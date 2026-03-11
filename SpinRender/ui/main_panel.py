@@ -583,6 +583,8 @@ class SpinRenderPanel(wx.Panel):
             return
         if self.status_msg == "// ready" and self.status_prog == 0.0:
             return
+        if hasattr(self, 'viewport'):
+            self.viewport.clear_preview_image()
         self.status_msg = "// ready"
         self.status_fg = self.ACCENT_GREEN
         self.status_prog = 0.0
@@ -849,8 +851,6 @@ class SpinRenderPanel(wx.Panel):
                     if 'custom' in self.preset_buttons: 
                         self.preset_buttons['custom'].SetLabel(name)
                     self.check_preset_match(manual_change=False)
-                else: 
-                    wx.MessageBox("Failed to save preset.", "Error", wx.OK | wx.ICON_ERROR)
         dlg.Destroy()
         pf = self.GetTopLevelParent()
         if pf: 
@@ -907,13 +907,15 @@ class SpinRenderPanel(wx.Panel):
 
         threading.Thread(target=run_render, daemon=True).start()
 
-    def on_render_progress(self, current, total, message):
-        wx.CallAfter(self._update_progress_ui, current, total, message)
+    def on_render_progress(self, current, total, message, frame_path=None):
+        wx.CallAfter(self._update_progress_ui, current, total, message, frame_path)
 
-    def _update_progress_ui(self, current, total, message):
+    def _update_progress_ui(self, current, total, message, frame_path=None):
         self.status_msg = message
         self.status_prog = current / total if total > 0 else 0.0
         self.status_bar_panel.Refresh()
+        if frame_path and hasattr(self, 'viewport'):
+            self.viewport.set_preview_image(frame_path)
 
     def on_render_finished(self, output_path, error=None):
         self.is_rendering = False
@@ -921,8 +923,9 @@ class SpinRenderPanel(wx.Panel):
         self.render_btn.SetLabel("RENDER")
         self.render_btn.SetIcon("mdi-video-vintage")
         self.render_btn.SetDanger(False)
-        
         if error:
+            if hasattr(self, 'viewport'):
+                self.viewport.clear_preview_image()
             self.status_msg = f"// error: {error}"
             self.status_fg = self.ACCENT_ORANGE
             self.status_bar_color = self.ACCENT_ORANGE
@@ -932,8 +935,6 @@ class SpinRenderPanel(wx.Panel):
             self.status_fg = self.ACCENT_GREEN
             self.status_bar_color = self.ACCENT_GREEN
             self.status_prog = 1.0
-            
-            # Open containing folder
             try:
                 folder = os.path.dirname(output_path)
                 if os.path.isdir(folder):
@@ -951,7 +952,6 @@ class SpinRenderPanel(wx.Panel):
             self.status_msg = "// render stopped"
             self.status_fg = self.ACCENT_ORANGE
             self.status_prog = 0.0
-            
         self.status_bar_panel.Refresh()
 
     def on_drag_start(self, event): 

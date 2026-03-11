@@ -184,15 +184,16 @@ class RenderEngine:
         resolution = self.settings.get('resolution', '1920x1080')
         width, height = map(int, resolution.split('x'))
 
+        if self.progress_callback:
+            self.progress_callback(0, frame_count, "// initializing render...")
+
         # Render each frame
         for i in range(frame_count):
             if self.canceled:
                 print("// render canceled by user")
                 return i
 
-            # Update progress
-            if self.progress_callback:
-                self.progress_callback(i + 1, frame_count, f"// rendering frame {i+1}/{frame_count}")
+            output_path = os.path.join(output_dir, f"frame{i:04d}.png")
 
             # 1. Calculate animation angle
             angle = (i * step_degrees)
@@ -214,8 +215,6 @@ class RenderEngine:
                 kx, ky, kz = board_tilt + spin_tilt, angle, board_roll + spin_heading
 
             rotate_str = f"{kx:.4f},{ky:.4f},{kz:.4f}"
-
-            output_path = os.path.join(output_dir, f"frame{i:04d}.png")
 
             # Find kicad-cli command
             kicad_cli = find_command('kicad-cli')
@@ -259,6 +258,10 @@ class RenderEngine:
                 process.wait(timeout=30)
                 if process.returncode != 0:
                     raise RuntimeError(f"Frame {i} render failed with exit code {process.returncode}")
+                
+                # Update progress AFTER render so the file exists for the preview window
+                if self.progress_callback:
+                    self.progress_callback(i + 1, frame_count, f"// rendering frame {i+1}/{frame_count}", output_path)
                     
             except subprocess.TimeoutExpired:
                 process.kill()
