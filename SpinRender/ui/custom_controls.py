@@ -176,7 +176,7 @@ class CustomToggleButton(wx.Panel):
 
     ICONS = {
         'mdi-reload': '\U000F0453',
-        'mdi-restore': '\U000F0456',
+        'mdi-restore': '\U000F099B',
         'mdi-check-circle': '\U000F05E0',
         'mdi-close-circle': '\U000F05E8',
         'mdi-weather-sunny': '\U000F0599',

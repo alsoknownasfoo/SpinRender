@@ -1,41 +1,36 @@
 """
-SpinRender Rendering Engine
-Generates frames using kicad-cli and assembles them into animations
+Core rendering engine for SpinRender
+Implements the tilted-loop model from the PRD
 """
 import subprocess
 import os
 import shutil
 import tempfile
+import json
 import math
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
+def find_command(cmd):
+    """Find a command in PATH or common locations"""
+    # Try PATH first
+    path = shutil.which(cmd)
+    if path:
+        return path
 
-def find_command(command_name):
-    """
-    Find command in PATH or common installation locations
-    Returns: str path to command or None
-    """
-    # First check PATH
-    cmd_path = shutil.which(command_name)
-    if cmd_path:
-        return cmd_path
-
-    # Check common locations
-    if command_name == 'kicad-cli':
+    # Common locations for KiCad and FFmpeg
+    common_paths = []
+    if cmd == 'kicad-cli':
         common_paths = [
             '/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli',
             '/usr/local/bin/kicad-cli',
             '/opt/homebrew/bin/kicad-cli'
         ]
-    elif command_name == 'ffmpeg':
+    elif cmd == 'ffmpeg':
         common_paths = [
             '/usr/local/bin/ffmpeg',
-            '/opt/homebrew/bin/ffmpeg',
-            '/usr/bin/ffmpeg'
+            '/opt/homebrew/bin/ffmpeg'
         ]
-    else:
-        return None
 
     for path in common_paths:
         if os.path.exists(path):
@@ -50,22 +45,34 @@ class RenderEngine:
     Implements the tilted-loop model from the PRD
     """
 
-    # Preset configurations
+    # Preset configurations (Universal Joint model)
     PRESETS = {
-        'hero_orbit': {
-            'tilt': 45.0,
+        'hero': {
+            'board_tilt': 35.0,
+            'board_roll': -90.0,
+            'spin_tilt': 0.0,
+            'spin_heading': 0.0,
             'direction': 'ccw',
-            'rotate_z': -45.0
+            'period': 10.0,
+            'lighting': 'studio'
         },
-        'top_sweep': {
-            'tilt': 0.0,
+        'spin': {
+            'board_tilt': 0.0,
+            'board_roll': -90.0,
+            'spin_tilt': 0.0,
+            'spin_heading': 0.0,
             'direction': 'ccw',
-            'rotate_z': 0.0
+            'period': 10.0,
+            'lighting': 'studio'
         },
-        'angle_reveal': {
-            'tilt': 30.0,
+        'roll': {
+            'board_tilt': 0.0,
+            'board_roll': 0.0,
+            'spin_tilt': 90.0,
+            'spin_heading': 0.0,
             'direction': 'ccw',
-            'rotate_z': -30.0
+            'period': 10.0,
+            'lighting': 'studio'
         }
     }
 
@@ -142,12 +149,6 @@ class RenderEngine:
     def generate_frames(self, output_dir):
         """
         Generate individual frames using kicad-cli
-
-        Args:
-            output_dir: Directory to store frames
-
-        Returns:
-            int: Number of frames generated
         """
         # Calculate frame parameters
         period = float(self.settings.get('period', 10.0))
@@ -155,10 +156,12 @@ class RenderEngine:
         frame_count = int(period * fps)
         step_degrees = 360.0 / frame_count
 
-        # Get rotation parameters
-        tilt = float(self.settings.get('tilt', 45.0))
+        # Universal Joint parameters
+        board_tilt = float(self.settings.get('board_tilt', 0.0))
+        board_roll = float(self.settings.get('board_roll', 0.0))
+        spin_tilt = float(self.settings.get('spin_tilt', 0.0))
+        spin_heading = float(self.settings.get('spin_heading', 0.0))
         direction = self.settings.get('direction', 'ccw')
-        rotate_z = self.settings.get('rotate_z', -45.0)
 
         # Get lighting parameters
         lighting = self.settings.get('lighting', 'studio')
@@ -170,14 +173,26 @@ class RenderEngine:
 
         # Render each frame
         for i in range(frame_count):
-            # Calculate Y rotation (loop angle)
+            # 1. Calculate animation angle
+            angle = (i * step_degrees)
             if direction == 'ccw':
-                rotate_y = -(i * step_degrees)
-            else:
-                rotate_y = i * step_degrees
+                angle = -angle
 
-            # Sanitize rotation values (see KICAD_CLI_RENDER_NOTES.md)
-            rotate_str = f"{tilt:.4f},{rotate_y:.4f},{rotate_z:.4f}"
+            # 2. Translate Universal Joint to KiCad Euler X,Y,Z
+            if spin_tilt == 0:
+                # Vertical Turntable mode
+                kx, ky, kz = board_tilt, angle, board_roll
+            elif abs(spin_tilt) == 90:
+                # Horizontal Roll mode
+                if spin_heading == 0:
+                    kx, ky, kz = angle, 0, board_tilt + board_roll
+                else:
+                    kx, ky, kz = angle, spin_heading, board_tilt + board_roll
+            else:
+                # Interpolated state
+                kx, ky, kz = board_tilt + spin_tilt, angle, board_roll + spin_heading
+
+            rotate_str = f"{kx:.4f},{ky:.4f},{kz:.4f}"
 
             output_path = os.path.join(output_dir, f"frame{i:04d}.png")
 

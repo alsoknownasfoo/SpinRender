@@ -72,11 +72,22 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         self.context = glcanvas.GLContext(self)
         self.initialized = False
         self.mesh_data = None
+        
+        # Universal Joint Parameters
         self.rotation_angle = 0.0
-        self.rotation_x, self.rotation_y, self.rotation_z = 30.0, 0.0, 0.0
+        self.board_tilt = 0.0
+        self.board_roll = 0.0
+        self.spin_tilt = 0.0
+        self.spin_heading = 0.0
+        
         self.rotation_speed = 1.2
         self.direction_sign = 1.0  # 1.0 for CCW, -1.0 for CW
         self.playing = False
+        
+        # Computed Axis
+        self.rotation_axis = np.array([0.0, 1.0, 0.0])
+        self._update_rotation_axis()
+        
         self.model_center = np.array([0.0, 0.0, 0.0])
         self.model_size = 150.0
         self.loading_state = "exporting"
@@ -106,6 +117,40 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
 
     def _update_loading(self, state):
         self.loading_state = state; self.Refresh()
+
+    def _update_rotation_axis(self):
+        """
+        Compute the 3D rotation axis vector based on SPIN TILT and SPIN HEADING.
+        """
+        t = math.radians(self.spin_tilt)
+        h = math.radians(self.spin_heading)
+        
+        # Tilt from vertical (0,1,0) towards horizontal plane
+        y = math.cos(t)
+        # Horizontal components
+        mag = math.sin(t)
+        x = mag * math.cos(h)
+        z = mag * math.sin(h)
+        
+        self.rotation_axis = np.array([x, y, z])
+        norm = np.linalg.norm(self.rotation_axis)
+        if norm > 0:
+            self.rotation_axis /= norm
+
+    def set_universal_joint_parameters(self, board_tilt, board_roll, spin_tilt, spin_heading):
+        self.board_tilt = board_tilt
+        self.board_roll = board_roll
+        self.spin_tilt = spin_tilt
+        self.spin_heading = spin_heading
+        self._update_rotation_axis()
+        self.Refresh()
+
+    def set_orbital_parameters(self, tilt, heading, pose):
+        self.axis_tilt = tilt
+        self.axis_heading = heading
+        self.start_pose = pose
+        self._update_rotation_axis()
+        self.Refresh()
 
     def _set_mesh(self, mesh):
         # Use idiomatic trimesh processing to clean topology
@@ -183,12 +228,16 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             gluPerspective(45.0, aspect, 1.0, cam_dist * 10.0)
             glMatrixMode(GL_MODELVIEW); glLoadIdentity()
             gluLookAt(0, 0, cam_dist, 0, 0, 0, 0, 1, 0)
-            # Apply static orientation (X, Y, Z set the tilt of the spin axis)
-            glRotatef(self.rotation_x, 1, 0, 0)
-            glRotatef(self.rotation_y, 0, 1, 0)
-            glRotatef(self.rotation_z, 0, 0, 1)
-            # Apply animated spin around the Y-axis of the tilted coordinate system
-            glRotatef(self.rotation_angle, 0, 1, 0)
+            
+            # 1. Spin the axis itself
+            glRotatef(self.direction_sign * self.rotation_angle, self.rotation_axis[0], self.rotation_axis[1], self.rotation_axis[2])
+            
+            # 2. Apply static orientation (Relative to spindle)
+            # First, Tilt the board forward/back
+            glRotatef(self.board_tilt, 1, 0, 0)
+            # Second, Roll the board like a clock
+            glRotatef(self.board_roll, 0, 0, 1)
+            
             glTranslatef(-self.model_center[0], -self.model_center[1], -self.model_center[2])
             glColor4f(0.5, 0.5, 0.5, 0.75) 
             if self.mesh_data: self._draw_mesh()
@@ -237,7 +286,10 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         if self.playing: 
             self.rotation_angle = (self.rotation_angle + (self.direction_sign * self.rotation_speed)) % 360.0
             self.Refresh()
-    def set_rotation(self, x, y, z): self.rotation_x, self.rotation_y, self.rotation_z = x, y, z; self.Refresh()
+    def set_rotation(self, x, y, z): 
+        self.axis_tilt = x
+        self._update_rotation_axis()
+        self.Refresh()
     def set_period(self, period): self.rotation_speed = 360.0 / (period * 30.0)
     def set_direction(self, direction_str):
         self.direction_sign = -1.0 if direction_str.lower() == 'cw' else 1.0
@@ -252,11 +304,48 @@ class PreviewRenderer(wx.Panel):
     Fallback wireframe 3D preview renderer
     """
     def __init__(self, parent, board_path):
-        super().__init__(parent); self.rotation_angle, self.rotation_x, self.rotation_y, self.rotation_z, self.rotation_speed, self.playing = 0.0, 0.0, 0.0, 0.0, 1.2, False
+        super().__init__(parent)
+        self.rotation_angle = 0.0
+        self.board_tilt = 0.0
+        self.spin_tilt = 0.0
+        self.spin_heading = 0.0
+
+        self.rotation_speed = 1.2
+        self.playing = False
         self.direction_sign = 1.0
-        self.SetBackgroundColour(wx.Colour(10, 10, 10)); self.Bind(wx.EVT_PAINT, self.on_paint)
+
+        self.rotation_axis = [0.0, 1.0, 0.0]
+        self._update_rotation_axis()
+
+        self.SetBackgroundColour(wx.Colour(10, 10, 10))
+        self.Bind(wx.EVT_PAINT, self.on_paint)
         self.timer = wx.Timer(self); self.Bind(wx.EVT_TIMER, self.on_timer)
 
+    def _update_rotation_axis(self):
+        t = math.radians(self.spin_tilt)
+        h = math.radians(self.spin_heading)
+        y = math.cos(t)
+        mag = math.sin(t)
+        x = mag * math.cos(h)
+        z = mag * math.sin(h)
+        self.rotation_axis = [x, y, z]
+        norm = math.sqrt(x*x + y*y + z*z)
+        if norm > 0:
+            self.rotation_axis = [x/norm, y/norm, z/norm]
+
+    def set_universal_joint_parameters(self, board_tilt, board_roll, spin_tilt, spin_heading):
+        self.board_tilt = board_tilt
+        self.board_roll = board_roll
+        self.spin_tilt = spin_tilt
+        self.spin_heading = spin_heading
+        self._update_rotation_axis()
+        self.Refresh()
+
+    def set_orbital_parameters(self, tilt, heading, pose):
+        self.spin_tilt = tilt
+        self.spin_heading = heading
+        self._update_rotation_axis()
+        self.Refresh()
     def on_paint(self, _event):
         dc = wx.PaintDC(self); gc = wx.GraphicsContext.Create(dc)
         if not gc: return
@@ -264,24 +353,57 @@ class PreviewRenderer(wx.Panel):
 
     def draw_pcb_wireframe(self, gc, cx, cy):
         size, verts, rotated = 100, [(-size, -size/4, -size), (size, -size/4, -size), (size, -size/4, size), (-size, -size/4, size), (-size, size/4, -size), (size, size/4, -size), (size, size/4, size), (-size, size/4, size)], []
-        for x, y, z in verts:
-            # Apply static orientation (X, Y, Z set the tilt of the spin axis)
-            xr = math.radians(self.rotation_x); y1 = y*math.cos(xr) - z*math.sin(xr); z1 = y*math.sin(xr) + z*math.cos(xr)
-            yr = math.radians(self.rotation_y); x2 = x*math.cos(yr) - z1*math.sin(yr); z2 = x*math.sin(yr) + z1*math.cos(yr)
-            zr = math.radians(self.rotation_z); x3 = x2*math.cos(zr) - y1*math.sin(zr); y2 = x2*math.sin(zr) + y1*math.cos(zr)
-            # Apply animated spin around Y-axis
-            ar = math.radians(self.rotation_angle); xf = x3*math.cos(ar) - z2*math.sin(ar); zf = x3*math.sin(ar) + z2*math.cos(ar)
-            scale = 200.0 / (200.0 + zf); rotated.append((cx + xf*scale, cy + y2*scale, zf))
+        
+        # 1. Spin Axis orientation
+        axis = self.rotation_axis
+        angle = math.radians(self.direction_sign * self.rotation_angle)
+        cos_a = math.cos(angle)
+        sin_a = math.sin(angle)
+        
+        # 2. Board lean (Tilt and Roll)
+        bt = math.radians(self.board_tilt)
+        cos_bt = math.cos(bt); sin_bt = math.sin(bt)
+        br = math.radians(self.board_roll)
+        cos_br = math.cos(br); sin_br = math.sin(br)
+        
+        for v in verts:
+            # First Tilt (X axis)
+            tx = v[0]
+            ty = v[1]*cos_bt - v[2]*sin_bt
+            tz = v[1]*sin_bt + v[2]*cos_bt
+            
+            # Second Roll (Z axis)
+            bx = tx*cos_br - ty*sin_br
+            by = tx*sin_br + ty*cos_br
+            bz = tz
+            
+            # Then rotate around spin axis using Rodrigues'
+            dot = bx*axis[0] + by*axis[1] + bz*axis[2]
+            cross = [
+                axis[1]*bz - axis[2]*by,
+                axis[2]*bx - axis[0]*bz,
+                axis[0]*by - axis[1]*bx
+            ]
+            
+            rx = bx*cos_a + cross[0]*sin_a + axis[0]*dot*(1-cos_a)
+            ry = by*cos_a + cross[1]*sin_a + axis[1]*dot*(1-cos_a)
+            rz = bz*cos_a + cross[2]*sin_a + axis[2]*dot*(1-cos_a)
+            
+            scale = 200.0 / (200.0 + rz)
+            rotated.append((cx + rx*scale, cy + ry*scale, rz))
+
         edges, pen = [(0,1), (1,2), (2,3), (3,0), (4,5), (5,6), (6,7), (7,4), (0,4), (1,5), (2,6), (3,7)], wx.Pen(wx.Colour(85, 85, 85, 150), 1)
         for s, e in edges:
             x1, y1, z1 = rotated[s]; x2, y2, z2 = rotated[e]
             gc.SetPen(pen); gc.StrokeLine(x1, y1, x2, y2)
-
     def on_timer(self, _event):
-        if self.playing: 
+        if self.playing:
             self.rotation_angle = (self.rotation_angle + (self.direction_sign * self.rotation_speed)) % 360.0
             self.Refresh()
-    def set_rotation(self, x, y, z): self.rotation_x, self.rotation_y, self.rotation_z = x, y, z; self.Refresh()
+    def set_rotation(self, x, y, z): 
+        self.axis_tilt = x
+        self._update_rotation_axis()
+        self.Refresh()
     def set_period(self, period): self.rotation_speed = 360.0 / (period * 30.0)
     def set_direction(self, direction_str):
         self.direction_sign = -1.0 if direction_str.lower() == 'cw' else 1.0
