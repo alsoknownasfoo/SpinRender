@@ -1,6 +1,5 @@
 """
 SpinRender Main UI Panel
-Implements the two-panel layout from Pencil design
 """
 import wx
 import wx.svg
@@ -11,7 +10,9 @@ import time
 import threading
 import subprocess
 from pathlib import Path
-from .custom_controls import (
+
+# Use absolute imports from the plugin root for KiCad compatibility
+from ui.custom_controls import (
     CustomSlider, CustomToggleButton, CustomButton,
     PresetCard, SectionLabel, NumericDisplay, NumericInput,
     get_custom_font, get_mdi_font, _OSWALD

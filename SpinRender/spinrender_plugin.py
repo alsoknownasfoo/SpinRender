@@ -6,6 +6,8 @@ import wx
 import os
 import sys
 import site
+import logging
+
 # REMOVE THIS LINE IN PRODUCTION - This is for development to prevent .pyc files from being generated in the plugin directory
 sys.dont_write_bytecode = True 
 
@@ -19,6 +21,16 @@ if user_site not in sys.path:
 plugin_dir = os.path.dirname(os.path.abspath(__file__))
 if plugin_dir not in sys.path:
     sys.path.insert(0, plugin_dir)
+
+# Configure logging
+log_file = os.path.join(plugin_dir, "spinrender.log")
+logging.basicConfig(
+    filename=log_file,
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger("SpinRender")
+logger.info(f"Loading SpinRender plugin from {plugin_dir}")
 
 from utils.dependencies import DependencyChecker
 from ui.main_panel import SpinRenderPanel
@@ -38,11 +50,15 @@ class SpinRenderPlugin(pcbnew.ActionPlugin):
         self.description = "Generate animated PCB renders with camera loops and lighting presets"
         self.show_toolbar_button = True
         self.icon_file_name = os.path.join(plugin_dir, "resources", "icon.png")
+        self.dark_icon_file_name = os.path.join(plugin_dir, "resources", "icon.png")
+        
+        logger.debug(f"SpinRender defaults() called: name={self.name}")
 
     def Run(self):
         """
         Called when plugin is executed from KiCad
         """
+        logger.info("SpinRender Run() called")
         try:
             # Check if window already exists - bring to front instead of creating new one
             if SpinRenderFrame.active_instance is not None:
@@ -88,8 +104,10 @@ class SpinRenderPlugin(pcbnew.ActionPlugin):
 
             frame = SpinRenderFrame(parent, board_path)
             frame.Show()
+            logger.info("SpinRender frame shown successfully")
 
         except Exception as e:
+            logger.error(f"Failed to launch SpinRender: {e}", exc_info=True)
             wx.MessageBox(
                 f"Failed to launch SpinRender:\n{str(e)}",
                 "SpinRender - Error",
@@ -151,4 +169,10 @@ class SpinRenderFrame(wx.Frame):
 
 
 # Register plugin with KiCad
-SpinRenderPlugin().register()
+try:
+    logger.debug("Attempting to register SpinRender plugin")
+    SpinRenderPlugin().register()
+    logger.info("SpinRender plugin registered")
+except Exception as e:
+    logger.error(f"SpinRender registration failed: {e}", exc_info=True)
+    print(f"SpinRender Error: {e}")
