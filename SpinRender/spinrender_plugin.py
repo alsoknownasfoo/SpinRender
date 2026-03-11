@@ -6,6 +6,8 @@ import wx
 import os
 import sys
 import site
+# REMOVE THIS LINE IN PRODUCTION - This is for development to prevent .pyc files from being generated in the plugin directory
+sys.dont_write_bytecode = True 
 
 # Add user site-packages to path
 # This is critical for KiCad bundled Python to find packages installed via 'pip install --user'
