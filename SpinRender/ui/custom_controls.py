@@ -554,7 +554,7 @@ class CustomButton(wx.Panel):
         super().__init__(parent, size=size)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
 
-        self.label = str(label).upper()
+        self.label = str(label)
         self.icon = icon
         self.icon_font_family = icon_font_family
         self.primary = primary
@@ -691,7 +691,7 @@ class CustomButton(wx.Panel):
         self.Refresh()
 
     def SetLabel(self, label):
-        self.label = str(label).upper()
+        self.label = str(label)
         self.Refresh()
 
     def SetIcon(self, icon):
