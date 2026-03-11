@@ -8,6 +8,7 @@ import shutil
 import tempfile
 import json
 import math
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -80,7 +81,7 @@ class RenderEngine:
     LIGHTING_PRESETS = {
         'studio': {
             'light_side': 0.15,
-            'light_side_elevation': 135
+            'light_side_elevation': 45
         },
         'dramatic': {
             'light_side': 0.3,
@@ -88,7 +89,7 @@ class RenderEngine:
         },
         'soft': {
             'light_side': 0.05,
-            'light_side_elevation': 160
+            'light_side_elevation': 20
         },
         'none': {
             'light_side': 0.0,
@@ -96,17 +97,20 @@ class RenderEngine:
         }
     }
 
-    def __init__(self, board_path, settings):
+    def __init__(self, board_path, settings, progress_callback=None):
         """
         Initialize render engine
 
         Args:
             board_path: Path to .kicad_pcb file
             settings: Dict of render settings
+            progress_callback: Function(current, total, message)
         """
         self.board_path = board_path
         self.board_dir = os.path.dirname(board_path)
         self.settings = settings
+        self.progress_callback = progress_callback
+        self.canceled = False
 
         # Apply preset defaults if using a preset
         if settings.get('preset') in self.PRESETS:
@@ -126,12 +130,17 @@ class RenderEngine:
         try:
             # Generate frames
             frame_count = self.generate_frames(temp_dir)
+            if self.canceled:
+                return None
 
             # Determine output path
             output_path = self.get_output_path()
 
             # Assemble output based on format
             format_type = self.settings.get('format', 'mp4')
+            if self.progress_callback:
+                self.progress_callback(frame_count, frame_count, f"// assembling {format_type}...")
+
             if format_type == 'mp4':
                 self.assemble_mp4(temp_dir, output_path, frame_count)
             elif format_type == 'gif':
@@ -145,6 +154,10 @@ class RenderEngine:
             # Clean up temp directory
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
+
+    def cancel(self):
+        """Cancel the render process"""
+        self.canceled = True
 
     def generate_frames(self, output_dir):
         """
@@ -173,6 +186,14 @@ class RenderEngine:
 
         # Render each frame
         for i in range(frame_count):
+            if self.canceled:
+                print("// render canceled by user")
+                return i
+
+            # Update progress
+            if self.progress_callback:
+                self.progress_callback(i + 1, frame_count, f"// rendering frame {i+1}/{frame_count}")
+
             # 1. Calculate animation angle
             angle = (i * step_degrees)
             if direction == 'ccw':
@@ -221,39 +242,43 @@ class RenderEngine:
             if cli_overrides:
                 cmd.extend(cli_overrides.split())
 
-            # Execute render
+            # Execute render and pipe output to console
+            print(f"> {' '.join(cmd)}")
             try:
-                subprocess.run(
+                process = subprocess.Popen(
                     cmd,
-                    check=True,
                     stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    timeout=30
+                    stderr=subprocess.STDOUT,
+                    text=True
                 )
-            except subprocess.CalledProcessError as e:
-                raise RuntimeError(f"Frame {i} render failed: {e.stderr.decode()}")
+                
+                # Stream output to console
+                for line in process.stdout:
+                    print(f"  {line.strip()}")
+                
+                process.wait(timeout=30)
+                if process.returncode != 0:
+                    raise RuntimeError(f"Frame {i} render failed with exit code {process.returncode}")
+                    
             except subprocess.TimeoutExpired:
+                process.kill()
                 raise RuntimeError(f"Frame {i} render timed out")
+            except Exception as e:
+                raise RuntimeError(f"Frame {i} render failed: {str(e)}")
 
         return frame_count
 
     def assemble_mp4(self, frame_dir, output_path, frame_count):
         """
         Assemble frames into MP4 video using ffmpeg
-
-        Args:
-            frame_dir: Directory containing frames
-            output_path: Output MP4 file path
-            frame_count: Number of frames
         """
-        # Find ffmpeg command
         ffmpeg = find_command('ffmpeg')
         if not ffmpeg:
             raise RuntimeError("ffmpeg not found in PATH or common locations")
 
         cmd = [
             ffmpeg,
-            '-y',  # Overwrite output
+            '-y',
             '-framerate', '30',
             '-i', os.path.join(frame_dir, 'frame%04d.png'),
             '-c:v', 'libx264',
@@ -261,95 +286,58 @@ class RenderEngine:
             '-profile:v', 'high',
             '-level', '4.1',
             '-crf', '18',
-            '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',  # Ensure even dimensions
+            '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
             output_path
         ]
 
+        print(f"> {' '.join(cmd)}")
         try:
-            subprocess.run(
-                cmd,
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                timeout=300
-            )
+            subprocess.run(cmd, check=True, stdout=None, stderr=None, timeout=300)
         except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"MP4 assembly failed: {e.stderr.decode()}")
+            raise RuntimeError("MP4 assembly failed. See console output.")
         except subprocess.TimeoutExpired:
             raise RuntimeError("MP4 assembly timed out")
 
     def assemble_gif(self, frame_dir, output_path, frame_count):
         """
         Assemble frames into GIF using ffmpeg
-
-        Args:
-            frame_dir: Directory containing frames
-            output_path: Output GIF file path
-            frame_count: Number of frames
         """
-        # Find ffmpeg command
         ffmpeg = find_command('ffmpeg')
         if not ffmpeg:
             raise RuntimeError("ffmpeg not found in PATH or common locations")
 
-        # Generate palette first for better quality
         palette_path = os.path.join(frame_dir, 'palette.png')
-
         palette_cmd = [
-            ffmpeg,
-            '-y',
-            '-framerate', '30',
+            ffmpeg, '-y', '-framerate', '30',
             '-i', os.path.join(frame_dir, 'frame%04d.png'),
-            '-vf', 'palettegen',
-            palette_path
+            '-vf', 'palettegen', palette_path
         ]
 
+        print(f"> {' '.join(palette_cmd)}")
         try:
-            subprocess.run(
-                palette_cmd,
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                timeout=60
-            )
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"GIF palette generation failed: {e.stderr.decode()}")
+            subprocess.run(palette_cmd, check=True, stdout=None, stderr=None, timeout=60)
+        except subprocess.CalledProcessError:
+            raise RuntimeError("GIF palette generation failed.")
 
-        # Create GIF using palette
         gif_cmd = [
-            ffmpeg,
-            '-y',
-            '-framerate', '30',
+            ffmpeg, '-y', '-framerate', '30',
             '-i', os.path.join(frame_dir, 'frame%04d.png'),
             '-i', palette_path,
             '-filter_complex', 'paletteuse',
             output_path
         ]
 
+        print(f"> {' '.join(gif_cmd)}")
         try:
-            subprocess.run(
-                gif_cmd,
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                timeout=300
-            )
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"GIF assembly failed: {e.stderr.decode()}")
+            subprocess.run(gif_cmd, check=True, stdout=None, stderr=None, timeout=300)
+        except subprocess.CalledProcessError:
+            raise RuntimeError("GIF assembly failed.")
 
     def assemble_png_sequence(self, frame_dir, output_path, frame_count):
         """
         Copy PNG sequence to output directory
-
-        Args:
-            frame_dir: Directory containing frames
-            output_path: Output directory path
-            frame_count: Number of frames
         """
-        # Create output directory if it doesn't exist
         os.makedirs(output_path, exist_ok=True)
-
-        # Copy all frames
         for i in range(frame_count):
             src = os.path.join(frame_dir, f"frame{i:04d}.png")
             dst = os.path.join(output_path, f"frame{i:04d}.png")
@@ -358,29 +346,21 @@ class RenderEngine:
     def get_output_path(self):
         """
         Determine output file/directory path based on settings
-
-        Returns:
-            str: Output path
         """
         if self.settings.get('output_auto', True):
-            # Auto-generate timestamped path
             timestamp = datetime.now().strftime("%y%m%d_%H%M%S")
             output_base = os.path.join(self.board_dir, "Renders", timestamp)
             os.makedirs(output_base, exist_ok=True)
         else:
-            # Use specified path
             output_base = self.settings.get('output_path', self.board_dir)
 
-        # Determine filename based on format
         format_type = self.settings.get('format', 'mp4')
         board_name = os.path.splitext(os.path.basename(self.board_path))[0]
 
         if format_type == 'png_sequence':
-            # For PNG sequence, return the directory
             output_path = os.path.join(output_base, board_name)
             os.makedirs(output_path, exist_ok=True)
         else:
-            # For video/gif, return the full file path
             ext = 'mp4' if format_type == 'mp4' else 'gif'
             output_path = os.path.join(output_base, f"{board_name}.{ext}")
 

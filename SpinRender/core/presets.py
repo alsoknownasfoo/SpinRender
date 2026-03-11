@@ -66,12 +66,13 @@ class PresetManager:
         preset_data = {
             'name': name,
             'settings': {
-                'tilt': settings.get('tilt', 45.0),
+                'board_tilt': settings.get('board_tilt', 0.0),
+                'board_roll': settings.get('board_roll', 0.0),
+                'spin_tilt': settings.get('spin_tilt', 0.0),
+                'spin_heading': settings.get('spin_heading', 0.0),
                 'period': settings.get('period', 10.0),
-                'easing': settings.get('easing', 'linear'),
                 'direction': settings.get('direction', 'ccw'),
-                'lighting': settings.get('lighting', 'studio'),
-                'rotate_z': settings.get('rotate_z', -45.0)
+                'lighting': settings.get('lighting', 'studio')
             }
         }
 

@@ -191,7 +191,11 @@ class CustomToggleButton(wx.Panel):
         'mdi-image-multiple': '\U000F02F0',
         'mdi-television-hd': '\U000F0704',
         'mdi-television': '\U000F0502',
-        'mdi-monitor': '\U000F0379'
+        'mdi-monitor': '\U000F0379',
+        'mdi-trash-can-outline': '\U000F0A7A',
+        'mdi-axis-x-arrow': '\U000F0D4C',
+        'mdi-axis-y-arrow': '\U000F0D51',
+        'mdi-alert-octagram': '\U000F0767'
     }
 
     def __init__(self, parent, options=None, size=(120, 32), active_color=None):
@@ -277,13 +281,24 @@ class CustomToggleButton(wx.Panel):
     def on_click(self, event):
         if not self.IsEnabled(): return
         
-        # Cycle index
-        self.selection = (self.selection + 1) % len(self.options)
-        self.Refresh()
+        # Calculate which option was clicked based on X position
+        width = self.GetSize().x
+        num_options = len(self.options)
+        state_width = width / num_options
         
-        evt = wx.PyCommandEvent(wx.EVT_TOGGLEBUTTON.typeId, self.GetId())
-        evt.SetInt(self.selection)
-        self.GetEventHandler().ProcessEvent(evt)
+        click_x = event.GetX()
+        new_selection = int(click_x // state_width)
+        
+        # Clip just in case of rounding at the very edge
+        new_selection = max(0, min(new_selection, num_options - 1))
+        
+        if self.selection != new_selection:
+            self.selection = new_selection
+            self.Refresh()
+            
+            evt = wx.PyCommandEvent(wx.EVT_TOGGLEBUTTON.typeId, self.GetId())
+            evt.SetInt(self.selection)
+            self.GetEventHandler().ProcessEvent(evt)
 
     def GetSelection(self): return self.selection
     def SetSelection(self, index):
@@ -525,12 +540,17 @@ class CustomButton(wx.Panel):
         'mdi-close': '\U000F0156',
         'mdi-cog': '\U000F0493',
         'mdi-play': '\U000F040D',
+        'mdi-stop': '\U000F04DB',
+        'mdi-video-vintage': '\U000F0A1C',
         'mdi-folder': '\U000F024B',
         'mdi-check': '\U000F012C',
-        'mdi-alert': '\U000F0026'
+        'mdi-alert': '\U000F0026',
+        'mdi-information-outline': '\U000F02FD',
+        'mdi-trash-can-outline': '\U000F0A7A',
+        'mdi-alert-octagram': '\U000F0767'
     }
 
-    def __init__(self, parent, label="BUTTON", icon=None, icon_font_family=None, primary=True, ghost=False, danger=False, size=(-1, 36)):
+    def __init__(self, parent, label="BUTTON", icon=None, icon_font_family=None, primary=True, ghost=False, danger=False, icon_color=None, size=(-1, 36)):
         super().__init__(parent, size=size)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
 
@@ -540,6 +560,7 @@ class CustomButton(wx.Panel):
         self.primary = primary
         self.ghost = ghost
         self.danger = danger
+        self.icon_color_override = icon_color
         self.hovered = False
         self.pressed = False
 
@@ -559,7 +580,10 @@ class CustomButton(wx.Panel):
 
         # Style colors
         if self.primary:
-            bg_base, text_base, border_base = wx.Colour(0, 188, 212), wx.Colour(13, 13, 13), None
+            if self.danger:
+                bg_base, text_base, border_base = wx.Colour(180, 0, 0), wx.Colour(255, 255, 255), None
+            else:
+                bg_base, text_base, border_base = wx.Colour(0, 188, 212), wx.Colour(13, 13, 13), None
         elif self.ghost:
             bg_base, text_base, border_base = wx.Colour(0, 0, 0, 0), wx.Colour(224, 224, 224), None
         else:
@@ -569,7 +593,10 @@ class CustomButton(wx.Panel):
         bg = bg_base
         text_color = text_base
         
-        if self.danger:
+        if self.danger and self.primary:
+            if self.pressed: bg = wx.Colour(140, 0, 0)
+            elif self.hovered: bg = wx.Colour(220, 20, 20)
+        elif self.danger:
             if self.pressed:
                 bg = wx.Colour(180, 0, 0)
                 text_color = wx.Colour(255, 255, 255)
@@ -591,6 +618,13 @@ class CustomButton(wx.Panel):
 
         final_bg = _get_paint_color(bg, enabled)
         final_text = _get_paint_color(text_color, enabled)
+        
+        # Determine final icon color (priority to override)
+        final_icon_color = final_text
+        if self.icon_color_override and enabled:
+            final_icon_color = self.icon_color_override
+        elif self.icon_color_override and not enabled:
+            final_icon_color = _get_paint_color(self.icon_color_override, False)
         
         if not self.ghost or (self.hovered or self.pressed):
             gc.SetBrush(wx.Brush(final_bg))
@@ -616,7 +650,7 @@ class CustomButton(wx.Panel):
                 icon_font = get_mdi_font(14)
             else:
                 icon_font = wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
-            gc.SetFont(icon_font, final_text)
+            gc.SetFont(icon_font, final_icon_color)
             iw, ih = gc.GetTextExtent(icon_char)
 
         # Calculate total group width for horizontal centering
@@ -626,7 +660,7 @@ class CustomButton(wx.Panel):
 
         # Draw icon centered vertically
         if icon_char:
-            gc.SetFont(icon_font, final_text)
+            gc.SetFont(icon_font, final_icon_color)
             gc.DrawText(icon_char, start_x, (height - ih) / 2)
             
         # Draw label centered vertically
@@ -660,6 +694,18 @@ class CustomButton(wx.Panel):
         self.label = str(label).upper()
         self.Refresh()
 
+    def SetIcon(self, icon):
+        self.icon = icon
+        self.Refresh()
+
+    def SetPrimary(self, primary):
+        self.primary = primary
+        self.Refresh()
+
+    def SetDanger(self, danger):
+        self.danger = danger
+        self.Refresh()
+
 
 class PresetCard(wx.Panel):
     """
@@ -669,7 +715,8 @@ class PresetCard(wx.Panel):
         wx.Colour(23, 23, 23), wx.Colour(30, 30, 30), wx.Colour(51, 51, 51), wx.Colour(0, 188, 212), wx.Colour(119, 119, 119), wx.Colour(0, 188, 212)
     ICONS = {'rotate-cw': '↻', 'rotate-ccw': '↺', 'arrow-down': '↓', 'arrow-up': '↑', 'circle': '○', 'star': '⭐',
              'mdi-rotate-cw': '\U000F0465', 'mdi-arrow-down': '\U000F0045', 'mdi-arrow-up': '\U000F005D', 
-             'mdi-circle': '\U000F012F', 'mdi-star-settings-outline': '\U000F166B'}
+             'mdi-circle': '\U000F012F', 'mdi-star-settings-outline': '\U000F166B',
+             'mdi-rotate-360': '\U000F1999', 'mdi-horizontal-rotate-counterclockwise': '\U000F10F4'}
 
     def __init__(self, parent, label="PRESET", icon_name="rotate-cw", size=(90, 64)):
         super().__init__(parent, size=size)
@@ -717,6 +764,10 @@ class PresetCard(wx.Panel):
 
     def SetSelected(self, selected):
         self.selected = selected
+        self.Refresh()
+
+    def SetLabel(self, label):
+        self.label = str(label).upper()
         self.Refresh()
 
     def IsSelected(self): return self.selected
@@ -805,8 +856,12 @@ class NumericInput(wx.Panel):
     """
     Editable numeric input matching Component/NumericInput
     """
-    BG_COLOR, BORDER_COLOR, BORDER_FOCUS, VALUE_COLOR, VALUE_EDIT, UNIT_COLOR = \
-        wx.Colour(13, 13, 13), wx.Colour(51, 51, 51), wx.Colour(0, 188, 212), wx.Colour(255, 214, 0), wx.Colour(224, 224, 224), wx.Colour(119, 119, 119)
+    BG_COLOR = wx.Colour(13, 13, 13)
+    BORDER_COLOR = wx.Colour(51, 51, 51)
+    BORDER_FOCUS = wx.Colour(0, 188, 212)
+    VALUE_COLOR = wx.Colour(255, 214, 0)
+    VALUE_EDIT = wx.Colour(224, 224, 224)
+    UNIT_COLOR = wx.Colour(119, 119, 119)
 
     def __init__(self, parent, value=0.0, unit="", min_val=None, max_val=None, size=(100, 32)):
         super().__init__(parent, size=size)
@@ -915,3 +970,223 @@ class NumericInput(wx.Panel):
         self.value = value
         if not self.editing: self.Refresh()
     def GetValue(self): return self.value
+
+
+class CustomTextInput(wx.Panel):
+    """
+    Custom text input using wx.Panel to avoid native OS focus highlights.
+    Supports multiline and placeholder text.
+    """
+    BG_COLOR = wx.Colour(13, 13, 13)
+    BORDER_COLOR = wx.Colour(51, 51, 51)
+    BORDER_FOCUS = wx.Colour(0, 188, 212)
+    TEXT_COLOR = wx.Colour(224, 224, 224)
+    PLACEHOLDER_COLOR = wx.Colour(85, 85, 85)
+
+    def __init__(self, parent, value="", placeholder="", multiline=False, size=(-1, 36)):
+        super().__init__(parent, size=size)
+        self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
+        self.value = str(value).upper()
+        self.placeholder = str(placeholder)
+        self.multiline = multiline
+        self.is_placeholder_active = not self.value and self.placeholder
+        
+        self.Bind(wx.EVT_PAINT, self.on_paint)
+        self.Bind(wx.EVT_LEFT_DOWN, self.on_click)
+        self.Bind(wx.EVT_CHAR, self.on_char)
+        self.Bind(wx.EVT_KILL_FOCUS, self.on_focus_lost)
+        self.Bind(wx.EVT_SET_FOCUS, self.on_focus_gained)
+        self.SetCanFocus(True)
+
+    def on_paint(self, event):
+        dc = wx.AutoBufferedPaintDC(self)
+        gc = wx.GraphicsContext.Create(dc)
+        if not gc: return
+
+        width, height = self.GetSize()
+        enabled = self.IsEnabled()
+
+        # Background
+        gc.SetBrush(wx.Brush(_get_paint_color(self.BG_COLOR, enabled)))
+        
+        # Border
+        bc = self.BORDER_FOCUS if self.HasFocus() else self.BORDER_COLOR
+        gc.SetPen(wx.Pen(_get_paint_color(bc, enabled), 1))
+        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
+
+        # Text
+        font = get_custom_font(size=11)
+        
+        if self.is_placeholder_active and not self.HasFocus():
+            display_text = self.placeholder
+            text_color = self.PLACEHOLDER_COLOR
+        else:
+            display_text = self.value
+            text_color = self.TEXT_COLOR
+            
+        gc.SetFont(font, _get_paint_color(text_color, enabled))
+        
+        if self.HasFocus():
+            display_text += "|"
+            
+        if self.multiline:
+            # Simple wrapping/multiline support
+            gc.DrawText(display_text, 12, 10)
+        else:
+            tw, th = gc.GetTextExtent(display_text)
+            gc.DrawText(display_text, 12, (height - th) / 2)
+
+    def on_click(self, event):
+        if not self.IsEnabled(): return
+        self.SetFocus()
+        self.Refresh()
+
+    def on_char(self, event):
+        if not self.IsEnabled(): return
+        key = event.GetKeyCode()
+        
+        if key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+            if self.multiline:
+                self.value += "\n"
+                self.Refresh()
+            else:
+                # Trigger enter event for single line
+                evt = wx.PyCommandEvent(wx.EVT_TEXT_ENTER.typeId, self.GetId())
+                self.GetEventHandler().ProcessEvent(evt)
+        elif key == wx.WXK_BACK:
+            if len(self.value) > 0:
+                self.value = self.value[:-1]
+                self.Refresh()
+        elif key == wx.WXK_TAB:
+            event.Skip()
+        else:
+            char = chr(key) if key < 256 else None
+            if char and char.isprintable():
+                self.value += char.upper()
+                self.Refresh()
+                
+        # Update placeholder state
+        self.is_placeholder_active = not self.value and self.placeholder
+                
+        # Trigger generic text event
+        evt = wx.PyCommandEvent(wx.EVT_TEXT.typeId, self.GetId())
+        evt.SetString(self.value)
+        self.GetEventHandler().ProcessEvent(evt)
+
+    def on_focus_gained(self, event):
+        self.Refresh()
+        event.Skip()
+
+    def on_focus_lost(self, event):
+        self.Refresh()
+        event.Skip()
+
+    def GetValue(self): return self.value.strip()
+    def SetValue(self, val):
+        self.value = str(val).upper()
+        self.is_placeholder_active = not self.value and self.placeholder
+        self.Refresh()
+
+
+class ProjectFolderChip(wx.Panel):
+    """
+    Small orange chip for "PROJECT FOLDER" prefix
+    """
+    def __init__(self, parent):
+        # Measure text to get width
+        font = get_custom_font(8, weight=wx.FONTWEIGHT_BOLD)
+        temp_dc = wx.ScreenDC()
+        temp_dc.SetFont(font)
+        tw, th = temp_dc.GetTextExtent("PROJECT FOLDER")
+        
+        super().__init__(parent, size=(tw + 12, 18))
+        self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
+        self.Bind(wx.EVT_PAINT, self.on_paint)
+
+    def on_paint(self, event):
+        dc = wx.AutoBufferedPaintDC(self)
+        gc = wx.GraphicsContext.Create(dc)
+        if not gc: return
+        
+        w, h = self.GetSize()
+        gc.SetBrush(wx.Brush(wx.Colour(255, 107, 53))) # $accent-orange
+        gc.SetPen(wx.TRANSPARENT_PEN)
+        gc.DrawRoundedRectangle(0, 0, w, h, 4)
+        
+        gc.SetFont(get_custom_font(8, weight=wx.FONTWEIGHT_BOLD), wx.Colour(13, 13, 13))
+        tw, th = gc.GetTextExtent("PROJECT FOLDER")
+        gc.DrawText("PROJECT FOLDER", (w - tw) / 2, (h - th) / 2)
+
+
+class PathInputControl(wx.Panel):
+    """
+    Styled path display with folder icon and project chip support
+    """
+    BG_COLOR = wx.Colour(13, 13, 13)
+    BORDER_COLOR = wx.Colour(51, 51, 51)
+    TEXT_COLOR = wx.Colour(224, 224, 224)
+
+    def __init__(self, parent, size=(-1, 36)):
+        super().__init__(parent, size=size)
+        self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
+        self.path_text = ""
+        self.show_chip = False
+        
+        self.chip = ProjectFolderChip(self)
+        self.chip.Hide()
+        
+        self.Bind(wx.EVT_PAINT, self.on_paint)
+        self.Bind(wx.EVT_SIZE, self.on_size)
+
+    def on_size(self, event):
+        self.update_chip_pos()
+        event.Skip()
+
+    def update_chip_pos(self):
+        # Position chip after the icon
+        self.chip.Move(wx.Point(36, (self.GetSize().y - 18) / 2))
+
+    def SetPath(self, path, in_project=False):
+        self.path_text = path
+        self.show_chip = in_project
+        if self.show_chip: self.chip.Show()
+        else: self.chip.Hide()
+        self.Refresh()
+
+    def on_paint(self, event):
+        dc = wx.AutoBufferedPaintDC(self)
+        gc = wx.GraphicsContext.Create(dc)
+        if not gc: return
+        
+        w, h = self.GetSize()
+        enabled = self.IsEnabled()
+        
+        # Background
+        gc.SetBrush(wx.Brush(_get_paint_color(self.BG_COLOR, enabled)))
+        gc.SetPen(wx.Pen(_get_paint_color(self.BORDER_COLOR, enabled), 1))
+        gc.DrawRoundedRectangle(1, 1, w - 2, h - 2, 4)
+        
+        # Folder Icon
+        icon_font = get_mdi_font(14)
+        gc.SetFont(icon_font, _get_paint_color(self.TEXT_COLOR, enabled))
+        # mdi-folder: F024B
+        itw, ih = gc.GetTextExtent('\U000F024B')
+        gc.DrawText('\U000F024B', 12, (h - ih) / 2)
+        
+        # Path Text
+        font = get_custom_font(11)
+        gc.SetFont(font, _get_paint_color(self.TEXT_COLOR, enabled))
+        
+        text_x = 36
+        if self.show_chip:
+            text_x += self.chip.GetSize().x + 6
+            
+        # Truncate text if too long
+        tw, th = gc.GetTextExtent(self.path_text)
+        display_text = self.path_text
+        if text_x + tw > w - 12:
+            # Simple truncation for now
+            display_text = "..." + self.path_text[-25:]
+            
+        gc.DrawText(display_text, text_x, (h - th) / 2)
+

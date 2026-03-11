@@ -283,7 +283,8 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
 
     def on_size(self, _event): self.Refresh()
     def on_timer(self, _event):
-        if self.playing: 
+        if self.playing:
+            # direction_sign is 1.0 for CCW, -1.0 for CW
             self.rotation_angle = (self.rotation_angle + (self.direction_sign * self.rotation_speed)) % 360.0
             self.Refresh()
     def set_rotation(self, x, y, z): 
@@ -398,6 +399,7 @@ class PreviewRenderer(wx.Panel):
             gc.SetPen(pen); gc.StrokeLine(x1, y1, x2, y2)
     def on_timer(self, _event):
         if self.playing:
+            # direction_sign is 1.0 for CCW, -1.0 for CW
             self.rotation_angle = (self.rotation_angle + (self.direction_sign * self.rotation_speed)) % 360.0
             self.Refresh()
     def set_rotation(self, x, y, z): 

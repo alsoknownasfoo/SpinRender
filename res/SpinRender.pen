@@ -2639,8 +2639,8 @@
     {
       "type": "frame",
       "id": "l7PCz",
-      "x": 1900,
-      "y": 1049,
+      "x": 1899,
+      "y": 1047,
       "name": "Modal/AdvancedOptions",
       "width": 480,
       "fill": "#111111",
@@ -2703,7 +2703,7 @@
                   "type": "text",
                   "id": "U18Mh",
                   "name": "period-label",
-                  "fill": "$text-primary",
+                  "fill": "$text-secondary",
                   "content": "OUTPUT PATH",
                   "fontFamily": "JetBrains Mono",
                   "fontSize": 10,
@@ -2863,7 +2863,7 @@
                   "type": "text",
                   "id": "kK9Zj",
                   "fill": "$text-secondary",
-                  "content": "Parameter Overrides",
+                  "content": "PARAMETER OVERRRIDES",
                   "fontFamily": "JetBrains Mono",
                   "fontSize": 11,
                   "fontWeight": "normal"
@@ -2879,7 +2879,7 @@
                   "stroke": {
                     "align": "inside",
                     "thickness": 1,
-                    "fill": "$border-default"
+                    "fill": "#333333ff"
                   },
                   "padding": 12,
                   "children": [
