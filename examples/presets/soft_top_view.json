@@ -1,0 +1,10 @@
+{
+  "name": "Soft Top View",
+  "settings": {
+    "tilt": 0.0,
+    "period": 12.0,
+    "direction": "ccw",
+    "rotate_z": 0.0,
+    "lighting": "soft"
+  }
+}

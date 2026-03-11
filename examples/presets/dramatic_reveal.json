@@ -1,0 +1,10 @@
+{
+  "name": "Dramatic Reveal",
+  "settings": {
+    "tilt": 30.0,
+    "period": 8.0,
+    "direction": "cw",
+    "rotate_z": -30.0,
+    "lighting": "dramatic"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "Hero Orbit Fast",
+  "settings": {
+    "tilt": 45.0,
+    "period": 5.0,
+    "direction": "ccw",
+    "rotate_z": -45.0,
+    "lighting": "studio"
+  }
+}

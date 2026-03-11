@@ -1,0 +1,10 @@
+{
+  "name": "Isometric Showcase",
+  "settings": {
+    "tilt": 60.0,
+    "period": 10.0,
+    "direction": "ccw",
+    "rotate_z": -45.0,
+    "lighting": "studio"
+  }
+}

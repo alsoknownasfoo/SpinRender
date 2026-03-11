@@ -1,0 +1,3 @@
+"""
+SpinRender core package
+"""
