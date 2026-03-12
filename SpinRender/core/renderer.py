@@ -164,10 +164,10 @@ class RenderEngine:
     # Lighting presets
     LIGHTING_PRESETS = {
         'studio': {
-            'light_top': 0.0,
-            'light_side': 0.5,
+            'light_top': 0.15,
+            'light_side': 0.25,
             'light_bottom': 0.0,
-            'light_camera': 0.1,
+            'light_camera': 0.2,
             'light_side_elevation': 45,
             'floor': True
         },
@@ -326,11 +326,18 @@ class RenderEngine:
             kx, ky, kz = compute_kicad_angles(
                 board_tilt, board_roll, spin_tilt, spin_heading, anim_angle
             )
-            # kicad-cli's argparser (nargs=0..1) misinterprets a value starting with '-'
-            # as a new flag. Normalize kx into [0, 360) so the string never leads with '-'.
+            
+            # Normalize all angles to [0, 360) to avoid negative signs leading 
+            # the argument, which can break the kicad-cli parser.
             kx = kx % 360.0
-            if kx > 359.9999:  # floating-point near-zero wraps to ~360; snap to 0
-                kx = 0.0
+            ky = ky % 360.0
+            kz = kz % 360.0
+            
+            # Snap near-zero values
+            if kx > 359.99: kx = 0.0
+            if ky > 359.99: ky = 0.0
+            if kz > 359.99: kz = 0.0
+            
             rotate_str = f"{kx:.4f},{ky:.4f},{kz:.4f}"
 
             # Find kicad-cli command
@@ -339,16 +346,18 @@ class RenderEngine:
                 raise RuntimeError("kicad-cli not found in PATH or common locations")
 
             # Build kicad-cli command
+            bg_color = self.settings.get('bg_color', 'opaque')
             cmd = [
                 kicad_cli, 'pcb', 'render',
                 '--perspective',
                 '--rotate', rotate_str,
-                '--zoom', '0.80',
+                '--zoom', '0.8',
                 '-w', str(width),
                 '-h', str(height),
-                '--background', 'opaque',
+                '--background', bg_color,
                 '--quality', 'high'
             ]
+
 
             # Apply lighting parameters from preset
             if light_params.get('floor'):

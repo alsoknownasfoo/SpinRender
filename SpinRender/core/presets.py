@@ -177,45 +177,63 @@ class PresetManager:
 
     def get_last_used_settings(self):
         """
-        Get the last used render settings for this project
+        Get the last used render settings. 
+        Tries project-specific first, then falls back to global.
 
         Returns:
             dict: Last used settings, or None
         """
-        if not self.project_presets_dir:
-            return None
+        # 1. Try project-specific settings first
+        if self.project_presets_dir:
+            project_path = os.path.join(self.project_presets_dir, 'last_used.json')
+            if os.path.exists(project_path):
+                try:
+                    with open(project_path, 'r') as f:
+                        return json.load(f)
+                except Exception as e:
+                    print(f"Failed to load project last used settings: {e}")
 
-        settings_path = os.path.join(self.project_presets_dir, 'last_used.json')
+        # 2. Fallback to global last used settings
+        global_path = os.path.join(self.global_presets_dir, 'last_used.json')
+        if os.path.exists(global_path):
+            try:
+                with open(global_path, 'r') as f:
+                    return json.load(f)
+            except Exception as e:
+                print(f"Failed to load global last used settings: {e}")
 
-        if not os.path.exists(settings_path):
-            return None
-
-        try:
-            with open(settings_path, 'r') as f:
-                return json.load(f)
-        except Exception as e:
-            print(f"Failed to load last used settings: {e}")
-            return None
+        return None
 
     def save_last_used_settings(self, settings):
         """
-        Save the last used render settings for this project
+        Save the last used render settings.
+        Saves to both project-specific (if available) and global locations.
 
         Args:
             settings: Dict of render settings
 
         Returns:
-            bool: True if successful
+            bool: True if global save was successful
         """
-        if not self.project_presets_dir:
-            return False
+        success = True
 
-        settings_path = os.path.join(self.project_presets_dir, 'last_used.json')
+        # 1. Save to project-specific directory if it exists
+        if self.project_presets_dir:
+            project_path = os.path.join(self.project_presets_dir, 'last_used.json')
+            try:
+                with open(project_path, 'w') as f:
+                    json.dump(settings, f, indent=2)
+            except Exception as e:
+                print(f"Failed to save project last used settings: {e}")
+                success = False
 
+        # 2. Always save to global directory for cross-project persistence
+        global_path = os.path.join(self.global_presets_dir, 'last_used.json')
         try:
-            with open(settings_path, 'w') as f:
+            with open(global_path, 'w') as f:
                 json.dump(settings, f, indent=2)
-            return True
         except Exception as e:
-            print(f"Failed to save last used settings: {e}")
-            return False
+            print(f"Failed to save global last used settings: {e}")
+            success = False
+
+        return success

@@ -102,10 +102,12 @@ class SpinRenderPanel(wx.Panel):
             'lighting': 'studio',
             'format': 'mp4', 
             'resolution': '1920x1080', 
+            'bg_color': '#000000',
             'output_auto': True,
             'output_path': '', 
             'cli_overrides': '',
-            'render_mode': 'both'
+            'render_mode': 'both',
+            'logging_level': 'simple'
         }
         
         # Attempt to load last used settings
@@ -114,6 +116,10 @@ class SpinRenderPanel(wx.Panel):
         last_settings = manager.get_last_used_settings()
         if last_settings:
             self.settings.update(last_settings)
+            
+        # Initialize logging level from settings
+        from utils.logger import SpinLogger
+        SpinLogger.setup(level=self.settings.get('logging_level', 'simple'))
             
         self.SetBackgroundColour(self.BG_PAGE)
         self.drag_start_pos = None
@@ -465,6 +471,8 @@ class SpinRenderPanel(wx.Panel):
         panel.SetBackgroundColour(self.BG_PAGE)
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.create_section_label(panel, "OUTPUT SETTINGS"), 0, wx.EXPAND | wx.BOTTOM, 10)
+        
+        # Row 1: Format and Resolution
         cols_panel = wx.Panel(panel)
         cols_sizer = wx.BoxSizer(wx.HORIZONTAL)
         from ui.custom_controls import CustomDropdown
@@ -501,7 +509,54 @@ class SpinRenderPanel(wx.Panel):
         r_col.SetSizerAndFit(r_sizer)
         cols_sizer.Add(r_col, 1, wx.EXPAND)
         cols_panel.SetSizerAndFit(cols_sizer)
-        sizer.Add(cols_panel, 0, wx.EXPAND)
+        sizer.Add(cols_panel, 0, wx.EXPAND | wx.BOTTOM, 12)
+
+        # Row 2: Background Color
+        bg_col = wx.Panel(panel)
+        bg_vsizer = wx.BoxSizer(wx.VERTICAL)
+        bg_lbl = wx.StaticText(bg_col, label="BACKGROUND COLOR")
+        bg_lbl.SetForegroundColour(self.TEXT_PRIMARY)
+        bg_lbl.SetFont(wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName="JetBrains Mono"))
+        bg_vsizer.Add(bg_lbl, 0, wx.BOTTOM, 6)
+        
+        bg_row = wx.Panel(bg_col)
+        bg_hsizer = wx.BoxSizer(wx.HORIZONTAL)
+        
+        # Color Presets
+        self.bg_presets = [
+            ("#000000", "BLACK"),
+            ("#FFFFFF", "WHITE"),
+            ("#333333", "CHARCOAL"),
+            ("#F5F5DC", "CREAM")
+        ]
+        
+        from .custom_controls import CustomToggleButton
+        bg_opts = [{'label': lbl} for hex_val, lbl in self.bg_presets]
+        self.bg_toggle = CustomToggleButton(bg_row, options=bg_opts, size=(300, 32))
+        curr_bg = self.settings.get('bg_color', '#000000').upper()
+        # Find index of current color in presets
+        bg_idx = -1
+        for i, (hex_val, lbl) in enumerate(self.bg_presets):
+            if hex_val.upper() == curr_bg:
+                bg_idx = i; break
+        if bg_idx != -1:
+            self.bg_toggle.SetSelection(bg_idx)
+        else:
+            # Custom color selected
+            self.bg_toggle.SetSelection(-1) # No selection in toggle
+            
+        self.bg_toggle.Bind(wx.EVT_TOGGLEBUTTON, self.on_bg_preset_change)
+        bg_hsizer.Add(self.bg_toggle, 0, wx.RIGHT, 8)
+        
+        self.bg_custom_btn = CustomButton(bg_row, label="CUSTOM...", icon="mdi-palette", primary=False, size=(110, 32))
+        self.bg_custom_btn.Bind(wx.EVT_BUTTON, self.on_bg_custom)
+        bg_hsizer.Add(self.bg_custom_btn, 1, wx.EXPAND)
+        
+        bg_row.SetSizer(bg_hsizer)
+        bg_vsizer.Add(bg_row, 0, wx.EXPAND)
+        bg_col.SetSizer(bg_vsizer)
+        sizer.Add(bg_col, 0, wx.EXPAND)
+        
         panel.SetSizerAndFit(sizer)
         return panel
 
@@ -685,7 +740,8 @@ class SpinRenderPanel(wx.Panel):
 
         # --- Bottom-Left: Lighting + BG color ---
         lighting = self.settings.get('lighting', 'studio').upper()
-        self.ov_bottom_left.SetLabel(f"{lighting} · BG:BLACK")
+        bg_hex = self.settings.get('bg_color', '#000000').upper()
+        self.ov_bottom_left.SetLabel(f"{lighting} · BG:{bg_hex}")
 
         # --- Bottom-Center: Resolution + Ratio + FPS ---
         res = self.settings.get('resolution', '1920x1080')
@@ -1056,6 +1112,10 @@ class SpinRenderPanel(wx.Panel):
         """Persist current settings to project-local config file"""
         from core.presets import PresetManager
         PresetManager(self.board_path).save_last_used_settings(self.settings)
+        
+        # Re-apply logging level in case it changed
+        from utils.logger import SpinLogger
+        SpinLogger.setup(level=self.settings.get('logging_level', 'simple'))
 
     def on_board_tilt_change(self, event): 
         self.reset_status_bar()
@@ -1195,6 +1255,37 @@ class SpinRenderPanel(wx.Panel):
         self.update_preview_overlay()
         self.save_settings()
 
+    def on_bg_preset_change(self, event):
+        self.reset_status_bar()
+        idx = self.bg_toggle.GetSelection()
+        if 0 <= idx < len(self.bg_presets):
+            color_hex = self.bg_presets[idx][0]
+            self.settings['bg_color'] = color_hex
+            if hasattr(self, 'viewport'):
+                self.viewport.set_background_color(color_hex)
+            self.update_preview_overlay()
+            self.save_settings()
+
+    def on_bg_custom(self, event):
+        self.reset_status_bar()
+        curr_color = wx.Colour(self.settings.get('bg_color', '#000000'))
+        data = wx.ColourData()
+        data.SetColour(curr_color)
+        dlg = wx.ColourDialog(self, data)
+        if dlg.ShowModal() == wx.ID_OK:
+            new_color = dlg.GetColourData().GetColour()
+            color_hex = "#%02X%02X%02X" % (new_color.Red(), new_color.Green(), new_color.Blue())
+            self.settings['bg_color'] = color_hex
+            
+            # Deselect presets in toggle since it's custom
+            self.bg_toggle.SetSelection(-1)
+            
+            if hasattr(self, 'viewport'):
+                self.viewport.set_background_color(color_hex)
+            self.update_preview_overlay()
+            self.save_settings()
+        dlg.Destroy()
+
     def on_save_preset(self, event):
         self.reset_status_bar()
         from ui.dialogs import SavePresetDialog
@@ -1219,7 +1310,9 @@ class SpinRenderPanel(wx.Panel):
         self.reset_status_bar()
         from ui.dialogs import AdvancedOptionsDialog
         dlg = AdvancedOptionsDialog(self, self.settings, self.board_path)
-        dlg.ShowModal()
+        if dlg.ShowModal() == wx.ID_OK:
+            self.save_settings()
+            
         dlg.Destroy()
         self.update_preview_overlay()
         pf = self.GetTopLevelParent()
@@ -1230,8 +1323,7 @@ class SpinRenderPanel(wx.Panel):
         if self.is_rendering and self.render_engine:
             self.render_engine.cancel()
             
-        from core.presets import PresetManager
-        PresetManager(self.board_path).save_last_used_settings(self.settings)
+        self.save_settings()
         f = self.GetTopLevelParent()
         if f: 
             f.Close()
@@ -1240,8 +1332,7 @@ class SpinRenderPanel(wx.Panel):
         if self.is_rendering and self.render_engine:
             self.render_engine.cancel()
 
-        from core.presets import PresetManager
-        PresetManager(self.board_path).save_last_used_settings(self.settings)
+        self.save_settings()
         f = self.GetTopLevelParent()
         if f: 
             f.Close()

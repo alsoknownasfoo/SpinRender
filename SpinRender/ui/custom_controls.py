@@ -569,7 +569,8 @@ class CustomButton(wx.Panel):
         'mdi-information-outline': '\U000F02FD',
         'mdi-trash-can-outline': '\U000F0A7A',
         'mdi-alert-octagram': '\U000F0767',
-        'mdi-exit-to-app': '\U000F0206'
+        'mdi-exit-to-app': '\U000F0206',
+        'mdi-palette': '\U000F03E8'
     }
 
     def __init__(self, parent, label="BUTTON", icon=None, icon_font_family=None, primary=True, ghost=False, danger=False, icon_color=None, size=(-1, 36)):

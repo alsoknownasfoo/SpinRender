@@ -98,6 +98,9 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         # Render Mode: "wireframe" | "shaded" | "both"
         self.render_mode = "both"
 
+        # Background color
+        self.bg_color = (0.04, 0.04, 0.04, 1.0)
+
         # Computed Axis
         self.rotation_axis = np.array([0.0, 1.0, 0.0])
         self._update_rotation_axis()
@@ -282,8 +285,29 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glLineWidth(1.2)
-        glClearColor(0.04, 0.04, 0.04, 1.0)
+        glClearColor(*self.bg_color)
         self.initialized = True
+
+    def set_background_color(self, color_str):
+        """Set the background color of the preview. Supports hex '#RRGGBB'."""
+        if not color_str:
+            return
+            
+        if color_str == 'opaque':
+            self.bg_color = (0.04, 0.04, 0.04, 1.0)
+        elif color_str.startswith('#'):
+            try:
+                # Remove '#' and ensure correct length
+                hex_str = color_str[1:]
+                if len(hex_str) == 6:
+                    r = int(hex_str[0:2], 16) / 255.0
+                    g = int(hex_str[2:4], 16) / 255.0
+                    b = int(hex_str[4:6], 16) / 255.0
+                    self.bg_color = (r, g, b, 1.0)
+            except (ValueError, IndexError):
+                pass
+        
+        self.Refresh()
 
     def set_lighting(self, preset_id):
         """Sets OpenGL lights based on the actual values in RenderEngine.LIGHTING_PRESETS."""
@@ -301,14 +325,14 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         glEnable(GL_LIGHT3) # Bottom
         
         # Helper to scale intensity for OpenGL (kicad intensities are often low)
-        def scale(val): return float(val) * 2.0
+        def scale(val): return float(val) * 4.0
 
         # Workspace logic: if no specific lights, use bright even light
         if preset_id == 'workspace':
             glLightfv(GL_LIGHT0, GL_POSITION, [0.0, 1.0, 0.0, 0.0]) # Top
-            glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.5, 1.5, 1.5, 1.0])
+            glLightfv(GL_LIGHT0, GL_DIFFUSE, [2.0, 2.0, 2.0, 1.0])
             glLightfv(GL_LIGHT2, GL_POSITION, [0.0, 0.0, 1.0, 0.0]) # Camera
-            glLightfv(GL_LIGHT2, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+            glLightfv(GL_LIGHT2, GL_DIFFUSE, [1.5, 1.5, 1.5, 1.0])
             glDisable(GL_LIGHT1); glDisable(GL_LIGHT3)
         else:
             # 1. Top Light
@@ -424,14 +448,14 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
                 viewport_x = 0
                 viewport_y = (h - viewport_height) // 2
 
-            # Clear entire viewport to black
+            # Clear entire viewport to black (or bg color)
             glViewport(0, 0, w, h)
-            glClearColor(0.0, 0.0, 0.0, 1.0)
+            glClearColor(*self.bg_color)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
             # Set viewport to the letterboxed/pillarboxed area
             glViewport(viewport_x, viewport_y, viewport_width, viewport_height)
-            glClearColor(0.04, 0.04, 0.04, 1.0)
+            glClearColor(*self.bg_color)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
             glMatrixMode(GL_PROJECTION)

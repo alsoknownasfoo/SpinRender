@@ -20,13 +20,9 @@ plugin_dir = os.path.dirname(os.path.abspath(__file__))
 if plugin_dir not in sys.path:
     sys.path.insert(0, plugin_dir)
 
-# Configure logging
-log_file = os.path.join(plugin_dir, "spinrender.log")
-logging.basicConfig(
-    filename=log_file,
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Initialize logging system
+from utils.logger import SpinLogger
+SpinLogger.setup(level='simple') # Default until settings are loaded
 logger = logging.getLogger("SpinRender")
 logger.info(f"Loading SpinRender plugin from {plugin_dir}")
 

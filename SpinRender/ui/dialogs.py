@@ -136,7 +136,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
     PLACEHOLDER_TEXT = ".e.g. --color-theme=theme"
 
     def __init__(self, parent, settings, board_path):
-        super().__init__(parent, "Advanced Options", (480, 440))
+        super().__init__(parent, "Advanced Options", (480, 560))
         self.settings = settings
         self.board_path = board_path
         self.board_dir = os.path.dirname(board_path)
@@ -192,7 +192,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         path_input_sizer.Add(self.browse_btn, 0)
         
         path_input_row.SetSizer(path_input_sizer)
-        content_sizer.Add(path_input_row, 0, wx.EXPAND | wx.BOTTOM, 24)
+        content_sizer.Add(path_input_row, 0, wx.EXPAND | wx.BOTTOM, 20)
 
         # 2. PARAMETER OVERRIDES section
         content_sizer.Add(self.create_section_label(content, "PARAMETER OVERRIDES"), 0, wx.EXPAND | wx.BOTTOM, 12)
@@ -231,7 +231,40 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         link_txt.Bind(wx.EVT_LEFT_DOWN, lambda e: webbrowser.open(url))
         
         link_row.SetSizer(link_sizer)
-        content_sizer.Add(link_row, 0, wx.EXPAND)
+        content_sizer.Add(link_row, 0, wx.EXPAND | wx.BOTTOM, 24)
+
+        # 3. LOGGING section
+        content_sizer.Add(self.create_section_label(content, "SYSTEM LOGGING"), 0, wx.EXPAND | wx.BOTTOM, 12)
+        
+        log_row = wx.Panel(content)
+        log_hsizer = wx.BoxSizer(wx.HORIZONTAL)
+        
+        self.log_opts = [
+            {'id': 'off', 'label': 'OFF'},
+            {'id': 'simple', 'label': 'SIMPLE'},
+            {'id': 'verbose', 'label': 'VERBOSE'}
+        ]
+        self.log_toggle = CustomToggleButton(log_row, options=self.log_opts, size=(240, 28))
+        curr_lvl = self.settings.get('logging_level', 'simple')
+        lvl_idx = next((i for i, o in enumerate(self.log_opts) if o['id'] == curr_lvl), 1)
+        self.log_toggle.SetSelection(lvl_idx)
+        log_hsizer.Add(self.log_toggle, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 16)
+        
+        from utils.logger import SpinLogger
+        open_logs_txt = wx.StaticText(log_row, label="OPEN LOGS FOLDER")
+        open_logs_txt.SetForegroundColour(self.ACCENT_CYAN)
+        open_logs_txt.SetFont(get_custom_font(9, weight=wx.FONTWEIGHT_BOLD))
+        open_logs_txt.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        open_logs_txt.Bind(wx.EVT_LEFT_DOWN, lambda e: SpinLogger.open_logs_folder())
+        log_hsizer.Add(open_logs_txt, 0, wx.ALIGN_CENTER_VERTICAL)
+        
+        log_row.SetSizer(log_hsizer)
+        content_sizer.Add(log_row, 0, wx.EXPAND | wx.BOTTOM, 8)
+        
+        log_info = wx.StaticText(content, label="Logs are kept for 30 days. Useful for troubleshooting render failures.")
+        log_info.SetForegroundColour(self.TEXT_MUTED)
+        log_info.SetFont(get_custom_font(8))
+        content_sizer.Add(log_info, 0, wx.EXPAND)
 
         content.SetSizer(content_sizer)
         main_sizer.Add(content, 1, wx.EXPAND | wx.ALL, 24)
@@ -303,6 +336,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
     def on_ok(self, event):
         self.settings['cli_overrides'] = self.override_input.GetValue()
         self.settings['output_auto'] = self.auto_toggle.GetValue()
+        self.settings['logging_level'] = self.log_opts[self.log_toggle.GetSelection()]['id']
         self.EndModal(wx.ID_OK)
 
 
