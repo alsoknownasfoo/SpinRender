@@ -282,43 +282,53 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         glClearColor(0.04, 0.04, 0.04, 1.0)
         self.initialized = True
 
-    def set_lighting(self, preset):
-        """Sets OpenGL lights to match the 'feel' of the lighting preset."""
+    def set_lighting(self, preset_id):
+        """Sets OpenGL lights based on the actual values in RenderEngine.LIGHTING_PRESETS."""
+        from core.renderer import RenderEngine
         self.SetCurrent(self.context)
         
-        if preset == 'studio':
-            # Key: Front Right Warm
-            glLightfv(GL_LIGHT0, GL_POSITION, [1.5, 1.0, 2.0, 0.0])
-            glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 0.95, 0.9, 1.0])
-            # Fill: Front Left Cool
-            glLightfv(GL_LIGHT1, GL_POSITION, [-1.5, 0.5, 1.0, 0.0])
-            glLightfv(GL_LIGHT1, GL_DIFFUSE, [0.3, 0.35, 0.45, 1.0])
-            # Back: High Rim
-            glLightfv(GL_LIGHT2, GL_POSITION, [0.0, 2.0, -2.0, 0.0])
-            glLightfv(GL_LIGHT2, GL_DIFFUSE, [0.5, 0.5, 0.5, 1.0])
-        elif preset == 'dramatic':
-            # Strong Top-Down Front
-            glLightfv(GL_LIGHT0, GL_POSITION, [0.0, 2.0, 1.0, 0.0])
-            glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-            # Dim back light for rim
-            glLightfv(GL_LIGHT1, GL_POSITION, [0.0, 1.0, -2.0, 0.0])
-            glLightfv(GL_LIGHT1, GL_DIFFUSE, [0.4, 0.4, 0.4, 1.0])
-            glDisable(GL_LIGHT2)
-        elif preset == 'soft':
-            # Balanced ambient-heavy lights
-            glLightfv(GL_LIGHT0, GL_POSITION, [1.0, 1.0, 1.0, 0.0])
-            glLightfv(GL_LIGHT0, GL_DIFFUSE, [0.5, 0.5, 0.5, 1.0])
-            glLightfv(GL_LIGHT1, GL_POSITION, [-1.0, 1.0, 1.0, 0.0])
-            glLightfv(GL_LIGHT1, GL_DIFFUSE, [0.5, 0.5, 0.5, 1.0])
-            glLightfv(GL_LIGHT2, GL_POSITION, [0.0, -1.0, 0.0, 0.0])
-            glLightfv(GL_LIGHT2, GL_DIFFUSE, [0.2, 0.2, 0.2, 1.0])
-        else: # none
-            # Completely even light from camera and top
-            glLightfv(GL_LIGHT0, GL_POSITION, [0.0, 0.0, 1.0, 0.0])
-            glLightfv(GL_LIGHT0, GL_DIFFUSE, [0.6, 0.6, 0.6, 1.0])
-            glLightfv(GL_LIGHT1, GL_POSITION, [0.0, 1.0, 0.0, 0.0])
-            glLightfv(GL_LIGHT1, GL_DIFFUSE, [0.6, 0.6, 0.6, 1.0])
-            glDisable(GL_LIGHT2)
+        # Get preset values
+        presets = RenderEngine.LIGHTING_PRESETS
+        p = presets.get(preset_id, presets['studio'])
+        
+        # Enable relevant lights
+        glEnable(GL_LIGHT0) # Top
+        glEnable(GL_LIGHT1) # Side
+        glEnable(GL_LIGHT2) # Camera
+        glEnable(GL_LIGHT3) # Bottom
+        
+        # Helper to scale intensity for OpenGL (kicad intensities are often low)
+        def scale(val): return float(val) * 2.0
+
+        # Workspace logic: if no specific lights, use bright even light
+        if preset_id == 'workspace':
+            glLightfv(GL_LIGHT0, GL_POSITION, [0.0, 1.0, 0.0, 0.0]) # Top
+            glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.5, 1.5, 1.5, 1.0])
+            glLightfv(GL_LIGHT2, GL_POSITION, [0.0, 0.0, 1.0, 0.0]) # Camera
+            glLightfv(GL_LIGHT2, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+            glDisable(GL_LIGHT1); glDisable(GL_LIGHT3)
+        else:
+            # 1. Top Light
+            it = scale(p.get('light_top', 0.0))
+            glLightfv(GL_LIGHT0, GL_POSITION, [0.0, 1.0, 0.0, 0.0])
+            glLightfv(GL_LIGHT0, GL_DIFFUSE, [it, it, it, 1.0])
+            
+            # 2. Side Light (Using elevation from preset)
+            elev = math.radians(p.get('light_side_elevation', 45))
+            isid = scale(p.get('light_side', 0.0))
+            # Place side light at an angle
+            glLightfv(GL_LIGHT1, GL_POSITION, [math.cos(elev), math.sin(elev), 0.5, 0.0])
+            glLightfv(GL_LIGHT1, GL_DIFFUSE, [isid, isid, isid, 1.0])
+            
+            # 3. Camera Light
+            icam = scale(p.get('light_camera', 0.0))
+            glLightfv(GL_LIGHT2, GL_POSITION, [0.0, 0.0, 1.0, 0.0])
+            glLightfv(GL_LIGHT2, GL_DIFFUSE, [icam, icam, icam, 1.0])
+            
+            # 4. Bottom Light
+            ibot = scale(p.get('light_bottom', 0.0))
+            glLightfv(GL_LIGHT3, GL_POSITION, [0.0, -1.0, 0.0, 0.0])
+            glLightfv(GL_LIGHT3, GL_DIFFUSE, [ibot, ibot, ibot, 1.0])
             
         self.Refresh()
 
@@ -439,12 +449,16 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             glTranslatef(-self.model_center[0], -self.model_center[1], -self.model_center[2])
             
             if self.mesh_data:
-                # 1. Shaded Faces
+                # 1. Shaded Faces (Volume & Lighting)
                 glEnable(GL_LIGHTING)
                 glEnable(GL_POLYGON_OFFSET_FILL)
                 glPolygonOffset(1.0, 1.0)
                 
-                glColor4f(0.8, 0.8, 0.8, 1.0)
+                # Material Properties for nice "Studio" highlights
+                glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, [0.5, 0.5, 0.5, 1.0])
+                glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50.0)
+                
+                glColor4f(0.2, 0.2, 0.2, 1.0) # Deep charcoal for faces
                 glEnableClientState(GL_VERTEX_ARRAY)
                 glEnableClientState(GL_NORMAL_ARRAY)
                 glVertexPointer(3, GL_FLOAT, 0, self.mesh_data['tri_vertices'])
@@ -453,9 +467,9 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
                 glDisableClientState(GL_NORMAL_ARRAY)
                 glDisable(GL_POLYGON_OFFSET_FILL)
                 
-                # 2. Wireframe Edges
+                # 2. Wireframe Edges (Technical Precision)
                 glDisable(GL_LIGHTING)
-                glColor4f(0.3, 0.3, 0.3, 0.8) # Muted edges for shaded view
+                glColor4f(0.0, 0.0, 0.0, 0.9) # Pure black edges
                 glVertexPointer(3, GL_FLOAT, 0, self.mesh_data['vertices'])
                 glDrawArrays(GL_LINES, 0, self.mesh_data['count'])
                 glDisableClientState(GL_VERTEX_ARRAY)

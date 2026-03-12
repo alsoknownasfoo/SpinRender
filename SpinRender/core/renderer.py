@@ -164,31 +164,30 @@ class RenderEngine:
     # Lighting presets
     LIGHTING_PRESETS = {
         'studio': {
-            'light_top': 0.4,
-            'light_side': 0.6,
-            'light_camera': 0.2,
+            'light_top': 0.0,
+            'light_side': 0.5,
+            'light_bottom': 0.0,
+            'light_camera': 0.1,
             'light_side_elevation': 45,
             'floor': True
         },
         'dramatic': {
-            'light_top': 0.1,
-            'light_side': 0.8,
+            'light_top': 0.5,
+            'light_side': 0.0,
+            'light_bottom': 0.5,
             'light_camera': 0.0,
-            'light_side_elevation': 30,
+            'light_side_elevation': 45,
             'floor': False
         },
         'soft': {
-            'light_top': 0.5,
+            'light_top': 0.3,
             'light_side': 0.3,
-            'light_camera': 0.4,
+            'light_bottom': 0.3,
+            'light_camera': 0.3,
             'light_side_elevation': 60,
             'floor': False
         },
-        'none': {
-            'light_top': 0.5,
-            'light_side': 0.5,
-            'light_camera': 0.5,
-            'light_side_elevation': 45,
+        'workspace': {
             'floor': False
         }
     }

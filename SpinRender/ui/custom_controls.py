@@ -203,7 +203,8 @@ class CustomToggleButton(wx.Panel):
         'mdi-trash-can-outline': '\U000F0A7A',
         'mdi-axis-x-arrow': '\U000F0D4C',
         'mdi-axis-y-arrow': '\U000F0D51',
-        'mdi-alert-octagram': '\U000F0767'
+        'mdi-alert-octagram': '\U000F0767',
+        'mdi-application-edit': '\U000F00AE'
     }
 
     def __init__(self, parent, options=None, size=(120, 32), active_color=None):

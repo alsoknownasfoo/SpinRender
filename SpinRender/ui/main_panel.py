@@ -441,7 +441,7 @@ class SpinRenderPanel(wx.Panel):
             {'id': 'studio', 'label': 'STUDIO', 'icon': 'mdi-weather-sunny'}, 
             {'id': 'dramatic', 'label': 'DRAMATIC', 'icon': 'mdi-lightning-bolt'}, 
             {'id': 'soft', 'label': 'SOFT', 'icon': 'mdi-image-filter-drama-outline'}, 
-            {'id': 'none', 'label': 'NONE', 'icon': 'mdi-circle-off-outline'}
+            {'id': 'workspace', 'label': 'WORKSPACE', 'icon': 'mdi-application-edit'}
         ]
         self.light_toggle = CustomToggleButton(panel, options=self.light_options, size=(320, 32), active_color=self.ACCENT_YELLOW)
         current_light = self.settings.get('lighting', 'studio')
@@ -449,6 +449,13 @@ class SpinRenderPanel(wx.Panel):
         self.light_toggle.SetSelection(initial_idx)
         self.light_toggle.Bind(wx.EVT_TOGGLEBUTTON, self.on_lighting_change)
         sizer.Add(self.light_toggle, 0, wx.EXPAND)
+
+        # Descriptor hint
+        hint = wx.StaticText(panel, label="SELECT WORKSPACE TO USE KICAD 3D VIEWER SETTINGS")
+        hint.SetForegroundColour(wx.Colour(85, 85, 85)) # Dimmed gray
+        hint.SetFont(wx.Font(7, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
+        sizer.Add(hint, 0, wx.TOP, 4)
+
         panel.SetSizerAndFit(sizer)
         return panel
 
