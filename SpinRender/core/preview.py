@@ -58,6 +58,10 @@ class PCBModelLoader:
             else:
                 mesh = scene
             
+            # Align mesh with KiCad base orientation (Top-down view at 0,0,0)
+            # Match parity test: Rotate +90 around X to bring face-up
+            mesh.apply_transform(trimesh.transformations.rotation_matrix(math.radians(90), [1, 0, 0]))
+
             # Auto-scale from meters to mm if needed
             if np.max(mesh.extents) < 1.0:
                 mesh.apply_scale(1000.0)
@@ -149,16 +153,15 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
     def _update_rotation_axis(self):
         """
         Compute the 3D rotation axis vector based on SPIN TILT and SPIN HEADING.
+        Treat Z as the normal (polar axis) to match KiCad translation parity.
         """
         t = math.radians(self.spin_tilt)
         h = math.radians(self.spin_heading)
         
-        # Tilt from vertical (0,1,0) towards horizontal plane
-        y = math.cos(t)
-        # Horizontal components
-        mag = math.sin(t)
-        x = mag * math.cos(h)
-        z = mag * math.sin(h)
+        # Spherical coordinates with Z as vertical
+        x = math.sin(t) * math.cos(h)
+        y = math.sin(t) * math.sin(h)
+        z = math.cos(t)
         
         self.rotation_axis = np.array([x, y, z])
         norm = np.linalg.norm(self.rotation_axis)
@@ -332,17 +335,17 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
 
             glMatrixMode(GL_PROJECTION)
             glLoadIdentity()
-            cam_dist = (self.model_size * 0.5) / (0.4142 * min(1.0, target_aspect) * 0.9)
+            cam_dist = (self.model_size * 0.5) / (0.4142 * min(1.0, target_aspect) * 0.85)
             gluPerspective(45.0, target_aspect, 1.0, cam_dist * 10.0)
             glMatrixMode(GL_MODELVIEW)
             glLoadIdentity()
             gluLookAt(0, 0, cam_dist, 0, 0, 0, 0, 1, 0)
 
-            # 1. Spin the axis itself
-            glRotatef(self.direction_sign * self.rotation_angle, self.rotation_axis[0], self.rotation_axis[1], self.rotation_axis[2])
-
-            # 2. Apply static orientation
+            # Match kicad-cli rotation order: R_X(board_tilt) · R_spin · R_Z(board_roll)
+            # In OpenGL, last specified = first applied to vertices (right-to-left).
+            # So we specify outermost first: board_tilt (X), spin (axis), board_roll (Z).
             glRotatef(self.board_tilt, 1, 0, 0)
+            glRotatef(self.direction_sign * self.rotation_angle, self.rotation_axis[0], self.rotation_axis[1], self.rotation_axis[2])
             glRotatef(self.board_roll, 0, 0, 1)
 
             glTranslatef(-self.model_center[0], -self.model_center[1], -self.model_center[2])
@@ -438,7 +441,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
 
     def on_timer(self, _event):
         if self.playing:
-            self.rotation_angle = (self.rotation_angle + (self.direction_sign * self.rotation_speed)) % 360.0
+            self.rotation_angle = (self.rotation_angle + self.rotation_speed) % 360.0
             self.Refresh()
 
     def set_preview_image(self, image_path):
@@ -543,10 +546,10 @@ class PreviewRenderer(wx.Panel):
     def _update_rotation_axis(self):
         t = math.radians(self.spin_tilt)
         h = math.radians(self.spin_heading)
-        y = math.cos(t)
-        mag = math.sin(t)
-        x = mag * math.cos(h)
-        z = mag * math.sin(h)
+        # Spherical coordinates with Z as vertical
+        x = math.sin(t) * math.cos(h)
+        y = math.sin(t) * math.sin(h)
+        z = math.cos(t)
         self.rotation_axis = [x, y, z]
         norm = math.sqrt(x*x + y*y + z*z)
         if norm > 0:
@@ -611,16 +614,26 @@ class PreviewRenderer(wx.Panel):
         br = math.radians(self.board_roll); cos_br = math.cos(br); sin_br = math.sin(br)
         
         for v in verts:
-            ty = v[1]*cos_bt - v[2]*sin_bt
-            tz = v[1]*sin_bt + v[2]*cos_bt
-            bx = v[0]*cos_br - ty*sin_br
-            by = v[0]*sin_br + ty*cos_br
-            bz = tz
-            dot = bx*axis[0] + by*axis[1] + bz*axis[2]
-            cross = [axis[1]*bz - axis[2]*by, axis[2]*bx - axis[0]*bz, axis[0]*by - axis[1]*bx]
-            rx = bx*cos_a + cross[0]*sin_a + axis[0]*dot*(1-cos_a)
-            ry = by*cos_a + cross[1]*sin_a + axis[1]*dot*(1-cos_a)
-            rz = bz*cos_a + cross[2]*sin_a + axis[2]*dot*(1-cos_a)
+            # Match kicad-cli rotation order: R_X(board_tilt) · R_spin · R_Z(board_roll)
+            # Applied right-to-left: Z first, then spin, then X.
+
+            # Step 1: Z rotation (board_roll)
+            zx = v[0]*cos_br - v[1]*sin_br
+            zy = v[0]*sin_br + v[1]*cos_br
+            zz = v[2]
+
+            # Step 2: Spin around axis (Rodrigues)
+            dot = zx*axis[0] + zy*axis[1] + zz*axis[2]
+            cross = [axis[1]*zz - axis[2]*zy, axis[2]*zx - axis[0]*zz, axis[0]*zy - axis[1]*zx]
+            sx = zx*cos_a + cross[0]*sin_a + axis[0]*dot*(1-cos_a)
+            sy = zy*cos_a + cross[1]*sin_a + axis[1]*dot*(1-cos_a)
+            sz = zz*cos_a + cross[2]*sin_a + axis[2]*dot*(1-cos_a)
+
+            # Step 3: X rotation (board_tilt)
+            rx = sx
+            ry = sy*cos_bt - sz*sin_bt
+            rz = sy*sin_bt + sz*cos_bt
+
             scale = 200.0 / (200.0 + rz)
             rotated.append((cx + rx*scale, cy + ry*scale, rz))
 
@@ -632,7 +645,7 @@ class PreviewRenderer(wx.Panel):
 
     def on_timer(self, _event):
         if self.playing:
-            self.rotation_angle = (self.rotation_angle + (self.direction_sign * self.rotation_speed)) % 360.0
+            self.rotation_angle = (self.rotation_angle + self.rotation_speed) % 360.0
             self.Refresh()
 
     def set_preview_image(self, image_path):

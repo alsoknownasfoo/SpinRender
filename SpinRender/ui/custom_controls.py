@@ -164,6 +164,12 @@ class CustomSlider(wx.Panel):
         self.value = max(self.min_val, min(self.max_val, value))
         self.Refresh()
 
+    def AcceptsFocus(self):
+        return False
+
+    def AcceptsFocusFromKeyboard(self):
+        return False
+
 
 class CustomToggleButton(wx.Panel):
     """
@@ -319,6 +325,12 @@ class CustomToggleButton(wx.Panel):
         # Legacy support: set to 1 if True, 0 if False
         self.selection = 1 if value else 0
         self.Refresh()
+
+    def AcceptsFocus(self):
+        return False
+
+    def AcceptsFocusFromKeyboard(self):
+        return False
 
 
 class DropdownPopup(wx.PopupTransientWindow):
@@ -521,6 +533,12 @@ class CustomDropdown(wx.Panel):
         self.selection = 0
         self.Refresh()
 
+    def AcceptsFocus(self):
+        return False
+
+    def AcceptsFocusFromKeyboard(self):
+        return False
+
 
 class CustomButton(wx.Panel):
     """
@@ -708,6 +726,12 @@ class CustomButton(wx.Panel):
         self.danger = danger
         self.Refresh()
 
+    def AcceptsFocus(self):
+        return False
+
+    def AcceptsFocusFromKeyboard(self):
+        return False
+
 
 class PresetCard(wx.Panel):
     """
@@ -715,10 +739,22 @@ class PresetCard(wx.Panel):
     """
     BG_COLOR, BG_SELECTED, BORDER_DEFAULT, BORDER_SELECTED, TEXT_COLOR, TEXT_SELECTED = \
         wx.Colour(23, 23, 23), wx.Colour(30, 30, 30), wx.Colour(51, 51, 51), wx.Colour(0, 188, 212), wx.Colour(119, 119, 119), wx.Colour(0, 188, 212)
-    ICONS = {'rotate-cw': '↻', 'rotate-ccw': '↺', 'arrow-down': '↓', 'arrow-up': '↑', 'circle': '○', 'star': '⭐',
-             'mdi-rotate-cw': '\U000F0465', 'mdi-arrow-down': '\U000F0045', 'mdi-arrow-up': '\U000F005D', 
-             'mdi-circle': '\U000F012F', 'mdi-star-settings-outline': '\U000F166B',
-             'mdi-rotate-360': '\U000F1999', 'mdi-horizontal-rotate-counterclockwise': '\U000F10F4'}
+    ICONS = {
+        'rotate-cw': '↻',
+        'rotate-ccw': '↺',
+        'arrow-down': '↓',
+        'arrow-up': '↑',
+        'circle': '○',
+        'star': '⭐',
+        'mdi-rotate-cw': '\U000F0465',
+        'mdi-arrow-down': '\U000F0045',
+        'mdi-arrow-up': '\U000F005D',
+        'mdi-circle': '\U000F012F',
+        'mdi-star-settings-outline': '\U000F166B',
+        'mdi-rotate-360': '\U000F1999',
+        'mdi-rotate-orbit': '\U000F0D98',
+        'mdi-horizontal-rotate-counterclockwise': '\U000F10F4'
+    }
 
     def __init__(self, parent, label="PRESET", icon_name="rotate-cw", size=(90, 64)):
         super().__init__(parent, size=size)
@@ -773,6 +809,12 @@ class PresetCard(wx.Panel):
         self.Refresh()
 
     def IsSelected(self): return self.selected
+
+    def AcceptsFocus(self):
+        return False
+
+    def AcceptsFocusFromKeyboard(self):
+        return False
 
 
 class SectionLabel(wx.Panel):
@@ -973,6 +1015,12 @@ class NumericInput(wx.Panel):
         if not self.editing: self.Refresh()
     def GetValue(self): return self.value
 
+    def AcceptsFocus(self):
+        return self.IsEnabled()
+
+    def AcceptsFocusFromKeyboard(self):
+        return self.IsEnabled()
+
 
 class CustomTextInput(wx.Panel):
     """
@@ -1089,6 +1137,12 @@ class CustomTextInput(wx.Panel):
         self.is_placeholder_active = not self.value and self.placeholder
         self.Refresh()
 
+    def AcceptsFocus(self):
+        return self.IsEnabled()
+
+    def AcceptsFocusFromKeyboard(self):
+        return self.IsEnabled()
+
 
 class ProjectFolderChip(wx.Panel):
     """
@@ -1118,6 +1172,12 @@ class ProjectFolderChip(wx.Panel):
         gc.SetFont(get_custom_font(8, weight=wx.FONTWEIGHT_BOLD), wx.Colour(13, 13, 13))
         tw, th = gc.GetTextExtent("PROJECT FOLDER")
         gc.DrawText("PROJECT FOLDER", (w - tw) / 2, (h - th) / 2)
+
+    def AcceptsFocus(self):
+        return False
+
+    def AcceptsFocusFromKeyboard(self):
+        return False
 
 
 class PathInputControl(wx.Panel):
@@ -1192,3 +1252,8 @@ class PathInputControl(wx.Panel):
             
         gc.DrawText(display_text, text_x, (h - th) / 2)
 
+    def AcceptsFocus(self):
+        return False
+
+    def AcceptsFocusFromKeyboard(self):
+        return False

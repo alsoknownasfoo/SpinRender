@@ -12,6 +12,87 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+
+# ---------------------------------------------------------------------------
+# Rotation math helpers — translate UI parameters to kicad-cli --rotate X,Y,Z
+#
+# kicad-cli applies: M = R_X(kx) · R_Y(ky) · R_Z(kz)
+# (Z applied first to the board vertex, X applied last)
+# ---------------------------------------------------------------------------
+
+def _rot_x(a):
+    c, s = math.cos(a), math.sin(a)
+    return [[1,0,0],[0,c,-s],[0,s,c]]
+
+def _rot_y(a):
+    c, s = math.cos(a), math.sin(a)
+    return [[c,0,s],[0,1,0],[-s,0,c]]
+
+def _rot_z(a):
+    c, s = math.cos(a), math.sin(a)
+    return [[c,-s,0],[s,c,0],[0,0,1]]
+
+def _matmul(A, B):
+    return [[sum(A[i][k]*B[k][j] for k in range(3)) for j in range(3)] for i in range(3)]
+
+def _rodrigues(axis, angle_rad):
+    """Rotation matrix for `angle_rad` around unit `axis` (Rodrigues)."""
+    ax, ay, az = axis
+    c, s = math.cos(angle_rad), math.sin(angle_rad)
+    t = 1 - c
+    return [
+        [t*ax*ax+c,    t*ax*ay-s*az, t*ax*az+s*ay],
+        [t*ax*ay+s*az, t*ay*ay+c,    t*ay*az-s*ax],
+        [t*ax*az-s*ay, t*ay*az+s*ax, t*az*az+c   ]
+    ]
+
+def _euler_xyz_from_matrix(M):
+    """
+    Decompose rotation matrix M into intrinsic XYZ Euler angles (degrees),
+    i.e.  M = R_X(kx) · R_Y(ky) · R_Z(kz).
+    Returns (kx_deg, ky_deg, kz_deg).
+    """
+    # M[row][col] indexing
+    sy = max(-1.0, min(1.0, M[0][2]))  # sin(ky), clamped for stability
+    ky = math.asin(sy)
+    cos_ky = math.cos(ky)
+    if abs(cos_ky) > 1e-6:
+        kx = math.atan2(-M[1][2], M[2][2])
+        kz = math.atan2(-M[0][1], M[0][0])
+    else:
+        # Gimbal lock: ky = ±90°; set kz=0 and solve for kx.
+        # For ky=-90°: M[2][0]=cos(kx-kz), M[2][1]=sin(kx-kz)
+        # For ky=+90°: M[2][0]=cos(kx+kz), M[2][1]=-sin(kx+kz)
+        if sy < 0:
+            kx = math.atan2(M[2][1], M[2][0])
+        else:
+            kx = math.atan2(-M[2][1], M[2][0])
+        kz = 0.0
+    return math.degrees(kx), math.degrees(ky), math.degrees(kz)
+
+def compute_kicad_angles(board_tilt, board_roll, spin_tilt, spin_heading, anim_angle_deg):
+    """
+    Translate SpinRender Universal-Joint parameters for a single animation
+    frame into kicad-cli --rotate X,Y,Z angles.
+    """
+    if spin_tilt == 0.0:
+        # Fast path: spin around Z (which is the normal in our aligned model)
+        return board_tilt, 0.0, anim_angle_deg + board_roll
+
+    # General path: compute full matrix and decompose
+    t = math.radians(spin_tilt)
+    h = math.radians(spin_heading)
+    
+    # Polar axis is Z (matching our aligned mesh normal)
+    axis = (math.sin(t)*math.cos(h),
+            math.sin(t)*math.sin(h),
+            math.cos(t))
+
+    R_spin = _rodrigues(axis, math.radians(anim_angle_deg))
+    M = _matmul(_rot_x(math.radians(board_tilt)),
+                _matmul(R_spin, _rot_z(math.radians(board_roll))))
+    return _euler_xyz_from_matrix(M)
+
 def find_command(cmd):
     """Find a command in PATH or common locations"""
     # Try PATH first
@@ -47,30 +128,33 @@ class RenderEngine:
     """
 
     # Preset configurations (Universal Joint model)
+    # kicad-cli --rotate mapping:
+    #   board_tilt  → kx (static elevation from top-down camera)
+    #   spin around Z (spin_tilt=90, spin_heading=90) → kz animates
     PRESETS = {
         'hero': {
-            'board_tilt': 35.0,
-            'board_roll': -90.0,
-            'spin_tilt': 0.0,
-            'spin_heading': 0.0,
+            'board_tilt': 45.0,
+            'board_roll': -45.0,
+            'spin_tilt': 45.0,
+            'spin_heading': -135.0,
             'direction': 'ccw',
             'period': 10.0,
             'lighting': 'studio'
         },
         'spin': {
-            'board_tilt': 0.0,
-            'board_roll': -90.0,
-            'spin_tilt': 0.0,
+            'board_tilt': 90.0,
+            'board_roll': -70.0,
+            'spin_tilt': -20.0,
             'spin_heading': 0.0,
             'direction': 'ccw',
             'period': 10.0,
             'lighting': 'studio'
         },
-        'roll': {
+        'flip': {
             'board_tilt': 0.0,
-            'board_roll': 0.0,
-            'spin_tilt': 90.0,
-            'spin_heading': 0.0,
+            'board_roll': -180.0,
+            'spin_tilt': -90.0,
+            'spin_heading': -135.0,
             'direction': 'ccw',
             'period': 10.0,
             'lighting': 'studio'
@@ -223,25 +307,19 @@ class RenderEngine:
 
             output_path = os.path.join(output_dir, f"frame{i:04d}.png")
 
-            # 1. Calculate animation angle
-            angle = (i * step_degrees)
-            if direction == 'ccw':
-                angle = -angle
+            # 1. Calculate animation angle for this frame
+            raw_angle = i * step_degrees
+            anim_angle = raw_angle if direction == 'ccw' else -raw_angle
 
-            # 2. Translate Universal Joint to KiCad Euler X,Y,Z
-            if spin_tilt == 0:
-                # Vertical Turntable mode
-                kx, ky, kz = board_tilt, angle, board_roll
-            elif abs(spin_tilt) == 90:
-                # Horizontal Roll mode
-                if spin_heading == 0:
-                    kx, ky, kz = angle, 0, board_tilt + board_roll
-                else:
-                    kx, ky, kz = angle, spin_heading, board_tilt + board_roll
-            else:
-                # Interpolated state
-                kx, ky, kz = board_tilt + spin_tilt, angle, board_roll + spin_heading
-
+            # 2. Translate Universal-Joint parameters to kicad-cli --rotate X,Y,Z
+            kx, ky, kz = compute_kicad_angles(
+                board_tilt, board_roll, spin_tilt, spin_heading, anim_angle
+            )
+            # kicad-cli's argparser (nargs=0..1) misinterprets a value starting with '-'
+            # as a new flag. Normalize kx into [0, 360) so the string never leads with '-'.
+            kx = kx % 360.0
+            if kx > 359.9999:  # floating-point near-zero wraps to ~360; snap to 0
+                kx = 0.0
             rotate_str = f"{kx:.4f},{ky:.4f},{kz:.4f}"
 
             # Find kicad-cli command
@@ -252,8 +330,9 @@ class RenderEngine:
             # Build kicad-cli command
             cmd = [
                 kicad_cli, 'pcb', 'render',
+                '--perspective',
                 '--rotate', rotate_str,
-                '--zoom', '0.7',
+                '--zoom', '0.85',
                 '-w', str(width),
                 '-h', str(height),
                 '--background', 'opaque',

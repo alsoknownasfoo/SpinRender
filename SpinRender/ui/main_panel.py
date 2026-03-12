@@ -91,11 +91,11 @@ class SpinRenderPanel(wx.Panel):
         
         # Default settings
         self.settings = {
-            'preset': 'hero', 
-            'board_tilt': 35.0, 
-            'board_roll': -90.0,
-            'spin_tilt': 0.0, 
-            'spin_heading': 0.0,
+            'preset': 'hero',
+            'board_tilt': 45.0,
+            'board_roll': 0.0,
+            'spin_tilt': 90.0,
+            'spin_heading': 90.0,
             'period': 10.0, 
             'easing': 'linear', 
             'direction': 'ccw', 
@@ -272,7 +272,7 @@ class SpinRenderPanel(wx.Panel):
         presets_data = [
             ("hero", "HERO", "mdi-rotate-cw"), 
             ("spin", "SPIN", "mdi-rotate-360"), 
-            ("roll", "ROLL", "mdi-horizontal-rotate-counterclockwise"), 
+            ("flip", "FLIP", "mdi-rotate-orbit"), 
             ("custom", "SELECT CUSTOM..", "mdi-star-settings-outline")
         ]
         self.preset_buttons = {}
