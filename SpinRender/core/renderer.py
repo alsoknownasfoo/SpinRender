@@ -124,22 +124,37 @@ class RenderEngine:
         Main render entry point
         Generates frames and assembles final output
         """
-        # Create temp directory for frames
-        temp_dir = tempfile.mkdtemp(prefix='spinrender_')
+        # Create temp directory for frames - use a slightly more persistent name
+        # so we can use it for looping preview after render finishes
+        temp_dir = tempfile.mkdtemp(prefix='spinrender_frames_')
 
         try:
             # Generate frames
             frame_count = self.generate_frames(temp_dir)
             if self.canceled:
+                # Clean up on cancel
+                if os.path.exists(temp_dir):
+                    shutil.rmtree(temp_dir)
                 return None
 
             # Determine output path
             output_path = self.get_output_path()
 
+            # Save a preview frame before assembly
+            preview_frame_path = None
+            if frame_count > 0:
+                middle_frame = frame_count // 2
+                src_frame = os.path.join(temp_dir, f"frame{middle_frame:04d}.png")
+                if os.path.exists(src_frame):
+                    preview_dir = os.path.join(tempfile.gettempdir(), 'spinrender_preview')
+                    os.makedirs(preview_dir, exist_ok=True)
+                    preview_frame_path = os.path.join(preview_dir, 'last_render_preview.png')
+                    shutil.copy2(src_frame, preview_frame_path)
+
             # Assemble output based on format
             format_type = self.settings.get('format', 'mp4')
             if self.progress_callback:
-                self.progress_callback(frame_count, frame_count, f"// assembling {format_type}...")
+                self.progress_callback(frame_count, frame_count, f"ASSEMBLING {format_type.upper()}...")
 
             if format_type == 'mp4':
                 self.assemble_mp4(temp_dir, output_path, frame_count)
@@ -147,13 +162,26 @@ class RenderEngine:
                 self.assemble_gif(temp_dir, output_path, frame_count)
             elif format_type == 'png_sequence':
                 self.assemble_png_sequence(temp_dir, output_path, frame_count)
+                last_frame = os.path.join(output_path, f"frame{frame_count-1:04d}.png")
+                if os.path.exists(last_frame):
+                    preview_frame_path = last_frame
 
-            return output_path
+            # Return output path, preview frame path, and frame dir for looping
+            return {
+                'output': output_path, 
+                'preview': preview_frame_path or output_path,
+                'frame_dir': temp_dir,
+                'frame_count': frame_count
+            }
 
-        finally:
-            # Clean up temp directory
+        except Exception as e:
+            # Clean up on error
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
+            raise e
+        # Note: We don't delete temp_dir in finally anymore if successful, 
+        # so the UI can loop the frames. The UI will be responsible for 
+        # cleaning up previous frame dirs.
 
     def cancel(self):
         """Cancel the render process"""
@@ -185,7 +213,7 @@ class RenderEngine:
         width, height = map(int, resolution.split('x'))
 
         if self.progress_callback:
-            self.progress_callback(0, frame_count, "// initializing render...")
+            self.progress_callback(0, frame_count, "INITIALIZING RENDER...")
 
         # Render each frame
         for i in range(frame_count):
@@ -243,6 +271,7 @@ class RenderEngine:
 
             # Execute render and pipe output to console
             print(f"> {' '.join(cmd)}")
+
             try:
                 process = subprocess.Popen(
                     cmd,
@@ -250,19 +279,19 @@ class RenderEngine:
                     stderr=subprocess.STDOUT,
                     text=True
                 )
-                
+
                 # Stream output to console
                 for line in process.stdout:
                     print(f"  {line.strip()}")
-                
+
                 process.wait(timeout=30)
                 if process.returncode != 0:
                     raise RuntimeError(f"Frame {i} render failed with exit code {process.returncode}")
-                
-                # Update progress AFTER render so the file exists for the preview window
+
+                # Update progress with completed frame
                 if self.progress_callback:
-                    self.progress_callback(i + 1, frame_count, f"// rendering frame {i+1}/{frame_count}", output_path)
-                    
+                    self.progress_callback(i + 1, frame_count, f"RENDERING FRAME {i+1}/{frame_count}", output_path)
+
             except subprocess.TimeoutExpired:
                 process.kill()
                 raise RuntimeError(f"Frame {i} render timed out")

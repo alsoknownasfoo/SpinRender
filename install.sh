@@ -99,8 +99,9 @@ if [ -n "$TARGET_PATH" ]; then
     fi
 
     echo -e "${CYAN}[i] DEPLOYING ASSETS TO:${NC} ${TEAL}$TARGET_DIR${NC}"
+    rm -rf "$TARGET_DIR"
     mkdir -p "$TARGET_DIR"
-    cp -r "$SOURCE_DIR/." "$TARGET_DIR/"
+    cp -R "$SOURCE_DIR/." "$TARGET_DIR/"
     
     if [ -f "$TARGET_DIR/__init__.py" ]; then
         echo -e "    ${GREEN}✓ DEPLOYMENT_COMPLETE: SpinRender is active.${NC}"

@@ -90,19 +90,25 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         self.rotation_speed = 1.2
         self.direction_sign = 1.0  # 1.0 for CCW, -1.0 for CW
         self.playing = False
-        
+
         # Computed Axis
         self.rotation_axis = np.array([0.0, 1.0, 0.0])
         self._update_rotation_axis()
-        
+
         self.model_center = np.array([0.0, 0.0, 0.0])
         self.model_size = 150.0
         self.loading_state = "exporting"
-        
+
+        # Target aspect ratio for WYSIWYG preview
+        self.target_aspect_ratio = 16.0 / 9.0  # Default to 1920x1080
+
         # Live Frame Preview State
         self.preview_texture = None
         self.has_texture = False
-        
+
+        # Callback for when model finishes loading
+        self.on_model_loaded = None
+
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_SIZE, self.on_size)
         self.timer = wx.Timer(self)
@@ -200,9 +206,13 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         
         line_vertices = mesh.vertices[edges].reshape(-1, 3)
         self.mesh_data = {'vertices': line_vertices.astype(np.float32), 'count': len(line_vertices)}
-        
+
         self.loading_state = None
         self.Refresh()
+
+        # Notify that model has finished loading
+        if self.on_model_loaded:
+            wx.CallAfter(self.on_model_loaded)
 
     def init_gl(self):
         if self.initialized:
@@ -233,21 +243,54 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         glViewport(0, 0, w, h)
 
         if self.has_texture:
-            # Draw Rendered Frame Texture Overlay
+            # Draw Rendered Frame Texture Overlay with Aspect Ratio Preservation
             glMatrixMode(GL_PROJECTION)
             glLoadIdentity()
-            glOrtho(0, 1, 1, 0, -1, 1)
+            glOrtho(0, w, h, 0, -1, 1)
             glMatrixMode(GL_MODELVIEW)
             glLoadIdentity()
-            
+
+            # Calculate aspect ratios
+            viewport_aspect = float(w) / float(h) if h > 0 else 1.0
+
+            # Get texture dimensions if available
+            if hasattr(self, 'texture_width') and hasattr(self, 'texture_height'):
+                texture_aspect = float(self.texture_width) / float(self.texture_height) if self.texture_height > 0 else 1.0
+            else:
+                texture_aspect = viewport_aspect
+
+            # Calculate letterbox/pillarbox dimensions
+            if texture_aspect > viewport_aspect:
+                # Texture is wider - add letterbox (black bars top/bottom)
+                display_width = w
+                display_height = w / texture_aspect
+                offset_x = 0
+                offset_y = (h - display_height) / 2
+            else:
+                # Texture is taller - add pillarbox (black bars left/right)
+                display_height = h
+                display_width = h * texture_aspect
+                offset_x = (w - display_width) / 2
+                offset_y = 0
+
+            # Draw black background
+            glColor4f(0, 0, 0, 1)
+            glBegin(GL_QUADS)
+            glVertex2f(0, 0)
+            glVertex2f(w, 0)
+            glVertex2f(w, h)
+            glVertex2f(0, h)
+            glEnd()
+
+            # Draw texture with correct aspect ratio
             glEnable(GL_TEXTURE_2D)
             glBindTexture(GL_TEXTURE_2D, self.preview_texture)
             glColor4f(1, 1, 1, 1)
             glBegin(GL_QUADS)
-            glTexCoord2f(0, 0); glVertex2f(0, 0)
-            glTexCoord2f(1, 0); glVertex2f(1, 0)
-            glTexCoord2f(1, 1); glVertex2f(1, 1)
-            glTexCoord2f(0, 1); glVertex2f(0, 1)
+            glTexCoord2f(0, 0); glVertex2f(offset_x, offset_y)
+            glTexCoord2f(1, 0); glVertex2f(offset_x + display_width, offset_y)
+            glTexCoord2f(1, 1); glVertex2f(offset_x + display_width, offset_y + display_height)
+            glTexCoord2f(0, 1); glVertex2f(offset_x, offset_y + display_height)
             glEnd()
             glDisable(GL_TEXTURE_2D)
         elif self.loading_state:
@@ -258,28 +301,82 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             glLoadIdentity()
             self._draw_loading_overlay(size.x, size.y)
         else:
+            # Use configured target aspect ratio for WYSIWYG preview
+            target_aspect = self.target_aspect_ratio
+
+            viewport_aspect = float(w) / float(h) if h > 0 else target_aspect
+
+            # Calculate viewport dimensions with letterboxing/pillarboxing
+            if viewport_aspect > target_aspect:
+                # Viewport is wider - add pillarbox (black bars left/right)
+                viewport_height = h
+                viewport_width = int(h * target_aspect)
+                viewport_x = (w - viewport_width) // 2
+                viewport_y = 0
+            else:
+                # Viewport is taller - add letterbox (black bars top/bottom)
+                viewport_width = w
+                viewport_height = int(w / target_aspect)
+                viewport_x = 0
+                viewport_y = (h - viewport_height) // 2
+
+            # Clear entire viewport to black
+            glViewport(0, 0, w, h)
+            glClearColor(0.0, 0.0, 0.0, 1.0)
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+            # Set viewport to the letterboxed/pillarboxed area
+            glViewport(viewport_x, viewport_y, viewport_width, viewport_height)
+            glClearColor(0.04, 0.04, 0.04, 1.0)
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
             glMatrixMode(GL_PROJECTION)
             glLoadIdentity()
-            aspect = float(size.x)/float(size.y)
-            cam_dist = (self.model_size * 0.5) / (0.4142 * min(1.0, aspect) * 0.9)
-            gluPerspective(45.0, aspect, 1.0, cam_dist * 10.0)
+            cam_dist = (self.model_size * 0.5) / (0.4142 * min(1.0, target_aspect) * 0.9)
+            gluPerspective(45.0, target_aspect, 1.0, cam_dist * 10.0)
             glMatrixMode(GL_MODELVIEW)
             glLoadIdentity()
             gluLookAt(0, 0, cam_dist, 0, 0, 0, 0, 1, 0)
-            
+
             # 1. Spin the axis itself
             glRotatef(self.direction_sign * self.rotation_angle, self.rotation_axis[0], self.rotation_axis[1], self.rotation_axis[2])
-            
+
             # 2. Apply static orientation
             glRotatef(self.board_tilt, 1, 0, 0)
             glRotatef(self.board_roll, 0, 0, 1)
-            
+
             glTranslatef(-self.model_center[0], -self.model_center[1], -self.model_center[2])
-            glColor4f(0.5, 0.5, 0.5, 0.75) 
+            glColor4f(0.5, 0.5, 0.5, 0.75)
             if self.mesh_data:
                 self._draw_mesh()
             else:
                 self._draw_placeholder()
+                
+            # Draw faint gray outline matching the resolution viewport
+            glViewport(0, 0, w, h)
+            glMatrixMode(GL_PROJECTION)
+            glLoadIdentity()
+            glOrtho(0, w, h, 0, -1, 1)
+            glMatrixMode(GL_MODELVIEW)
+            glLoadIdentity()
+            
+            # Using same math as viewport calculation above
+            if viewport_aspect > target_aspect:
+                vw, vh = int(h * target_aspect), h
+                vx, vy = (w - vw) // 2, 0
+            else:
+                vw, vh = w, int(w / target_aspect)
+                vx, vy = 0, (h - vh) // 2
+                
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            glColor4f(1.0, 1.0, 1.0, 0.12) # Very faint white/gray
+            glBegin(GL_LINE_LOOP)
+            glVertex2f(vx, vy)
+            glVertex2f(vx + vw, vy)
+            glVertex2f(vx + vw, vy + vh)
+            glVertex2f(vx, vy + vh)
+            glEnd()
         self.SwapBuffers()
 
     def _draw_mesh(self):
@@ -347,24 +444,39 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
     def set_preview_image(self, image_path):
         """Loads a rendered frame as an OpenGL texture overlay."""
         if not os.path.exists(image_path):
+            print(f"[SpinRender] Preview image doesn't exist: {image_path}")
             return
-        
+
+        # Stop the 3D preview animation when showing rendered frames
+        if self.playing:
+            self.timer.Stop()
+            self.playing = False
+
         self.SetCurrent(self.context)
         try:
             image = wx.Image(image_path, wx.BITMAP_TYPE_PNG)
+            if not image.IsOk():
+                print(f"[SpinRender] Failed to load image (not ok): {image_path}")
+                return
+
             width, height = image.GetSize()
             data = image.GetData()
-            
+
+            # Store texture dimensions for aspect ratio calculation
+            self.texture_width = width
+            self.texture_height = height
+
             if not self.has_texture:
                 self.preview_texture = glGenTextures(1)
                 self.has_texture = True
-                
+
             glBindTexture(GL_TEXTURE_2D, self.preview_texture)
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-            
-            wx.CallAfter(self.Refresh)
+
+            print(f"[SpinRender] Successfully loaded preview: {width}x{height}, has_texture={self.has_texture}")
+            self.Refresh()
         except Exception as e:
             print(f"[SpinRender] GL Preview load failed: {e}")
 
@@ -386,6 +498,12 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
     def set_direction(self, direction_str):
         self.direction_sign = -1.0 if direction_str.lower() == 'cw' else 1.0
         self.Refresh()
+
+    def set_aspect_ratio(self, width, height):
+        """Set the target aspect ratio for WYSIWYG preview"""
+        if height > 0:
+            self.target_aspect_ratio = float(width) / float(height)
+            self.Refresh()
 
     def start_preview(self):
         self.playing = True
@@ -414,6 +532,8 @@ class PreviewRenderer(wx.Panel):
         self.playing = False
         self.direction_sign = 1.0
         self.preview_bitmap = None
+        self.target_aspect_ratio = 16.0 / 9.0  # Default to 1920x1080
+        self.on_model_loaded = None  # Callback for consistency with GLPreviewRenderer
         self._update_rotation_axis()
         self.SetBackgroundColour(wx.Colour(10, 10, 10))
         self.Bind(wx.EVT_PAINT, self.on_paint)
@@ -447,7 +567,33 @@ class PreviewRenderer(wx.Panel):
             return
         w, h = self.GetSize()
         if self.preview_bitmap:
-            gc.DrawBitmap(self.preview_bitmap, 0, 0, w, h)
+            # Draw with aspect ratio preservation and black bars
+            viewport_aspect = float(w) / float(h) if h > 0 else 1.0
+            bitmap_width = self.preview_bitmap.GetWidth()
+            bitmap_height = self.preview_bitmap.GetHeight()
+            bitmap_aspect = float(bitmap_width) / float(bitmap_height) if bitmap_height > 0 else 1.0
+
+            # Calculate letterbox/pillarbox dimensions
+            if bitmap_aspect > viewport_aspect:
+                # Bitmap is wider - add letterbox (black bars top/bottom)
+                display_width = w
+                display_height = w / bitmap_aspect
+                offset_x = 0
+                offset_y = (h - display_height) / 2
+            else:
+                # Bitmap is taller - add pillarbox (black bars left/right)
+                display_height = h
+                display_width = h * bitmap_aspect
+                offset_x = (w - display_width) / 2
+                offset_y = 0
+
+            # Draw black background
+            gc.SetBrush(wx.Brush(wx.Colour(0, 0, 0)))
+            gc.SetPen(wx.TRANSPARENT_PEN)
+            gc.DrawRectangle(0, 0, w, h)
+
+            # Draw bitmap with correct aspect ratio
+            gc.DrawBitmap(self.preview_bitmap, offset_x, offset_y, display_width, display_height)
         else:
             self.draw_pcb_wireframe(gc, w/2, h/2)
 
@@ -490,11 +636,24 @@ class PreviewRenderer(wx.Panel):
             self.Refresh()
 
     def set_preview_image(self, image_path):
+        if not os.path.exists(image_path):
+            print(f"[SpinRender] Fallback preview image doesn't exist: {image_path}")
+            return
+
+        # Stop the 3D preview animation when showing rendered frames
+        if self.playing:
+            self.timer.Stop()
+            self.playing = False
+
         try:
             self.preview_bitmap = wx.Bitmap(image_path, wx.BITMAP_TYPE_PNG)
+            if not self.preview_bitmap.IsOk():
+                print(f"[SpinRender] Fallback bitmap not ok: {image_path}")
+                return
+            print(f"[SpinRender] Fallback preview loaded: {self.preview_bitmap.GetWidth()}x{self.preview_bitmap.GetHeight()}")
             self.Refresh()
-        except:
-            pass
+        except Exception as e:
+            print(f"[SpinRender] Fallback preview load failed: {e}")
 
     def clear_preview_image(self):
         self.preview_bitmap = None
@@ -506,6 +665,12 @@ class PreviewRenderer(wx.Panel):
     def set_direction(self, direction_str):
         self.direction_sign = -1.0 if direction_str.lower() == 'cw' else 1.0
         self.Refresh()
+
+    def set_aspect_ratio(self, width, height):
+        """Set the target aspect ratio for WYSIWYG preview"""
+        if height > 0:
+            self.target_aspect_ratio = float(width) / float(height)
+            self.Refresh()
 
     def start_preview(self):
         self.playing = True

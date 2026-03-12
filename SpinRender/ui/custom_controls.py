@@ -63,6 +63,8 @@ def get_mdi_font(size=14):
 def _get_paint_color(color, enabled=True):
     """Helper to apply alpha if component is disabled."""
     if not enabled:
+        # Reduced opacity for disabled state (approx 50%)
+        # Ensure we return a wx.Colour that includes the alpha channel
         return wx.Colour(color.Red(), color.Green(), color.Blue(), 128)
     return color
 
