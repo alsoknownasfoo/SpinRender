@@ -97,6 +97,7 @@ if exist "!TARGET_DIR!" (
 )
 
 echo [i] DEPLOYING ASSETS TO: !TARGET_DIR!
+if exist "!TARGET_DIR!" rmdir /s /q "!TARGET_DIR!"
 mkdir "!TARGET_DIR!"
 xcopy "%SOURCE_DIR%" "!TARGET_DIR!\" /E /I /H /Y >nul
 
