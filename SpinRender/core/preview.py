@@ -133,8 +133,32 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
 
     def _export_and_load_sync(self):
         try:
-            temp_dir = tempfile.gettempdir()
-            glb_path = os.path.join(temp_dir, f"{Path(self.board_path).stem}_preview.glb")
+            # 1. Determine Cache Path based on file timestamp
+            mtime = int(os.path.getmtime(self.board_path))
+            stem = Path(self.board_path).stem
+            cache_dir = os.path.join(tempfile.gettempdir(), "SpinRender_Cache")
+            os.makedirs(cache_dir, exist_ok=True)
+            
+            glb_path = os.path.join(cache_dir, f"{stem}_{mtime}.glb")
+            
+            # Cleanup old versions of this board from cache
+            try:
+                for f in os.listdir(cache_dir):
+                    if f.startswith(f"{stem}_") and f.endswith(".glb") and f != f"{stem}_{mtime}.glb":
+                        try: os.remove(os.path.join(cache_dir, f))
+                        except: pass
+            except: pass
+            
+            # 2. Check if valid cache exists
+            if os.path.exists(glb_path):
+                print(f"[SpinRender] Using cached GLB: {glb_path}")
+                mesh = PCBModelLoader.load_glb_mesh(glb_path)
+                if mesh:
+                    wx.CallAfter(self._set_mesh, mesh)
+                    return
+
+            # 3. Otherwise Export
+            print(f"[SpinRender] Cache miss or invalid. Exporting GLB: {glb_path}")
             if PCBModelLoader.export_glb(self.board_path, glb_path):
                 mesh = PCBModelLoader.load_glb_mesh(glb_path)
                 if mesh:
@@ -143,7 +167,8 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
                     wx.CallAfter(self._update_loading, None)
             else:
                 wx.CallAfter(self._update_loading, None)
-        except Exception:
+        except Exception as e:
+            print(f"[SpinRender] Sync Error: {e}")
             wx.CallAfter(self._update_loading, None)
 
     def _update_loading(self, state):

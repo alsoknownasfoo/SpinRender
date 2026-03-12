@@ -133,19 +133,19 @@ class RenderEngine:
     #   spin around Z (spin_tilt=90, spin_heading=90) → kz animates
     PRESETS = {
         'hero': {
-            'board_tilt': 45.0,
+            'board_tilt': 0.0,
             'board_roll': -45.0,
-            'spin_tilt': 45.0,
-            'spin_heading': -135.0,
+            'spin_tilt': 90.0,
+            'spin_heading': 90.0,
             'direction': 'ccw',
             'period': 10.0,
             'lighting': 'studio'
         },
         'spin': {
-            'board_tilt': 90.0,
-            'board_roll': -70.0,
-            'spin_tilt': -20.0,
-            'spin_heading': 0.0,
+            'board_tilt': 0.0,
+            'board_roll': -45.0,
+            'spin_tilt': 90.0,
+            'spin_heading': 135.0,
             'direction': 'ccw',
             'period': 10.0,
             'lighting': 'studio'
@@ -153,9 +153,9 @@ class RenderEngine:
         'flip': {
             'board_tilt': 0.0,
             'board_roll': -180.0,
-            'spin_tilt': -90.0,
-            'spin_heading': -135.0,
-            'direction': 'ccw',
+            'spin_tilt': 90.0,
+            'spin_heading': 45.0,
+            'direction': 'cw',
             'period': 10.0,
             'lighting': 'studio'
         }

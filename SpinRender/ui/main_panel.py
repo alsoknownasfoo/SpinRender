@@ -92,8 +92,8 @@ class SpinRenderPanel(wx.Panel):
         # Default settings
         self.settings = {
             'preset': 'hero',
-            'board_tilt': 45.0,
-            'board_roll': 0.0,
+            'board_tilt': 0.0,
+            'board_roll': -45.0,
             'spin_tilt': 90.0,
             'spin_heading': 90.0,
             'period': 10.0, 
