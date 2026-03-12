@@ -300,7 +300,7 @@ class SpinRenderPanel(wx.Panel):
         header = wx.Panel(panel)
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
         header_sizer.Add(self.create_section_label(header, "PARAMETERS"), 1, wx.ALIGN_CENTER_VERTICAL)
-        save_btn = CustomButton(header, label="+ SAVE PRESET", primary=False, size=(120, 28))
+        save_btn = CustomButton(header, label="+ PRESET", primary=False, size=(120, 28))
         save_btn.Bind(wx.EVT_BUTTON, self.on_save_preset)
         header_sizer.Add(save_btn, 0, wx.ALIGN_CENTER_VERTICAL)
         header.SetSizerAndFit(header_sizer)
