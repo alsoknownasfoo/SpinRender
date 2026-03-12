@@ -964,6 +964,7 @@ class SpinRenderPanel(wx.Panel):
             self.viewport.set_universal_joint_parameters(self.settings['board_tilt'], self.settings['board_roll'], self.settings['spin_tilt'], self.settings['spin_heading'])
             self.viewport.set_period(self.settings['period'])
             self.viewport.set_direction(self.settings['direction'])
+            self.viewport.set_lighting(self.settings['lighting'])
         self.update_preview_overlay()
         self.check_preset_match(manual_change=False)
 
@@ -1094,12 +1095,14 @@ class SpinRenderPanel(wx.Panel):
         self.update_preview_overlay()
         self.check_preset_match(manual_change=True)
         
-    def on_lighting_change(self, event): 
+    def on_lighting_change(self, event):
         self.reset_status_bar()
-        self.settings['lighting'] = self.light_options[self.light_toggle.GetSelection()]['id']
+        preset_id = self.light_options[self.light_toggle.GetSelection()]['id']
+        self.settings['lighting'] = preset_id
+        if hasattr(self, 'viewport'):
+            self.viewport.set_lighting(preset_id)
         self.update_preview_overlay()
-        self.check_preset_match(manual_change=True)
-        
+        self.check_preset_match(manual_change=True)        
     def on_format_change(self, event): 
         self.reset_status_bar()
         self.settings['format'] = self.format_ids[self.format_choice.GetSelection()]

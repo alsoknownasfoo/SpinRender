@@ -233,7 +233,18 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             edges = mesh.edges_unique
         
         line_vertices = mesh.vertices[edges].reshape(-1, 3)
-        self.mesh_data = {'vertices': line_vertices.astype(np.float32), 'count': len(line_vertices)}
+        
+        # Capture triangle and normal data for shaded preview
+        tri_vertices = mesh.vertices[mesh.faces].reshape(-1, 3)
+        tri_normals = np.repeat(mesh.face_normals, 3, axis=0)
+        
+        self.mesh_data = {
+            'vertices': line_vertices.astype(np.float32), 
+            'count': len(line_vertices),
+            'tri_vertices': tri_vertices.astype(np.float32),
+            'tri_normals': tri_normals.astype(np.float32),
+            'tri_count': len(tri_vertices)
+        }
 
         self.loading_state = None
         self.Refresh()
@@ -250,7 +261,19 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         glDepthFunc(GL_LESS)
         glDisable(GL_CULL_FACE)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
-        glDisable(GL_LIGHTING)
+        
+        # 3-Point Lighting Setup
+        glEnable(GL_LIGHTING)
+        glEnable(GL_LIGHT0) # Key Light
+        glEnable(GL_LIGHT1) # Fill Light
+        glEnable(GL_LIGHT2) # Back Light
+        
+        glEnable(GL_COLOR_MATERIAL)
+        glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
+        
+        glEnable(GL_NORMALIZE)
+        glShadeModel(GL_SMOOTH)
+        
         glEnable(GL_LINE_SMOOTH)
         glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
         glEnable(GL_BLEND)
@@ -258,6 +281,46 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         glLineWidth(1.2)
         glClearColor(0.04, 0.04, 0.04, 1.0)
         self.initialized = True
+
+    def set_lighting(self, preset):
+        """Sets OpenGL lights to match the 'feel' of the lighting preset."""
+        self.SetCurrent(self.context)
+        
+        if preset == 'studio':
+            # Key: Front Right Warm
+            glLightfv(GL_LIGHT0, GL_POSITION, [1.5, 1.0, 2.0, 0.0])
+            glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 0.95, 0.9, 1.0])
+            # Fill: Front Left Cool
+            glLightfv(GL_LIGHT1, GL_POSITION, [-1.5, 0.5, 1.0, 0.0])
+            glLightfv(GL_LIGHT1, GL_DIFFUSE, [0.3, 0.35, 0.45, 1.0])
+            # Back: High Rim
+            glLightfv(GL_LIGHT2, GL_POSITION, [0.0, 2.0, -2.0, 0.0])
+            glLightfv(GL_LIGHT2, GL_DIFFUSE, [0.5, 0.5, 0.5, 1.0])
+        elif preset == 'dramatic':
+            # Strong Top-Down Front
+            glLightfv(GL_LIGHT0, GL_POSITION, [0.0, 2.0, 1.0, 0.0])
+            glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+            # Dim back light for rim
+            glLightfv(GL_LIGHT1, GL_POSITION, [0.0, 1.0, -2.0, 0.0])
+            glLightfv(GL_LIGHT1, GL_DIFFUSE, [0.4, 0.4, 0.4, 1.0])
+            glDisable(GL_LIGHT2)
+        elif preset == 'soft':
+            # Balanced ambient-heavy lights
+            glLightfv(GL_LIGHT0, GL_POSITION, [1.0, 1.0, 1.0, 0.0])
+            glLightfv(GL_LIGHT0, GL_DIFFUSE, [0.5, 0.5, 0.5, 1.0])
+            glLightfv(GL_LIGHT1, GL_POSITION, [-1.0, 1.0, 1.0, 0.0])
+            glLightfv(GL_LIGHT1, GL_DIFFUSE, [0.5, 0.5, 0.5, 1.0])
+            glLightfv(GL_LIGHT2, GL_POSITION, [0.0, -1.0, 0.0, 0.0])
+            glLightfv(GL_LIGHT2, GL_DIFFUSE, [0.2, 0.2, 0.2, 1.0])
+        else: # none
+            # Completely even light from camera and top
+            glLightfv(GL_LIGHT0, GL_POSITION, [0.0, 0.0, 1.0, 0.0])
+            glLightfv(GL_LIGHT0, GL_DIFFUSE, [0.6, 0.6, 0.6, 1.0])
+            glLightfv(GL_LIGHT1, GL_POSITION, [0.0, 1.0, 0.0, 0.0])
+            glLightfv(GL_LIGHT1, GL_DIFFUSE, [0.6, 0.6, 0.6, 1.0])
+            glDisable(GL_LIGHT2)
+            
+        self.Refresh()
 
     def on_paint(self, _event):
         size = self.GetSize()
@@ -374,9 +437,28 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             glRotatef(self.board_roll, 0, 0, 1)
 
             glTranslatef(-self.model_center[0], -self.model_center[1], -self.model_center[2])
-            glColor4f(0.5, 0.5, 0.5, 0.75)
+            
             if self.mesh_data:
-                self._draw_mesh()
+                # 1. Shaded Faces
+                glEnable(GL_LIGHTING)
+                glEnable(GL_POLYGON_OFFSET_FILL)
+                glPolygonOffset(1.0, 1.0)
+                
+                glColor4f(0.8, 0.8, 0.8, 1.0)
+                glEnableClientState(GL_VERTEX_ARRAY)
+                glEnableClientState(GL_NORMAL_ARRAY)
+                glVertexPointer(3, GL_FLOAT, 0, self.mesh_data['tri_vertices'])
+                glNormalPointer(GL_FLOAT, 0, self.mesh_data['tri_normals'])
+                glDrawArrays(GL_TRIANGLES, 0, self.mesh_data['tri_count'])
+                glDisableClientState(GL_NORMAL_ARRAY)
+                glDisable(GL_POLYGON_OFFSET_FILL)
+                
+                # 2. Wireframe Edges
+                glDisable(GL_LIGHTING)
+                glColor4f(0.3, 0.3, 0.3, 0.8) # Muted edges for shaded view
+                glVertexPointer(3, GL_FLOAT, 0, self.mesh_data['vertices'])
+                glDrawArrays(GL_LINES, 0, self.mesh_data['count'])
+                glDisableClientState(GL_VERTEX_ARRAY)
             else:
                 self._draw_placeholder()
                 

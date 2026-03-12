@@ -164,20 +164,32 @@ class RenderEngine:
     # Lighting presets
     LIGHTING_PRESETS = {
         'studio': {
-            'light_side': 0.15,
-            'light_side_elevation': 45
+            'light_top': 0.4,
+            'light_side': 0.6,
+            'light_camera': 0.2,
+            'light_side_elevation': 45,
+            'floor': True
         },
         'dramatic': {
-            'light_side': 0.3,
-            'light_side_elevation': 90
+            'light_top': 0.1,
+            'light_side': 0.8,
+            'light_camera': 0.0,
+            'light_side_elevation': 30,
+            'floor': False
         },
         'soft': {
-            'light_side': 0.05,
-            'light_side_elevation': 20
+            'light_top': 0.5,
+            'light_side': 0.3,
+            'light_camera': 0.4,
+            'light_side_elevation': 60,
+            'floor': False
         },
         'none': {
-            'light_side': 0.0,
-            'light_side_elevation': 90
+            'light_top': 0.5,
+            'light_side': 0.5,
+            'light_camera': 0.5,
+            'light_side_elevation': 45,
+            'floor': False
         }
     }
 
@@ -336,12 +348,19 @@ class RenderEngine:
                 '-w', str(width),
                 '-h', str(height),
                 '--background', 'opaque',
-                '--quality', 'high',
-                '--light-side', str(light_params['light_side']),
-                '--light-side-elevation', str(light_params['light_side_elevation']),
-                '-o', output_path,
-                self.board_path
+                '--quality', 'high'
             ]
+
+            # Apply lighting parameters from preset
+            if light_params.get('floor'):
+                cmd.append('--floor')
+            
+            for key in ['light_top', 'light_bottom', 'light_side', 'light_camera', 'light_side_elevation']:
+                if key in light_params:
+                    cli_key = '--' + key.replace('_', '-')
+                    cmd.extend([cli_key, str(light_params[key])])
+
+            cmd.extend(['-o', output_path, self.board_path])
 
             # Add CLI overrides if specified
             cli_overrides = self.settings.get('cli_overrides', '').strip()
