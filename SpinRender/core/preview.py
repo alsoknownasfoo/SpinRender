@@ -474,10 +474,13 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
                 # 2. Wireframe Edges (Technical Precision)
                 if self.render_mode in ("wireframe", "both"):
                     glDisable(GL_LIGHTING)
+                    
                     if self.render_mode == "wireframe":
                         edge_color = (0.5, 0.5, 0.5, 0.8) # Gray for pure wireframe
+                        glLineWidth(1.0)
                     else:
                         edge_color = (0.0, 0.0, 0.0, 0.9) # Black when overlaid on shaded
+                        glLineWidth(2.0)
                     
                     glColor4f(*edge_color)
                     glEnableClientState(GL_VERTEX_ARRAY)

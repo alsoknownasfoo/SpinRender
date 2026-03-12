@@ -665,11 +665,15 @@ class SpinRenderPanel(wx.Panel):
             ]
             self.ov_top_left.SetLabel("  ".join(params))
 
-        # --- Top-Right: CLOSE PREVIEW button ---
+        # --- Top-Right: CLOSE PREVIEW button and Render Mode Toggle ---
         if self.render_preview_active and not self.preview_manually_closed and not self.is_rendering:
             self.ov_top_right.Show()
+            if hasattr(self, 'render_mode_sizer'):
+                self.render_mode_sizer.ShowItems(False)
         else:
             self.ov_top_right.Hide()
+            if hasattr(self, 'render_mode_sizer'):
+                self.render_mode_sizer.ShowItems(True)
 
         # --- Bottom-Left: Lighting + BG color ---
         lighting = self.settings.get('lighting', 'studio').upper()
