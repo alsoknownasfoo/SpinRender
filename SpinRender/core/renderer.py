@@ -138,8 +138,8 @@ class RenderEngine:
             'spin_tilt': 90.0,
             'spin_heading': 90.0,
             'direction': 'ccw',
-            'period': 10.0,
-            'lighting': 'studio'
+            'period':5.0,
+            'lighting': 'dramatic'
         },
         'spin': {
             'board_tilt': 0.0,
@@ -147,7 +147,7 @@ class RenderEngine:
             'spin_tilt': 90.0,
             'spin_heading': 135.0,
             'direction': 'ccw',
-            'period': 10.0,
+            'period':5.0,
             'lighting': 'studio'
         },
         'flip': {
@@ -156,8 +156,8 @@ class RenderEngine:
             'spin_tilt': 90.0,
             'spin_heading': 45.0,
             'direction': 'cw',
-            'period': 10.0,
-            'lighting': 'studio'
+            'period':5.0,
+            'lighting': 'dramatic'
         }
     }
 
