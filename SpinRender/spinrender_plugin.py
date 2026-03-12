@@ -169,4 +169,3 @@ try:
     logger.info("SpinRender plugin registered")
 except Exception as e:
     logger.error(f"SpinRender registration failed: {e}", exc_info=True)
-    print(f"SpinRender Error: {e}")

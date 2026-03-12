@@ -248,23 +248,23 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         curr_lvl = self.settings.get('logging_level', 'simple')
         lvl_idx = next((i for i, o in enumerate(self.log_opts) if o['id'] == curr_lvl), 1)
         self.log_toggle.SetSelection(lvl_idx)
-        log_hsizer.Add(self.log_toggle, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 16)
-        
-        from utils.logger import SpinLogger
-        open_logs_txt = wx.StaticText(log_row, label="OPEN LOGS FOLDER")
-        open_logs_txt.SetForegroundColour(self.ACCENT_CYAN)
-        open_logs_txt.SetFont(get_custom_font(9, weight=wx.FONTWEIGHT_BOLD))
-        open_logs_txt.SetCursor(wx.Cursor(wx.CURSOR_HAND))
-        open_logs_txt.Bind(wx.EVT_LEFT_DOWN, lambda e: SpinLogger.open_logs_folder())
-        log_hsizer.Add(open_logs_txt, 0, wx.ALIGN_CENTER_VERTICAL)
+        log_hsizer.Add(self.log_toggle, 0, wx.ALIGN_CENTER_VERTICAL)
         
         log_row.SetSizer(log_hsizer)
-        content_sizer.Add(log_row, 0, wx.EXPAND | wx.BOTTOM, 8)
+        content_sizer.Add(log_row, 0, wx.EXPAND | wx.BOTTOM, 12)
         
         log_info = wx.StaticText(content, label="Logs are kept for 30 days. Useful for troubleshooting render failures.")
         log_info.SetForegroundColour(self.TEXT_MUTED)
         log_info.SetFont(get_custom_font(8))
-        content_sizer.Add(log_info, 0, wx.EXPAND)
+        content_sizer.Add(log_info, 0, wx.EXPAND | wx.BOTTOM, 8)
+
+        from utils.logger import SpinLogger
+        open_logs_txt = wx.StaticText(content, label="OPEN LOGS FOLDER")
+        open_logs_txt.SetForegroundColour(self.ACCENT_CYAN)
+        open_logs_txt.SetFont(get_custom_font(9, weight=wx.FONTWEIGHT_BOLD))
+        open_logs_txt.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        open_logs_txt.Bind(wx.EVT_LEFT_DOWN, lambda e: SpinLogger.open_logs_folder())
+        content_sizer.Add(open_logs_txt, 0, wx.BOTTOM, 12)
 
         content.SetSizer(content_sizer)
         main_sizer.Add(content, 1, wx.EXPAND | wx.ALL, 24)

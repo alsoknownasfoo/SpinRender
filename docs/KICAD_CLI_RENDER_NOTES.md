@@ -13,7 +13,7 @@ Key options in use:
 - `--side`
 - `--background`
 - `--quality`
-- `--floor`, `--perspective`
+- `--perspective`
 - `--zoom`
 - `--pivot`
 - `--rotate`

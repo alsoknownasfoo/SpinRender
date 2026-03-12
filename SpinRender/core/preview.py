@@ -15,7 +15,10 @@ import threading
 import subprocess
 import os
 import tempfile
+import logging
 from pathlib import Path
+
+logger = logging.getLogger("SpinRender")
 
 # Global flag to ensure glutInit is only called once per session
 if '_SPINRENDER_GLUT_INIT' not in globals():
@@ -157,14 +160,14 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             
             # 2. Check if valid cache exists
             if os.path.exists(glb_path):
-                print(f"[SpinRender] Using cached GLB: {glb_path}")
+                logger.debug(f"Using cached GLB: {glb_path}")
                 mesh = PCBModelLoader.load_glb_mesh(glb_path)
                 if mesh:
                     wx.CallAfter(self._set_mesh, mesh)
                     return
 
             # 3. Otherwise Export
-            print(f"[SpinRender] Cache miss or invalid. Exporting GLB: {glb_path}")
+            logger.debug(f"Cache miss or invalid. Exporting GLB: {glb_path}")
             if PCBModelLoader.export_glb(self.board_path, glb_path):
                 mesh = PCBModelLoader.load_glb_mesh(glb_path)
                 if mesh:
@@ -174,7 +177,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             else:
                 wx.CallAfter(self._update_loading, None)
         except Exception as e:
-            print(f"[SpinRender] Sync Error: {e}")
+            logger.error(f"Sync Error: {e}", exc_info=True)
             wx.CallAfter(self._update_loading, None)
 
     def _update_loading(self, state):
@@ -612,7 +615,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
     def set_preview_image(self, image_path):
         """Loads a rendered frame as an OpenGL texture overlay."""
         if not os.path.exists(image_path):
-            print(f"[SpinRender] Preview image doesn't exist: {image_path}")
+            logger.debug(f"Preview image doesn't exist: {image_path}")
             return
 
         # Stop the 3D preview animation when showing rendered frames
@@ -624,7 +627,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         try:
             image = wx.Image(image_path, wx.BITMAP_TYPE_PNG)
             if not image.IsOk():
-                print(f"[SpinRender] Failed to load image (not ok): {image_path}")
+                logger.error(f"Failed to load image (not ok): {image_path}")
                 return
 
             width, height = image.GetSize()
@@ -643,10 +646,10 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 
-            print(f"[SpinRender] Successfully loaded preview: {width}x{height}, has_texture={self.has_texture}")
+            logger.info(f"Successfully loaded preview: {width}x{height}, has_texture={self.has_texture}")
             self.Refresh()
         except Exception as e:
-            print(f"[SpinRender] GL Preview load failed: {e}")
+            logger.error(f"GL Preview load failed: {e}", exc_info=True)
 
     def clear_preview_image(self):
         """Clears the rendered frame overlay and returns to wireframe."""
@@ -815,7 +818,7 @@ class PreviewRenderer(wx.Panel):
 
     def set_preview_image(self, image_path):
         if not os.path.exists(image_path):
-            print(f"[SpinRender] Fallback preview image doesn't exist: {image_path}")
+            logger.debug(f"Fallback preview image doesn't exist: {image_path}")
             return
 
         # Stop the 3D preview animation when showing rendered frames
@@ -826,12 +829,12 @@ class PreviewRenderer(wx.Panel):
         try:
             self.preview_bitmap = wx.Bitmap(image_path, wx.BITMAP_TYPE_PNG)
             if not self.preview_bitmap.IsOk():
-                print(f"[SpinRender] Fallback bitmap not ok: {image_path}")
+                logger.error(f"Fallback bitmap not ok: {image_path}")
                 return
-            print(f"[SpinRender] Fallback preview loaded: {self.preview_bitmap.GetWidth()}x{self.preview_bitmap.GetHeight()}")
+            logger.info(f"Fallback preview loaded: {self.preview_bitmap.GetWidth()}x{self.preview_bitmap.GetHeight()}")
             self.Refresh()
         except Exception as e:
-            print(f"[SpinRender] Fallback preview load failed: {e}")
+            logger.error(f"Fallback preview load failed: {e}", exc_info=True)
 
     def clear_preview_image(self):
         self.preview_bitmap = None

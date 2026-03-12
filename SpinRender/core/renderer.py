@@ -9,8 +9,11 @@ import tempfile
 import json
 import math
 import time
+import logging
 from datetime import datetime
 from pathlib import Path
+
+logger = logging.getLogger("SpinRender")
 
 
 # ---------------------------------------------------------------------------
@@ -168,27 +171,23 @@ class RenderEngine:
             'light_side': 0.25,
             'light_bottom': 0.0,
             'light_camera': 0.2,
-            'light_side_elevation': 45,
-            'floor': True
+            'light_side_elevation': 45
         },
         'dramatic': {
             'light_top': 0.5,
             'light_side': 0.0,
             'light_bottom': 0.5,
             'light_camera': 0.0,
-            'light_side_elevation': 45,
-            'floor': False
+            'light_side_elevation': 45
         },
         'soft': {
             'light_top': 0.3,
             'light_side': 0.3,
             'light_bottom': 0.3,
             'light_camera': 0.3,
-            'light_side_elevation': 60,
-            'floor': False
+            'light_side_elevation': 60
         },
         'workspace': {
-            'floor': False
         }
     }
 
@@ -310,10 +309,12 @@ class RenderEngine:
         if self.progress_callback:
             self.progress_callback(0, frame_count, "INITIALIZING RENDER...")
 
+        logger.info(f"Starting render: {resolution} ({frame_count} frames) via kicad-cli")
+
         # Render each frame
         for i in range(frame_count):
             if self.canceled:
-                print("// render canceled by user")
+                logger.info("Render canceled by user")
                 return i
 
             output_path = os.path.join(output_dir, f"frame{i:04d}.png")
@@ -346,7 +347,6 @@ class RenderEngine:
                 raise RuntimeError("kicad-cli not found in PATH or common locations")
 
             # Build kicad-cli command
-            bg_color = self.settings.get('bg_color', 'opaque')
             cmd = [
                 kicad_cli, 'pcb', 'render',
                 '--perspective',
@@ -354,15 +354,19 @@ class RenderEngine:
                 '--zoom', '0.8',
                 '-w', str(width),
                 '-h', str(height),
-                '--background', bg_color,
-                '--quality', 'high'
+                '--background', 'transparent',
+                '--quality', 'user'
             ]
-
+            
+            # Setup environment to use our custom config directory
+            # This allows us to force raytracing settings like "no floor" via 3d_viewer.json
+            plugin_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            config_dir = os.path.join(plugin_dir, 'resources', 'kicad_config')
+            
+            env = os.environ.copy()
+            env['KICAD_CONFIG_HOME'] = config_dir
 
             # Apply lighting parameters from preset
-            if light_params.get('floor'):
-                cmd.append('--floor')
-            
             for key in ['light_top', 'light_bottom', 'light_side', 'light_camera', 'light_side_elevation']:
                 if key in light_params:
                     cli_key = '--' + key.replace('_', '-')
@@ -375,20 +379,21 @@ class RenderEngine:
             if cli_overrides:
                 cmd.extend(cli_overrides.split())
 
-            # Execute render and pipe output to console
-            print(f"> {' '.join(cmd)}")
+            # Execute render and pipe output to logger
+            logger.debug(f"CLI CMD: {' '.join(cmd)}")
 
             try:
                 process = subprocess.Popen(
                     cmd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
-                    text=True
+                    text=True,
+                    env=env
                 )
 
-                # Stream output to console
+                # Stream output to verbose logger
                 for line in process.stdout:
-                    print(f"  {line.strip()}")
+                    logger.debug(f"  [kicad-cli] {line.strip()}")
 
                 process.wait(timeout=30)
                 if process.returncode != 0:
@@ -414,26 +419,41 @@ class RenderEngine:
         if not ffmpeg:
             raise RuntimeError("ffmpeg not found in PATH or common locations")
 
+        # Get background color
+        bg_hex = self.settings.get('bg_color', '#000000')
+        if bg_hex == 'opaque': bg_hex = '#000000'
+        
+        # Get resolution
+        res = self.settings.get('resolution', '1920x1080')
+        w, h = map(int, res.split('x'))
+
+        # Use single input and generate background in filter graph to avoid position-dependent option errors
         cmd = [
             ffmpeg,
             '-y',
             '-framerate', '30',
             '-i', os.path.join(frame_dir, 'frame%04d.png'),
+            '-filter_complex', f'color=c={bg_hex}:s={w}x{h}[bg];[bg][0:v]overlay=shortest=1[ov];[ov]scale=trunc(iw/2)*2:trunc(ih/2)*2[out]',
+            '-map', '[out]',
             '-c:v', 'libx264',
             '-pix_fmt', 'yuv420p',
             '-profile:v', 'high',
             '-level', '4.1',
             '-crf', '18',
-            '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
             output_path
         ]
 
-        print(f"> {' '.join(cmd)}")
+        logger.info(f"Assembling MP4: {output_path}")
+        logger.debug(f"FFMPEG CMD: {' '.join(cmd)}")
         try:
-            subprocess.run(cmd, check=True, stdout=None, stderr=None, timeout=300)
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError("MP4 assembly failed. See console output.")
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            for line in process.stdout:
+                logger.debug(f"  [ffmpeg] {line.strip()}")
+            process.wait(timeout=300)
+            if process.returncode != 0:
+                raise RuntimeError(f"MP4 assembly failed with code {process.returncode}")
         except subprocess.TimeoutExpired:
+            process.kill()
             raise RuntimeError("MP4 assembly timed out")
 
     def assemble_gif(self, frame_dir, output_path, frame_count):
@@ -444,31 +464,56 @@ class RenderEngine:
         if not ffmpeg:
             raise RuntimeError("ffmpeg not found in PATH or common locations")
 
+        # Get background color
+        bg_hex = self.settings.get('bg_color', '#000000')
+        if bg_hex == 'opaque': bg_hex = '#000000'
+        
+        # Get resolution
+        res = self.settings.get('resolution', '1920x1080')
+        w, h = map(int, res.split('x'))
+
         palette_path = os.path.join(frame_dir, 'palette.png')
+        
+        # 1. Generate palette from composited frames (background generated in filter graph)
         palette_cmd = [
             ffmpeg, '-y', '-framerate', '30',
             '-i', os.path.join(frame_dir, 'frame%04d.png'),
-            '-vf', 'palettegen', palette_path
+            '-filter_complex', f'color=c={bg_hex}:s={w}x{h}[bg];[bg][0:v]overlay=shortest=1[ov];[ov]palettegen', 
+            palette_path
         ]
 
-        print(f"> {' '.join(palette_cmd)}")
+        logger.debug(f"GIF PALETTE CMD: {' '.join(palette_cmd)}")
         try:
-            subprocess.run(palette_cmd, check=True, stdout=None, stderr=None, timeout=60)
-        except subprocess.CalledProcessError:
+            process = subprocess.Popen(palette_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            for line in process.stdout:
+                logger.debug(f"  [ffmpeg-palette] {line.strip()}")
+            process.wait(timeout=60)
+            if process.returncode != 0:
+                raise RuntimeError("GIF palette generation failed.")
+        except Exception as e:
+            logger.error(f"Palette gen error: {e}")
             raise RuntimeError("GIF palette generation failed.")
 
+        # 2. Assemble GIF with composited frames (background generated in filter graph)
         gif_cmd = [
             ffmpeg, '-y', '-framerate', '30',
             '-i', os.path.join(frame_dir, 'frame%04d.png'),
             '-i', palette_path,
-            '-filter_complex', 'paletteuse',
+            '-filter_complex', f'color=c={bg_hex}:s={w}x{h}[bg];[bg][0:v]overlay=shortest=1[ov];[ov][1:v]paletteuse',
             output_path
         ]
 
-        print(f"> {' '.join(gif_cmd)}")
+        logger.info(f"Assembling GIF: {output_path}")
+        logger.debug(f"GIF ASSY CMD: {' '.join(gif_cmd)}")
         try:
-            subprocess.run(gif_cmd, check=True, stdout=None, stderr=None, timeout=300)
-        except subprocess.CalledProcessError:
+            process = subprocess.Popen(gif_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            for line in process.stdout:
+                logger.debug(f"  [ffmpeg-gif] {line.strip()}")
+            process.wait(timeout=300)
+            if process.returncode != 0:
+                raise RuntimeError("GIF assembly failed.")
+        except Exception as e:
+            logger.error(f"GIF assembly error: {e}")
             raise RuntimeError("GIF assembly failed.")
 
     def assemble_png_sequence(self, frame_dir, output_path, frame_count):

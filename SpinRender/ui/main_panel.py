@@ -9,7 +9,10 @@ import json
 import time
 import threading
 import subprocess
+import logging
 from pathlib import Path
+
+logger = logging.getLogger("SpinRender")
 
 # Use absolute imports from the plugin root for KiCad compatibility
 from ui.custom_controls import (
@@ -42,7 +45,7 @@ class SVGLogoPanel(wx.Panel):
             try:
                 self.svg_image = wx.svg.SVGimage.CreateFromFile(str(svg_path))
             except Exception as e:
-                print(f"[SpinRender] Failed to load SVG: {e}")
+                logger.error(f"Failed to load SVG: {e}", exc_info=True)
 
         self.Bind(wx.EVT_PAINT, self.on_paint)
 
@@ -519,41 +522,11 @@ class SpinRenderPanel(wx.Panel):
         bg_lbl.SetFont(wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName="JetBrains Mono"))
         bg_vsizer.Add(bg_lbl, 0, wx.BOTTOM, 6)
         
-        bg_row = wx.Panel(bg_col)
-        bg_hsizer = wx.BoxSizer(wx.HORIZONTAL)
+        from .custom_controls import CustomColorPicker
+        curr_bg = self.settings.get('bg_color', '#000000')
+        self.bg_picker = CustomColorPicker(bg_col, current_color=curr_bg, on_change=self.on_bg_color_change)
+        bg_vsizer.Add(self.bg_picker, 0, wx.EXPAND)
         
-        # Color Presets
-        self.bg_presets = [
-            ("#000000", "BLACK"),
-            ("#FFFFFF", "WHITE"),
-            ("#333333", "CHARCOAL"),
-            ("#F5F5DC", "CREAM")
-        ]
-        
-        from .custom_controls import CustomToggleButton
-        bg_opts = [{'label': lbl} for hex_val, lbl in self.bg_presets]
-        self.bg_toggle = CustomToggleButton(bg_row, options=bg_opts, size=(300, 32))
-        curr_bg = self.settings.get('bg_color', '#000000').upper()
-        # Find index of current color in presets
-        bg_idx = -1
-        for i, (hex_val, lbl) in enumerate(self.bg_presets):
-            if hex_val.upper() == curr_bg:
-                bg_idx = i; break
-        if bg_idx != -1:
-            self.bg_toggle.SetSelection(bg_idx)
-        else:
-            # Custom color selected
-            self.bg_toggle.SetSelection(-1) # No selection in toggle
-            
-        self.bg_toggle.Bind(wx.EVT_TOGGLEBUTTON, self.on_bg_preset_change)
-        bg_hsizer.Add(self.bg_toggle, 0, wx.RIGHT, 8)
-        
-        self.bg_custom_btn = CustomButton(bg_row, label="CUSTOM...", icon="mdi-palette", primary=False, size=(110, 32))
-        self.bg_custom_btn.Bind(wx.EVT_BUTTON, self.on_bg_custom)
-        bg_hsizer.Add(self.bg_custom_btn, 1, wx.EXPAND)
-        
-        bg_row.SetSizer(bg_hsizer)
-        bg_vsizer.Add(bg_row, 0, wx.EXPAND)
         bg_col.SetSizer(bg_vsizer)
         sizer.Add(bg_col, 0, wx.EXPAND)
         
@@ -689,6 +662,9 @@ class SpinRenderPanel(wx.Panel):
         self.viewport.set_period(self.settings['period'])
         self.viewport.set_direction(self.settings['direction'])
         self.viewport.set_render_mode(self.settings.get('render_mode', 'both'))
+        
+        # Initialize background color
+        self.viewport.set_background_color(self.settings.get('bg_color', '#000000'))
         
         # Initialize aspect ratio
         try:
@@ -874,7 +850,14 @@ class SpinRenderPanel(wx.Panel):
         if not gc: return
 
         w, h = self.render_preview_panel.GetSize()
-        gc.SetBrush(wx.Brush(wx.Colour(0, 0, 0)))
+        
+        # 1. Get current background color
+        bg_hex = self.settings.get('bg_color', '#000000')
+        if bg_hex == 'opaque': bg_hex = '#000000'
+        bg_color = wx.Colour(bg_hex)
+        
+        # 2. Fill background with selected color
+        gc.SetBrush(wx.Brush(bg_color))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRectangle(0, 0, w, h)
 
@@ -894,6 +877,10 @@ class SpinRenderPanel(wx.Panel):
                 display_width = h * bmp_aspect
                 x_offset = (w - display_width) / 2
                 y_offset = 0
+            
+            # Note: We already filled the whole panel with bg_color, 
+            # but we could also specifically fill just the bitmap rect if needed.
+            
             gc.SetInterpolationQuality(wx.INTERPOLATION_BEST)
             gc.DrawBitmap(self.render_preview_bitmap, x_offset, y_offset, display_width, display_height)
             
@@ -1037,10 +1024,17 @@ class SpinRenderPanel(wx.Panel):
     def apply_preset_data(self, preset, label):
         if not label.startswith("CUSTOM:"):
             if 'custom' in self.preset_buttons: self.preset_buttons['custom'].SetLabel("SELECT CUSTOM..")
-        keys = ['board_tilt', 'board_roll', 'spin_tilt', 'spin_heading', 'period', 'direction', 'lighting']
+        keys = ['board_tilt', 'board_roll', 'spin_tilt', 'spin_heading', 'period', 'direction', 'lighting', 'bg_color']
         for k in keys:
             if k in preset: self.settings[k] = preset[k]
-        if hasattr(self, 'board_tilt_slider'): 
+
+        if 'bg_color' in preset and hasattr(self, 'bg_picker'):
+            self.bg_picker.SetColor(self.settings['bg_color'])
+            if hasattr(self, 'viewport'):
+                self.viewport.set_background_color(self.settings['bg_color'])
+
+        if hasattr(self, 'board_tilt_slider'):
+ 
             self.board_tilt_slider.SetValue(self.settings['board_tilt'])
             self.board_tilt_input.SetValue(self.settings['board_tilt'])
         if hasattr(self, 'board_roll_slider'): 
@@ -1255,36 +1249,13 @@ class SpinRenderPanel(wx.Panel):
         self.update_preview_overlay()
         self.save_settings()
 
-    def on_bg_preset_change(self, event):
+    def on_bg_color_change(self, color_hex):
         self.reset_status_bar()
-        idx = self.bg_toggle.GetSelection()
-        if 0 <= idx < len(self.bg_presets):
-            color_hex = self.bg_presets[idx][0]
-            self.settings['bg_color'] = color_hex
-            if hasattr(self, 'viewport'):
-                self.viewport.set_background_color(color_hex)
-            self.update_preview_overlay()
-            self.save_settings()
-
-    def on_bg_custom(self, event):
-        self.reset_status_bar()
-        curr_color = wx.Colour(self.settings.get('bg_color', '#000000'))
-        data = wx.ColourData()
-        data.SetColour(curr_color)
-        dlg = wx.ColourDialog(self, data)
-        if dlg.ShowModal() == wx.ID_OK:
-            new_color = dlg.GetColourData().GetColour()
-            color_hex = "#%02X%02X%02X" % (new_color.Red(), new_color.Green(), new_color.Blue())
-            self.settings['bg_color'] = color_hex
-            
-            # Deselect presets in toggle since it's custom
-            self.bg_toggle.SetSelection(-1)
-            
-            if hasattr(self, 'viewport'):
-                self.viewport.set_background_color(color_hex)
-            self.update_preview_overlay()
-            self.save_settings()
-        dlg.Destroy()
+        self.settings['bg_color'] = color_hex
+        if hasattr(self, 'viewport'):
+            self.viewport.set_background_color(color_hex)
+        self.update_preview_overlay()
+        self.save_settings()
 
     def on_save_preset(self, event):
         self.reset_status_bar()
@@ -1444,7 +1415,7 @@ class SpinRenderPanel(wx.Panel):
                             self.render_preview_panel.Show()
                         self.render_preview_panel.Refresh()
             except Exception as e:
-                print(f"[SpinRender] Failed to load frame bitmap: {e}")
+                logger.error(f"Failed to load frame bitmap: {e}", exc_info=True)
 
     def on_render_finished(self, result, error=None):
         if not self: return

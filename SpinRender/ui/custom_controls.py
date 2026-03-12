@@ -1183,6 +1183,209 @@ class ProjectFolderChip(wx.Panel):
         return False
 
 
+class CustomColorPicker(wx.Panel):
+    """
+    Custom color picker matching Component/ColorPicker from Pencil design.
+    Features swatches for presets and a custom color button.
+    """
+    BG_PANEL = wx.Colour(26, 26, 26)  # $bg-panel
+    BORDER_COLOR = wx.Colour(31, 31, 31)  # #1F1F1F
+    BG_INPUT = wx.Colour(13, 13, 13)
+    ACCENT_CYAN = wx.Colour(0, 188, 212)
+    TEXT_MUTED = wx.Colour(85, 85, 85)
+    ACCENT_YELLOW = wx.Colour(255, 214, 0)
+
+    PRESETS = [
+        ("#000000", "BLACK"),
+        ("#1A1F23", "SLATE"),
+        ("#F5F0E8", "CREAM"),
+        ("#FFFFFF", "WHITE")
+    ]
+
+    def __init__(self, parent, current_color="#000000", on_change=None):
+        super().__init__(parent)
+        self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
+        self.current_color = current_color.upper()
+        self.on_change = on_change
+        
+        self.hover_idx = -1 # 0-3 for presets, 4 for custom
+        self.selection = -1 # -1 if custom, 0-3 if preset
+        self._update_selection()
+
+        self.Bind(wx.EVT_PAINT, self.on_paint)
+        self.Bind(wx.EVT_MOTION, self.on_mouse_move)
+        self.Bind(wx.EVT_LEFT_DOWN, self.on_click)
+        self.Bind(wx.EVT_LEAVE_WINDOW, self.on_leave)
+        
+        # Fixed size based on design
+        self.SetMinSize((340, 64))
+
+    def _update_selection(self):
+        self.selection = -1
+        for i, (hex_val, _) in enumerate(self.PRESETS):
+            if hex_val.upper() == self.current_color:
+                self.selection = i
+                break
+
+    def SetColor(self, hex_color):
+        self.current_color = hex_color.upper()
+        self._update_selection()
+        self.Refresh()
+
+    def _get_rects(self):
+        """Pre-calculate rectangles for hit detection and painting"""
+        w, h = self.GetSize()
+        rects = {}
+        
+        x_cursor = 12
+        swatch_size = 28
+        gap = 10 # Increased gap
+        
+        # Presets
+        for i in range(len(self.PRESETS)):
+            rects[f'preset_{i}'] = wx.Rect(x_cursor, 10, swatch_size, swatch_size)
+            x_cursor += swatch_size + gap
+            
+        # Divider position
+        rects['divider'] = x_cursor
+        x_cursor += gap
+        
+        # Custom Swatch
+        rects['custom'] = wx.Rect(x_cursor, 10, swatch_size, swatch_size)
+        x_cursor += swatch_size + gap + 4
+        
+        # Hex Input
+        input_w = 100
+        input_h = 28
+        rects['hex'] = wx.Rect(x_cursor, (h - input_h) // 2, input_w, input_h)
+        
+        return rects
+
+    def on_paint(self, event):
+        dc = wx.AutoBufferedPaintDC(self)
+        gc = wx.GraphicsContext.Create(dc)
+        if not gc: return
+
+        w, h = self.GetSize()
+        enabled = self.IsEnabled()
+        rects = self._get_rects()
+
+        # 1. Background (No Border)
+        gc.SetBrush(wx.Brush(_get_paint_color(self.BG_PANEL, enabled)))
+        gc.SetPen(wx.TRANSPARENT_PEN)
+        gc.DrawRoundedRectangle(0, 0, w, h, 4)
+
+        # 2. Draw Presets
+        for i, (hex_val, label) in enumerate(self.PRESETS):
+            r = rects[f'preset_{i}']
+            self._draw_swatch(gc, r.x, r.y, hex_val, label, i == self.selection, i == self.hover_idx, enabled)
+
+        # 3. Divider
+        gc.SetPen(wx.Pen(_get_paint_color(self.BORDER_COLOR, enabled), 1))
+        div_x = rects['divider']
+        gc.StrokeLine(div_x, 10, div_x, h - 10)
+
+        # 4. Custom Swatch
+        is_custom = self.selection == -1
+        r_cust = rects['custom']
+        self._draw_swatch(gc, r_cust.x, r_cust.y, self.current_color, "CUSTOM", is_custom, self.hover_idx == 4, enabled)
+
+        # 5. Hex Display
+        r_hex = rects['hex']
+        gc.SetBrush(wx.Brush(_get_paint_color(self.BG_INPUT, enabled)))
+        gc.SetPen(wx.Pen(_get_paint_color(self.BORDER_COLOR, enabled), 1))
+        gc.DrawRoundedRectangle(r_hex.x, r_hex.y, r_hex.width, r_hex.height, 4)
+
+        hex_font = get_custom_font(11, weight=wx.FONTWEIGHT_BOLD)
+        gc.SetFont(hex_font, _get_paint_color(self.ACCENT_YELLOW, enabled))
+        tw, th = gc.GetTextExtent(self.current_color)
+        gc.DrawText(self.current_color, r_hex.x + (r_hex.width - tw) / 2, r_hex.y + (r_hex.height - th) / 2)
+
+    def _draw_swatch(self, gc, x, y, color_hex, label, is_selected, is_hovered, enabled):
+        swatch_size = 28
+        
+        # Color Box
+        gc.SetBrush(wx.Brush(_get_paint_color(wx.Colour(color_hex), enabled)))
+        
+        stroke_color = self.BORDER_COLOR
+        thickness = 1
+        if is_selected:
+            stroke_color = self.ACCENT_CYAN
+            thickness = 2
+        elif is_hovered:
+            stroke_color = wx.Colour(120, 120, 120)
+            
+        gc.SetPen(wx.Pen(_get_paint_color(stroke_color, enabled), thickness))
+        gc.DrawRoundedRectangle(x, y, swatch_size, swatch_size, 4)
+
+        # Label
+        label_font = get_custom_font(7)
+        gc.SetFont(label_font, _get_paint_color(self.TEXT_MUTED, enabled))
+        tw, th = gc.GetTextExtent(label)
+        gc.DrawText(label, x + (swatch_size - tw) / 2, y + swatch_size + 4)
+
+    def on_mouse_move(self, event):
+        if not self.IsEnabled(): return
+        pos = event.GetPosition()
+        rects = self._get_rects()
+        
+        new_hover = -1
+        for i in range(len(self.PRESETS)):
+            if rects[f'preset_{i}'].Contains(pos):
+                new_hover = i
+                break
+        
+        if new_hover == -1 and rects['custom'].Contains(pos):
+            new_hover = 4
+            
+        if self.hover_idx != new_hover:
+            self.hover_idx = new_hover
+            self.Refresh()
+
+    def on_click(self, event):
+        if not self.IsEnabled(): return
+        pos = event.GetPosition()
+        rects = self._get_rects()
+        
+        clicked_idx = -1
+        for i in range(len(self.PRESETS)):
+            if rects[f'preset_{i}'].Contains(pos):
+                clicked_idx = i
+                break
+        
+        if clicked_idx == -1 and rects['custom'].Contains(pos):
+            clicked_idx = 4
+
+        if clicked_idx == -1: return
+        
+        if clicked_idx < 4:
+            # Preset selected
+            new_color = self.PRESETS[clicked_idx][0]
+            if new_color != self.current_color:
+                self.current_color = new_color
+                self.selection = clicked_idx
+                self.Refresh()
+                if self.on_change: self.on_change(new_color)
+        else:
+            # Custom clicked - show dialog
+            curr_color = wx.Colour(self.current_color)
+            data = wx.ColourData()
+            data.SetColour(curr_color)
+            dlg = wx.ColourDialog(self, data)
+            if dlg.ShowModal() == wx.ID_OK:
+                new_color_obj = dlg.GetColourData().GetColour()
+                new_hex = "#%02X%02X%02X" % (new_color_obj.Red(), new_color_obj.Green(), new_color_obj.Blue())
+                self.current_color = new_hex
+                self._update_selection()
+                self.Refresh()
+                if self.on_change: self.on_change(new_hex)
+            dlg.Destroy()
+
+    def on_leave(self, event):
+        self.hover_idx = -1
+        self.Refresh()
+
+
 class PathInputControl(wx.Panel):
     """
     Styled path display with folder icon and project chip support

@@ -4,7 +4,10 @@ Handles saving, loading, and managing render presets
 """
 import json
 import os
+import logging
 from pathlib import Path
+
+logger = logging.getLogger("SpinRender")
 
 
 class PresetManager:
@@ -72,7 +75,8 @@ class PresetManager:
                 'spin_heading': settings.get('spin_heading', 0.0),
                 'period': settings.get('period', 10.0),
                 'direction': settings.get('direction', 'ccw'),
-                'lighting': settings.get('lighting', 'studio')
+                'lighting': settings.get('lighting', 'studio'),
+                'bg_color': settings.get('bg_color', '#000000')
             }
         }
 
@@ -81,7 +85,7 @@ class PresetManager:
                 json.dump(preset_data, f, indent=2)
             return True
         except Exception as e:
-            print(f"Failed to save preset: {e}")
+            logger.error(f"Failed to save preset: {e}", exc_info=True)
             return False
 
     def load_preset(self, name, is_global=False):
@@ -114,7 +118,7 @@ class PresetManager:
                 preset_data = json.load(f)
             return preset_data.get('settings', {})
         except Exception as e:
-            print(f"Failed to load preset: {e}")
+            logger.error(f"Failed to load preset: {e}", exc_info=True)
             return None
 
     def list_presets(self, include_global=True):
@@ -170,7 +174,7 @@ class PresetManager:
                 os.remove(preset_path)
                 return True
             except Exception as e:
-                print(f"Failed to delete preset: {e}")
+                logger.error(f"Failed to delete preset: {e}", exc_info=True)
                 return False
 
         return False
@@ -191,7 +195,7 @@ class PresetManager:
                     with open(project_path, 'r') as f:
                         return json.load(f)
                 except Exception as e:
-                    print(f"Failed to load project last used settings: {e}")
+                    logger.error(f"Failed to load project last used settings: {e}", exc_info=True)
 
         # 2. Fallback to global last used settings
         global_path = os.path.join(self.global_presets_dir, 'last_used.json')
@@ -200,7 +204,7 @@ class PresetManager:
                 with open(global_path, 'r') as f:
                     return json.load(f)
             except Exception as e:
-                print(f"Failed to load global last used settings: {e}")
+                logger.error(f"Failed to load global last used settings: {e}", exc_info=True)
 
         return None
 
@@ -224,7 +228,7 @@ class PresetManager:
                 with open(project_path, 'w') as f:
                     json.dump(settings, f, indent=2)
             except Exception as e:
-                print(f"Failed to save project last used settings: {e}")
+                logger.error(f"Failed to save project last used settings: {e}", exc_info=True)
                 success = False
 
         # 2. Always save to global directory for cross-project persistence
@@ -233,7 +237,7 @@ class PresetManager:
             with open(global_path, 'w') as f:
                 json.dump(settings, f, indent=2)
         except Exception as e:
-            print(f"Failed to save global last used settings: {e}")
+            logger.error(f"Failed to save global last used settings: {e}", exc_info=True)
             success = False
 
         return success
