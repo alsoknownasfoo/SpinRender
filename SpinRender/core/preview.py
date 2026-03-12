@@ -95,6 +95,9 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         self.direction_sign = 1.0  # 1.0 for CCW, -1.0 for CW
         self.playing = False
 
+        # Render Mode: "wireframe" | "shaded" | "both"
+        self.render_mode = "both"
+
         # Computed Axis
         self.rotation_axis = np.array([0.0, 1.0, 0.0])
         self._update_rotation_axis()
@@ -450,29 +453,37 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             
             if self.mesh_data:
                 # 1. Shaded Faces (Volume & Lighting)
-                glEnable(GL_LIGHTING)
-                glEnable(GL_POLYGON_OFFSET_FILL)
-                glPolygonOffset(1.0, 1.0)
-                
-                # Material Properties for nice "Studio" highlights
-                glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, [0.5, 0.5, 0.5, 1.0])
-                glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50.0)
-                
-                glColor4f(0.2, 0.2, 0.2, 1.0) # Deep charcoal for faces
-                glEnableClientState(GL_VERTEX_ARRAY)
-                glEnableClientState(GL_NORMAL_ARRAY)
-                glVertexPointer(3, GL_FLOAT, 0, self.mesh_data['tri_vertices'])
-                glNormalPointer(GL_FLOAT, 0, self.mesh_data['tri_normals'])
-                glDrawArrays(GL_TRIANGLES, 0, self.mesh_data['tri_count'])
-                glDisableClientState(GL_NORMAL_ARRAY)
-                glDisable(GL_POLYGON_OFFSET_FILL)
+                if self.render_mode in ("shaded", "both"):
+                    glEnable(GL_LIGHTING)
+                    glEnable(GL_POLYGON_OFFSET_FILL)
+                    glPolygonOffset(1.0, 1.0)
+                    
+                    # Material Properties for nice "Studio" highlights
+                    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, [0.5, 0.5, 0.5, 1.0])
+                    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50.0)
+                    
+                    glColor4f(0.2, 0.2, 0.2, 1.0) # Deep charcoal for faces
+                    glEnableClientState(GL_VERTEX_ARRAY)
+                    glEnableClientState(GL_NORMAL_ARRAY)
+                    glVertexPointer(3, GL_FLOAT, 0, self.mesh_data['tri_vertices'])
+                    glNormalPointer(GL_FLOAT, 0, self.mesh_data['tri_normals'])
+                    glDrawArrays(GL_TRIANGLES, 0, self.mesh_data['tri_count'])
+                    glDisableClientState(GL_NORMAL_ARRAY)
+                    glDisable(GL_POLYGON_OFFSET_FILL)
                 
                 # 2. Wireframe Edges (Technical Precision)
-                glDisable(GL_LIGHTING)
-                glColor4f(0.0, 0.0, 0.0, 0.9) # Pure black edges
-                glVertexPointer(3, GL_FLOAT, 0, self.mesh_data['vertices'])
-                glDrawArrays(GL_LINES, 0, self.mesh_data['count'])
-                glDisableClientState(GL_VERTEX_ARRAY)
+                if self.render_mode in ("wireframe", "both"):
+                    glDisable(GL_LIGHTING)
+                    if self.render_mode == "wireframe":
+                        edge_color = (0.5, 0.5, 0.5, 0.8) # Gray for pure wireframe
+                    else:
+                        edge_color = (0.0, 0.0, 0.0, 0.9) # Black when overlaid on shaded
+                    
+                    glColor4f(*edge_color)
+                    glEnableClientState(GL_VERTEX_ARRAY)
+                    glVertexPointer(3, GL_FLOAT, 0, self.mesh_data['vertices'])
+                    glDrawArrays(GL_LINES, 0, self.mesh_data['count'])
+                    glDisableClientState(GL_VERTEX_ARRAY)
             else:
                 self._draw_placeholder()
                 
@@ -556,6 +567,12 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             glVertex2f(vs, by); glVertex2f(ve, by); glVertex2f(ve, by+BAR_H); glVertex2f(vs, by+BAR_H)
             glEnd()
         glEnable(GL_DEPTH_TEST)
+
+    def set_render_mode(self, mode):
+        """Set the rendering style: wireframe, shaded, or both."""
+        if mode in ("wireframe", "shaded", "both"):
+            self.render_mode = mode
+            self.Refresh()
 
     def on_size(self, _event):
         self.Refresh()

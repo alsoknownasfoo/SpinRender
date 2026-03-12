@@ -104,7 +104,8 @@ class SpinRenderPanel(wx.Panel):
             'resolution': '1920x1080', 
             'output_auto': True,
             'output_path': '', 
-            'cli_overrides': ''
+            'cli_overrides': '',
+            'render_mode': 'both'
         }
         
         # Attempt to load last used settings
@@ -539,6 +540,31 @@ class SpinRenderPanel(wx.Panel):
         self.ov_top_left.SetForegroundColour(wx.Colour(255, 255, 255, 68))
         self.ov_top_left.SetFont(wx.Font(9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
         top_meta_sizer.Add(self.ov_top_left, 1, wx.ALIGN_CENTER_VERTICAL)
+
+        # Top-Right: Render Mode Toggle
+        self.render_mode_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.render_mode_btns = {}
+        
+        mode_font = wx.Font(9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName="JetBrains Mono")
+        modes = [("WIREFRAME", "wireframe"), ("SHADED", "shaded"), ("BOTH", "both")]
+        
+        for i, (label, mode_id) in enumerate(modes):
+            btn = wx.StaticText(top_meta, label=label)
+            btn.SetFont(mode_font)
+            btn.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+            btn.Bind(wx.EVT_LEFT_DOWN, lambda e, m=mode_id: self.on_render_mode_change(m))
+            
+            self.render_mode_btns[mode_id] = btn
+            self.render_mode_sizer.Add(btn, 0, wx.ALIGN_CENTER_VERTICAL)
+            
+            if i < len(modes) - 1:
+                div = wx.StaticText(top_meta, label="  |  ")
+                div.SetFont(mode_font)
+                div.SetForegroundColour(wx.Colour(50, 50, 50))
+                self.render_mode_sizer.Add(div, 0, wx.ALIGN_CENTER_VERTICAL)
+        
+        top_meta_sizer.Add(self.render_mode_sizer, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+        self.update_render_mode_ui(self.settings.get('render_mode', 'both'))
         
         # Top-Right: CLOSE PREVIEW button
         self.ov_top_right = wx.StaticText(top_meta, label="CLOSE PREVIEW")
@@ -607,6 +633,7 @@ class SpinRenderPanel(wx.Panel):
         self.viewport.set_universal_joint_parameters(self.settings['board_tilt'], self.settings['board_roll'], self.settings['spin_tilt'], self.settings['spin_heading'])
         self.viewport.set_period(self.settings['period'])
         self.viewport.set_direction(self.settings['direction'])
+        self.viewport.set_render_mode(self.settings.get('render_mode', 'both'))
         self.viewport.start_preview()
         
         # Initial update
@@ -1011,6 +1038,12 @@ class SpinRenderPanel(wx.Panel):
                 if not matched_any: self.settings['preset'] = 'custom'
                 if manual_change and not matched_any: self.preset_buttons['custom'].SetLabel("SELECT CUSTOM..")
         self.update_preview_overlay()
+        self.save_settings()
+
+    def save_settings(self):
+        """Persist current settings to project-local config file"""
+        from core.presets import PresetManager
+        PresetManager(self.board_path).save_last_used_settings(self.settings)
 
     def on_board_tilt_change(self, event): 
         self.reset_status_bar()
@@ -1101,6 +1134,24 @@ class SpinRenderPanel(wx.Panel):
             self.viewport.set_direction(self.settings['direction'])
         self.update_preview_overlay()
         self.check_preset_match(manual_change=True)
+
+    def on_render_mode_change(self, mode_id):
+        """Handle clicks on the WIREFRAME | SHADED | BOTH toggle"""
+        self.settings['render_mode'] = mode_id
+        if hasattr(self, 'viewport'):
+            self.viewport.set_render_mode(mode_id)
+        self.update_render_mode_ui(mode_id)
+        self.save_settings()
+
+    def update_render_mode_ui(self, active_mode):
+        """Updates the colors of the mode toggle labels"""
+        if not hasattr(self, 'render_mode_btns'): return
+        for mode_id, btn in self.render_mode_btns.items():
+            if mode_id == active_mode:
+                btn.SetForegroundColour(self.ACCENT_CYAN)
+            else:
+                btn.SetForegroundColour(wx.Colour(100, 100, 100))
+            btn.Refresh()
         
     def on_lighting_change(self, event):
         self.reset_status_bar()
@@ -1110,15 +1161,18 @@ class SpinRenderPanel(wx.Panel):
             self.viewport.set_lighting(preset_id)
         self.update_preview_overlay()
         self.check_preset_match(manual_change=True)        
+
     def on_format_change(self, event): 
         self.reset_status_bar()
         self.settings['format'] = self.format_ids[self.format_choice.GetSelection()]
         self.update_preview_overlay()
+        self.save_settings()
         
     def on_resolution_change(self, event): 
         self.reset_status_bar()
         self.settings['resolution'] = self.res_ids[self.res_choice.GetSelection()]
         self.update_preview_overlay()
+        self.save_settings()
 
     def on_save_preset(self, event):
         self.reset_status_bar()
