@@ -349,7 +349,7 @@ class DropdownPopup(wx.PopupTransientWindow):
         self.accent_color = wx.Colour(0, 188, 212)  # $accent-cyan
         self.text_primary = wx.Colour(224, 224, 224)
         self.text_muted = wx.Colour(85, 85, 85)
-        self.border_color = wx.Colour(51, 51, 51)
+        self.border_color = wx.Colour(31, 31, 31)
         
         self.item_height = 32
         self.SetBackgroundColour(self.bg_color)
@@ -568,7 +568,8 @@ class CustomButton(wx.Panel):
         'mdi-alert': '\U000F0026',
         'mdi-information-outline': '\U000F02FD',
         'mdi-trash-can-outline': '\U000F0A7A',
-        'mdi-alert-octagram': '\U000F0767'
+        'mdi-alert-octagram': '\U000F0767',
+        'mdi-exit-to-app': '\U000F0206'
     }
 
     def __init__(self, parent, label="BUTTON", icon=None, icon_font_family=None, primary=True, ghost=False, danger=False, icon_color=None, size=(-1, 36)):
@@ -608,7 +609,7 @@ class CustomButton(wx.Panel):
         elif self.ghost:
             bg_base, text_base, border_base = wx.Colour(0, 0, 0, 0), wx.Colour(224, 224, 224), None
         else:
-            bg_base, text_base, border_base = wx.Colour(13, 13, 13), wx.Colour(224, 224, 224), wx.Colour(51, 51, 51)
+            bg_base, text_base, border_base = wx.Colour(13, 13, 13), wx.Colour(224, 224, 224), wx.Colour(31, 31, 31)
 
         # Apply interaction feedback to base colors
         bg = bg_base
@@ -739,7 +740,7 @@ class PresetCard(wx.Panel):
     Preset card matching Component/PresetCard
     """
     BG_COLOR, BG_SELECTED, BORDER_DEFAULT, BORDER_SELECTED, TEXT_COLOR, TEXT_SELECTED = \
-        wx.Colour(23, 23, 23), wx.Colour(30, 30, 30), wx.Colour(51, 51, 51), wx.Colour(0, 188, 212), wx.Colour(119, 119, 119), wx.Colour(0, 188, 212)
+        wx.Colour(23, 23, 23), wx.Colour(30, 30, 30), wx.Colour(31, 31, 31), wx.Colour(0, 188, 212), wx.Colour(119, 119, 119), wx.Colour(0, 188, 212)
     ICONS = {
         'rotate-cw': '↻',
         'rotate-ccw': '↺',

@@ -343,7 +343,7 @@ class RenderEngine:
                 kicad_cli, 'pcb', 'render',
                 '--perspective',
                 '--rotate', rotate_str,
-                '--zoom', '0.85',
+                '--zoom', '0.80',
                 '-w', str(width),
                 '-h', str(height),
                 '--background', 'opaque',

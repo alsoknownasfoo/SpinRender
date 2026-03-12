@@ -82,7 +82,7 @@ class SpinRenderPanel(wx.Panel):
     ACCENT_YELLOW = wx.Colour(255, 214, 0)
     ACCENT_GREEN = wx.Colour(76, 175, 80)
     ACCENT_ORANGE = wx.Colour(255, 107, 53)
-    BORDER_DEFAULT = wx.Colour(51, 51, 51)
+    BORDER_DEFAULT = wx.Colour(31, 31, 31)
 
     def __init__(self, parent, board_path):
         super().__init__(parent)
@@ -490,8 +490,8 @@ class SpinRenderPanel(wx.Panel):
         r_lbl.SetForegroundColour(self.TEXT_PRIMARY)
         r_lbl.SetFont(wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName="JetBrains Mono"))
         r_sizer.Add(r_lbl, 0, wx.BOTTOM, 6)
-        self.res_choices = ["1920×1080 (1080P)", "1280×720 (720P)", "800×600 (Square)"]
-        self.res_ids = ["1920x1080", "1280x720", "800x600"]
+        self.res_choices = ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
+        self.res_ids = ["1920x1080", "1280x720", "800x800"]
         self.res_choice = CustomDropdown(r_col, choices=self.res_choices, size=(-1, 32))
         curr_res = self.settings.get('resolution', '1920x1080')
         res_idx = self.res_ids.index(curr_res) if curr_res in self.res_ids else 0
@@ -514,7 +514,7 @@ class SpinRenderPanel(wx.Panel):
         self.adv_btn = CustomButton(arow, label="", icon='mdi-cog', primary=False, size=(36, 36))
         self.adv_btn.Bind(wx.EVT_BUTTON, self.on_advanced_options)
         asizer.Add(self.adv_btn, 0, wx.RIGHT, 8)
-        self.can_btn = CustomButton(arow, label="CANCEL", icon='mdi-close', primary=False, danger=True, size=(110, 36))
+        self.can_btn = CustomButton(arow, label="CLOSE", icon='mdi-exit-to-app', primary=False, danger=True, size=(110, 36))
         self.can_btn.Bind(wx.EVT_BUTTON, self.on_cancel)
         asizer.Add(self.can_btn, 0, wx.RIGHT, 8)
         self.render_btn = CustomButton(arow, label="RENDER", icon='mdi-video-vintage', primary=True, size=(150, 36))
@@ -634,6 +634,14 @@ class SpinRenderPanel(wx.Panel):
         self.viewport.set_period(self.settings['period'])
         self.viewport.set_direction(self.settings['direction'])
         self.viewport.set_render_mode(self.settings.get('render_mode', 'both'))
+        
+        # Initialize aspect ratio
+        try:
+            res = self.settings.get('resolution', '1920x1080')
+            w, h = map(int, res.split('x'))
+            self.viewport.set_aspect_ratio(w, h)
+        except: pass
+
         self.viewport.start_preview()
         
         # Initial update
@@ -1174,7 +1182,16 @@ class SpinRenderPanel(wx.Panel):
         
     def on_resolution_change(self, event): 
         self.reset_status_bar()
-        self.settings['resolution'] = self.res_ids[self.res_choice.GetSelection()]
+        res = self.res_ids[self.res_choice.GetSelection()]
+        self.settings['resolution'] = res
+        
+        # Update viewport aspect ratio for WYSIWYG
+        try:
+            w, h = map(int, res.split('x'))
+            if hasattr(self, 'viewport'):
+                self.viewport.set_aspect_ratio(w, h)
+        except: pass
+            
         self.update_preview_overlay()
         self.save_settings()
 
@@ -1210,6 +1227,9 @@ class SpinRenderPanel(wx.Panel):
             pf.Raise()
 
     def on_cancel(self, event):
+        if self.is_rendering and self.render_engine:
+            self.render_engine.cancel()
+            
         from core.presets import PresetManager
         PresetManager(self.board_path).save_last_used_settings(self.settings)
         f = self.GetTopLevelParent()
@@ -1217,6 +1237,9 @@ class SpinRenderPanel(wx.Panel):
             f.Close()
             
     def on_close(self, event):
+        if self.is_rendering and self.render_engine:
+            self.render_engine.cancel()
+
         from core.presets import PresetManager
         PresetManager(self.board_path).save_last_used_settings(self.settings)
         f = self.GetTopLevelParent()
@@ -1302,6 +1325,7 @@ class SpinRenderPanel(wx.Panel):
         wx.CallAfter(self._update_progress_ui, current, total, message, frame_path)
 
     def _update_progress_ui(self, current, total, message, frame_path=None):
+        if not self: return
         self.status_msg = message
         self.status_prog = current / total if total > 0 else 0.0
         self.status_bar_panel.Refresh()
@@ -1332,6 +1356,7 @@ class SpinRenderPanel(wx.Panel):
                 print(f"[SpinRender] Failed to load frame bitmap: {e}")
 
     def on_render_finished(self, result, error=None):
+        if not self: return
         self.is_rendering = False
         self.render_engine = None
         self.render_btn.SetLabel("RENDER")
@@ -1355,6 +1380,7 @@ class SpinRenderPanel(wx.Panel):
         
         # Give UI a moment to process button visibility changes
         wx.SafeYield()
+        if not self: return
         self.controls_panel.Refresh()
         
         if error:
@@ -1392,6 +1418,14 @@ class SpinRenderPanel(wx.Panel):
             self.current_render_frame = None
             self.final_output_type = self.settings.get('format', 'mp4')
             
+            if hasattr(self, 'render_preview_panel'):
+                if hasattr(self, 'viewport'):
+                    v_size = self.viewport.GetSize()
+                    self.render_preview_panel.SetSize(v_size)
+                    self.render_preview_panel.SetPosition((0, 0))
+                self.render_preview_panel.Show()
+                self.render_preview_panel.Refresh()
+
             if frame_dir and frame_count:
                 self.start_playback(frame_dir, frame_count)
             
@@ -1410,8 +1444,12 @@ class SpinRenderPanel(wx.Panel):
             # Stopped manually - keep preview active if we have frames
             if self.render_preview_bitmap:
                 self.render_preview_active = True
+                if hasattr(self, 'render_preview_panel'):
+                    self.render_preview_panel.Show()
             else:
                 self.render_preview_active = False
+                if hasattr(self, 'render_preview_panel'):
+                    self.render_preview_panel.Hide()
                 
             self.final_output_type = None
             self.status_msg = "RENDER STOPPED"
