@@ -3,3 +3,11 @@ __pycache__/
 TODO.md
 *.kicad_pcb
 .dmux/
+
+# Testing & coverage
+.coverage
+htmlcov/
+SpinRender/logs/
+
+# Orchestration worktrees (actual git repos, not status files)
+.orchestration/*/worktree-*/
