@@ -6,9 +6,9 @@
 
 ## Document Metadata
 
-- **Version:** 0.3 (Draft)
-- **Date:** 2026-03-06
-- **Status:** Draft / Alignment
+- **Version:** 0.4 (Draft)
+- **Date:** 2026-03-13
+- **Status:** Draft / Alignment / Implementation Sync
 - **Owner:** Founding Product + Engineering
 
 ---
@@ -80,17 +80,27 @@ Make beautiful PCB animation rendering **accessible inside the KiCad workflow**,
 ### Entry Points
 
 - KiCad toolbar button / menu action: **Render with SpinRender**
-- Optional project-side config file for reusable presets
+- Project-local preset and last-used settings persisted under `.spinrender/`
 
 ### Core Flow (MVP)
 
 1. User opens board in KiCad.
 2. User launches SpinRender panel.
 3. User sees a two-panel layout: controls on the left, auto-playing preview loop on the right.
-4. User selects a loop preset (e.g., hero orbit, top sweep, angle reveal).
-5. User adjusts rotation settings (view tilt, rotation period, easing, direction) and lighting preset.
+4. User selects a loop preset (currently Hero, Spin, or Flip).
+5. User adjusts rotation settings and lighting preset.
 6. Preview updates live as controls change.
 7. User clicks **RENDER** to export the final animation.
+
+### Current State Snapshot
+
+The current implementation is broadly aligned with the MVP direction, but some behaviors are more concrete than the original PRD and some planned simplifications have not yet been applied.
+
+- The plugin is implemented as a KiCad action plugin with a dedicated floating window.
+- The UI currently exposes a universal-joint-style rotation model with four controls: `Board Tilt`, `Board Roll`, `Spin Tilt`, and `Spin Heading`.
+- The preview supports `wireframe`, `shaded`, and `both` modes, plus looping playback of rendered frames after export.
+- The exporter currently supports `MP4`, `GIF`, and `PNG Sequence` outputs.
+- Project-local presets and last-used settings are persisted today; an external styling/configuration format is still future work.
 
 ### UX Principles
 
@@ -111,21 +121,23 @@ Make beautiful PCB animation rendering **accessible inside the KiCad workflow**,
 ### FR-2: Scene Presets
 
 - Include at least 3 built-in loop presets for MVP:
-   - Hero Orbit
-   - Top Sweep
-   - Angle Reveal
+   - Hero
+   - Spin
+   - Flip
 - Presets include tilt baseline, loop direction, light rig, and timing defaults.
 
 ### FR-2A: Tilted Loop Control Model (Core UX)
 
-- Main UI exposes a simplified loop model instead of raw XYZ keyframing controls.
+- Main UI exposes a constrained rotation model instead of raw timeline/keyframe editing.
 - All rotation-related controls are grouped under a single **Rotation Settings** category:
-   - **View Tilt (θ)** `0°..90°`
+   - **Board Tilt**
+   - **Board Roll**
+   - **Spin Tilt**
+   - **Spin Heading**
    - **Rotation Period** (`seconds per revolution`)
-   - **Easing Profile** — displayed as a graphical curve visualization (linear in MVP)
    - **Direction** — presented as a CW/CCW segmented toggle (not a simple button)
 - Loop generation must ensure deterministic, repeatable `360°` progression per export.
-- Easing remains linear in MVP; non-linear easing is deferred.
+- Easing remains linear internally in MVP; no dedicated easing control is currently exposed in the UI.
 - Frame rate is fixed at 30 fps and is not user-configurable in MVP.
 
 ### FR-2B: Lighting Presets
@@ -136,15 +148,16 @@ Make beautiful PCB animation rendering **accessible inside the KiCad workflow**,
    - Soft (diffused, low-shadow ambient lighting)
 - Lighting presets are selectable via a dedicated Lighting section in the UI.
 - Each preset defines key light position, fill light intensity, and ambient level.
+- Current implementation note: the preview also exposes a `Workspace` lighting option to approximate KiCad viewer lighting; this should be treated as implementation-specific until productized.
 
 ### FR-3: Material/Look Controls (MVP-Lite)
 
 Core Aesthetic: A "High-Density Industrial" Dark Mode UI inspired by Blender and technical CAD software.
 
 - Geometric Precision:
-    - Edges: Strict 0px border-radius (sharp corners only). No rounded corners on buttons, sliders, or panels.
+   - Edges: Prefer 4px border-radius with radii expansion/contraction on elements within 4px distance.
     - Layout: A rigid grid-based system where components share 1px borders. Use "crosshair" or "L-bracket" corner accents to define panel boundaries.
-    - Depth: No drop shadows. Use 1px inset or outset borders in varying shades of grey to create structural depth and "pressed" vs. "raised" states.
+   - Depth: Prefer 1px inset or outset borders in varying shades of grey to create structural depth and "pressed" vs. "raised" states.
 
 - Color Palette & Typography:
     - Background: Deep charcoal or "matte black" (#121212 to #1A1A1A).
@@ -153,7 +166,7 @@ Core Aesthetic: A "High-Density Industrial" Dark Mode UI inspired by Blender and
     - Yellow/Amber: For numerical data and status values.
     - Green: For positive toggles (e.g., "CCW" or "Active").
     - Orange: For secondary branding or warning accents.
-    - Typography: Monospaced fonts for all numerical data (e.g., JetBrains Mono) to ensure character alignment. Sans-serif for labels (e.g., Inter or IBM Plex Sans).
+   - Typography: Monospaced fonts for all numerical data (e.g., JetBrains Mono) to ensure character alignment. Distinct display and label fonts are acceptable if they preserve the high-density industrial aesthetic.
 
 - Component Styling:
     - Sliders: Minimalist tracks with a thick, rectangular block as the handle ("thumb"). The handle should use a solid signal color.
@@ -166,22 +179,27 @@ Core Aesthetic: A "High-Density Industrial" Dark Mode UI inspired by Blender and
 ### FR-4: Export Pipeline
 
 - Export animation to at least one widely used format (MP4 preferred for MVP).
+- Additional formats may be supported if they do not materially complicate the MVP experience.
 - Optional image sequence export (PNG) if feasible in MVP.
-- Configurable output resolution (1080p minimum).
+- Configurable output resolution (300px minimum).
 - Frame rate is fixed at 30 fps (not user-configurable in MVP).
 - Primary export action is labeled **RENDER** (not "Export").
 - An **Advanced Options** button opens a modal/dialog for secondary settings (output path, parameter override).
+
+Current implementation note:
+- The current product already supports `MP4`, `GIF`, and `PNG Sequence` exports.
 
 ### FR-5: Revision-Friendly Reuse
 
 - Save/load render settings per project.
 - Re-render after board updates without full manual reconfiguration.
+- Current implementation note: settings are persisted as JSON files under `.spinrender/`, including preset files and `last_used.json`.
 
 ### FR-6: Preview & Validation
 
-- Preview is an always-playing, low-resolution unshaded animation loop displayed in the right panel of the UI.
+- Preview is an always-playing animation view displayed in the right panel of the UI.
 - Preview auto-plays continuously — there is no separate "Preview" button. The loop updates live as the user adjusts rotation, lighting, and preset controls.
-- Preview is virtualized from a small set of rendered source images and manipulated in UI for responsiveness.
+- Preview currently uses an OpenGL board preview for live interaction, with a rendered-frame playback overlay shown after export.
 - Validate missing assets and show actionable error messages.
 
 ### FR-7: Error Handling
@@ -241,20 +259,34 @@ Core Aesthetic: A "High-Density Industrial" Dark Mode UI inspired by Blender and
 ### In Scope
 
 - KiCad plugin shell + UI panel (two-panel layout: controls left, preview right)
-- 3 loop presets
+- 3 built-in loop presets
 - 3 lighting presets (Studio, Dramatic, Soft)
 - Basic look themes
-- MP4 export at fixed 30 fps (1080p)
+- MP4 export at fixed 30 fps (480p minimum)
 - Per-project render setting persistence
 - Clear error handling for common failure modes
-- Grouped rotation settings UI (tilt, period, easing curve, CW/CCW toggle)
-- Auto-playing low-res preview loop (no separate preview action)
+- Grouped rotation settings UI with deterministic loop controls
+- Auto-playing preview (no separate preview action)
 - Advanced options modal for secondary export settings
-- Virtualized preview behavior for fast interaction
+- Live preview behavior tuned for fast interaction
+
+### Current State (2026-03-13)
+
+- Implemented: KiCad action plugin shell and floating panel UI
+- Implemented: built-in `Hero`, `Spin`, and `Flip` loop presets
+- Implemented: `Studio`, `Dramatic`, and `Soft` lighting presets, plus an implementation-specific `Workspace` preview mode
+- Implemented: `MP4`, `GIF`, and `PNG Sequence` export formats at fixed `30 fps`
+- Implemented: project-local and global persistence for presets and last-used settings
+- Implemented: always-on OpenGL preview with post-render looping playback overlay
+- Implemented: advanced options dialog for output path, CLI overrides, and logging level
+- Partially aligned: the current rotation model is more explicit than the originally planned simplified tilt-only model
+- Not yet implemented: external config-driven styling/theme system described in UI planning docs
 
 ### Out of Scope
 
-- 
+- Custom light definitions
+- Easing animation options
+- Arbitrary keyframe authoring and timeline editing
 
 ---
 
@@ -286,6 +318,7 @@ Core Aesthetic: A "High-Density Industrial" Dark Mode UI inspired by Blender and
 - Plugin integration + UI scaffold
 - Presets + preview + export
 - Internal alpha testing
+- Align implementation details and docs on preset naming, rotation model, and export scope
 
 ### Phase 2: Beta
 

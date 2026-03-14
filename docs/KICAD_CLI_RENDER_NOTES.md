@@ -1,91 +1,136 @@
 # KiCad CLI Render Notes
 
-This document captures practical behavior of `kicad-cli pcb render` observed during SpinRender integration.
+This document captures practical behavior of `kicad-cli pcb render` and related preview/export commands as they are currently used by SpinRender.
 
-## Verified Behavior (KiCad on macOS, 2026-03-06)
+## Verified Behavior (Current Implementation Snapshot, 2026-03-13)
 
 Command tested:
 - `kicad-cli pcb render --help`
 
-Key options in use:
-- `--output`
-- `--width`, `--height`
-- `--side`
-- `--background`
-- `--quality`
+SpinRender currently uses these commands:
+- `kicad-cli pcb render`
+- `kicad-cli pcb export glb`
+
+Key `pcb render` options currently emitted by SpinRender:
+- `--rotate`
 - `--perspective`
 - `--zoom`
-- `--pivot`
-- `--rotate`
-- `--light-side`, `--light-side-elevation`
+- `--background transparent`
+- `--quality user`
+- `-w`, `-h`
+- `--light-top`
+- `--light-bottom`
+- `--light-side`
+- `--light-camera`
+- `--light-side-elevation`
+- `-o`
 
-## Important Parser Quirk
+Key `pcb export glb` options currently emitted for preview loading:
+- `--fuse-shapes`
+- `--grid-origin`
+- `--no-dnp`
+- `--subst-models`
+- `--include-pads`
+- `--include-silkscreen`
+- `--output`
 
-On this KiCad build, negative vector values for `--pivot` (and related vector args) can be parsed as unknown arguments.
+Important implementation clarification:
+- Final MP4 and GIF outputs are composited with the selected background color in `ffmpeg`; the KiCad render step itself stays transparent.
+- SpinRender sets `KICAD_CONFIG_HOME` to the in-repo `resources/kicad_config` directory so render behavior can be influenced by shipped KiCad config files.
 
-Example that fails:
-- `--pivot=-10.0,2.0,0.0`
-
-Observed error:
-- `Unknown argument: -10.0,2.0,0.0`
-
-Example that parses (then fails later only because test input file is missing):
-- `--pivot=10.0,2.0,0.0`
-
-## SpinRender Mitigation
-
-SpinRender uses a tilted-loop model and emits render-safe vectors by default:
-- `--pivot=0.0000,0.0000,0.0000`
-- `--rotate=<tilt>,<loop_angle>,0.0000` with non-negative tilt range
-
-Legacy or manual CLI override tokens that are standalone vector literals are sanitized before command execution.
+Important clarification:
+- Manual CLI overrides are currently appended with simple whitespace splitting.
+- They are **not** sanitized or normalized before execution.
+- Any future override validation should happen before tokens are appended to the command.
 
 ## Rotation Coordinate System (Universal Joint Model)
 
 **Verified through test renders (2026-03-11)**
 
-SpinRender uses a "Universal Joint" model to provide full 360° freedom for any rotation style (spin, roll, tumble) without axis redundancy or gimbal lock.
+SpinRender uses a universal-joint-style control model to provide full 360° freedom for spin, roll, and tumble style motions while still emitting KiCad-safe Euler angles per frame.
 
 ### Adjustment Parameters
 
-1.  **BOARD TILT**: Sets the angle at which the board is "mounted" to the rotation axis.
-    *   *0°*: Board is flat on the axis (spins like a record).
-    *   *90°*: Board is standing straight up on the axis (spins like a coin).
-2.  **SPIN TILT**: Tilts the entire rotation axis itself from Vertical to Horizontal.
-    *   *0°*: Turntable spin (Vertical axis).
-    *   *90°*: Somersault/Roll (Horizontal axis).
-3.  **SPIN HEADING**: Rotates the *direction* of the axis tilt around the table.
-    *   Lets you choose if a "roll" comes towards the camera, goes sideways, or moves diagonally.
+1. **BOARD TILT**: Static X-axis tilt applied to the board before the animated spin.
+2. **BOARD ROLL**: Static Z-axis roll used to bias the board's resting orientation.
+3. **SPIN TILT**: Polar tilt of the animated spin axis.
+4. **SPIN HEADING**: Azimuth of the animated spin axis around the board.
+5. **DIRECTION**: `ccw` keeps the animated angle positive, `cw` negates it.
+6. **PERIOD**: Controls frame count through a fixed `30 fps` render cadence.
 
-### Common Scenarios
+### Built-In Presets in the Current Renderer
 
-| Scenario | BOARD TILT | SPIN TILT | SPIN HEADING | Result |
-| :--- | :--- | :--- | :--- | :--- |
-| **Hero Orbit** | **45°** | **0°** | *Irrelevant* | Spun on a vertical axis, board leaning back at 45°. |
-| **Standard Spin** | **90°** | **0°** | *Irrelevant* | Spun on a vertical axis, board standing straight up (spinning L-to-R). |
-| **Somersault/Roll** | **0°** | **90°** | **0°** | Horizontal axis (L-to-R), board flat on it, rolling towards camera. |
+| Preset | BOARD TILT | BOARD ROLL | SPIN TILT | SPIN HEADING | DIRECTION | LIGHTING |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **hero** | `0°` | `-45°` | `90°` | `90°` | `ccw` | `dramatic` |
+| **spin** | `0°` | `-45°` | `90°` | `135°` | `ccw` | `studio` |
+| **flip** | `0°` | `-180°` | `90°` | `45°` | `cw` | `dramatic` |
+
+### Render-Side Rotation Mapping
+
+For each frame, SpinRender computes an animation angle from:
+- `frame_count = period * 30`
+- `step_degrees = 360 / frame_count`
+- `anim_angle = raw_angle` for `ccw`
+- `anim_angle = -raw_angle` for `cw`
+
+The exporter then converts the control model into KiCad's `--rotate X,Y,Z` using two paths:
+
+1. **Fast path** when `spin_tilt == 0`:
+   - `X = board_tilt`
+   - `Y = 0`
+   - `Z = anim_angle + board_roll`
+
+2. **General path** when the spin axis is tilted:
+   - Construct an axis from spherical coordinates with **Z as the polar axis**.
+   - Build `R_spin` with Rodrigues rotation.
+   - Compose the matrix as `R_X(board_tilt) · R_spin · R_Z(board_roll)`.
+   - Decompose that matrix back into intrinsic XYZ Euler angles for KiCad.
+
+Before emission, all three output angles are normalized into `[0, 360)` to avoid leading negative values that may confuse the CLI parser.
 
 ### Technical Implementation (Preview)
 
-The 3D preview applies transformations in this order:
+The OpenGL preview is intentionally aligned with the renderer's rotation model.
 
-1.  **Spin Animation**: Rotation around the dynamic axis defined by **Spin Tilt** and **Spin Heading**.
-2.  **Board Tilt**: Static leaning of the board relative to that axis.
+Preview axis construction:
 
-**Implementation Logic:**
 ```python
-# Orientation axis is calculated from Spin Tilt (t) and Spin Heading (h)
-y = cos(t)
 x = sin(t) * cos(h)
-z = sin(t) * sin(h)
-axis = [x, y, z]
-
-# Apply Angle-Axis Rotation for the spin
-glRotatef(rotation_angle, axis[0], axis[1], axis[2])
-
-# Apply static Board Tilt relative to the axis
-glRotatef(board_tilt, 1, 0, 0)
+y = sin(t) * sin(h)
+z = cos(t)
+axis = normalize([x, y, z])
 ```
+
+Preview transform order:
+
+1. **BOARD TILT** as X rotation
+2. **Animated spin** around the dynamic axis
+3. **BOARD ROLL** as Z rotation
+
+```python
+glRotatef(board_tilt, 1, 0, 0)
+glRotatef(direction_sign * rotation_angle, axis[0], axis[1], axis[2])
+glRotatef(board_roll, 0, 0, 1)
+```
+
+This matches the intended order noted in the preview code:
+- `R_X(board_tilt) · R_spin · R_Z(board_roll)`
+
+## Preview/Export Parity Notes
+
+The preview pipeline includes a few implementation details that are important for parity with export:
+
+- Exported GLB meshes are rotated by `+90°` around X after loading so the preview uses the same face-up orientation assumption as the renderer math.
+- If the loaded mesh appears to be in meters, the preview auto-scales it to millimeters.
+- The preview supports `wireframe`, `shaded`, and `both` modes, but final export is still driven by `kicad-cli pcb render` rather than the OpenGL preview.
+- The preview has a special `workspace` lighting mode that approximates the KiCad viewer more closely, even though the renderer still uses the CLI lighting preset table.
+
+## CLI Override Caveat
+
+`cli_overrides` are currently appended directly onto the render command using basic string splitting. That means:
+- quoting behavior is limited,
+- malformed tokens pass through unchanged.
 
 ## Why this doc exists
 
