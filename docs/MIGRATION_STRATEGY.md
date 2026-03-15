@@ -392,3 +392,28 @@ After completing all phases, verify:
 | Missed inline `wx.Colour()` call | Widget renders wrong color | Grep check post-migration |
 | Import cycle | Import error at startup | `theme.py` has zero internal imports |
 | Font constant rename | `get_custom_font()` breaks | `_JETBRAINS_MONO` etc remain as local aliases |
+
+---
+
+## Phase 6: Semantic Aliases (Optional Future Enhancement)
+
+After initial migration, introduce semantic alias constants for better readability:
+
+```python
+# In theme.py, add:
+ACCENT_PRIMARY = ACCENT_CYAN   # main interactive color
+ACCENT_SECONDARY = ACCENT_YELLOW  # highlights
+ACCENT_SUCCESS = ACCENT_GREEN   # success states
+ACCENT_WARNING = ACCENT_ORANGE  # warnings, badges
+```
+
+Update controls to use semantic names where appropriate:
+- Buttons (primary) → `ACCENT_PRIMARY`
+- Selected states → `ACCENT_PRIMARY`
+- Danger/warning → `ACCENT_WARNING`
+- Success indicators → `ACCENT_SUCCESS`
+
+**Benefits**: Code intent becomes clearer than raw color names.
+
+**Migration**: Simple find/replace in `custom_controls.py`, `dialogs.py`, `main_panel.py` after tests pass with current theme API.
+

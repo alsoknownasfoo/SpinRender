@@ -31,17 +31,60 @@ class ColourMock:
         return self._a
 
 
+class FontMock:
+    """Mock for wx.Font that returns configured faceName."""
+    def __init__(self, size, family=None, style=None, weight=None, faceName=None, **kwargs):
+        self._size = size
+        self._family = family
+        self._style = style
+        self._weight = weight
+        self._faceName = faceName
+
+    def GetFaceName(self):
+        return self._faceName
+
+    def GetPointSize(self):
+        return self._size
+
+
+class DummyWindow:
+    """Simple window mock that accepts arbitrary kwargs like wx.Window."""
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __getattr__(self, name):
+        return MagicMock()
+
+
 class Mockwx:
     """Mock wxPython module for headless testing."""
 
     def __init__(self):
         self._objects = {}
+        # Pre-create submodule mocks
+        self._svg = self._make_module('wx.svg')
+        self._lib = self._make_module('wx.lib')
+        self._glcanvas = self._make_module('wx.glcanvas')
+        self._scrolledpanel = self._make_module('wx.lib.scrolledpanel')
+        # Link scrolledpanel to lib
+        self._lib.scrolledpanel = self._scrolledpanel
+
+    def _make_module(self, name):
+        m = MagicMock()
+        m.__name__ = name
+        m.__file__ = f'{name}.py'
+        m.__path__ = [] if '.' in name else None
+        return m
 
     def __getattr__(self, name):
         """Return mocked wx classes/functions based on name."""
         # Colour/Color - return the ColourMock class itself (not a factory)
         if name in ['Colour', 'Color']:
             return ColourMock
+
+        # Font - return FontMock class
+        if name == 'Font':
+            return FontMock
 
         # Constants
         font_weights = {
@@ -53,15 +96,30 @@ class Mockwx:
         if name in font_weights:
             return font_weights[name]
 
-        # Window classes - return MagicMock class (callable, subclassable)
+        font_constants = {
+            'FONTSTYLE_NORMAL': 0,
+            'FONTSTYLE_ITALIC': 1,
+            'FONTFAMILY_DEFAULT': 80,
+        }
+        if name in font_constants:
+            return font_constants[name]
+
+        # Submodules
+        if name == 'svg':
+            return self._svg
+        if name == 'lib':
+            return self._lib
+        if name == 'glcanvas':
+            return self._glcanvas
+
+        # Window classes - return DummyWindow class (callable, subclassable)
         window_classes = [
             'Panel', 'Dialog', 'Frame', 'Window',
-            'Slider', 'Button', 'StaticText', 'TextCtrl'
+            'Slider', 'Button', 'StaticText', 'TextCtrl',
+            'PopupTransientWindow'
         ]
         if name in window_classes:
-            # Return the MagicMock class itself so it can be subclassed
-            # and instantiated. Instances will have MagicMock behavior.
-            return MagicMock
+            return DummyWindow
 
         # Other classes
         if name == 'GraphicsContext':
@@ -77,52 +135,10 @@ class Mockwx:
                     'VERTICAL', 'HORIZONTAL']:
             return MagicMock()
 
-        # Generic mock for anything else
+        # Generic mock for anything else - create and cache a MagicMock instance
         mock = MagicMock()
         self._objects[name] = mock
         return mock
-
-    def _create_colour_mock(self, *args, **kwargs):
-        """Create a mock wx.Colour instance."""
-        if len(args) == 1 and isinstance(args[0], str):
-            hex_str = args[0].lstrip('#')
-            r = int(hex_str[0:2], 16)
-            g = int(hex_str[2:4], 16)
-            b = int(hex_str[4:6], 16)
-            a = kwargs.get('alpha', 255)
-        elif len(args) == 3:
-            r, g, b = args
-            a = kwargs.get('alpha', 255)
-        elif len(args) == 4:
-            r, g, b, a = args
-        else:
-            r = g = b = a = 0
-
-        colour = MagicMock()
-        colour.Red.return_value = r
-        colour.Green.return_value = g
-        colour.Blue.return_value = b
-        colour.Alpha.return_value = a
-
-        return colour
-
-    def _create_window_mock(self, *args, **kwargs):
-        """Create a mock wx.Window-derived instance."""
-        window = MagicMock()
-        window.GetSize.return_value = (100, 100)
-        window.GetClientSize.return_value = (100, 100)
-        window.GetPosition.return_value = (0, 0)
-        window.GetBackgroundColour.return_value = MagicMock()
-        window.SetBackgroundColour.return_value = None
-        window.SetMinSize.return_value = None
-        window.Bind.return_value = None
-        window.GetParent.return_value = None
-        window.GetChildren.return_value = []
-        window.GetSizer.return_value = None
-        window.SetSizer.return_value = None
-        window.Layout.return_value = None
-        window.Refresh.return_value = None
-        return window
 
     def _create_gc_mock(self, dc):
         """Create a mock wx.GraphicsContext."""
@@ -157,11 +173,11 @@ mock_pcbnew.__version__ = "6.0"
 sys.modules['wx'] = mock_wx_module
 sys.modules['pcbnew'] = mock_pcbnew
 
-# Mock wx submodules that are imported in the codebase
-sys.modules['wx.svg'] = MagicMock()
-sys.modules['wx.lib'] = MagicMock()
-sys.modules['wx.lib.scrolledpanel'] = MagicMock()
-sys.modules['wx.glcanvas'] = MagicMock()
+# Register wx submodule mocks in sys.modules
+sys.modules['wx.svg'] = mock_wx_module._svg
+sys.modules['wx.lib'] = mock_wx_module._lib
+sys.modules['wx.glcanvas'] = mock_wx_module._glcanvas
+sys.modules['wx.lib.scrolledpanel'] = mock_wx_module._scrolledpanel
 
 
 @pytest.fixture(scope='session', autouse=True)

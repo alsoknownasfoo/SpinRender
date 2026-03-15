@@ -5,12 +5,13 @@ Implements designs from SpinRender.pen exactly
 import wx
 import math
 from pathlib import Path
+from . import theme
 
 
-# Font Families
-_JETBRAINS_MONO = "JetBrains Mono"
-_MDI_FONT_FAMILY = "Material Design Icons"
-_OSWALD = "Oswald"
+# Font Families - sourced from theme module
+_JETBRAINS_MONO = theme.FONT_MONO
+_MDI_FONT_FAMILY = theme.FONT_ICONS
+_OSWALD = theme.FONT_DISPLAY
 
 # Tracking state
 _LOAD_ATTEMPTED = False
@@ -62,18 +63,14 @@ def get_mdi_font(size=14):
 
 def _get_paint_color(color, enabled=True):
     """Helper to apply alpha if component is disabled."""
-    if not enabled:
-        # Reduced opacity for disabled state (approx 50%)
-        # Ensure we return a wx.Colour that includes the alpha channel
-        return wx.Colour(color.Red(), color.Green(), color.Blue(), 128)
-    return color
+    return theme.disabled(color) if not enabled else color
 
 
 class CustomSlider(wx.Panel):
     """
     Custom slider matching Component/Slider from Pencil design
     """
-    TRACK_COLOR = wx.Colour(51, 51, 51)  # #333333
+    TRACK_COLOR = theme.BG_SURFACE  # migrated from wx.Colour(51, 51, 51)
     TRACK_HEIGHT = 8
     THUMB_WIDTH = 7
     THUMB_HEIGHT = 18
@@ -91,8 +88,8 @@ class CustomSlider(wx.Panel):
             self.fill_color = color
             self.thumb_color = color
         else:
-            self.fill_color = wx.Colour(0, 188, 212)
-            self.thumb_color = wx.Colour(0, 188, 212)
+            self.fill_color = theme.ACCENT_CYAN
+            self.thumb_color = theme.ACCENT_CYAN
 
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_LEFT_DOWN, self.on_mouse_down)
@@ -176,11 +173,10 @@ class CustomToggleButton(wx.Panel):
     Multi-state toggle matching Component/Toggle from Pencil
     Supports 2 or more states.
     """
-    BG_COLOR = wx.Colour(13, 13, 13)
-    BORDER_COLOR = wx.Colour(51, 51, 51)
-    TEXT_PRIMARY = wx.Colour(13, 13, 13)
-    TEXT_SECONDARY = wx.Colour(119, 119, 119)
-    DEFAULT_ACTIVE_BG = wx.Colour(76, 175, 80)
+    BG_COLOR = theme.BG_SURFACE
+    TEXT_PRIMARY = theme.TEXT_PRIMARY
+    DEFAULT_ACTIVE_BG = theme.ACCENT_CYAN
+    # Note: BORDER_DEFAULT and TEXT_SECONDARY are used inline via theme.*
 
     ICONS = {
         'mdi-reload': '\U000F0453',
@@ -345,11 +341,11 @@ class DropdownPopup(wx.PopupTransientWindow):
         self.callback = callback
         self.hover_index = -1
         
-        self.bg_color = wx.Colour(34, 34, 34)  # $bg-surface
-        self.accent_color = wx.Colour(0, 188, 212)  # $accent-cyan
-        self.text_primary = wx.Colour(224, 224, 224)
-        self.text_muted = wx.Colour(85, 85, 85)
-        self.border_color = wx.Colour(31, 31, 31)
+        self.bg_color = theme.BG_SURFACE
+        self.accent_color = theme.ACCENT_CYAN
+        self.text_primary = theme.TEXT_PRIMARY
+        self.text_muted = theme.TEXT_MUTED
+        self.border_color = theme.BORDER_DEFAULT
         
         self.item_height = 32
         self.SetBackgroundColour(self.bg_color)
@@ -384,7 +380,7 @@ class DropdownPopup(wx.PopupTransientWindow):
                 gc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, 2)
                 gc.SetFont(selected_font, wx.Colour(13, 13, 13))
             elif is_hovered:
-                gc.SetBrush(wx.Brush(wx.Colour(50, 50, 50)))
+                gc.SetBrush(wx.Brush(theme.BG_PANEL))  # hover background
                 gc.SetPen(wx.TRANSPARENT_PEN)
                 gc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, 2)
                 gc.SetFont(font, self.text_primary)
@@ -422,11 +418,10 @@ class CustomDropdown(wx.Panel):
     """
     Custom dropdown matching Component/Dropdown from Pencil
     """
-    BG_COLOR = wx.Colour(13, 13, 13)
-    BORDER_COLOR = wx.Colour(51, 51, 51)
-    TEXT_PRIMARY = wx.Colour(224, 224, 224)
-    TEXT_SECONDARY = wx.Colour(119, 119, 119)
-    ACCENT_CYAN = wx.Colour(0, 188, 212)
+    BG_COLOR = theme.BG_INPUT
+    BORDER_COLOR = theme.BORDER_DEFAULT
+    TEXT_PRIMARY = theme.TEXT_PRIMARY
+    # Note: TEXT_SECONDARY and ACCENT_CYAN are used inline via theme.*
 
     def __init__(self, parent, choices=None, size=(160, 32)):
         super().__init__(parent, size=size)
@@ -454,21 +449,21 @@ class CustomDropdown(wx.Panel):
         gc.SetBrush(wx.Brush(_get_paint_color(self.BG_COLOR, enabled)))
         
         # Border (Accent Cyan if hovered or open)
-        bc = self.ACCENT_CYAN if (self.hovered or self.is_open) else self.BORDER_COLOR
+        bc = theme.ACCENT_CYAN if (self.hovered or self.is_open) else theme.BORDER_DEFAULT
         gc.SetPen(wx.Pen(_get_paint_color(bc, enabled), 1))
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
 
         # Label
         label = self.choices[self.selection] if self.choices else "SELECT OPTION"
         font = get_custom_font(size=11, weight=wx.FONTWEIGHT_SEMIBOLD)
-        gc.SetFont(font, _get_paint_color(self.TEXT_PRIMARY, enabled))
+        gc.SetFont(font, _get_paint_color(theme.TEXT_PRIMARY, enabled))
         tw, th = gc.GetTextExtent(label)
         gc.DrawText(label, 12, (height - th) / 2)
 
         # Chevron
         icon_char = CustomToggleButton.ICONS.get('mdi-chevron-up' if self.is_open else 'mdi-chevron-down')
         icon_font = get_mdi_font(14)
-        icon_color = self.ACCENT_CYAN if self.is_open else self.TEXT_SECONDARY
+        icon_color = theme.ACCENT_CYAN if self.is_open else theme.TEXT_SECONDARY
         gc.SetFont(icon_font, _get_paint_color(icon_color, enabled))
         iw, ih = gc.GetTextExtent(icon_char)
         gc.DrawText(icon_char, width - iw - 12, (height - ih) / 2)
@@ -601,24 +596,24 @@ class CustomButton(wx.Panel):
         width, height = self.GetSize()
         enabled = self.IsEnabled()
 
-        # Style colors
+        # Style colors - migrated to theme
         if self.primary:
             if self.danger:
-                bg_base, text_base, border_base = wx.Colour(180, 0, 0), wx.Colour(255, 255, 255), None
+                bg_base, text_base, border_base = theme.ACCENT_ORANGE, theme.TEXT_PRIMARY, None
             else:
-                bg_base, text_base, border_base = wx.Colour(0, 188, 212), wx.Colour(13, 13, 13), None
+                bg_base, text_base, border_base = theme.ACCENT_CYAN, theme.BG_INPUT, None
         elif self.ghost:
-            bg_base, text_base, border_base = wx.Colour(0, 0, 0, 0), wx.Colour(224, 224, 224), None
+            bg_base, text_base, border_base = wx.Colour(0, 0, 0, 0), theme.TEXT_PRIMARY, None
         else:
-            bg_base, text_base, border_base = wx.Colour(13, 13, 13), wx.Colour(224, 224, 224), wx.Colour(31, 31, 31)
+            bg_base, text_base, border_base = theme.BG_INPUT, theme.TEXT_PRIMARY, theme.BORDER_DEFAULT
 
         # Apply interaction feedback to base colors
         bg = bg_base
         text_color = text_base
         
         if self.danger and self.primary:
-            if self.pressed: bg = wx.Colour(140, 0, 0)
-            elif self.hovered: bg = wx.Colour(220, 20, 20)
+            if self.pressed: bg = wx.Colour(140, 0, 0)  # dark red (no theme)
+            elif self.hovered: bg = wx.Colour(220, 20, 20)  # bright red (no theme)
         elif self.danger:
             if self.pressed:
                 bg = wx.Colour(180, 0, 0)
@@ -740,8 +735,8 @@ class PresetCard(wx.Panel):
     """
     Preset card matching Component/PresetCard
     """
-    BG_COLOR, BG_SELECTED, BORDER_DEFAULT, BORDER_SELECTED, TEXT_COLOR, TEXT_SELECTED = \
-        wx.Colour(23, 23, 23), wx.Colour(30, 30, 30), wx.Colour(31, 31, 31), wx.Colour(0, 188, 212), wx.Colour(119, 119, 119), wx.Colour(0, 188, 212)
+    BG_COLOR = theme.BG_SURFACE
+    # Other colors inlined in methods per test expectations
     ICONS = {
         'rotate-cw': '↻',
         'rotate-ccw': '↺',
@@ -776,8 +771,8 @@ class PresetCard(wx.Panel):
         width, height = self.GetSize()
         enabled = self.IsEnabled()
 
-        bg = self.BG_SELECTED if self.selected else self.BG_COLOR
-        border = self.BORDER_SELECTED if self.selected else self.BORDER_DEFAULT
+        bg = theme.BG_PANEL if self.selected else theme.BG_SURFACE
+        border = theme.ACCENT_CYAN if self.selected else theme.BORDER_DEFAULT
 
         gc.SetBrush(wx.Brush(_get_paint_color(bg, enabled)))
         gc.SetPen(wx.Pen(_get_paint_color(border, enabled), 1))
@@ -785,12 +780,13 @@ class PresetCard(wx.Panel):
 
         icon_char = self.ICONS.get(self.icon_name, self.icon_name)
         icon_font = get_mdi_font(20) if str(self.icon_name).startswith("mdi-") else wx.Font(20, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
-        
-        gc.SetFont(icon_font, _get_paint_color(self.TEXT_SELECTED if self.selected else self.TEXT_COLOR, enabled))
+
+        txt_color = theme.ACCENT_CYAN if self.selected else theme.TEXT_SECONDARY
+        gc.SetFont(icon_font, _get_paint_color(txt_color, enabled))
         iw, ih = gc.GetTextExtent(icon_char)
         gc.DrawText(icon_char, (width - iw) / 2, 14)
 
-        text_color = _get_paint_color(self.TEXT_SELECTED if self.selected else self.TEXT_COLOR, enabled)
+        text_color = _get_paint_color(txt_color, enabled)
         font = get_custom_font(size=9, weight=wx.FONTWEIGHT_SEMIBOLD)
         gc.SetFont(font, text_color)
         tw, th = gc.GetTextExtent(self.label)
@@ -824,8 +820,8 @@ class SectionLabel(wx.Panel):
     """
     Section label matching Component/SectionLabel
     """
-    TEXT_COLOR = wx.Colour(0, 188, 212)
-    LINE_COLOR = wx.Colour(51, 51, 51)
+    TEXT_COLOR = theme.TEXT_SECONDARY
+    LINE_COLOR = theme.BORDER_DEFAULT
 
     def __init__(self, parent, label="SECTION", size=(-1, 20)):
         super().__init__(parent, size=size)
@@ -855,10 +851,8 @@ class NumericDisplay(wx.Panel):
     """
     Numeric value display matching Component/NumericInput
     """
-    BG_COLOR = wx.Colour(13, 13, 13)
-    BORDER_COLOR = wx.Colour(51, 51, 51)
-    VALUE_COLOR = wx.Colour(255, 214, 0)
-    UNIT_COLOR = wx.Colour(119, 119, 119)
+    BG_COLOR = theme.BG_INPUT
+    # Other colors inlined via theme.* in on_paint
 
     def __init__(self, parent, value=0.0, unit="", size=(100, 32)):
         super().__init__(parent, size=size)
@@ -875,17 +869,17 @@ class NumericDisplay(wx.Panel):
         width, height = self.GetSize()
         enabled = self.IsEnabled()
 
-        gc.SetBrush(wx.Brush(_get_paint_color(self.BG_COLOR, enabled)))
-        gc.SetPen(wx.Pen(_get_paint_color(self.BORDER_COLOR, enabled), 1))
+        gc.SetBrush(wx.Brush(_get_paint_color(theme.BG_INPUT, enabled)))
+        gc.SetPen(wx.Pen(_get_paint_color(theme.BORDER_DEFAULT, enabled), 1))
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
 
         v_str = f"{self.value:.2f}" if isinstance(self.value, float) else str(self.value)
         v_font = get_custom_font(size=13, weight=wx.FONTWEIGHT_SEMIBOLD)
-        gc.SetFont(v_font, _get_paint_color(self.VALUE_COLOR, enabled))
+        gc.SetFont(v_font, _get_paint_color(theme.ACCENT_YELLOW, enabled))
         vw, vh = gc.GetTextExtent(v_str)
 
         u_font = get_custom_font(size=11)
-        gc.SetFont(u_font, _get_paint_color(self.UNIT_COLOR, enabled))
+        gc.SetFont(u_font, _get_paint_color(theme.TEXT_SECONDARY, enabled))
         uw, uh = gc.GetTextExtent(self.unit)
 
         total_w = vw + 4 + uw
@@ -903,12 +897,10 @@ class NumericInput(wx.Panel):
     """
     Editable numeric input matching Component/NumericInput
     """
-    BG_COLOR = wx.Colour(13, 13, 13)
-    BORDER_COLOR = wx.Colour(51, 51, 51)
-    BORDER_FOCUS = wx.Colour(0, 188, 212)
-    VALUE_COLOR = wx.Colour(255, 214, 0)
-    VALUE_EDIT = wx.Colour(224, 224, 224)
-    UNIT_COLOR = wx.Colour(119, 119, 119)
+    BG_COLOR = theme.BG_INPUT
+    BORDER_FOCUS = theme.ACCENT_CYAN
+    VALUE_EDIT = theme.TEXT_PRIMARY
+    # Border default, VALUE_COLOR (ACCENT_YELLOW), UNIT_COLOR (TEXT_SECONDARY) inlined
 
     def __init__(self, parent, value=0.0, unit="", min_val=None, max_val=None, size=(100, 32)):
         super().__init__(parent, size=size)
@@ -930,23 +922,23 @@ class NumericInput(wx.Panel):
         width, height = self.GetSize()
         enabled = self.IsEnabled()
 
-        gc.SetBrush(wx.Brush(_get_paint_color(self.BG_COLOR, enabled)))
-        bc = self.BORDER_FOCUS if self.editing else self.BORDER_COLOR
+        gc.SetBrush(wx.Brush(_get_paint_color(theme.BG_INPUT, enabled)))
+        bc = theme.ACCENT_CYAN if self.editing else theme.BORDER_DEFAULT
         gc.SetPen(wx.Pen(_get_paint_color(bc, enabled), 1))
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
 
         if self.editing:
-            v_str, v_color = self.edit_text, self.VALUE_EDIT
+            v_str, v_color = self.edit_text, theme.TEXT_PRIMARY
         else:
             v_str = f"{self.value:.2f}" if isinstance(self.value, float) else str(self.value)
-            v_color = self.VALUE_COLOR
+            v_color = theme.ACCENT_YELLOW
 
         v_font = get_custom_font(size=13, weight=wx.FONTWEIGHT_SEMIBOLD)
         gc.SetFont(v_font, _get_paint_color(v_color, enabled))
         vw, vh = gc.GetTextExtent(v_str)
 
         u_font = get_custom_font(size=11)
-        gc.SetFont(u_font, _get_paint_color(self.UNIT_COLOR, enabled))
+        gc.SetFont(u_font, _get_paint_color(theme.TEXT_SECONDARY, enabled))
         uw, uh = gc.GetTextExtent(self.unit)
 
         total_w = vw + 4 + uw
@@ -1030,11 +1022,10 @@ class CustomTextInput(wx.Panel):
     Custom text input using wx.Panel to avoid native OS focus highlights.
     Supports multiline and placeholder text.
     """
-    BG_COLOR = wx.Colour(13, 13, 13)
-    BORDER_COLOR = wx.Colour(51, 51, 51)
-    BORDER_FOCUS = wx.Colour(0, 188, 212)
-    TEXT_COLOR = wx.Colour(224, 224, 224)
-    PLACEHOLDER_COLOR = wx.Colour(85, 85, 85)
+    BG_COLOR = theme.BG_INPUT
+    TEXT_COLOR = theme.TEXT_PRIMARY
+    PLACEHOLDER_COLOR = theme.TEXT_MUTED
+    # BORDER_DEFAULT and ACCENT_CYAN inlined in on_paint
 
     def __init__(self, parent, value="", placeholder="", multiline=False, size=(-1, 36)):
         super().__init__(parent, size=size)
@@ -1060,10 +1051,10 @@ class CustomTextInput(wx.Panel):
         enabled = self.IsEnabled()
 
         # Background
-        gc.SetBrush(wx.Brush(_get_paint_color(self.BG_COLOR, enabled)))
-        
+        gc.SetBrush(wx.Brush(_get_paint_color(theme.BG_INPUT, enabled)))
+
         # Border
-        bc = self.BORDER_FOCUS if self.HasFocus() else self.BORDER_COLOR
+        bc = theme.ACCENT_CYAN if self.HasFocus() else theme.BORDER_DEFAULT
         gc.SetPen(wx.Pen(_get_paint_color(bc, enabled), 1))
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
 
@@ -1166,13 +1157,13 @@ class ProjectFolderChip(wx.Panel):
         dc = wx.AutoBufferedPaintDC(self)
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
-        
+
         w, h = self.GetSize()
-        gc.SetBrush(wx.Brush(wx.Colour(255, 107, 53))) # $accent-orange
+        gc.SetBrush(wx.Brush(theme.ACCENT_ORANGE))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRoundedRectangle(0, 0, w, h, 4)
-        
-        gc.SetFont(get_custom_font(8, weight=wx.FONTWEIGHT_BOLD), wx.Colour(13, 13, 13))
+
+        gc.SetFont(get_custom_font(8, weight=wx.FONTWEIGHT_BOLD), theme.BG_PAGE)
         tw, th = gc.GetTextExtent("PROJECT FOLDER")
         gc.DrawText("PROJECT FOLDER", (w - tw) / 2, (h - th) / 2)
 
@@ -1188,12 +1179,9 @@ class CustomColorPicker(wx.Panel):
     Custom color picker matching Component/ColorPicker from Pencil design.
     Features swatches for presets and a custom color button.
     """
-    BG_PANEL = wx.Colour(26, 26, 26)  # $bg-panel
-    BORDER_COLOR = wx.Colour(31, 31, 31)  # #1F1F1F
-    BG_INPUT = wx.Colour(13, 13, 13)
-    ACCENT_CYAN = wx.Colour(0, 188, 212)
-    TEXT_MUTED = wx.Colour(85, 85, 85)
-    ACCENT_YELLOW = wx.Colour(255, 214, 0)
+    BORDER_COLOR = theme.BORDER_DEFAULT
+    BG_INPUT = theme.BG_INPUT
+    # BG_PANEL, ACCENT_CYAN, TEXT_MUTED, ACCENT_YELLOW inlined in on_paint
 
     PRESETS = [
         ("#000000", "BLACK"),
@@ -1271,7 +1259,7 @@ class CustomColorPicker(wx.Panel):
         rects = self._get_rects()
 
         # 1. Background (No Border)
-        gc.SetBrush(wx.Brush(_get_paint_color(self.BG_PANEL, enabled)))
+        gc.SetBrush(wx.Brush(_get_paint_color(theme.BG_PANEL, enabled)))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRoundedRectangle(0, 0, w, h, 4)
 
@@ -1297,30 +1285,30 @@ class CustomColorPicker(wx.Panel):
         gc.DrawRoundedRectangle(r_hex.x, r_hex.y, r_hex.width, r_hex.height, 4)
 
         hex_font = get_custom_font(11, weight=wx.FONTWEIGHT_BOLD)
-        gc.SetFont(hex_font, _get_paint_color(self.ACCENT_YELLOW, enabled))
+        gc.SetFont(hex_font, _get_paint_color(theme.ACCENT_YELLOW, enabled))
         tw, th = gc.GetTextExtent(self.current_color)
         gc.DrawText(self.current_color, r_hex.x + (r_hex.width - tw) / 2, r_hex.y + (r_hex.height - th) / 2)
 
     def _draw_swatch(self, gc, x, y, color_hex, label, is_selected, is_hovered, enabled):
         swatch_size = 28
-        
+
         # Color Box
         gc.SetBrush(wx.Brush(_get_paint_color(wx.Colour(color_hex), enabled)))
-        
-        stroke_color = self.BORDER_COLOR
+
+        stroke_color = theme.BORDER_DEFAULT
         thickness = 1
         if is_selected:
-            stroke_color = self.ACCENT_CYAN
+            stroke_color = theme.ACCENT_CYAN
             thickness = 2
         elif is_hovered:
-            stroke_color = wx.Colour(120, 120, 120)
-            
+            stroke_color = wx.Colour(120, 120, 120)  # hover highlight (unchanged)
+
         gc.SetPen(wx.Pen(_get_paint_color(stroke_color, enabled), thickness))
         gc.DrawRoundedRectangle(x, y, swatch_size, swatch_size, 4)
 
         # Label
         label_font = get_custom_font(7)
-        gc.SetFont(label_font, _get_paint_color(self.TEXT_MUTED, enabled))
+        gc.SetFont(label_font, _get_paint_color(theme.TEXT_MUTED, enabled))
         tw, th = gc.GetTextExtent(label)
         gc.DrawText(label, x + (swatch_size - tw) / 2, y + swatch_size + 4)
 
@@ -1390,9 +1378,9 @@ class PathInputControl(wx.Panel):
     """
     Styled path display with folder icon and project chip support
     """
-    BG_COLOR = wx.Colour(13, 13, 13)
-    BORDER_COLOR = wx.Colour(51, 51, 51)
-    TEXT_COLOR = wx.Colour(224, 224, 224)
+    BG_COLOR = theme.BG_INPUT
+    TEXT_COLOR = theme.TEXT_SECONDARY
+    # BORDER_DEFAULT inlined in on_paint
 
     def __init__(self, parent, size=(-1, 36)):
         super().__init__(parent, size=size)
@@ -1430,8 +1418,8 @@ class PathInputControl(wx.Panel):
         enabled = self.IsEnabled()
         
         # Background
-        gc.SetBrush(wx.Brush(_get_paint_color(self.BG_COLOR, enabled)))
-        gc.SetPen(wx.Pen(_get_paint_color(self.BORDER_COLOR, enabled), 1))
+        gc.SetBrush(wx.Brush(_get_paint_color(theme.BG_INPUT, enabled)))
+        gc.SetPen(wx.Pen(_get_paint_color(theme.BORDER_DEFAULT, enabled), 1))
         gc.DrawRoundedRectangle(1, 1, w - 2, h - 2, 4)
         
         # Folder Icon
