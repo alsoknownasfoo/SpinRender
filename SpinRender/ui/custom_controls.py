@@ -80,11 +80,30 @@ class CustomSlider(wx.Panel):
             self.fill_color = theme.ACCENT_CYAN
             self.thumb_color = theme.ACCENT_CYAN
 
+        # Standard mouse bindings for hover/click interactions
+        bind_mouse_events(
+            self,
+            hover_handler=self._on_hover,
+            leave_handler=self._on_leave,
+            click_handler=self.on_mouse_down
+        )
+
+        # Custom paint and other events bound directly
         self.Bind(wx.EVT_PAINT, self.on_paint)
-        self.Bind(wx.EVT_LEFT_DOWN, self.on_mouse_down)
         self.Bind(wx.EVT_LEFT_UP, self.on_mouse_up)
         self.Bind(wx.EVT_MOTION, self.on_mouse_move)
         self.Bind(wx.EVT_SIZE, self.on_size)
+
+    def _on_hover(self, event):
+        """Mouse entered slider control."""
+        if self.IsEnabled():
+            self._hovered = True
+            self.Refresh()
+
+    def _on_leave(self, event):
+        """Mouse left slider control."""
+        self._hovered = False
+        self.Refresh()
 
     def on_size(self, event):
         self.Refresh()
@@ -101,7 +120,12 @@ class CustomSlider(wx.Panel):
         track_y = (height - self.TRACK_HEIGHT) / 2
         thumb_y = (height - self.THUMB_HEIGHT) / 2
 
-        gc.SetBrush(wx.Brush(_get_paint_color(self.TRACK_COLOR, enabled)))
+        # Apply disabled state to colors
+        track_color = theme.disabled(self.TRACK_COLOR) if not enabled else self.TRACK_COLOR
+        fill_color = theme.disabled(self.fill_color) if not enabled else self.fill_color
+        thumb_color = theme.disabled(self.thumb_color) if not enabled else self.thumb_color
+
+        gc.SetBrush(wx.Brush(track_color))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRoundedRectangle(0, track_y, width, self.TRACK_HEIGHT, 4)
 
@@ -109,13 +133,13 @@ class CustomSlider(wx.Panel):
         fill_width = ratio * width
 
         if fill_width > 0:
-            gc.SetBrush(wx.Brush(_get_paint_color(self.fill_color, enabled)))
+            gc.SetBrush(wx.Brush(fill_color))
             gc.DrawRoundedRectangle(0, track_y, fill_width, self.TRACK_HEIGHT, 4)
 
         thumb_x = fill_width - self.THUMB_WIDTH / 2
         thumb_x = max(0, min(thumb_x, width - self.THUMB_WIDTH))
 
-        gc.SetBrush(wx.Brush(_get_paint_color(self.thumb_color, enabled)))
+        gc.SetBrush(wx.Brush(thumb_color))
         gc.DrawRoundedRectangle(thumb_x, thumb_y, self.THUMB_WIDTH, self.THUMB_HEIGHT, 2)
 
     def on_mouse_down(self, event):
@@ -211,7 +235,7 @@ class CustomToggleButton(wx.Panel):
             
         self.selection = 0
         self.Bind(wx.EVT_PAINT, self.on_paint)
-        self.Bind(wx.EVT_LEFT_DOWN, self.on_click)
+        bind_mouse_events(self, click_handler=self.on_click)
 
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
@@ -224,13 +248,16 @@ class CustomToggleButton(wx.Panel):
         
         enabled = self.IsEnabled()
 
-        # Border logic
-        gc.SetBrush(wx.Brush(_get_paint_color(self.BG_COLOR, enabled)))
-        gc.SetPen(wx.Pen(_get_paint_color(self.BORDER_COLOR, enabled), 1))
+        # Border logic - apply disabled state
+        bg_color = theme.disabled(self.BG_COLOR) if not enabled else self.BG_COLOR
+        border_color = theme.disabled(self.BORDER_DEFAULT) if not enabled else theme.BORDER_DEFAULT
+        gc.SetBrush(wx.Brush(bg_color))
+        gc.SetPen(wx.Pen(border_color, 1))
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
 
-        # Draw Active Indicator
-        gc.SetBrush(wx.Brush(_get_paint_color(self.active_bg, enabled)))
+        # Draw Active Indicator - apply disabled state
+        active_color = theme.disabled(self.active_bg) if not enabled else self.active_bg
+        gc.SetBrush(wx.Brush(active_color))
         gc.SetPen(wx.TRANSPARENT_PEN)
         active_x = self.selection * state_width
         gc.DrawRoundedRectangle(active_x + 1, 1, state_width - 2, height - 2, 4)
@@ -238,7 +265,8 @@ class CustomToggleButton(wx.Panel):
         # Draw each state
         for i, opt in enumerate(self.options):
             is_active = (i == self.selection)
-            color = _get_paint_color(self.TEXT_PRIMARY if is_active else self.TEXT_SECONDARY, enabled)
+            base_color = self.TEXT_PRIMARY if is_active else self.TEXT_SECONDARY
+            color = theme.disabled(base_color) if not enabled else base_color
             self._draw_side(gc, opt.get('label'), opt.get('icon'), i * state_width, state_width, height, color)
 
     def _draw_side(self, gc, label, icon_name, x_offset, width, height, color):
@@ -859,17 +887,23 @@ class NumericDisplay(wx.Panel):
         width, height = self.GetSize()
         enabled = self.IsEnabled()
 
-        gc.SetBrush(wx.Brush(_get_paint_color(theme.BG_INPUT, enabled)))
-        gc.SetPen(wx.Pen(_get_paint_color(theme.BORDER_DEFAULT, enabled), 1))
+        # Apply disabled state to colors
+        bg = theme.disabled(theme.BG_INPUT) if not enabled else theme.BG_INPUT
+        border = theme.disabled(theme.BORDER_DEFAULT) if not enabled else theme.BORDER_DEFAULT
+        accent = theme.disabled(theme.ACCENT_YELLOW) if not enabled else theme.ACCENT_YELLOW
+        secondary = theme.disabled(theme.TEXT_SECONDARY) if not enabled else theme.TEXT_SECONDARY
+
+        gc.SetBrush(wx.Brush(bg))
+        gc.SetPen(wx.Pen(border, 1))
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
 
         v_str = f"{self.value:.2f}" if isinstance(self.value, float) else str(self.value)
         v_font = TextStyles.numeric_value.create_font()
-        gc.SetFont(v_font, _get_paint_color(theme.ACCENT_YELLOW, enabled))
+        gc.SetFont(v_font, accent)
         vw, vh = gc.GetTextExtent(v_str)
 
         u_font = TextStyles.body.create_font()
-        gc.SetFont(u_font, _get_paint_color(theme.TEXT_SECONDARY, enabled))
+        gc.SetFont(u_font, secondary)
         uw, uh = gc.GetTextExtent(self.unit)
 
         total_w = vw + 4 + uw
