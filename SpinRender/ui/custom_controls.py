@@ -6,6 +6,7 @@ import wx
 import math
 from pathlib import Path
 from . import theme
+from .text_styles import TextStyle, TextStyles
 
 
 # Font Families - sourced from theme module
@@ -47,18 +48,6 @@ def ensure_fonts_loaded():
                     wx.Font.AddPrivateFont(str(font_path))
                 except Exception:
                     pass
-
-
-def get_custom_font(size=11, family_name=_JETBRAINS_MONO, weight=wx.FONTWEIGHT_NORMAL, italic=False):
-    """Returns requested font."""
-    ensure_fonts_loaded()
-    style = wx.FONTSTYLE_ITALIC if italic else wx.FONTSTYLE_NORMAL
-    return wx.Font(size, wx.FONTFAMILY_DEFAULT, style, weight, faceName=family_name)
-
-
-def get_mdi_font(size=14):
-    """Specific helper for MDI icons."""
-    return get_custom_font(size=size, family_name=_MDI_FONT_FAMILY)
 
 
 def _get_paint_color(color, enabled=True):
@@ -253,7 +242,7 @@ class CustomToggleButton(wx.Panel):
             self._draw_side(gc, opt.get('label'), opt.get('icon'), i * state_width, state_width, height, color)
 
     def _draw_side(self, gc, label, icon_name, x_offset, width, height, color):
-        font = get_custom_font(size=11, weight=wx.FONTWEIGHT_SEMIBOLD)
+        font = TextStyles.body_strong.create_font()
         icon_char = self.ICONS.get(icon_name, icon_name) if icon_name else None
         
         tw, th = 0, 0
@@ -265,9 +254,9 @@ class CustomToggleButton(wx.Panel):
         icon_font = None
         if icon_char:
             if icon_name and icon_name.startswith("mdi-"):
-                icon_font = get_mdi_font(14)
+                icon_font = TextStyles.icon.create_font()
             else:
-                icon_font = wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+                icon_font = TextStyles.icon.create_font()
             gc.SetFont(icon_font, color)
             iw, ih = gc.GetTextExtent(icon_char)
             
@@ -365,8 +354,8 @@ class DropdownPopup(wx.PopupTransientWindow):
         gc.SetPen(wx.Pen(self.border_color, 1))
         gc.DrawRoundedRectangle(0, 0, width, height, 4)
 
-        font = get_custom_font(size=11)
-        selected_font = get_custom_font(size=11, weight=wx.FONTWEIGHT_SEMIBOLD)
+        font = TextStyles.body.create_font()
+        selected_font = TextStyles.body_strong.create_font()
 
         for i, choice in enumerate(self.choices):
             rect = wx.Rect(4, 4 + (i * self.item_height), width - 8, self.item_height)
@@ -455,14 +444,14 @@ class CustomDropdown(wx.Panel):
 
         # Label
         label = self.choices[self.selection] if self.choices else "SELECT OPTION"
-        font = get_custom_font(size=11, weight=wx.FONTWEIGHT_SEMIBOLD)
+        font = TextStyles.body_strong.create_font()
         gc.SetFont(font, _get_paint_color(theme.TEXT_PRIMARY, enabled))
         tw, th = gc.GetTextExtent(label)
         gc.DrawText(label, 12, (height - th) / 2)
 
         # Chevron
         icon_char = CustomToggleButton.ICONS.get('mdi-chevron-up' if self.is_open else 'mdi-chevron-down')
-        icon_font = get_mdi_font(14)
+        icon_font = TextStyles.icon.create_font()
         icon_color = theme.ACCENT_CYAN if self.is_open else theme.TEXT_SECONDARY
         gc.SetFont(icon_font, _get_paint_color(icon_color, enabled))
         iw, ih = gc.GetTextExtent(icon_char)
@@ -653,7 +642,7 @@ class CustomButton(wx.Panel):
 
         # Prepare fonts and measure content
         icon_char = self.ICONS.get(self.icon, self.icon) if self.icon else None
-        label_font = get_custom_font(size=11, weight=wx.FONTWEIGHT_SEMIBOLD)
+        label_font = TextStyles.body_strong.create_font()
         
         tw, th = 0, 0
         if self.label:
@@ -664,11 +653,11 @@ class CustomButton(wx.Panel):
         icon_font = None
         if icon_char:
             if self.icon_font_family:
-                icon_font = wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName=self.icon_font_family)
+                icon_font = TextStyle(family=self.icon_font_family, size=14, weight=400).create_font()
             elif isinstance(self.icon, str) and self.icon.startswith("mdi-"):
-                icon_font = get_mdi_font(14)
+                icon_font = TextStyles.icon.create_font()
             else:
-                icon_font = wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+                icon_font = TextStyles.icon.create_font()
             gc.SetFont(icon_font, final_icon_color)
             iw, ih = gc.GetTextExtent(icon_char)
 
@@ -780,7 +769,7 @@ class PresetCard(wx.Panel):
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
 
         icon_char = self.ICONS.get(self.icon_name, self.icon_name)
-        icon_font = get_mdi_font(20) if str(self.icon_name).startswith("mdi-") else wx.Font(20, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
+        icon_font = TextStyles.icon_lg.create_font() if str(self.icon_name).startswith("mdi-") else TextStyles.icon_lg.create_font()
 
         txt_color = theme.ACCENT_CYAN if self.selected else theme.TEXT_SECONDARY
         gc.SetFont(icon_font, _get_paint_color(txt_color, enabled))
@@ -788,7 +777,7 @@ class PresetCard(wx.Panel):
         gc.DrawText(icon_char, (width - iw) / 2, 14)
 
         text_color = _get_paint_color(txt_color, enabled)
-        font = get_custom_font(size=9, weight=wx.FONTWEIGHT_SEMIBOLD)
+        font = TextStyles.label_sm.create_font()
         gc.SetFont(font, text_color)
         tw, th = gc.GetTextExtent(self.label)
         gc.DrawText(self.label, (width - tw) / 2, height - th - 8)
@@ -836,7 +825,7 @@ class SectionLabel(wx.Panel):
         if not gc: return
 
         width, height = self.GetSize()
-        font = wx.Font(13, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName="Oswald")
+        font = TextStyles.section_heading.create_font()
         gc.SetFont(font, self.TEXT_COLOR)
         tw, th = gc.GetTextExtent(self.label)
         gc.DrawText(self.label, 0, (height - th) / 2)
@@ -875,11 +864,11 @@ class NumericDisplay(wx.Panel):
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
 
         v_str = f"{self.value:.2f}" if isinstance(self.value, float) else str(self.value)
-        v_font = get_custom_font(size=13, weight=wx.FONTWEIGHT_SEMIBOLD)
+        v_font = TextStyles.numeric_value.create_font()
         gc.SetFont(v_font, _get_paint_color(theme.ACCENT_YELLOW, enabled))
         vw, vh = gc.GetTextExtent(v_str)
 
-        u_font = get_custom_font(size=11)
+        u_font = TextStyles.body.create_font()
         gc.SetFont(u_font, _get_paint_color(theme.TEXT_SECONDARY, enabled))
         uw, uh = gc.GetTextExtent(self.unit)
 
@@ -934,11 +923,11 @@ class NumericInput(wx.Panel):
             v_str = f"{self.value:.2f}" if isinstance(self.value, float) else str(self.value)
             v_color = theme.ACCENT_YELLOW
 
-        v_font = get_custom_font(size=13, weight=wx.FONTWEIGHT_SEMIBOLD)
+        v_font = TextStyles.numeric_value.create_font()
         gc.SetFont(v_font, _get_paint_color(v_color, enabled))
         vw, vh = gc.GetTextExtent(v_str)
 
-        u_font = get_custom_font(size=11)
+        u_font = TextStyles.body.create_font()
         gc.SetFont(u_font, _get_paint_color(theme.TEXT_SECONDARY, enabled))
         uw, uh = gc.GetTextExtent(self.unit)
 
@@ -1060,7 +1049,7 @@ class CustomTextInput(wx.Panel):
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
 
         # Text
-        font = get_custom_font(size=11)
+        font = TextStyles.body.create_font()
         
         if self.is_placeholder_active and not self.HasFocus():
             display_text = self.placeholder
@@ -1145,7 +1134,7 @@ class ProjectFolderChip(wx.Panel):
     """
     def __init__(self, parent):
         # Measure text to get width
-        font = get_custom_font(8, weight=wx.FONTWEIGHT_BOLD)
+        font = TextStyles.label_xs.create_font()
         temp_dc = wx.ScreenDC()
         temp_dc.SetFont(font)
         tw, th = temp_dc.GetTextExtent("PROJECT FOLDER")
@@ -1164,7 +1153,7 @@ class ProjectFolderChip(wx.Panel):
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRoundedRectangle(0, 0, w, h, 4)
 
-        gc.SetFont(get_custom_font(8, weight=wx.FONTWEIGHT_BOLD), theme.BG_PAGE)
+        gc.SetFont(TextStyles.label_xs.create_font(), theme.BG_PAGE)
         tw, th = gc.GetTextExtent("PROJECT FOLDER")
         gc.DrawText("PROJECT FOLDER", (w - tw) / 2, (h - th) / 2)
 
@@ -1285,7 +1274,7 @@ class CustomColorPicker(wx.Panel):
         gc.SetPen(wx.Pen(_get_paint_color(self.BORDER_COLOR, enabled), 1))
         gc.DrawRoundedRectangle(r_hex.x, r_hex.y, r_hex.width, r_hex.height, 4)
 
-        hex_font = get_custom_font(11, weight=wx.FONTWEIGHT_BOLD)
+        hex_font = TextStyles.body_strong.create_font()
         gc.SetFont(hex_font, _get_paint_color(theme.ACCENT_YELLOW, enabled))
         tw, th = gc.GetTextExtent(self.current_color)
         gc.DrawText(self.current_color, r_hex.x + (r_hex.width - tw) / 2, r_hex.y + (r_hex.height - th) / 2)
@@ -1308,7 +1297,7 @@ class CustomColorPicker(wx.Panel):
         gc.DrawRoundedRectangle(x, y, swatch_size, swatch_size, 4)
 
         # Label
-        label_font = get_custom_font(7)
+        label_font = TextStyles.label_xs.create_font()
         gc.SetFont(label_font, _get_paint_color(theme.TEXT_MUTED, enabled))
         tw, th = gc.GetTextExtent(label)
         gc.DrawText(label, x + (swatch_size - tw) / 2, y + swatch_size + 4)
@@ -1424,14 +1413,14 @@ class PathInputControl(wx.Panel):
         gc.DrawRoundedRectangle(1, 1, w - 2, h - 2, 4)
         
         # Folder Icon
-        icon_font = get_mdi_font(14)
+        icon_font = TextStyles.icon.create_font()
         gc.SetFont(icon_font, _get_paint_color(self.TEXT_COLOR, enabled))
         # mdi-folder: F024B
         itw, ih = gc.GetTextExtent('\U000F024B')
         gc.DrawText('\U000F024B', 12, (h - ih) / 2)
         
         # Path Text
-        font = get_custom_font(11)
+        font = TextStyles.body.create_font()
         gc.SetFont(font, _get_paint_color(self.TEXT_COLOR, enabled))
         
         text_x = 36

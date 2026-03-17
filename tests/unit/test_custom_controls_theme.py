@@ -19,6 +19,7 @@ class TestFontMigration:
         from SpinRender.ui import custom_controls
         from SpinRender.ui.theme import FONT_MONO, FONT_ICONS, FONT_DISPLAY
 
+        # Font family constants should still exist for backward compatibility
         if hasattr(custom_controls, '_JETBRAINS_MONO'):
             assert getattr(custom_controls, '_JETBRAINS_MONO') == FONT_MONO
         if hasattr(custom_controls, '_MDI_FONT_FAMILY'):
@@ -26,20 +27,11 @@ class TestFontMigration:
         if hasattr(custom_controls, '_OSWALD'):
             assert getattr(custom_controls, '_OSWALD') == FONT_DISPLAY
 
-    def test_get_custom_font_uses_theme_fonts(self):
+    def test_deprecated_font_functions_removed(self):
+        """After migration, get_custom_font and get_mdi_font should no longer exist."""
         from SpinRender.ui import custom_controls
-        from SpinRender.ui.theme import FONT_MONO, FONT_ICONS, FONT_DISPLAY
-
-        f1 = custom_controls.get_custom_font(size=12)
-        assert f1.GetFaceName() == FONT_MONO
-        f2 = custom_controls.get_custom_font(size=14, family_name=FONT_ICONS)
-        assert f2.GetFaceName() == FONT_ICONS
-
-    def test_get_mdi_font_uses_theme_icons(self):
-        from SpinRender.ui import custom_controls
-        from SpinRender.ui.theme import FONT_ICONS
-        f = custom_controls.get_mdi_font(size=14)
-        assert f.GetFaceName() == FONT_ICONS
+        assert not hasattr(custom_controls, 'get_custom_font'), "get_custom_font should be removed after migration"
+        assert not hasattr(custom_controls, 'get_mdi_font'), "get_mdi_font should be removed after migration"
 
 
 class TestGetPaintColorReplacement:

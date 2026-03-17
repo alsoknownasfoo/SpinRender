@@ -8,6 +8,30 @@ from foundation.fonts import JETBRAINS_MONO, MDI_FONT_FAMILY, OSWALD, INTER
 
 
 # ---------------------------------------------------------------------------
+# Font Families (from foundation.fonts)
+# ---------------------------------------------------------------------------
+FONT_MONO     = JETBRAINS_MONO
+FONT_ICONS    = MDI_FONT_FAMILY
+FONT_DISPLAY  = OSWALD
+FONT_INTER    = INTER
+
+# Font size scale (point sizes)
+FONT_SIZE_XS     = 8
+FONT_SIZE_SM     = 9
+FONT_SIZE_BASE   = 11
+FONT_SIZE_MD     = 13
+FONT_SIZE_LG     = 14
+FONT_SIZE_XL     = 18
+FONT_SIZE_ICON   = 14
+FONT_SIZE_ICON_LG = 20
+
+# Font weight constants
+FONT_WEIGHT_NORMAL   = 400
+FONT_WEIGHT_SEMIBOLD = 600
+FONT_WEIGHT_BOLD     = 700
+
+
+# ---------------------------------------------------------------------------
 # Color Palette
 # ---------------------------------------------------------------------------
 
@@ -70,15 +94,6 @@ BG_OUTPUT_PREVIEW = wx.Colour(10, 10, 10)
 
 # Inactive button / disabled text
 GREY_100 = wx.Colour(100, 100, 100)
-
-
-# ---------------------------------------------------------------------------
-# Typography
-# ---------------------------------------------------------------------------
-
-FONT_MONO   = JETBRAINS_MONO
-FONT_ICONS  = MDI_FONT_FAMILY
-FONT_DISPLAY = OSWALD
 
 
 # ---------------------------------------------------------------------------

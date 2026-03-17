@@ -17,9 +17,9 @@ logger = logging.getLogger("SpinRender")
 # Use absolute imports from the plugin root for KiCad compatibility
 from ui.custom_controls import (
     CustomSlider, CustomToggleButton, CustomButton,
-    PresetCard, SectionLabel, NumericDisplay, NumericInput,
-    get_custom_font, get_mdi_font, _OSWALD
+    PresetCard, SectionLabel, NumericDisplay, NumericInput
 )
+from .text_styles import TextStyle, TextStyles
 
 # Import preview renderers
 from core.preview import GLPreviewRenderer
@@ -255,12 +255,12 @@ class SpinRenderPanel(wx.Panel):
         title_sizer = wx.BoxSizer(wx.VERTICAL)
         title = wx.StaticText(header, label="SPINRENDER")
         title.SetForegroundColour(theme.TEXT_PRIMARY)
-        title.SetFont(get_custom_font(18, family_name=_OSWALD, weight=wx.FONTWEIGHT_BOLD))
+        title.SetFont(TextStyles.panel_title.create_font())
         title_sizer.Add(title, 0)
 
         subtitle = wx.StaticText(header, label="0.9 alpha")
         subtitle.SetForegroundColour(theme.ACCENT_CYAN)
-        subtitle.SetFont(wx.Font(8, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
+        subtitle.SetFont(TextStyles.label_xs.create_font())
         title_sizer.Add(subtitle, 0)
         sizer.Add(title_sizer, 0, wx.ALIGN_CENTER_VERTICAL)
 
@@ -331,7 +331,7 @@ class SpinRenderPanel(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         label = wx.StaticText(panel, label="ROTATION SETTINGS")
         label.SetForegroundColour(theme.TEXT_PRIMARY)
-        label.SetFont(wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName="JetBrains Mono"))
+        label.SetFont(TextStyle(family=theme.FONT_MONO, size=10, weight=600).create_font())
         sizer.Add(label, 0, wx.BOTTOM, 6)
 
         cols = [theme.PRESET_RED, theme.PRESET_AMBER, theme.PRESET_BLUE, theme.PRESET_PURPLE]
@@ -348,7 +348,7 @@ class SpinRenderPanel(wx.Panel):
 
         desc = wx.StaticText(panel, label="BOARD: ORIENT ON SPINDLE | SPIN: ORIENT THE SPINDLE ITSELF")
         desc.SetForegroundColour(theme.TEXT_MUTED)
-        desc.SetFont(wx.Font(8, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
+        desc.SetFont(TextStyles.label_xs.create_font())
         sizer.Add(desc, 0)
         panel.SetSizerAndFit(sizer)
         return panel
@@ -368,11 +368,11 @@ class SpinRenderPanel(wx.Panel):
         if icon_char:
             icon_lbl = wx.StaticText(label_part, label=icon_char)
             icon_lbl.SetForegroundColour(col)
-            icon_lbl.SetFont(get_mdi_font(14))
+            icon_lbl.SetFont(TextStyles.icon.create_font())
             lp_sizer.Add(icon_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         lbl = wx.StaticText(label_part, label=f"{label_text}:")
         lbl.SetForegroundColour(col)
-        lbl.SetFont(wx.Font(9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName="JetBrains Mono"))
+        lbl.SetFont(TextStyles.label_xs.create_font())
         lp_sizer.Add(lbl, 0, wx.ALIGN_CENTER_VERTICAL)
         label_part.SetSizer(lp_sizer)
         sizer.Add(label_part, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
@@ -396,7 +396,7 @@ class SpinRenderPanel(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         lbl = wx.StaticText(panel, label="ROTATION PERIOD")
         lbl.SetForegroundColour(theme.TEXT_PRIMARY)
-        lbl.SetFont(wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName="JetBrains Mono"))
+        lbl.SetFont(TextStyle(family=theme.FONT_MONO, size=10, weight=600).create_font())
         sizer.Add(lbl, 0, wx.BOTTOM, 6)
         
         crow = wx.Panel(panel)
@@ -415,11 +415,11 @@ class SpinRenderPanel(wx.Panel):
         msizer = wx.BoxSizer(wx.HORIZONTAL)
         desc = wx.StaticText(mrow, label="SPEED OF 360° SPIN")
         desc.SetForegroundColour(theme.TEXT_MUTED)
-        desc.SetFont(wx.Font(8, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
+        desc.SetFont(TextStyles.label_xs.create_font())
         msizer.Add(desc, 1)
         self.frame_count = wx.StaticText(mrow, label=f"{int(p_val * 30)} f")
         self.frame_count.SetForegroundColour(theme.TEXT_SECONDARY)
-        self.frame_count.SetFont(wx.Font(8, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
+        self.frame_count.SetFont(TextStyles.label_xs.create_font())
         msizer.Add(self.frame_count, 0)
         mrow.SetSizerAndFit(msizer)
         sizer.Add(mrow, 0, wx.EXPAND)
@@ -431,7 +431,7 @@ class SpinRenderPanel(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         lbl = wx.StaticText(panel, label="DIRECTION")
         lbl.SetForegroundColour(theme.TEXT_PRIMARY)
-        lbl.SetFont(wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName="JetBrains Mono"))
+        lbl.SetFont(TextStyle(family=theme.FONT_MONO, size=10, weight=600).create_font())
         sizer.Add(lbl, 0, wx.BOTTOM, 6)
         dir_options = [{'label': 'CCW', 'icon': 'mdi-restore'}, {'label': 'CW', 'icon': 'mdi-reload'}]
         self.dir_toggle = CustomToggleButton(panel, options=dir_options, size=(210, 32))
@@ -447,7 +447,7 @@ class SpinRenderPanel(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         lbl = wx.StaticText(panel, label="LIGHTING")
         lbl.SetForegroundColour(theme.TEXT_PRIMARY)
-        lbl.SetFont(wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName="JetBrains Mono"))
+        lbl.SetFont(TextStyle(family=theme.FONT_MONO, size=10, weight=600).create_font())
         sizer.Add(lbl, 0, wx.BOTTOM, 6)
         self.light_options = [
             {'id': 'studio', 'label': 'STUDIO', 'icon': 'mdi-weather-sunny'}, 
@@ -465,7 +465,7 @@ class SpinRenderPanel(wx.Panel):
         # Descriptor hint
         hint = wx.StaticText(panel, label="SELECT WORKSPACE TO USE KICAD 3D VIEWER SETTINGS")
         hint.SetForegroundColour(theme.TEXT_MUTED)
-        hint.SetFont(wx.Font(7, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
+        hint.SetFont(TextStyle(family=theme.FONT_MONO, size=7, weight=400).create_font())
         sizer.Add(hint, 0, wx.TOP, 4)
 
         panel.SetSizerAndFit(sizer)
@@ -485,7 +485,7 @@ class SpinRenderPanel(wx.Panel):
         f_sizer = wx.BoxSizer(wx.VERTICAL)
         f_lbl = wx.StaticText(f_col, label="FORMAT")
         f_lbl.SetForegroundColour(theme.TEXT_PRIMARY)
-        f_lbl.SetFont(wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName="JetBrains Mono"))
+        f_lbl.SetFont(TextStyle(family=theme.FONT_MONO, size=10, weight=600).create_font())
         f_sizer.Add(f_lbl, 0, wx.BOTTOM, 6)
         self.format_choices = ["MP4 (H.264)", "GIF", "PNG Sequence"]
         self.format_ids = ["mp4", "gif", "png_sequence"]
@@ -501,7 +501,7 @@ class SpinRenderPanel(wx.Panel):
         r_sizer = wx.BoxSizer(wx.VERTICAL)
         r_lbl = wx.StaticText(r_col, label="RESOLUTION")
         r_lbl.SetForegroundColour(theme.TEXT_PRIMARY)
-        r_lbl.SetFont(wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName="JetBrains Mono"))
+        r_lbl.SetFont(TextStyle(family=theme.FONT_MONO, size=10, weight=600).create_font())
         r_sizer.Add(r_lbl, 0, wx.BOTTOM, 6)
         self.res_choices = ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
         self.res_ids = ["1920x1080", "1280x720", "800x800"]
@@ -521,7 +521,7 @@ class SpinRenderPanel(wx.Panel):
         bg_vsizer = wx.BoxSizer(wx.VERTICAL)
         bg_lbl = wx.StaticText(bg_col, label="BACKGROUND COLOR")
         bg_lbl.SetForegroundColour(theme.TEXT_PRIMARY)
-        bg_lbl.SetFont(wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName="JetBrains Mono"))
+        bg_lbl.SetFont(TextStyle(family=theme.FONT_MONO, size=10, weight=600).create_font())
         bg_vsizer.Add(bg_lbl, 0, wx.BOTTOM, 6)
         
         from .custom_controls import CustomColorPicker
@@ -568,14 +568,14 @@ class SpinRenderPanel(wx.Panel):
         # Top-Left: Parameters OR Preset Name
         self.ov_top_left = wx.StaticText(top_meta, label="")
         self.ov_top_left.SetForegroundColour(theme.WHITE_ALPHA_68)
-        self.ov_top_left.SetFont(wx.Font(9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
+        self.ov_top_left.SetFont(TextStyle(family=theme.FONT_MONO, size=9, weight=400).create_font())
         top_meta_sizer.Add(self.ov_top_left, 1, wx.ALIGN_CENTER_VERTICAL)
 
         # Top-Right: Render Mode Toggle
         self.render_mode_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.render_mode_btns = {}
         
-        mode_font = wx.Font(9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName="JetBrains Mono")
+        mode_font = TextStyle(family=theme.FONT_MONO, size=9, weight=700).create_font()
         modes = [("WIREFRAME", "wireframe"), ("SHADED", "shaded"), ("BOTH", "both")]
         
         for i, (label, mode_id) in enumerate(modes):
@@ -599,7 +599,7 @@ class SpinRenderPanel(wx.Panel):
         # Top-Right: CLOSE PREVIEW button
         self.ov_top_right = wx.StaticText(top_meta, label="CLOSE PREVIEW")
         self.ov_top_right.SetForegroundColour(theme.ACCENT_CYAN)
-        self.ov_top_right.SetFont(wx.Font(9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName="JetBrains Mono"))
+        self.ov_top_right.SetFont(TextStyle(family=theme.FONT_MONO, size=9, weight=700).create_font())
         self.ov_top_right.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         self.ov_top_right.Hide()
         self.ov_top_right.Bind(wx.EVT_LEFT_DOWN, self.on_close_render_preview)
@@ -632,20 +632,20 @@ class SpinRenderPanel(wx.Panel):
         # Bottom-Left: Lighting + BG
         self.ov_bottom_left = wx.StaticText(bottom_meta, label="")
         self.ov_bottom_left.SetForegroundColour(theme.WHITE_ALPHA_68)
-        self.ov_bottom_left.SetFont(wx.Font(9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
+        self.ov_bottom_left.SetFont(TextStyle(family=theme.FONT_MONO, size=9, weight=400).create_font())
         bottom_sizer.Add(self.ov_bottom_left, 1, wx.ALIGN_CENTER_VERTICAL)
         
         # Bottom-Center: Res + Ratio + FPS
         self.ov_bottom_center = wx.StaticText(bottom_meta, label="")
         self.ov_bottom_center.SetForegroundColour(theme.WHITE_ALPHA_68)
-        self.ov_bottom_center.SetFont(wx.Font(9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
+        self.ov_bottom_center.SetFont(TextStyle(family=theme.FONT_MONO, size=9, weight=400).create_font())
         bottom_sizer.Add(self.ov_bottom_center, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_CENTER_HORIZONTAL)
         self.ov_bottom_center.SetWindowStyle(wx.ST_NO_AUTORESIZE | wx.ALIGN_CENTRE_HORIZONTAL)
         
         # Bottom-Right: State Info
         self.ov_bottom_right = wx.StaticText(bottom_meta, label="")
         self.ov_bottom_right.SetForegroundColour(theme.ACCENT_GREEN)
-        self.ov_bottom_right.SetFont(wx.Font(9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
+        self.ov_bottom_right.SetFont(TextStyle(family=theme.FONT_MONO, size=9, weight=400).create_font())
         bottom_sizer.Add(self.ov_bottom_right, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
         self.ov_bottom_right.SetWindowStyle(wx.ST_NO_AUTORESIZE | wx.ALIGN_RIGHT)
         
@@ -928,7 +928,7 @@ class SpinRenderPanel(wx.Panel):
         gc.SetBrush(wx.Brush(theme.BG_PANEL))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRectangle(0, 0, w, h)
-        font = wx.Font(8, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono")
+        font = TextStyle(family=theme.FONT_MONO, size=8, weight=400).create_font()
         gc.SetFont(font, self.status_fg)
         tw, th = gc.GetTextExtent(self.status_msg)
         tx, ty = 10, (h - th) / 2
@@ -967,7 +967,7 @@ class SpinRenderPanel(wx.Panel):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         label = wx.StaticText(panel, label=text)
         label.SetForegroundColour(theme.ACCENT_CYAN)
-        label.SetFont(get_custom_font(13, family_name=_OSWALD, weight=wx.FONTWEIGHT_SEMIBOLD))
+        label.SetFont(TextStyle(family=theme.FONT_DISPLAY, size=13, weight=600).create_font())
         sizer.Add(label, 0, wx.ALIGN_CENTER_VERTICAL)
         line = wx.Panel(panel, size=(60, 1))
         line.SetBackgroundColour(theme.BORDER_DEFAULT)
