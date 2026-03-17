@@ -19,12 +19,13 @@ class FakePanel:
 
 
 class FakeStaticText:
-    """Fake wx.StaticText that tracks font and colour."""
+    """Fake wx.StaticText that tracks font, colour, and event bindings."""
     def __init__(self, parent, label, **kwargs):
         self.parent = parent
         self.label = label
         self._font = None
         self._fg_colour = None
+        self._bindings = {}  # event_type -> handler
 
     def SetFont(self, font):
         self._font = font
@@ -40,6 +41,16 @@ class FakeStaticText:
 
     def GetLabel(self):
         return self.label
+
+    def Bind(self, event_type, handler):
+        """Track event bindings for testing."""
+        if event_type not in self._bindings:
+            self._bindings[event_type] = []
+        self._bindings[event_type].append(handler)
+
+    def GetBindings(self):
+        """Return the bindings dict for test inspection."""
+        return self._bindings
 
 
 # wx is already mocked by conftest. Replace Panel and StaticText with our fakes.
@@ -120,6 +131,15 @@ class TestCreateText:
         text = helpers.create_text(parent, "Label", style)
         fg = text.GetForegroundColour()
         assert fg is None
+
+    def test_enables_mouse_pass_through(self):
+        """Binds EVT_LEFT_DOWN to enable click propagation to parent."""
+        parent = MagicMock()
+        style = TextStyle(family="Test", size=11, weight=400)
+        text = helpers.create_text(parent, "Label", style)
+        bindings = text.GetBindings()
+        assert wx.EVT_LEFT_DOWN in bindings
+        assert len(bindings[wx.EVT_LEFT_DOWN]) == 1
 
 
 class TestBindMouseEvents:

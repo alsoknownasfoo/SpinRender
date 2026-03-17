@@ -65,7 +65,8 @@ def create_text(parent: wx.Window, label: str, text_style, **kwargs) -> wx.Stati
         **kwargs: Additional wx.StaticText constructor args
 
     Returns:
-        wx.StaticText with font and foreground colour set
+        wx.StaticText with font and foreground colour set, and mouse pass-through
+        for click events (EVT_LEFT_DOWN calls event.Skip()).
     """
     text = wx.StaticText(parent, label=label, **kwargs)
 
@@ -77,6 +78,11 @@ def create_text(parent: wx.Window, label: str, text_style, **kwargs) -> wx.Stati
         # Apply foreground colour if specified
         if text_style.color:
             text.SetForegroundColour(text_style.color)
+
+    # Enable mouse pass-through: clicks on the label propagate to parent
+    # This is essential for non-interactive labels inside clickable containers
+    # (e.g., PresetCard, CustomButton). The label will not consume the event.
+    text.Bind(wx.EVT_LEFT_DOWN, lambda e: e.Skip())
 
     return text
 
