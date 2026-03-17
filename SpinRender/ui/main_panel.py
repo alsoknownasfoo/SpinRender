@@ -24,6 +24,9 @@ from ui.custom_controls import (
 # Import preview renderers
 from core.preview import GLPreviewRenderer
 
+# Import theme module for centralized colors
+from . import theme
+
 
 class SVGLogoPanel(wx.Panel):
     """
@@ -74,19 +77,6 @@ class SpinRenderPanel(wx.Panel):
     Main SpinRender UI panel with two-panel layout
     """
 
-    BG_PAGE = wx.Colour(18, 18, 18)
-    BG_PANEL = wx.Colour(26, 26, 26)
-    BG_INPUT = wx.Colour(13, 13, 13)
-    BG_SURFACE = wx.Colour(34, 34, 34)
-    TEXT_PRIMARY = wx.Colour(224, 224, 224)
-    TEXT_SECONDARY = wx.Colour(119, 119, 119)
-    TEXT_MUTED = wx.Colour(85, 85, 85)
-    ACCENT_CYAN = wx.Colour(0, 188, 212)
-    ACCENT_YELLOW = wx.Colour(255, 214, 0)
-    ACCENT_GREEN = wx.Colour(76, 175, 80)
-    ACCENT_ORANGE = wx.Colour(255, 107, 53)
-    BORDER_DEFAULT = wx.Colour(31, 31, 31)
-
     def __init__(self, parent, board_path):
         super().__init__(parent)
         self.board_path = board_path
@@ -124,7 +114,7 @@ class SpinRenderPanel(wx.Panel):
         from utils.logger import SpinLogger
         SpinLogger.setup(level=self.settings.get('logging_level', 'simple'))
             
-        self.SetBackgroundColour(self.BG_PAGE)
+        self.SetBackgroundColour(theme.BG_PAGE)
         self.drag_start_pos = None
         self.frame_start_pos = None
         self.is_rendering = False
@@ -134,9 +124,9 @@ class SpinRenderPanel(wx.Panel):
         
         # Status state for custom paint
         self.status_msg = "READY"
-        self.status_fg = self.ACCENT_GREEN
+        self.status_fg = theme.ACCENT_GREEN
         self.status_prog = 0.0
-        self.status_bar_color = self.ACCENT_CYAN
+        self.status_bar_color = theme.ACCENT_CYAN
         
         # Initialize render state tracking
         self.render_preview_active = False
@@ -158,7 +148,7 @@ class SpinRenderPanel(wx.Panel):
     def build_ui(self):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         top_panel = wx.Panel(self)
-        top_panel.SetBackgroundColour(self.BG_PAGE)
+        top_panel.SetBackgroundColour(theme.BG_PAGE)
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         # Left: Controls panel
@@ -167,7 +157,7 @@ class SpinRenderPanel(wx.Panel):
 
         # Center Divider
         divider = wx.Panel(top_panel, size=(1, -1))
-        divider.SetBackgroundColour(self.BORDER_DEFAULT)
+        divider.SetBackgroundColour(theme.BORDER_DEFAULT)
         top_sizer.Add(divider, 0, wx.EXPAND)
 
         # Right: Preview panel
@@ -179,7 +169,7 @@ class SpinRenderPanel(wx.Panel):
         main_sizer.Add(top_panel, 1, wx.EXPAND)
         
         status_divider = wx.Panel(self, size=(-1, 1))
-        status_divider.SetBackgroundColour(self.BORDER_DEFAULT)
+        status_divider.SetBackgroundColour(theme.BORDER_DEFAULT)
         main_sizer.Add(status_divider, 0, wx.EXPAND)
 
         self.status_bar_panel = self.create_status_bar(self)
@@ -199,7 +189,7 @@ class SpinRenderPanel(wx.Panel):
 
     def create_controls_panel(self, parent):
         panel = scrolled.ScrolledPanel(parent, size=(450, -1))
-        panel.SetBackgroundColour(self.BG_PAGE)
+        panel.SetBackgroundColour(theme.BG_PAGE)
         panel.SetupScrolling(scroll_x=False, scroll_y=True, rate_y=20)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -209,28 +199,28 @@ class SpinRenderPanel(wx.Panel):
         sizer.Add(header, 0, wx.EXPAND)
         
         div1 = wx.Panel(panel, size=(-1, 1))
-        div1.SetBackgroundColour(self.BORDER_DEFAULT)
+        div1.SetBackgroundColour(theme.BORDER_DEFAULT)
         sizer.Add(div1, 0, wx.EXPAND)
         
         presets = self.create_preset_section(panel)
         sizer.Add(presets, 0, wx.EXPAND | wx.ALL, padding)
         
         div2 = wx.Panel(panel, size=(-1, 1))
-        div2.SetBackgroundColour(self.BORDER_DEFAULT)
+        div2.SetBackgroundColour(theme.BORDER_DEFAULT)
         sizer.Add(div2, 0, wx.EXPAND)
         
         params = self.create_parameters_section(panel)
         sizer.Add(params, 0, wx.EXPAND | wx.ALL, padding)
         
         div3 = wx.Panel(panel, size=(-1, 1))
-        div3.SetBackgroundColour(self.BORDER_DEFAULT)
+        div3.SetBackgroundColour(theme.BORDER_DEFAULT)
         sizer.Add(div3, 0, wx.EXPAND)
         
         output_settings = self.create_output_settings_section(panel)
         sizer.Add(output_settings, 1, wx.EXPAND | wx.ALL, padding)
         
         div4 = wx.Panel(panel, size=(-1, 1))
-        div4.SetBackgroundColour(self.BORDER_DEFAULT)
+        div4.SetBackgroundColour(theme.BORDER_DEFAULT)
         sizer.Add(div4, 0, wx.EXPAND)
         
         export = self.create_export_section(panel)
@@ -244,7 +234,7 @@ class SpinRenderPanel(wx.Panel):
 
     def create_header(self, parent):
         header = wx.Panel(parent, size=(-1, 90))
-        header.SetBackgroundColour(self.BG_PANEL)
+        header.SetBackgroundColour(theme.BG_PANEL)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         logo = SVGLogoPanel(header, size=(58, 58))
@@ -252,12 +242,12 @@ class SpinRenderPanel(wx.Panel):
 
         title_sizer = wx.BoxSizer(wx.VERTICAL)
         title = wx.StaticText(header, label="SPINRENDER")
-        title.SetForegroundColour(self.TEXT_PRIMARY)
+        title.SetForegroundColour(theme.TEXT_PRIMARY)
         title.SetFont(get_custom_font(18, family_name=_OSWALD, weight=wx.FONTWEIGHT_BOLD))
         title_sizer.Add(title, 0)
 
         subtitle = wx.StaticText(header, label="0.9 alpha")
-        subtitle.SetForegroundColour(self.ACCENT_CYAN)
+        subtitle.SetForegroundColour(theme.ACCENT_CYAN)
         subtitle.SetFont(wx.Font(8, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
         title_sizer.Add(subtitle, 0)
         sizer.Add(title_sizer, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -273,7 +263,7 @@ class SpinRenderPanel(wx.Panel):
 
     def create_preset_section(self, parent):
         panel = wx.Panel(parent)
-        panel.SetBackgroundColour(self.BG_PAGE)
+        panel.SetBackgroundColour(theme.BG_PAGE)
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.create_section_label(panel, "LOOP PRESET"), 0, wx.EXPAND | wx.BOTTOM, 8)
 
@@ -304,7 +294,7 @@ class SpinRenderPanel(wx.Panel):
 
     def create_parameters_section(self, parent):
         panel = wx.Panel(parent)
-        panel.SetBackgroundColour(self.BG_PAGE)
+        panel.SetBackgroundColour(theme.BG_PAGE)
         sizer = wx.BoxSizer(wx.VERTICAL)
         
         header = wx.Panel(panel)
@@ -328,7 +318,7 @@ class SpinRenderPanel(wx.Panel):
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
         label = wx.StaticText(panel, label="ROTATION SETTINGS")
-        label.SetForegroundColour(self.TEXT_PRIMARY)
+        label.SetForegroundColour(theme.TEXT_PRIMARY)
         label.SetFont(wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName="JetBrains Mono"))
         sizer.Add(label, 0, wx.BOTTOM, 6)
 
@@ -345,7 +335,7 @@ class SpinRenderPanel(wx.Panel):
         sizer.Add(row4, 0, wx.EXPAND | wx.BOTTOM, 4)
 
         desc = wx.StaticText(panel, label="BOARD: ORIENT ON SPINDLE | SPIN: ORIENT THE SPINDLE ITSELF")
-        desc.SetForegroundColour(self.TEXT_MUTED)
+        desc.SetForegroundColour(theme.TEXT_MUTED)
         desc.SetFont(wx.Font(8, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
         sizer.Add(desc, 0)
         panel.SetSizerAndFit(sizer)
@@ -393,7 +383,7 @@ class SpinRenderPanel(wx.Panel):
         panel = wx.Panel(panel if 'panel' in locals() else parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
         lbl = wx.StaticText(panel, label="ROTATION PERIOD")
-        lbl.SetForegroundColour(self.TEXT_PRIMARY)
+        lbl.SetForegroundColour(theme.TEXT_PRIMARY)
         lbl.SetFont(wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName="JetBrains Mono"))
         sizer.Add(lbl, 0, wx.BOTTOM, 6)
         
@@ -412,11 +402,11 @@ class SpinRenderPanel(wx.Panel):
         mrow = wx.Panel(panel)
         msizer = wx.BoxSizer(wx.HORIZONTAL)
         desc = wx.StaticText(mrow, label="SPEED OF 360° SPIN")
-        desc.SetForegroundColour(self.TEXT_MUTED)
+        desc.SetForegroundColour(theme.TEXT_MUTED)
         desc.SetFont(wx.Font(8, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
         msizer.Add(desc, 1)
         self.frame_count = wx.StaticText(mrow, label=f"{int(p_val * 30)} f")
-        self.frame_count.SetForegroundColour(self.TEXT_SECONDARY)
+        self.frame_count.SetForegroundColour(theme.TEXT_SECONDARY)
         self.frame_count.SetFont(wx.Font(8, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
         msizer.Add(self.frame_count, 0)
         mrow.SetSizerAndFit(msizer)
@@ -428,7 +418,7 @@ class SpinRenderPanel(wx.Panel):
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
         lbl = wx.StaticText(panel, label="DIRECTION")
-        lbl.SetForegroundColour(self.TEXT_PRIMARY)
+        lbl.SetForegroundColour(theme.TEXT_PRIMARY)
         lbl.SetFont(wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName="JetBrains Mono"))
         sizer.Add(lbl, 0, wx.BOTTOM, 6)
         dir_options = [{'label': 'CCW', 'icon': 'mdi-restore'}, {'label': 'CW', 'icon': 'mdi-reload'}]
@@ -444,7 +434,7 @@ class SpinRenderPanel(wx.Panel):
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
         lbl = wx.StaticText(panel, label="LIGHTING")
-        lbl.SetForegroundColour(self.TEXT_PRIMARY)
+        lbl.SetForegroundColour(theme.TEXT_PRIMARY)
         lbl.SetFont(wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName="JetBrains Mono"))
         sizer.Add(lbl, 0, wx.BOTTOM, 6)
         self.light_options = [
@@ -453,7 +443,7 @@ class SpinRenderPanel(wx.Panel):
             {'id': 'soft', 'label': 'SOFT', 'icon': 'mdi-image-filter-drama-outline'}, 
             {'id': 'workspace', 'label': 'WORKSPACE', 'icon': 'mdi-application-edit'}
         ]
-        self.light_toggle = CustomToggleButton(panel, options=self.light_options, size=(320, 32), active_color=self.ACCENT_YELLOW)
+        self.light_toggle = CustomToggleButton(panel, options=self.light_options, size=(320, 32), active_color=theme.ACCENT_YELLOW)
         current_light = self.settings.get('lighting', 'studio')
         initial_idx = next((i for i, opt in enumerate(self.light_options) if opt['id'] == current_light), 0)
         self.light_toggle.SetSelection(initial_idx)
@@ -471,7 +461,7 @@ class SpinRenderPanel(wx.Panel):
 
     def create_output_settings_section(self, parent):
         panel = wx.Panel(parent)
-        panel.SetBackgroundColour(self.BG_PAGE)
+        panel.SetBackgroundColour(theme.BG_PAGE)
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.create_section_label(panel, "OUTPUT SETTINGS"), 0, wx.EXPAND | wx.BOTTOM, 10)
         
@@ -482,7 +472,7 @@ class SpinRenderPanel(wx.Panel):
         f_col = wx.Panel(cols_panel)
         f_sizer = wx.BoxSizer(wx.VERTICAL)
         f_lbl = wx.StaticText(f_col, label="FORMAT")
-        f_lbl.SetForegroundColour(self.TEXT_PRIMARY)
+        f_lbl.SetForegroundColour(theme.TEXT_PRIMARY)
         f_lbl.SetFont(wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName="JetBrains Mono"))
         f_sizer.Add(f_lbl, 0, wx.BOTTOM, 6)
         self.format_choices = ["MP4 (H.264)", "GIF", "PNG Sequence"]
@@ -498,7 +488,7 @@ class SpinRenderPanel(wx.Panel):
         r_col = wx.Panel(cols_panel)
         r_sizer = wx.BoxSizer(wx.VERTICAL)
         r_lbl = wx.StaticText(r_col, label="RESOLUTION")
-        r_lbl.SetForegroundColour(self.TEXT_PRIMARY)
+        r_lbl.SetForegroundColour(theme.TEXT_PRIMARY)
         r_lbl.SetFont(wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName="JetBrains Mono"))
         r_sizer.Add(r_lbl, 0, wx.BOTTOM, 6)
         self.res_choices = ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
@@ -518,7 +508,7 @@ class SpinRenderPanel(wx.Panel):
         bg_col = wx.Panel(panel)
         bg_vsizer = wx.BoxSizer(wx.VERTICAL)
         bg_lbl = wx.StaticText(bg_col, label="BACKGROUND COLOR")
-        bg_lbl.SetForegroundColour(self.TEXT_PRIMARY)
+        bg_lbl.SetForegroundColour(theme.TEXT_PRIMARY)
         bg_lbl.SetFont(wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName="JetBrains Mono"))
         bg_vsizer.Add(bg_lbl, 0, wx.BOTTOM, 6)
         
@@ -596,7 +586,7 @@ class SpinRenderPanel(wx.Panel):
         
         # Top-Right: CLOSE PREVIEW button
         self.ov_top_right = wx.StaticText(top_meta, label="CLOSE PREVIEW")
-        self.ov_top_right.SetForegroundColour(self.ACCENT_CYAN)
+        self.ov_top_right.SetForegroundColour(theme.ACCENT_CYAN)
         self.ov_top_right.SetFont(wx.Font(9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName="JetBrains Mono"))
         self.ov_top_right.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         self.ov_top_right.Hide()
@@ -642,7 +632,7 @@ class SpinRenderPanel(wx.Panel):
         
         # Bottom-Right: State Info
         self.ov_bottom_right = wx.StaticText(bottom_meta, label="")
-        self.ov_bottom_right.SetForegroundColour(self.ACCENT_GREEN)
+        self.ov_bottom_right.SetForegroundColour(theme.ACCENT_GREEN)
         self.ov_bottom_right.SetFont(wx.Font(9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
         bottom_sizer.Add(self.ov_bottom_right, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
         self.ov_bottom_right.SetWindowStyle(wx.ST_NO_AUTORESIZE | wx.ALIGN_RIGHT)
@@ -910,7 +900,7 @@ class SpinRenderPanel(wx.Panel):
 
     def create_status_bar(self, parent):
         panel = wx.Panel(parent, size=(-1, 25))
-        panel.SetBackgroundColour(self.BG_PANEL)
+        panel.SetBackgroundColour(theme.BG_PANEL)
         panel.SetMinSize((-1, 25))
         panel.SetMaxSize((-1, 25))
         panel.SetBackgroundStyle(wx.BG_STYLE_PAINT)
@@ -923,7 +913,7 @@ class SpinRenderPanel(wx.Panel):
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
         w, h = win.GetSize()
-        gc.SetBrush(wx.Brush(self.BG_PANEL))
+        gc.SetBrush(wx.Brush(theme.BG_PANEL))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRectangle(0, 0, w, h)
         font = wx.Font(8, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono")
@@ -954,9 +944,9 @@ class SpinRenderPanel(wx.Panel):
 
         if self.status_msg == "READY" and self.status_prog == 0.0: return
         self.status_msg = "READY"
-        self.status_fg = self.ACCENT_GREEN
+        self.status_fg = theme.ACCENT_GREEN
         self.status_prog = 0.0
-        self.status_bar_color = self.ACCENT_CYAN
+        self.status_bar_color = theme.ACCENT_CYAN
         if hasattr(self, 'status_bar_panel'):
             self.status_bar_panel.Refresh()
 
@@ -964,11 +954,11 @@ class SpinRenderPanel(wx.Panel):
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         label = wx.StaticText(panel, label=text)
-        label.SetForegroundColour(self.ACCENT_CYAN)
+        label.SetForegroundColour(theme.ACCENT_CYAN)
         label.SetFont(get_custom_font(13, family_name=_OSWALD, weight=wx.FONTWEIGHT_SEMIBOLD))
         sizer.Add(label, 0, wx.ALIGN_CENTER_VERTICAL)
         line = wx.Panel(panel, size=(60, 1))
-        line.SetBackgroundColour(self.BORDER_DEFAULT)
+        line.SetBackgroundColour(theme.BORDER_DEFAULT)
         sizer.Add(line, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 8)
         panel.SetSizerAndFit(sizer)
         return panel
@@ -1214,7 +1204,7 @@ class SpinRenderPanel(wx.Panel):
         if not hasattr(self, 'render_mode_btns'): return
         for mode_id, btn in self.render_mode_btns.items():
             if mode_id == active_mode:
-                btn.SetForegroundColour(self.ACCENT_CYAN)
+                btn.SetForegroundColour(theme.ACCENT_CYAN)
             else:
                 btn.SetForegroundColour(wx.Colour(100, 100, 100))
             btn.Refresh()
@@ -1313,7 +1303,7 @@ class SpinRenderPanel(wx.Panel):
             if self.render_engine: 
                 self.render_engine.cancel()
             self.status_msg = "STOPPING RENDER..."
-            self.status_fg = self.ACCENT_ORANGE
+            self.status_fg = theme.ACCENT_ORANGE
             self.status_bar_panel.Refresh()
             return
 
@@ -1339,7 +1329,7 @@ class SpinRenderPanel(wx.Panel):
         self.Layout()
 
         self.status_msg = "PREPARING RENDER..."
-        self.status_fg = self.ACCENT_CYAN
+        self.status_fg = theme.ACCENT_CYAN
         self.status_prog = 0.0
         self.status_bar_panel.Refresh()
         
@@ -1454,8 +1444,8 @@ class SpinRenderPanel(wx.Panel):
             
             self.final_output_type = None
             self.status_msg = f"ERROR: {error.upper()}"
-            self.status_fg = self.ACCENT_ORANGE
-            self.status_bar_color = self.ACCENT_ORANGE
+            self.status_fg = theme.ACCENT_ORANGE
+            self.status_bar_color = theme.ACCENT_ORANGE
             wx.MessageBox(error, "Render Error", wx.OK | wx.ICON_ERROR)
         elif result:
             # Handle new dict return format or legacy string format
@@ -1471,8 +1461,8 @@ class SpinRenderPanel(wx.Panel):
                 frame_count = 0
 
             self.status_msg = "RENDER COMPLETE"
-            self.status_fg = self.ACCENT_GREEN
-            self.status_bar_color = self.ACCENT_GREEN
+            self.status_fg = theme.ACCENT_GREEN
+            self.status_bar_color = theme.ACCENT_GREEN
             self.status_prog = 1.0
             
             # Start looping playback of the rendered result
@@ -1515,7 +1505,7 @@ class SpinRenderPanel(wx.Panel):
                 
             self.final_output_type = None
             self.status_msg = "RENDER STOPPED"
-            self.status_fg = self.ACCENT_ORANGE
+            self.status_fg = theme.ACCENT_ORANGE
             self.status_prog = 0.0
             
         self.update_preview_overlay()
