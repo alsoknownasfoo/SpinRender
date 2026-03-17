@@ -5,8 +5,11 @@ Implements modal dialogs from Pencil design
 import wx
 import os
 import webbrowser
+import threading
 from .custom_controls import CustomButton, get_custom_font, CustomTextInput
 from . import theme
+from foundation.fonts import JETBRAINS_MONO, MDI_FONT_FAMILY, INTER
+from foundation.icons import STATUS_ICONS
 
 
 ID_RESET = 10001
@@ -464,3 +467,254 @@ class RecallPresetDialog(BaseStyledDialog):
     def on_cancel(self, event): self.EndModal(wx.ID_CANCEL)
     def GetSelectedSettings(self): return self.selected_preset
     def GetSelectedName(self): return self.selected_name
+class DependencyCheckDialog(wx.Dialog):
+    """
+    Dialog for dependency checking and installation
+    Follows High-Density aesthetic from Res/SpinRender.pen
+    """
+
+    def __init__(self, parent, dep_status, checker):
+        super().__init__(
+            parent,
+            title="SpinRender - Setup Required",
+            size=(500, 650),
+            style=wx.FRAME_NO_TASKBAR | wx.BORDER_NONE | wx.STAY_ON_TOP
+        )
+
+        self.dep_status = dep_status
+        self.checker = checker
+
+        # Design system colors - migrated to theme module
+        self.bg_color = theme.BG_SURFACE
+        self.bg_input = theme.BG_INPUT
+        self.text_primary = theme.TEXT_PRIMARY
+        self.text_secondary = theme.TEXT_SECONDARY
+        self.accent_yellow = theme.ACCENT_YELLOW
+        self.accent_green = theme.ACCENT_GREEN
+        self.accent_orange = theme.ACCENT_ORANGE
+        self.accent_cyan = theme.ACCENT_CYAN
+        self.border_default = theme.BORDER_DEFAULT
+
+        self.SetBackgroundColour(self.bg_color)
+        
+        # UI state
+        self.current_dep_index = 0
+        self.num_deps = 0
+        
+        # simulated progress timer
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.on_timer, self.timer)
+
+        self.build_ui()
+        self.Centre()
+
+        # Dragging support - Bind specifically to header components
+        self.header.Bind(wx.EVT_LEFT_DOWN, self.on_left_down)
+        self.header.Bind(wx.EVT_LEFT_UP, self.on_left_up)
+        self.header.Bind(wx.EVT_MOTION, self.on_mouse_motion)
+        
+        self.header_title.Bind(wx.EVT_LEFT_DOWN, self.on_left_down)
+        self.header_title.Bind(wx.EVT_LEFT_UP, self.on_left_up)
+        self.header_title.Bind(wx.EVT_MOTION, self.on_mouse_motion)
+        
+        self.drag_pos = None
+
+    def build_ui(self):
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Header (Drag handle)
+        self.header = wx.Panel(self, size=(-1, 48))
+        self.header.SetBackgroundColour(self.bg_color)
+        header_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        
+        self.header_title = wx.StaticText(self.header, label="SETUP REQUIRED")
+        self.header_title.SetForegroundColour(self.accent_yellow)
+        self.header_title.SetFont(wx.Font(13, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName=JETBRAINS_MONO))
+        
+        header_sizer.Add(self.header_title, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 16)
+        self.header.SetSizer(header_sizer)
+        main_sizer.Add(self.header, 0, wx.EXPAND)
+
+        # Border separator
+        line = wx.Panel(self, size=(-1, 1))
+        line.SetBackgroundColour(self.border_default)
+        main_sizer.Add(line, 0, wx.EXPAND)
+
+        # Content Panel
+        content = wx.Panel(self)
+        self.content_sizer = wx.BoxSizer(wx.VERTICAL)
+        
+        msg = wx.StaticText(content, label="SpinRender requires the following dependencies to function:")
+        msg.SetForegroundColour(self.text_secondary)
+        msg.SetFont(wx.Font(11, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName=INTER))
+        self.content_sizer.Add(msg, 0, wx.ALL, 16)
+
+        # List existing dependencies
+        for dep_name, is_found in self.dep_status.items():
+            dep_panel = wx.Panel(content)
+            dep_panel.SetBackgroundColour(self.bg_input)
+            dep_sizer = wx.BoxSizer(wx.VERTICAL)
+            row_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+            dep_label = wx.StaticText(dep_panel, label=dep_name)
+            dep_label.SetForegroundColour(self.text_primary)
+            dep_label.SetFont(wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName=JETBRAINS_MONO))
+
+            # Use bundled MDI symbols (required)
+            status_symbol = "mdi-check-circle" if is_found else "mdi-close-circle"
+            status_color = self.accent_green if is_found else self.accent_orange
+            
+            # Get icon from foundation icons
+            icon_char = STATUS_ICONS.get(status_symbol, "")
+            
+            status_label = wx.StaticText(dep_panel, label=icon_char)
+            status_label.SetForegroundColour(status_color)
+            status_label.SetFont(wx.Font(14, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName=MDI_FONT_FAMILY))
+
+            row_sizer.Add(dep_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 16)
+            row_sizer.Add(status_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 16)
+            # Increase vertical height/whitespace
+            dep_sizer.Add(row_sizer, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 12)
+
+            dep_panel.SetSizer(dep_sizer)
+            # Increase horizontal padding (inset more)
+            self.content_sizer.Add(dep_panel, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 24)
+
+        # Integrated Progress Area
+        self.progress_panel = wx.Panel(content)
+        self.progress_panel.Hide()
+        progress_sizer = wx.BoxSizer(wx.VERTICAL)
+        
+        self.progress_gauge = wx.Gauge(self.progress_panel, range=100, size=(-1, 4))
+        self.progress_gauge.SetBackgroundColour(self.bg_input)
+        self.progress_gauge.SetForegroundColour(self.accent_cyan)
+        progress_sizer.Add(self.progress_gauge, 0, wx.EXPAND | wx.BOTTOM, 8)
+        
+        self.progress_status = wx.StaticText(self.progress_panel, label="Initializing...")
+        self.progress_status.SetForegroundColour(self.text_primary)
+        self.progress_status.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName=INTER))
+        progress_sizer.Add(self.progress_status, 0, wx.EXPAND | wx.BOTTOM, 8)
+        
+        self.progress_log = wx.TextCtrl(
+            self.progress_panel, 
+            style=wx.TE_MULTILINE | wx.TE_READONLY | wx.NO_BORDER | wx.TE_RICH
+        )
+        self.progress_log.SetBackgroundColour(self.bg_input)
+        self.progress_log.SetForegroundColour(self.text_secondary)
+        self.progress_log.SetFont(wx.Font(8, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName=JETBRAINS_MONO))
+        progress_sizer.Add(self.progress_log, 1, wx.EXPAND)
+        
+        self.progress_panel.SetSizer(progress_sizer)
+        self.content_sizer.Add(self.progress_panel, 1, wx.EXPAND | wx.ALL, 16)
+
+        content.SetSizer(self.content_sizer)
+        main_sizer.Add(content, 1, wx.EXPAND)
+
+        # Footer with custom buttons
+        footer = wx.Panel(self)
+        footer_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        
+        # Secondary Button (Close)
+        self.close_btn = CustomButton(footer, label="EXIT", primary=False, danger=True, size=(90, 36))
+        self.close_btn.Bind(wx.EVT_BUTTON, self.on_close)
+        
+        # Action Button (Install)
+        self.install_btn = CustomButton(footer, label="INSTALL", primary=True, size=(150, 36))
+        self.install_btn.Bind(wx.EVT_BUTTON, self.on_install)
+
+        footer_sizer.AddStretchSpacer()
+        footer_sizer.Add(self.close_btn, 0, wx.RIGHT, 12)
+        footer_sizer.Add(self.install_btn, 0, wx.RIGHT, 16)
+
+        footer.SetSizer(footer_sizer)
+        main_sizer.Add(footer, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 16)
+
+        self.SetSizer(main_sizer)
+
+    # Window Dragging Logic
+    def on_left_down(self, event):
+        win = event.GetEventObject()
+        win.CaptureMouse()
+        x, y = win.ClientToScreen(event.GetPosition())
+        origin_x, origin_y = self.GetPosition()
+        self.drag_pos = wx.Point(x - origin_x, y - origin_y)
+
+    def on_left_up(self, event):
+        win = event.GetEventObject()
+        if win.HasCapture():
+            win.ReleaseMouse()
+
+    def on_mouse_motion(self, event):
+        if event.Dragging() and event.LeftIsDown() and self.drag_pos:
+            win = event.GetEventObject()
+            x, y = win.ClientToScreen(event.GetPosition())
+            new_pos = wx.Point(x - self.drag_pos.x, y - self.drag_pos.y)
+            self.Move(new_pos)
+
+    def on_timer(self, event):
+        val = self.progress_gauge.GetValue()
+        limit = (self.current_dep_index * 100) + 95
+        if val < limit:
+            self.progress_gauge.SetValue(val + 1)
+
+    def on_close(self, event):
+        """Close dialog"""
+        self.EndModal(wx.ID_CANCEL)
+
+    def on_install(self, event):
+        if not self.checker.missing_deps:
+            self.EndModal(wx.ID_OK)
+            return
+
+        # UI State: Disable buttons
+        self.install_btn.Enable(False)
+        self.close_btn.Enable(False)
+        
+        self.progress_panel.Show()
+        self.progress_log.Clear()
+        self.Layout()
+
+        self.num_deps = len(self.checker.missing_deps)
+        self.progress_gauge.SetRange(self.num_deps * 100)
+        self.progress_gauge.SetValue(0)
+        
+        self.timer.Start(100)
+
+        thread = threading.Thread(target=self._run_install_thread)
+        thread.daemon = True
+        thread.start()
+
+    def _run_install_thread(self):
+        num_deps = len(self.checker.missing_deps)
+        for i, dep_name in enumerate(self.checker.missing_deps):
+            self.current_dep_index = i
+            is_last = (i == num_deps - 1)
+            wx.CallAfter(self.progress_status.SetLabel, f"Installing {dep_name}...")
+            
+            def log_callback(message):
+                wx.CallAfter(self._append_log, message)
+                if is_last and "Successfully installed" in message:
+                    wx.CallAfter(self.progress_gauge.SetValue, num_deps * 100)
+                    wx.CallAfter(self.progress_status.SetLabel, "Installation complete.")
+
+            self.checker.install_dependency(dep_name, callback=log_callback)
+            wx.CallAfter(self.progress_gauge.SetValue, (i + 1) * 100)
+
+        wx.CallAfter(self._on_install_finished)
+
+    def _append_log(self, message):
+        self.progress_log.AppendText(message + "\n")
+        self.progress_log.ShowPosition(self.progress_log.GetLastPosition())
+
+    def _on_install_finished(self):
+        self.timer.Stop()
+        self.progress_gauge.SetValue(self.num_deps * 100)
+        
+        self.dep_status = self.checker.check_all()
+        if not self.checker.missing_deps:
+            self.EndModal(wx.ID_OK)
+        else:
+            self.install_btn.Enable(True)
+            self.close_btn.Enable(True)
+            self.progress_status.SetLabel("Some installations failed.")
+            self.Layout()

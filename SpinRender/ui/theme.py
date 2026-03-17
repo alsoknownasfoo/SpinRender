@@ -4,6 +4,7 @@ SpinRender Design System — single source of truth for colors and typography.
 All UI files import from here. Never define wx.Colour values elsewhere.
 """
 import wx
+from foundation.fonts import JETBRAINS_MONO, MDI_FONT_FAMILY, OSWALD, INTER
 
 
 # ---------------------------------------------------------------------------
@@ -75,9 +76,9 @@ GREY_100 = wx.Colour(100, 100, 100)
 # Typography
 # ---------------------------------------------------------------------------
 
-FONT_MONO   = "JetBrains Mono"
-FONT_ICONS  = "Material Design Icons"
-FONT_DISPLAY = "Oswald"
+FONT_MONO   = JETBRAINS_MONO
+FONT_ICONS  = MDI_FONT_FAMILY
+FONT_DISPLAY = OSWALD
 
 
 # ---------------------------------------------------------------------------

@@ -26,7 +26,7 @@ SpinLogger.setup(level='simple') # Default until settings are loaded
 logger = logging.getLogger("SpinRender")
 logger.info(f"Loading SpinRender plugin from {plugin_dir}")
 
-from utils.dependencies import DependencyChecker
+from ui.dependencies import DependencyChecker
 from ui.main_panel import SpinRenderPanel
 
 
