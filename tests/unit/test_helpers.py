@@ -4,8 +4,7 @@ import pytest
 from unittest.mock import MagicMock
 import sys
 
-
-# Simple test doubles for wx widgets that store state
+# Use conftest's wx mock. Define test doubles that track state.
 class FakePanel:
     """Fake wx.Panel that tracks background colour."""
     def __init__(self, parent, *args, **kwargs):
@@ -43,14 +42,17 @@ class FakeStaticText:
         return self.label
 
 
-# Mock wx before SpinRender imports
-wx_mock = MagicMock()
-wx_mock.Panel = FakePanel
-wx_mock.StaticText = FakeStaticText
-wx_mock.EVT_ENTER_WINDOW = 1001
-wx_mock.EVT_LEAVE_WINDOW = 1002
-wx_mock.EVT_LEFT_DOWN = 1003
-sys.modules['wx'] = wx_mock
+# wx is already mocked by conftest. Replace Panel and StaticText with our fakes.
+import wx
+original_Panel = wx.Panel
+original_StaticText = wx.StaticText
+wx.Panel = FakePanel
+wx.StaticText = FakeStaticText
+
+# Event constants for bind_mouse_events tests
+wx.EVT_ENTER_WINDOW = 1001
+wx.EVT_LEAVE_WINDOW = 1002
+wx.EVT_LEFT_DOWN = 1003
 
 from SpinRender.ui import theme
 from SpinRender.ui.text_styles import TextStyle
@@ -128,21 +130,21 @@ class TestBindMouseEvents:
         parent = MagicMock()
         handler = MagicMock()
         helpers.bind_mouse_events(parent, hover_handler=handler)
-        parent.Bind.assert_any_call(wx_mock.EVT_ENTER_WINDOW, handler)
+        parent.Bind.assert_any_call(wx.EVT_ENTER_WINDOW, handler)
 
     def test_binds_leave_window_when_handler_provided(self):
         """Binds EVT_LEAVE_WINDOW if leave_handler not None."""
         parent = MagicMock()
         handler = MagicMock()
         helpers.bind_mouse_events(parent, leave_handler=handler)
-        parent.Bind.assert_any_call(wx_mock.EVT_LEAVE_WINDOW, handler)
+        parent.Bind.assert_any_call(wx.EVT_LEAVE_WINDOW, handler)
 
     def test_binds_left_down_when_handler_provided(self):
         """Binds EVT_LEFT_DOWN if click_handler not None."""
         parent = MagicMock()
         handler = MagicMock()
         helpers.bind_mouse_events(parent, click_handler=handler)
-        parent.Bind.assert_any_call(wx_mock.EVT_LEFT_DOWN, handler)
+        parent.Bind.assert_any_call(wx.EVT_LEFT_DOWN, handler)
 
     def test_does_not_bind_when_handler_none(self):
         """Does not bind event if corresponding handler is None."""
@@ -165,25 +167,28 @@ class TestApplyDisabledState:
 
     def test_applies_disabled_alpha_to_widget(self):
         """Sets widget to 50% opacity when disabled."""
-        parent = MagicMock()
+        widget = FakePanel(None)
         original = theme.ACCENT_CYAN
-        parent.GetBackgroundColour.return_value = original
+        widget.SetBackgroundColour(original)
 
-        helpers.apply_disabled_state(parent, is_enabled=False)
+        helpers.apply_disabled_state(widget, is_enabled=False)
 
-        expected = theme.disabled(original)
-        parent.SetBackgroundColour.assert_called_once()
-        set_colour = parent.SetBackgroundColour.call_args[0][0]
-        assert set_colour.Alpha() == expected.Alpha()
-        assert set_colour.Red() == expected.Red()
-        assert set_colour.Green() == expected.Green()
-        assert set_colour.Blue() == expected.Blue()
+        new_bg = widget.GetBackgroundColour()
+        # Should be a ColourMock with alpha=128
+        assert new_bg.Alpha() == 128
+        # RGB should be unchanged
+        assert new_bg.Red() == original.Red()
+        assert new_bg.Green() == original.Green()
+        assert new_bg.Blue() == original.Blue()
 
     def test_restores_enabled_state(self):
         """Does not change colour when is_enabled=True."""
-        parent = MagicMock()
-        parent.GetBackgroundColour.return_value = theme.ACCENT_CYAN
+        widget = FakePanel(None)
+        original = theme.ACCENT_CYAN
+        widget.SetBackgroundColour(original)
 
-        helpers.apply_disabled_state(parent, is_enabled=True)
+        helpers.apply_disabled_state(widget, is_enabled=True)
 
-        parent.SetBackgroundColour.assert_not_called()
+        # Should not have changed background
+        new_bg = widget.GetBackgroundColour()
+        assert new_bg is original
