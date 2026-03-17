@@ -27,6 +27,9 @@ from core.preview import GLPreviewRenderer
 # Import theme module for centralized colors
 from . import theme
 
+# Import RenderSettings
+from core.settings import RenderSettings
+
 
 class SVGLogoPanel(wx.Panel):
     """
@@ -83,36 +86,45 @@ class SpinRenderPanel(wx.Panel):
         self.board_dir = os.path.dirname(board_path)
         
         # Default settings
-        self.settings = {
-            'preset': 'hero',
-            'board_tilt': 0.0,
-            'board_roll': -45.0,
-            'spin_tilt': 90.0,
-            'spin_heading': 90.0,
-            'period': 10.0, 
-            'easing': 'linear', 
-            'direction': 'ccw', 
-            'lighting': 'studio',
-            'format': 'mp4', 
-            'resolution': '1920x1080', 
-            'bg_color': '#000000',
-            'output_auto': True,
-            'output_path': '', 
-            'cli_overrides': '',
-            'render_mode': 'both',
-            'logging_level': 'simple'
-        }
+        self.settings = RenderSettings(
+            preset='hero',
+            board_tilt=0.0,
+            board_roll=-45.0,
+            spin_tilt=90.0,
+            spin_heading=90.0,
+            period=10.0,
+            easing='linear',
+            direction='ccw',
+            lighting='studio',
+            format='mp4',
+            resolution='1920x1080',
+            bg_color='#000000',
+            output_auto=True,
+            output_path='',
+            cli_overrides='',
+            render_mode='both',
+            logging_level='simple'
+        )
         
         # Attempt to load last used settings
         from core.presets import PresetManager
         manager = PresetManager(self.board_path)
         last_settings = manager.get_last_used_settings()
         if last_settings:
-            self.settings.update(last_settings)
+            # Merge last settings into current settings
+            if isinstance(last_settings, RenderSettings):
+                # Update individual attributes
+                for field in ['board_tilt', 'board_roll', 'spin_tilt', 'spin_heading',
+                              'period', 'direction', 'lighting', 'bg_color',
+                              'render_mode', 'format', 'resolution', 'preset',
+                              'logging_level', 'easing', 'output_auto', 'output_path',
+                              'cli_overrides']:
+                    if hasattr(last_settings, field):
+                        setattr(self.settings, field, getattr(last_settings, field))
             
         # Initialize logging level from settings
         from utils.logger import SpinLogger
-        SpinLogger.setup(level=self.settings.get('logging_level', 'simple'))
+        SpinLogger.setup(level=getattr(self.settings, 'logging_level', 'simple'))
             
         self.SetBackgroundColour(theme.BG_PAGE)
         self.drag_start_pos = None
@@ -279,7 +291,7 @@ class SpinRenderPanel(wx.Panel):
         for i, (pid, lbl, ico) in enumerate(presets_data):
             btn = PresetCard(preset_row, label=lbl, icon_name=ico, size=(90, 64))
             btn.Bind(wx.EVT_BUTTON, lambda e, p=pid: self.on_preset_change(p))
-            if self.settings['preset'] == pid: 
+            if self.settings.preset == pid:
                 btn.SetSelected(True)
             self.preset_buttons[pid] = btn
             flags = wx.EXPAND
@@ -325,13 +337,13 @@ class SpinRenderPanel(wx.Panel):
         cols = [theme.PRESET_RED, theme.PRESET_AMBER, theme.PRESET_BLUE, theme.PRESET_PURPLE]
         icons = ["mdi-axis-x-arrow", "mdi-axis-y-arrow", "mdi-axis-y-rotate-counterclockwise", "mdi-axis-z-rotate-counterclockwise"]
         
-        row1 = self.create_axis_control(panel, "BOARD TILT", self.settings['board_tilt'], cols[0], icons[0], -90, 90, self.on_board_tilt_change, self.on_board_tilt_input)
+        row1 = self.create_axis_control(panel, "BOARD TILT", self.settings.board_tilt, cols[0], icons[0], -90, 90, self.on_board_tilt_change, self.on_board_tilt_input)
         sizer.Add(row1, 0, wx.EXPAND | wx.BOTTOM, 4)
-        row2 = self.create_axis_control(panel, "BOARD ROLL", self.settings['board_roll'], cols[1], icons[1], -180, 180, self.on_board_roll_change, self.on_board_roll_input)
+        row2 = self.create_axis_control(panel, "BOARD ROLL", self.settings.board_roll, cols[1], icons[1], -180, 180, self.on_board_roll_change, self.on_board_roll_input)
         sizer.Add(row2, 0, wx.EXPAND | wx.BOTTOM, 4)
-        row3 = self.create_axis_control(panel, "SPIN TILT", self.settings['spin_tilt'], cols[2], icons[2], -90, 90, self.on_spin_tilt_change, self.on_spin_tilt_input)
+        row3 = self.create_axis_control(panel, "SPIN TILT", self.settings.spin_tilt, cols[2], icons[2], -90, 90, self.on_spin_tilt_change, self.on_spin_tilt_input)
         sizer.Add(row3, 0, wx.EXPAND | wx.BOTTOM, 4)
-        row4 = self.create_axis_control(panel, "SPIN HEADING", self.settings['spin_heading'], cols[3], icons[3], -180, 180, self.on_spin_heading_change, self.on_spin_heading_input)
+        row4 = self.create_axis_control(panel, "SPIN HEADING", self.settings.spin_heading, cols[3], icons[3], -180, 180, self.on_spin_heading_change, self.on_spin_heading_input)
         sizer.Add(row4, 0, wx.EXPAND | wx.BOTTOM, 4)
 
         desc = wx.StaticText(panel, label="BOARD: ORIENT ON SPINDLE | SPIN: ORIENT THE SPINDLE ITSELF")
@@ -389,7 +401,7 @@ class SpinRenderPanel(wx.Panel):
         
         crow = wx.Panel(panel)
         csizer = wx.BoxSizer(wx.HORIZONTAL)
-        p_val = self.settings.get('period', 10.0)
+        p_val = self.settings.period
         self.period_slider = CustomSlider(crow, value=p_val, min_val=0.1, max_val=30, size=(-1, 18))
         self.period_slider.Bind(wx.EVT_SLIDER, self.on_period_change)
         csizer.Add(self.period_slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
@@ -423,7 +435,7 @@ class SpinRenderPanel(wx.Panel):
         sizer.Add(lbl, 0, wx.BOTTOM, 6)
         dir_options = [{'label': 'CCW', 'icon': 'mdi-restore'}, {'label': 'CW', 'icon': 'mdi-reload'}]
         self.dir_toggle = CustomToggleButton(panel, options=dir_options, size=(210, 32))
-        initial_idx = 1 if self.settings.get('direction') == 'cw' else 0
+        initial_idx = 1 if self.settings.direction == 'cw' else 0
         self.dir_toggle.SetSelection(initial_idx)
         self.dir_toggle.Bind(wx.EVT_TOGGLEBUTTON, self.on_direction_change)
         sizer.Add(self.dir_toggle, 0)
@@ -444,7 +456,7 @@ class SpinRenderPanel(wx.Panel):
             {'id': 'workspace', 'label': 'WORKSPACE', 'icon': 'mdi-application-edit'}
         ]
         self.light_toggle = CustomToggleButton(panel, options=self.light_options, size=(320, 32), active_color=theme.ACCENT_YELLOW)
-        current_light = self.settings.get('lighting', 'studio')
+        current_light = self.settings.lighting
         initial_idx = next((i for i, opt in enumerate(self.light_options) if opt['id'] == current_light), 0)
         self.light_toggle.SetSelection(initial_idx)
         self.light_toggle.Bind(wx.EVT_TOGGLEBUTTON, self.on_lighting_change)
@@ -478,7 +490,7 @@ class SpinRenderPanel(wx.Panel):
         self.format_choices = ["MP4 (H.264)", "GIF", "PNG Sequence"]
         self.format_ids = ["mp4", "gif", "png_sequence"]
         self.format_choice = CustomDropdown(f_col, choices=self.format_choices, size=(-1, 32))
-        curr_fmt = self.settings.get('format', 'mp4')
+        curr_fmt = self.settings.format
         fmt_idx = self.format_ids.index(curr_fmt) if curr_fmt in self.format_ids else 0
         self.format_choice.SetSelection(fmt_idx)
         self.format_choice.Bind(wx.EVT_CHOICE, self.on_format_change)
@@ -494,7 +506,7 @@ class SpinRenderPanel(wx.Panel):
         self.res_choices = ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
         self.res_ids = ["1920x1080", "1280x720", "800x800"]
         self.res_choice = CustomDropdown(r_col, choices=self.res_choices, size=(-1, 32))
-        curr_res = self.settings.get('resolution', '1920x1080')
+        curr_res = self.settings.resolution
         res_idx = self.res_ids.index(curr_res) if curr_res in self.res_ids else 0
         self.res_choice.SetSelection(res_idx)
         self.res_choice.Bind(wx.EVT_CHOICE, self.on_resolution_change)
@@ -513,7 +525,7 @@ class SpinRenderPanel(wx.Panel):
         bg_vsizer.Add(bg_lbl, 0, wx.BOTTOM, 6)
         
         from .custom_controls import CustomColorPicker
-        curr_bg = self.settings.get('bg_color', '#000000')
+        curr_bg = self.settings.bg_color
         self.bg_picker = CustomColorPicker(bg_col, current_color=curr_bg, on_change=self.on_bg_color_change)
         bg_vsizer.Add(self.bg_picker, 0, wx.EXPAND)
         
@@ -582,7 +594,7 @@ class SpinRenderPanel(wx.Panel):
                 self.render_mode_sizer.Add(div, 0, wx.ALIGN_CENTER_VERTICAL)
         
         top_meta_sizer.Add(self.render_mode_sizer, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
-        self.update_render_mode_ui(self.settings.get('render_mode', 'both'))
+        self.update_render_mode_ui(self.settings.render_mode)
         
         # Top-Right: CLOSE PREVIEW button
         self.ov_top_right = wx.StaticText(top_meta, label="CLOSE PREVIEW")
@@ -648,17 +660,17 @@ class SpinRenderPanel(wx.Panel):
         for w in [panel, self.viewport, top_meta, self.ov_top_left, bottom_meta, self.ov_bottom_left, self.ov_bottom_center, self.ov_bottom_right]: 
             self.enable_drag(w)
             
-        self.viewport.set_universal_joint_parameters(self.settings['board_tilt'], self.settings['board_roll'], self.settings['spin_tilt'], self.settings['spin_heading'])
-        self.viewport.set_period(self.settings['period'])
-        self.viewport.set_direction(self.settings['direction'])
-        self.viewport.set_render_mode(self.settings.get('render_mode', 'both'))
-        
+        self.viewport.set_universal_joint_parameters(self.settings.board_tilt, self.settings.board_roll, self.settings.spin_tilt, self.settings.spin_heading)
+        self.viewport.set_period(self.settings.period)
+        self.viewport.set_direction(self.settings.direction)
+        self.viewport.set_render_mode(getattr(self.settings, 'render_mode', 'both'))
+
         # Initialize background color
-        self.viewport.set_background_color(self.settings.get('bg_color', '#000000'))
+        self.viewport.set_background_color(getattr(self.settings, 'bg_color', '#000000'))
         
         # Initialize aspect ratio
         try:
-            res = self.settings.get('resolution', '1920x1080')
+            res = self.settings.resolution
             w, h = map(int, res.split('x'))
             self.viewport.set_aspect_ratio(w, h)
         except: pass
@@ -675,7 +687,7 @@ class SpinRenderPanel(wx.Panel):
         if not hasattr(self, 'ov_top_left'): return
 
         # --- Top-Left: Parameters OR Preset Name ---
-        preset_id = self.settings.get('preset', 'custom')
+        preset_id = self.settings.preset
         if preset_id != 'custom':
             label = preset_id.replace('_', ' ').upper()
             if hasattr(self, 'preset_buttons') and preset_id in self.preset_buttons:
@@ -686,11 +698,11 @@ class SpinRenderPanel(wx.Panel):
         else:
             # Show raw parameters
             params = [
-                f"BT:{self.settings.get('board_tilt', 0):.0f}°",
-                f"BR:{self.settings.get('board_roll', 0):.0f}°",
-                f"ST:{self.settings.get('spin_tilt', 0):.0f}°",
-                f"SH:{self.settings.get('spin_heading', 0):.0f}°",
-                f"· {self.settings.get('period', 10):.1f}s"
+                f"BT:{self.settings.board_tilt:.0f}°",
+                f"BR:{self.settings.board_roll:.0f}°",
+                f"ST:{self.settings.spin_tilt:.0f}°",
+                f"SH:{self.settings.spin_heading:.0f}°",
+                f"· {self.settings.period:.1f}s"
             ]
             self.ov_top_left.SetLabel("  ".join(params))
 
@@ -705,12 +717,12 @@ class SpinRenderPanel(wx.Panel):
                 self.render_mode_sizer.ShowItems(True)
 
         # --- Bottom-Left: Lighting + BG color ---
-        lighting = self.settings.get('lighting', 'studio').upper()
-        bg_hex = self.settings.get('bg_color', '#000000').upper()
+        lighting = self.settings.lighting.upper()
+        bg_hex = self.settings.bg_color.upper()
         self.ov_bottom_left.SetLabel(f"{lighting} · BG:{bg_hex}")
 
         # --- Bottom-Center: Resolution + Ratio + FPS ---
-        res = self.settings.get('resolution', '1920x1080')
+        res = self.settings.resolution
         fps = "30fps"
         try:
             parts = res.split('x')
@@ -842,7 +854,7 @@ class SpinRenderPanel(wx.Panel):
         w, h = self.render_preview_panel.GetSize()
         
         # 1. Get current background color
-        bg_hex = self.settings.get('bg_color', '#000000')
+        bg_hex = self.settings.bg_color
         if bg_hex == 'opaque': bg_hex = '#000000'
         bg_color = wx.Colour(bg_hex)
         
@@ -882,7 +894,7 @@ class SpinRenderPanel(wx.Panel):
             # Draw empty outline matching resolution if no bitmap yet
             # Calculate Display Dimensions based on current settings resolution
             try:
-                parts = self.settings.get('resolution', '1920x1080').split('x')
+                parts = self.settings.resolution.split('x')
                 bw, bh = map(int, parts)
                 panel_aspect = w / h
                 bmp_aspect = bw / bh
@@ -1016,41 +1028,41 @@ class SpinRenderPanel(wx.Panel):
             if 'custom' in self.preset_buttons: self.preset_buttons['custom'].SetLabel("SELECT CUSTOM..")
         keys = ['board_tilt', 'board_roll', 'spin_tilt', 'spin_heading', 'period', 'direction', 'lighting', 'bg_color']
         for k in keys:
-            if k in preset: self.settings[k] = preset[k]
+            if k in preset: setattr(self.settings, k, preset[k])
 
         if 'bg_color' in preset and hasattr(self, 'bg_picker'):
-            self.bg_picker.SetColor(self.settings['bg_color'])
+            self.bg_picker.SetColor(self.settings.bg_color)
             if hasattr(self, 'viewport'):
-                self.viewport.set_background_color(self.settings['bg_color'])
+                self.viewport.set_background_color(self.settings.bg_color)
 
         if hasattr(self, 'board_tilt_slider'):
  
-            self.board_tilt_slider.SetValue(self.settings['board_tilt'])
-            self.board_tilt_input.SetValue(self.settings['board_tilt'])
-        if hasattr(self, 'board_roll_slider'): 
-            self.board_roll_slider.SetValue(self.settings['board_roll'])
-            self.board_roll_input.SetValue(self.settings['board_roll'])
-        if hasattr(self, 'spin_tilt_slider'): 
-            self.spin_tilt_slider.SetValue(self.settings['spin_tilt'])
-            self.spin_tilt_input.SetValue(self.settings['spin_tilt'])
-        if hasattr(self, 'spin_heading_slider'): 
-            self.spin_heading_slider.SetValue(self.settings['spin_heading'])
-            self.spin_heading_input.SetValue(self.settings['spin_heading'])
+            self.board_tilt_slider.SetValue(self.settings.board_tilt)
+            self.board_tilt_input.SetValue(self.settings.board_tilt)
+        if hasattr(self, 'board_roll_slider'):
+            self.board_roll_slider.SetValue(self.settings.board_roll)
+            self.board_roll_input.SetValue(self.settings.board_roll)
+        if hasattr(self, 'spin_tilt_slider'):
+            self.spin_tilt_slider.SetValue(self.settings.spin_tilt)
+            self.spin_tilt_input.SetValue(self.settings.spin_tilt)
+        if hasattr(self, 'spin_heading_slider'):
+            self.spin_heading_slider.SetValue(self.settings.spin_heading)
+            self.spin_heading_input.SetValue(self.settings.spin_heading)
         if hasattr(self, 'period_slider'): 
-            p = self.settings['period']
+            p = self.settings.period
             self.period_slider.SetValue(p)
             self.period_input.SetValue(round(p, 1))
             self.frame_count.SetLabel(f"{int(p * 30)} f")
         if hasattr(self, 'dir_toggle'): 
-            self.dir_toggle.SetSelection(1 if self.settings['direction'] == 'cw' else 0)
+            self.dir_toggle.SetSelection(1 if self.settings.direction == 'cw' else 0)
         if hasattr(self, 'light_toggle'): 
-            idx = next((i for i, o in enumerate(self.light_options) if o['id'] == self.settings['lighting']), 0)
+            idx = next((i for i, o in enumerate(self.light_options) if o['id'] == self.settings.lighting), 0)
             self.light_toggle.SetSelection(idx)
-        if hasattr(self, 'viewport'): 
-            self.viewport.set_universal_joint_parameters(self.settings['board_tilt'], self.settings['board_roll'], self.settings['spin_tilt'], self.settings['spin_heading'])
-            self.viewport.set_period(self.settings['period'])
-            self.viewport.set_direction(self.settings['direction'])
-            self.viewport.set_lighting(self.settings['lighting'])
+        if hasattr(self, 'viewport'):
+            self.viewport.set_universal_joint_parameters(self.settings.board_tilt, self.settings.board_roll, self.settings.spin_tilt, self.settings.spin_heading)
+            self.viewport.set_period(self.settings.period)
+            self.viewport.set_direction(self.settings.direction)
+            self.viewport.set_lighting(self.settings.lighting)
         self.update_preview_overlay()
         self.check_preset_match(manual_change=False)
 
@@ -1065,29 +1077,34 @@ class SpinRenderPanel(wx.Panel):
             if pid == 'custom': continue
             p = presets.get(pid)
             if not p: btn.SetSelected(False); continue
-            is_match = all(abs(self.settings.get(k, 0) - p.get(k, 0)) < 0.01 for k in ['board_tilt', 'board_roll', 'spin_tilt', 'spin_heading', 'period'])
-            is_match = is_match and self.settings.get('direction') == p.get('direction')
-            is_match = is_match and self.settings.get('lighting') == p.get('lighting')
+            # Convert p to dict if it's RenderSettings
+            p_dict = p.to_dict() if hasattr(p, 'to_dict') else p
+            is_match = all(abs(getattr(self.settings, k, 0) - p_dict.get(k, 0)) < 0.01 for k in ['board_tilt', 'board_roll', 'spin_tilt', 'spin_heading', 'period'])
+            is_match = is_match and getattr(self.settings, 'direction', '') == p_dict.get('direction', '')
+            is_match = is_match and getattr(self.settings, 'lighting', '') == p_dict.get('lighting', '')
             btn.SetSelected(is_match)
-            if is_match: 
-                matched_any = True; self.settings['preset'] = pid
+            if is_match:
+                matched_any = True
+                self.settings.preset = pid
                 if 'custom' in self.preset_buttons: self.preset_buttons['custom'].SetLabel("SELECT CUSTOM..")
         cmn = None
         if not matched_any and not manual_change:
             for scope, name in custom_presets:
                 pd = manager.load_preset(name, is_global=(scope=='global'))
                 if not pd: continue
-                match = all(abs(self.settings.get(k, 0) - pd.get(k, 0)) < 0.01 for k in ['board_tilt', 'board_roll', 'spin_tilt', 'spin_heading', 'period'])
-                match = match and self.settings.get('direction') == pd.get('direction')
-                match = match and self.settings.get('lighting') == pd.get('lighting')
+                # Convert pd to dict if it's RenderSettings
+                pd_dict = pd.to_dict() if hasattr(pd, 'to_dict') else pd
+                match = all(abs(getattr(self.settings, k, 0) - pd_dict.get(k, 0)) < 0.01 for k in ['board_tilt', 'board_roll', 'spin_tilt', 'spin_heading', 'period'])
+                match = match and getattr(self.settings, 'direction', '') == pd_dict.get('direction', '')
+                match = match and getattr(self.settings, 'lighting', '') == pd_dict.get('lighting', '')
                 if match: cmn = name; matched_any = True; break
         if 'custom' in self.preset_buttons:
-            if cmn: 
+            if cmn:
                 self.preset_buttons['custom'].SetLabel(cmn); self.preset_buttons['custom'].SetSelected(True)
-                self.settings['preset'] = 'custom'
+                self.settings.preset = 'custom'
             else:
                 self.preset_buttons['custom'].SetSelected(False)
-                if not matched_any: self.settings['preset'] = 'custom'
+                if not matched_any: self.settings.preset = 'custom'
                 if manual_change and not matched_any: self.preset_buttons['custom'].SetLabel("SELECT CUSTOM..")
         self.update_preview_overlay()
         self.save_settings()
@@ -1096,104 +1113,104 @@ class SpinRenderPanel(wx.Panel):
         """Persist current settings to project-local config file"""
         from core.presets import PresetManager
         PresetManager(self.board_path).save_last_used_settings(self.settings)
-        
+
         # Re-apply logging level in case it changed
         from utils.logger import SpinLogger
-        SpinLogger.setup(level=self.settings.get('logging_level', 'simple'))
+        SpinLogger.setup(level=getattr(self.settings, 'logging_level', 'simple'))
 
-    def on_board_tilt_change(self, event): 
+    def on_board_tilt_change(self, event):
         self.reset_status_bar()
-        self.settings['board_tilt'] = float(self.board_tilt_slider.GetValue())
-        self.board_tilt_input.SetValue(self.settings['board_tilt'])
+        self.settings.board_tilt = float(self.board_tilt_slider.GetValue())
+        self.board_tilt_input.SetValue(self.settings.board_tilt)
         self._update_viewport_rotation()
         self.check_preset_match(manual_change=True)
 
-    def on_board_tilt_input(self, event): 
+    def on_board_tilt_input(self, event):
         self.reset_status_bar()
-        self.settings['board_tilt'] = float(self.board_tilt_input.GetValue())
-        self.board_tilt_slider.SetValue(self.settings['board_tilt'])
+        self.settings.board_tilt = float(self.board_tilt_input.GetValue())
+        self.board_tilt_slider.SetValue(self.settings.board_tilt)
         self._update_viewport_rotation()
         self.check_preset_match(manual_change=True)
 
-    def on_board_roll_change(self, event): 
+    def on_board_roll_change(self, event):
         self.reset_status_bar()
-        self.settings['board_roll'] = float(self.board_roll_slider.GetValue())
-        self.board_roll_input.SetValue(self.settings['board_roll'])
+        self.settings.board_roll = float(self.board_roll_slider.GetValue())
+        self.board_roll_input.SetValue(self.settings.board_roll)
         self._update_viewport_rotation()
         self.check_preset_match(manual_change=True)
 
-    def on_board_roll_input(self, event): 
+    def on_board_roll_input(self, event):
         self.reset_status_bar()
-        self.settings['board_roll'] = float(self.board_roll_input.GetValue())
-        self.board_roll_slider.SetValue(self.settings['board_roll'])
+        self.settings.board_roll = float(self.board_roll_input.GetValue())
+        self.board_roll_slider.SetValue(self.settings.board_roll)
         self._update_viewport_rotation()
         self.check_preset_match(manual_change=True)
 
-    def on_spin_tilt_change(self, event): 
+    def on_spin_tilt_change(self, event):
         self.reset_status_bar()
-        self.settings['spin_tilt'] = float(self.spin_tilt_slider.GetValue())
-        self.spin_tilt_input.SetValue(self.settings['spin_tilt'])
+        self.settings.spin_tilt = float(self.spin_tilt_slider.GetValue())
+        self.spin_tilt_input.SetValue(self.settings.spin_tilt)
         self._update_viewport_rotation()
         self.check_preset_match(manual_change=True)
 
-    def on_spin_tilt_input(self, event): 
+    def on_spin_tilt_input(self, event):
         self.reset_status_bar()
-        self.settings['spin_tilt'] = float(self.spin_tilt_input.GetValue())
-        self.spin_tilt_slider.SetValue(self.settings['spin_tilt'])
+        self.settings.spin_tilt = float(self.spin_tilt_input.GetValue())
+        self.spin_tilt_slider.SetValue(self.settings.spin_tilt)
         self._update_viewport_rotation()
         self.check_preset_match(manual_change=True)
 
-    def on_spin_heading_change(self, event): 
+    def on_spin_heading_change(self, event):
         self.reset_status_bar()
-        self.settings['spin_heading'] = float(self.spin_heading_slider.GetValue())
-        self.spin_heading_input.SetValue(self.settings['spin_heading'])
+        self.settings.spin_heading = float(self.spin_heading_slider.GetValue())
+        self.spin_heading_input.SetValue(self.settings.spin_heading)
         self._update_viewport_rotation()
         self.check_preset_match(manual_change=True)
 
-    def on_spin_heading_input(self, event): 
+    def on_spin_heading_input(self, event):
         self.reset_status_bar()
-        self.settings['spin_heading'] = float(self.spin_heading_input.GetValue())
-        self.spin_heading_slider.SetValue(self.settings['spin_heading'])
+        self.settings.spin_heading = float(self.spin_heading_input.GetValue())
+        self.spin_heading_slider.SetValue(self.settings.spin_heading)
         self._update_viewport_rotation()
         self.check_preset_match(manual_change=True)
     
     def _update_viewport_rotation(self):
-        if hasattr(self, 'viewport'): 
-            self.viewport.set_universal_joint_parameters(self.settings['board_tilt'], self.settings['board_roll'], self.settings['spin_tilt'], self.settings['spin_heading'])
+        if hasattr(self, 'viewport'):
+            self.viewport.set_universal_joint_parameters(self.settings.board_tilt, self.settings.board_roll, self.settings.spin_tilt, self.settings.spin_heading)
         self.update_preview_overlay()
-        
-    def on_period_change(self, event): 
+
+    def on_period_change(self, event):
         self.reset_status_bar()
-        self.settings['period'] = round(float(self.period_slider.GetValue()), 1)
-        self.period_input.SetValue(self.settings['period'])
-        self.frame_count.SetLabel(f"{int(self.settings['period'] * 30)} f")
-        if hasattr(self, 'viewport'): 
-            self.viewport.set_period(self.settings['period'])
+        self.settings.period = round(float(self.period_slider.GetValue()), 1)
+        self.period_input.SetValue(self.settings.period)
+        self.frame_count.SetLabel(f"{int(self.settings.period * 30)} f")
+        if hasattr(self, 'viewport'):
+            self.viewport.set_period(self.settings.period)
         self.update_preview_overlay()
         self.check_preset_match(manual_change=True)
-        
-    def on_period_input_change(self, event): 
+
+    def on_period_input_change(self, event):
         self.reset_status_bar()
         v = round(float(self.period_input.GetValue()), 1)
-        self.settings['period'] = v
+        self.settings.period = v
         self.period_slider.SetValue(v)
         self.frame_count.SetLabel(f"{int(v * 30)} f")
-        if hasattr(self, 'viewport'): 
+        if hasattr(self, 'viewport'):
             self.viewport.set_period(v)
         self.update_preview_overlay()
         self.check_preset_match(manual_change=True)
         
-    def on_direction_change(self, event): 
+    def on_direction_change(self, event):
         self.reset_status_bar()
-        self.settings['direction'] = 'cw' if self.dir_toggle.GetSelection() == 1 else 'ccw'
-        if hasattr(self, 'viewport'): 
-            self.viewport.set_direction(self.settings['direction'])
+        self.settings.direction = 'cw' if self.dir_toggle.GetSelection() == 1 else 'ccw'
+        if hasattr(self, 'viewport'):
+            self.viewport.set_direction(self.settings.direction)
         self.update_preview_overlay()
         self.check_preset_match(manual_change=True)
 
     def on_render_mode_change(self, mode_id):
         """Handle clicks on the WIREFRAME | SHADED | BOTH toggle"""
-        self.settings['render_mode'] = mode_id
+        self.settings.render_mode = mode_id
         if hasattr(self, 'viewport'):
             self.viewport.set_render_mode(mode_id)
         self.update_render_mode_ui(mode_id)
@@ -1212,22 +1229,22 @@ class SpinRenderPanel(wx.Panel):
     def on_lighting_change(self, event):
         self.reset_status_bar()
         preset_id = self.light_options[self.light_toggle.GetSelection()]['id']
-        self.settings['lighting'] = preset_id
+        self.settings.lighting = preset_id
         if hasattr(self, 'viewport'):
             self.viewport.set_lighting(preset_id)
         self.update_preview_overlay()
         self.check_preset_match(manual_change=True)        
 
-    def on_format_change(self, event): 
+    def on_format_change(self, event):
         self.reset_status_bar()
-        self.settings['format'] = self.format_ids[self.format_choice.GetSelection()]
+        self.settings.format = self.format_ids[self.format_choice.GetSelection()]
         self.update_preview_overlay()
         self.save_settings()
-        
-    def on_resolution_change(self, event): 
+
+    def on_resolution_change(self, event):
         self.reset_status_bar()
         res = self.res_ids[self.res_choice.GetSelection()]
-        self.settings['resolution'] = res
+        self.settings.resolution = res
         
         # Update viewport aspect ratio for WYSIWYG
         try:
@@ -1241,7 +1258,7 @@ class SpinRenderPanel(wx.Panel):
 
     def on_bg_color_change(self, color_hex):
         self.reset_status_bar()
-        self.settings['bg_color'] = color_hex
+        self.settings.bg_color = color_hex
         if hasattr(self, 'viewport'):
             self.viewport.set_background_color(color_hex)
         self.update_preview_overlay()
@@ -1468,7 +1485,7 @@ class SpinRenderPanel(wx.Panel):
             # Start looping playback of the rendered result
             self.render_preview_active = True
             self.current_render_frame = None
-            self.final_output_type = self.settings.get('format', 'mp4')
+            self.final_output_type = self.settings.format
             
             if hasattr(self, 'render_preview_panel'):
                 if hasattr(self, 'viewport'):

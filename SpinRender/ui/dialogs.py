@@ -197,7 +197,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         
         self.override_input = CustomTextInput(
             content,
-            value=self.settings.get('cli_overrides', ''),
+            value=getattr(self.settings, 'cli_overrides', ''),
             placeholder=self.PLACEHOLDER_TEXT,
             multiline=True,
             size=(-1, 80)
@@ -243,7 +243,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
             {'id': 'verbose', 'label': 'VERBOSE'}
         ]
         self.log_toggle = CustomToggleButton(log_row, options=self.log_opts, size=(240, 28))
-        curr_lvl = self.settings.get('logging_level', 'simple')
+        curr_lvl = getattr(self.settings, 'logging_level', 'simple')
         lvl_idx = next((i for i, o in enumerate(self.log_opts) if o['id'] == curr_lvl), 1)
         self.log_toggle.SetSelection(lvl_idx)
         log_hsizer.Add(self.log_toggle, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -302,9 +302,9 @@ class AdvancedOptionsDialog(BaseStyledDialog):
             self.path_display.Enable(False)
         else:
             self.path_display.Enable(True)
-            path = self.settings.get('output_path', '')
+            path = getattr(self.settings, 'output_path', '')
             if not path:
-                ext = self.settings.get('format', 'mp4')
+                ext = getattr(self.settings, 'format', 'mp4')
                 self.path_display.SetPath(f"/Renders/Untitled.{ext}", in_project=True)
             else:
                 try:
@@ -324,7 +324,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         if not os.path.exists(start_dir): os.makedirs(start_dir, exist_ok=True)
         dlg = wx.DirDialog(self, "Select Output Directory", defaultPath=start_dir)
         if dlg.ShowModal() == wx.ID_OK:
-            self.settings['output_path'] = dlg.GetPath()
+            self.settings.output_path = dlg.GetPath()
             self.update_path_display()
         dlg.Destroy()
 
@@ -332,9 +332,9 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         self.EndModal(wx.ID_CANCEL)
 
     def on_ok(self, event):
-        self.settings['cli_overrides'] = self.override_input.GetValue()
-        self.settings['output_auto'] = self.auto_toggle.GetValue()
-        self.settings['logging_level'] = self.log_opts[self.log_toggle.GetSelection()]['id']
+        self.settings.cli_overrides = self.override_input.GetValue()
+        self.settings.output_auto = self.auto_toggle.GetValue()
+        self.settings.logging_level = self.log_opts[self.log_toggle.GetSelection()]['id']
         self.EndModal(wx.ID_OK)
 
 

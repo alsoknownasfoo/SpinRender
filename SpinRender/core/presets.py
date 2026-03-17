@@ -9,6 +9,11 @@ from pathlib import Path
 
 logger = logging.getLogger("SpinRender")
 
+try:
+    from .settings import RenderSettings
+except ImportError:
+    RenderSettings = None  # For backward compatibility if used standalone
+
 
 class PresetManager:
     """
@@ -46,7 +51,7 @@ class PresetManager:
 
         Args:
             name: Preset name
-            settings: Dict of render settings
+            settings: RenderSettings object or dict of render settings
             is_global: If True, save to global presets; otherwise project presets
 
         Returns:
@@ -66,18 +71,17 @@ class PresetManager:
         # Save preset
         preset_path = os.path.join(preset_dir, f"{safe_name}.json")
 
+        # Convert RenderSettings to dict, or use dict directly
+        if RenderSettings is not None and isinstance(settings, RenderSettings):
+            settings_dict = settings.to_dict()
+        elif isinstance(settings, dict):
+            settings_dict = settings
+        else:
+            raise TypeError(f"settings must be RenderSettings or dict, got {type(settings)}")
+
         preset_data = {
             'name': name,
-            'settings': {
-                'board_tilt': settings.get('board_tilt', 0.0),
-                'board_roll': settings.get('board_roll', 0.0),
-                'spin_tilt': settings.get('spin_tilt', 0.0),
-                'spin_heading': settings.get('spin_heading', 0.0),
-                'period': settings.get('period', 10.0),
-                'direction': settings.get('direction', 'ccw'),
-                'lighting': settings.get('lighting', 'studio'),
-                'bg_color': settings.get('bg_color', '#000000')
-            }
+            'settings': settings_dict
         }
 
         try:
@@ -97,7 +101,7 @@ class PresetManager:
             is_global: If True, load from global presets
 
         Returns:
-            dict: Preset settings, or None if not found
+            RenderSettings: Preset settings, or None if not found
         """
         # Sanitize name
         safe_name = "".join(c for c in name if c.isalnum() or c in ('-', '_')).lower()
@@ -116,7 +120,12 @@ class PresetManager:
         try:
             with open(preset_path, 'r') as f:
                 preset_data = json.load(f)
-            return preset_data.get('settings', {})
+            settings_dict = preset_data.get('settings', {})
+
+            # Convert to RenderSettings if available
+            if RenderSettings is not None:
+                return RenderSettings.from_dict(settings_dict)
+            return settings_dict
         except Exception as e:
             logger.error(f"Failed to load preset: {e}", exc_info=True)
             return None
@@ -181,11 +190,11 @@ class PresetManager:
 
     def get_last_used_settings(self):
         """
-        Get the last used render settings. 
+        Get the last used render settings.
         Tries project-specific first, then falls back to global.
 
         Returns:
-            dict: Last used settings, or None
+            RenderSettings: Last used settings, or None
         """
         # 1. Try project-specific settings first
         if self.project_presets_dir:
@@ -193,7 +202,10 @@ class PresetManager:
             if os.path.exists(project_path):
                 try:
                     with open(project_path, 'r') as f:
-                        return json.load(f)
+                        data = json.load(f)
+                    if RenderSettings is not None:
+                        return RenderSettings.from_dict(data)
+                    return data
                 except Exception as e:
                     logger.error(f"Failed to load project last used settings: {e}", exc_info=True)
 
@@ -202,7 +214,10 @@ class PresetManager:
         if os.path.exists(global_path):
             try:
                 with open(global_path, 'r') as f:
-                    return json.load(f)
+                    data = json.load(f)
+                if RenderSettings is not None:
+                    return RenderSettings.from_dict(data)
+                return data
             except Exception as e:
                 logger.error(f"Failed to load global last used settings: {e}", exc_info=True)
 
@@ -214,11 +229,19 @@ class PresetManager:
         Saves to both project-specific (if available) and global locations.
 
         Args:
-            settings: Dict of render settings
+            settings: RenderSettings object or dict of render settings
 
         Returns:
             bool: True if global save was successful
         """
+        # Convert RenderSettings to dict if needed
+        if RenderSettings is not None and isinstance(settings, RenderSettings):
+            settings_dict = settings.to_dict()
+        elif isinstance(settings, dict):
+            settings_dict = settings
+        else:
+            raise TypeError(f"settings must be RenderSettings or dict, got {type(settings)}")
+
         success = True
 
         # 1. Save to project-specific directory if it exists
@@ -226,7 +249,7 @@ class PresetManager:
             project_path = os.path.join(self.project_presets_dir, 'last_used.json')
             try:
                 with open(project_path, 'w') as f:
-                    json.dump(settings, f, indent=2)
+                    json.dump(settings_dict, f, indent=2)
             except Exception as e:
                 logger.error(f"Failed to save project last used settings: {e}", exc_info=True)
                 success = False
@@ -235,7 +258,7 @@ class PresetManager:
         global_path = os.path.join(self.global_presets_dir, 'last_used.json')
         try:
             with open(global_path, 'w') as f:
-                json.dump(settings, f, indent=2)
+                json.dump(settings_dict, f, indent=2)
         except Exception as e:
             logger.error(f"Failed to save global last used settings: {e}", exc_info=True)
             success = False
