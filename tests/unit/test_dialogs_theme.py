@@ -65,8 +65,9 @@ class TestBaseStyledDialogThemeMigration:
     def test_shadow_size_constant_preserved(self):
         """SHADOW_SIZE layout constant should remain as class attribute."""
         from SpinRender.ui.dialogs import BaseStyledDialog
-        assert hasattr(BaseStyledDialog, 'SHADOW_SIZE')
-        assert BaseStyledDialog.SHADOW_SIZE == 16
+        class_vars = BaseStyledDialog.__dict__
+        assert 'SHADOW_SIZE' in class_vars, "BaseStyledDialog must have SHADOW_SIZE class attribute"
+        assert class_vars['SHADOW_SIZE'] == 16
 
 
 class TestAdvancedOptionsDialogTheme:

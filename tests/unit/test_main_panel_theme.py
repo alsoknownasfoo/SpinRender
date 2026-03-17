@@ -3,25 +3,6 @@ Test suite for main_panel.py theme migration
 TDD: Verify SpinRenderPanel uses centralized theme instead of class-level color constants
 """
 import pytest
-import sys
-from unittest.mock import MagicMock, patch
-
-# Mock wx modules before any imports
-sys.modules['wx'] = MagicMock()
-sys.modules['wx.svg'] = MagicMock()
-sys.modules['wx.lib'] = MagicMock()
-sys.modules['wx.lib.scrolledpanel'] = MagicMock()
-
-from tests.conftest import ColourMock, FontMock
-
-# Mock wx classes
-import wx
-wx.Colour = ColourMock
-wx.Font = FontMock
-wx.Dialog = MagicMock()
-wx.Panel = MagicMock()
-wx.ScrolledPanel = MagicMock()
-wx.SVG = MagicMock()
 
 
 class MockSpinRenderPanel:

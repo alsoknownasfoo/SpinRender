@@ -68,7 +68,7 @@ class SVGLogoPanel(wx.Panel):
                 # Render SVG at scale 1.0
                 self.svg_image.RenderToGC(gc, 1.0)
             except Exception:
-                gc.SetBrush(wx.Brush(wx.Colour(0, 188, 212)))
+                gc.SetBrush(wx.Brush(theme.ACCENT_CYAN))
                 gc.DrawRectangle(0, 0, width, height)
 
 
@@ -253,7 +253,7 @@ class SpinRenderPanel(wx.Panel):
         sizer.Add(title_sizer, 0, wx.ALIGN_CENTER_VERTICAL)
 
         sizer.AddStretchSpacer()
-        self.header_close_btn = CustomButton(header, label="", icon='mdi-close', primary=False, ghost=True, icon_color=wx.Colour(85, 85, 85), size=(36, 36))
+        self.header_close_btn = CustomButton(header, label="", icon='mdi-close', primary=False, ghost=True, icon_color=theme.TEXT_MUTED, size=(36, 36))
         self.header_close_btn.Bind(wx.EVT_BUTTON, self.on_close)
         sizer.Add(self.header_close_btn, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 16)
 
@@ -322,7 +322,7 @@ class SpinRenderPanel(wx.Panel):
         label.SetFont(wx.Font(10, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_SEMIBOLD, faceName="JetBrains Mono"))
         sizer.Add(label, 0, wx.BOTTOM, 6)
 
-        cols = [wx.Colour(255, 107, 107), wx.Colour(255, 180, 107), wx.Colour(77, 150, 255), wx.Colour(170, 107, 255)]
+        cols = [theme.PRESET_RED, theme.PRESET_AMBER, theme.PRESET_BLUE, theme.PRESET_PURPLE]
         icons = ["mdi-axis-x-arrow", "mdi-axis-y-arrow", "mdi-axis-y-rotate-counterclockwise", "mdi-axis-z-rotate-counterclockwise"]
         
         row1 = self.create_axis_control(panel, "BOARD TILT", self.settings['board_tilt'], cols[0], icons[0], -90, 90, self.on_board_tilt_change, self.on_board_tilt_input)
@@ -452,7 +452,7 @@ class SpinRenderPanel(wx.Panel):
 
         # Descriptor hint
         hint = wx.StaticText(panel, label="SELECT WORKSPACE TO USE KICAD 3D VIEWER SETTINGS")
-        hint.SetForegroundColour(wx.Colour(85, 85, 85)) # Dimmed gray
+        hint.SetForegroundColour(theme.TEXT_MUTED)
         hint.SetFont(wx.Font(7, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
         sizer.Add(hint, 0, wx.TOP, 4)
 
@@ -546,7 +546,7 @@ class SpinRenderPanel(wx.Panel):
 
     def create_preview_panel(self, parent):
         panel = wx.Panel(parent, size=(700, -1))
-        panel.SetBackgroundColour(wx.Colour(10, 10, 10))
+        panel.SetBackgroundColour(theme.BG_OUTPUT_PREVIEW)
         sizer = wx.BoxSizer(wx.VERTICAL)
         
         # --- TOP OVERLAY ---
@@ -555,7 +555,7 @@ class SpinRenderPanel(wx.Panel):
         
         # Top-Left: Parameters OR Preset Name
         self.ov_top_left = wx.StaticText(top_meta, label="")
-        self.ov_top_left.SetForegroundColour(wx.Colour(255, 255, 255, 68))
+        self.ov_top_left.SetForegroundColour(theme.WHITE_ALPHA_68)
         self.ov_top_left.SetFont(wx.Font(9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
         top_meta_sizer.Add(self.ov_top_left, 1, wx.ALIGN_CENTER_VERTICAL)
 
@@ -578,7 +578,7 @@ class SpinRenderPanel(wx.Panel):
             if i < len(modes) - 1:
                 div = wx.StaticText(top_meta, label="  |  ")
                 div.SetFont(mode_font)
-                div.SetForegroundColour(wx.Colour(50, 50, 50))
+                div.SetForegroundColour(theme.SCROLLBAR_GREY)
                 self.render_mode_sizer.Add(div, 0, wx.ALIGN_CENTER_VERTICAL)
         
         top_meta_sizer.Add(self.render_mode_sizer, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
@@ -598,7 +598,7 @@ class SpinRenderPanel(wx.Panel):
 
         # --- VIEWPORT CONTAINER ---
         viewport_container = wx.Panel(panel)
-        viewport_container.SetBackgroundColour(wx.Colour(0, 0, 0))
+        viewport_container.SetBackgroundColour(theme.BLACK)
         viewport_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.viewport = GLPreviewRenderer(viewport_container, self.board_path)
@@ -607,7 +607,7 @@ class SpinRenderPanel(wx.Panel):
 
         # Render preview overlay panel
         self.render_preview_panel = wx.Panel(viewport_container, style=wx.BORDER_NONE)
-        self.render_preview_panel.SetBackgroundColour(wx.Colour(0, 0, 0))
+        self.render_preview_panel.SetBackgroundColour(theme.BLACK)
         self.render_preview_panel.Hide()
         self.render_preview_panel.Bind(wx.EVT_PAINT, self._on_render_preview_paint)
 
@@ -619,13 +619,13 @@ class SpinRenderPanel(wx.Panel):
         
         # Bottom-Left: Lighting + BG
         self.ov_bottom_left = wx.StaticText(bottom_meta, label="")
-        self.ov_bottom_left.SetForegroundColour(wx.Colour(255, 255, 255, 68))
+        self.ov_bottom_left.SetForegroundColour(theme.WHITE_ALPHA_68)
         self.ov_bottom_left.SetFont(wx.Font(9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
         bottom_sizer.Add(self.ov_bottom_left, 1, wx.ALIGN_CENTER_VERTICAL)
         
         # Bottom-Center: Res + Ratio + FPS
         self.ov_bottom_center = wx.StaticText(bottom_meta, label="")
-        self.ov_bottom_center.SetForegroundColour(wx.Colour(255, 255, 255, 68))
+        self.ov_bottom_center.SetForegroundColour(theme.WHITE_ALPHA_68)
         self.ov_bottom_center.SetFont(wx.Font(9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName="JetBrains Mono"))
         bottom_sizer.Add(self.ov_bottom_center, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_CENTER_HORIZONTAL)
         self.ov_bottom_center.SetWindowStyle(wx.ST_NO_AUTORESIZE | wx.ALIGN_CENTRE_HORIZONTAL)
@@ -876,7 +876,7 @@ class SpinRenderPanel(wx.Panel):
             
             # Draw faint gray outline around the render
             gc.SetBrush(wx.TRANSPARENT_BRUSH)
-            gc.SetPen(wx.Pen(wx.Colour(255, 255, 255, 30), 1))
+            gc.SetPen(wx.Pen(theme.WHITE_ALPHA_30, 1))
             gc.DrawRectangle(x_offset, y_offset, display_width, display_height)
         else:
             # Draw empty outline matching resolution if no bitmap yet
@@ -894,7 +894,7 @@ class SpinRenderPanel(wx.Panel):
                     ox, oy = (w - dw) / 2, 0
                 
                 gc.SetBrush(wx.TRANSPARENT_BRUSH)
-                gc.SetPen(wx.Pen(wx.Colour(255, 255, 255, 30), 1))
+                gc.SetPen(wx.Pen(theme.WHITE_ALPHA_30, 1))
                 gc.DrawRectangle(ox, oy, dw, dh)
             except: pass
 
@@ -926,7 +926,7 @@ class SpinRenderPanel(wx.Panel):
             gc.SetBrush(wx.Brush(self.status_bar_color))
             gc.DrawRectangle(0, 0, fill_w, h)
             gc.Clip(0, 0, fill_w, h)
-            gc.SetFont(font, wx.Colour(13, 13, 13))
+            gc.SetFont(font, theme.BG_INPUT)
             gc.DrawText(self.status_msg, tx, ty)
             gc.ResetClip()
 
@@ -1206,7 +1206,7 @@ class SpinRenderPanel(wx.Panel):
             if mode_id == active_mode:
                 btn.SetForegroundColour(theme.ACCENT_CYAN)
             else:
-                btn.SetForegroundColour(wx.Colour(100, 100, 100))
+                btn.SetForegroundColour(theme.GREY_100)
             btn.Refresh()
         
     def on_lighting_change(self, event):

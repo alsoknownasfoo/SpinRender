@@ -378,7 +378,7 @@ class DropdownPopup(wx.PopupTransientWindow):
                 gc.SetBrush(wx.Brush(self.accent_color))
                 gc.SetPen(wx.TRANSPARENT_PEN)
                 gc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, 2)
-                gc.SetFont(selected_font, wx.Colour(13, 13, 13))
+                gc.SetFont(selected_font, theme.BG_INPUT)
             elif is_hovered:
                 gc.SetBrush(wx.Brush(theme.BG_PANEL))  # hover background
                 gc.SetPen(wx.TRANSPARENT_PEN)
@@ -603,7 +603,7 @@ class CustomButton(wx.Panel):
             else:
                 bg_base, text_base, border_base = theme.ACCENT_CYAN, theme.BG_INPUT, None
         elif self.ghost:
-            bg_base, text_base, border_base = wx.Colour(0, 0, 0, 0), theme.TEXT_PRIMARY, None
+            bg_base, text_base, border_base = theme.TRANSPARENT, theme.TEXT_PRIMARY, None
         else:
             bg_base, text_base, border_base = theme.BG_INPUT, theme.TEXT_PRIMARY, theme.BORDER_DEFAULT
 
@@ -612,27 +612,28 @@ class CustomButton(wx.Panel):
         text_color = text_base
         
         if self.danger and self.primary:
-            if self.pressed: bg = wx.Colour(140, 0, 0)  # dark red (no theme)
-            elif self.hovered: bg = wx.Colour(220, 20, 20)  # bright red (no theme)
+            if self.pressed: bg = theme.DANGER_DARK
+            elif self.hovered: bg = theme.DANGER_HOVER
         elif self.danger:
             if self.pressed:
-                bg = wx.Colour(180, 0, 0)
-                text_color = wx.Colour(255, 255, 255)
+                bg = theme.DANGER_MEDIUM
+                text_color = theme.WHITE
             elif self.hovered:
-                bg = wx.Colour(220, 20, 20)
-                text_color = wx.Colour(255, 255, 255)
+                bg = theme.DANGER_HOVER
+                text_color = theme.WHITE
         elif not self.ghost:
-            if self.pressed: bg = wx.Colour(max(0, bg.Red()-30), max(0, bg.Green()-30), max(0, bg.Blue()-30))
+            if self.pressed:
+                bg = wx.Colour(max(0, bg.Red()-30), max(0, bg.Green()-30), max(0, bg.Blue()-30))
             elif self.hovered:
                 inc = 20 if self.primary else 30
                 bg = wx.Colour(min(255, bg.Red()+inc), min(255, bg.Green()+inc), min(255, bg.Blue()+inc))
         else:
             if self.pressed:
-                bg = wx.Colour(255, 255, 255, 40)
-                text_color = wx.Colour(255, 255, 255)
+                bg = theme.WHITE_ALPHA_40
+                text_color = theme.WHITE
             elif self.hovered:
-                bg = wx.Colour(255, 255, 255, 20)
-                text_color = wx.Colour(255, 255, 255)
+                bg = theme.WHITE_ALPHA_20
+                text_color = theme.WHITE
 
         final_bg = _get_paint_color(bg, enabled)
         final_text = _get_paint_color(text_color, enabled)
@@ -1301,7 +1302,7 @@ class CustomColorPicker(wx.Panel):
             stroke_color = theme.ACCENT_CYAN
             thickness = 2
         elif is_hovered:
-            stroke_color = wx.Colour(120, 120, 120)  # hover highlight (unchanged)
+            stroke_color = theme.HOVER_HIGHLIGHT
 
         gc.SetPen(wx.Pen(_get_paint_color(stroke_color, enabled), thickness))
         gc.DrawRoundedRectangle(x, y, swatch_size, swatch_size, 4)

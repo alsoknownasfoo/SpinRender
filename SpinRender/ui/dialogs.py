@@ -33,7 +33,7 @@ class BaseStyledDialog(wx.Dialog):
         if wx.Platform == '__WXMSW__':
             self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         else:
-            self.SetBackgroundColour(wx.Colour(0, 0, 0, 0))
+            self.SetBackgroundColour(theme.TRANSPARENT)
             self.SetCanFocus(True)
             
         self.logical_size = size
@@ -58,7 +58,7 @@ class BaseStyledDialog(wx.Dialog):
         for i in range(s):
             # Doubled base alpha (from 80 to 160) for much darker shadow
             alpha = int(160 * (1.0 - (i / s)**0.5))
-            gc.SetBrush(wx.Brush(wx.Colour(0, 0, 0, alpha)))
+            gc.SetBrush(wx.Brush(wx.Colour(theme.BLACK.Red(), theme.BLACK.Green(), theme.BLACK.Blue(), alpha)))
             gc.SetPen(wx.TRANSPARENT_PEN)
             gc.DrawRoundedRectangle(i, i, w - 2*i, h - 2*i, 12)
             
@@ -340,8 +340,7 @@ class SavePresetDialog(BaseStyledDialog):
     Save Preset dialog
     Follows Pencil design: Modal/SavePreset
     """
-    BG_INPUT = wx.Colour(13, 13, 13)
-    TEXT_SECONDARY = wx.Colour(119, 119, 119)
+    # All colors use theme module - no class-level color constants
 
     def __init__(self, parent, board_path):
         super().__init__(parent, "Save Preset", (400, 260))
@@ -403,8 +402,7 @@ class RecallPresetDialog(BaseStyledDialog):
     Recall Preset dialog
     Follows Pencil design: Modal/PresetList
     """
-    # All colors from theme
-    ACCENT_ORANGE = wx.Colour(255, 107, 53)
+    # All colors use theme module
 
     def __init__(self, parent, board_path):
         super().__init__(parent, "SELECT CUSTOM PRESET", (400, 400))
@@ -427,7 +425,7 @@ class RecallPresetDialog(BaseStyledDialog):
         list_panel.SetBackgroundColour(theme.BG_MODAL); list_panel.SetupScrolling(scroll_x=False, scroll_y=True)
         list_sizer = wx.BoxSizer(wx.VERTICAL)
         if not presets:
-            empty_text = wx.StaticText(list_panel, label="No saved presets found."); empty_text.SetForegroundColour(wx.Colour(85, 85, 85))
+            empty_text = wx.StaticText(list_panel, label="No saved presets found."); empty_text.SetForegroundColour(theme.TEXT_MUTED)
             empty_text.SetFont(get_custom_font(11, italic=True)); list_sizer.Add(empty_text, 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 40)
         else:
             for scope, name in presets:
@@ -446,7 +444,7 @@ class RecallPresetDialog(BaseStyledDialog):
         trash_btn.SetFont(mdi_font); trash_btn.SetCursor(wx.Cursor(wx.CURSOR_HAND)); action_sizer.Add(trash_btn, 0, wx.ALIGN_CENTER_VERTICAL)
         cancel_icon = wx.StaticText(action_area, label='\U000F0156'); cancel_icon.SetForegroundColour(theme.ACCENT_ORANGE)
         cancel_icon.SetFont(mdi_font); cancel_icon.Hide(); confirm_icon = wx.StaticText(action_area, label='\U000F012C')
-        confirm_icon.SetForegroundColour(wx.Colour(76, 175, 80)); confirm_icon.SetFont(mdi_font); confirm_icon.Hide()
+        confirm_icon.SetForegroundColour(theme.ACCENT_GREEN); confirm_icon.SetFont(mdi_font); confirm_icon.Hide()
         action_area.SetSizer(action_sizer); sizer.Add(action_area, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 12); panel.SetSizer(sizer)
         def show_confirm(e):
             trash_btn.Hide(); action_sizer.Clear(); action_sizer.Add(cancel_icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 16)
