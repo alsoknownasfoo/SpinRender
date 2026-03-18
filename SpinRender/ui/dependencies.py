@@ -44,9 +44,9 @@ class DependencyChecker(PureDependencyChecker):
 
         logger.warning(f"Missing dependencies detected: {self.missing_deps}")
 
-        # Import dialog only when needed to avoid early theme loading
-        logger.debug("Importing DependencyCheckDialog...")
-        from .dialogs import DependencyCheckDialog
+        # Import bootstrap dialog to avoid early theme loading
+        logger.debug("Importing bootstrap DependencyCheckDialog...")
+        from .dependency_dialog import DependencyCheckDialog
         logger.debug("Creating dialog...")
         dialog = DependencyCheckDialog(None, dep_status, self)
         logger.debug("Showing modal dialog...")

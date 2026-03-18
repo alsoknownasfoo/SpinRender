@@ -149,6 +149,8 @@ class DependencyChecker:
             pkg = package_name.split()[0]
             if pkg == 'PyOpenGL':
                 pkg = 'OpenGL'
+            elif pkg == 'PyYAML':
+                pkg = 'yaml'
             __import__(pkg)
             logger.debug(f"  Package {pkg} is available")
             return True

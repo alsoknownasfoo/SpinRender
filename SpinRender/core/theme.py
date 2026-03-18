@@ -8,7 +8,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-# Try to import PyYAML, but allow failure here (will be caught in load())
+# Try to import PyYAML
 _yaml_available = False
 try:
     import yaml
