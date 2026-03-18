@@ -18,11 +18,9 @@ if user_site not in sys.path:
 
 # Add plugin directory to path for imports
 plugin_dir = os.path.dirname(os.path.abspath(__file__))
-if plugin_dir not in sys.path:
-    sys.path.insert(0, plugin_dir)
 
 # Initialize logging system
-from utils.logger import SpinLogger
+from SpinRender.utils.logger import SpinLogger
 SpinLogger.setup(level='verbose')  # Enable DEBUG level logging for troubleshooting
 logger = logging.getLogger("SpinRender")
 logger.info(f"Loading SpinRender plugin from {plugin_dir}")
@@ -32,7 +30,7 @@ logger.debug(f"Platform: {sys.platform}")
 
 # Import dependency checker early (doesn't require heavy dependencies)
 logger.debug("Importing dependency checker...")
-from ui.dependencies import DependencyChecker
+from SpinRender.ui.dependencies import DependencyChecker
 logger.debug("Dependency checker imported successfully")
 
 # NOTE: Do NOT import ui.main_panel here - it pulls in core.preview which requires
@@ -212,7 +210,7 @@ class SpinRenderFrame(wx.Frame):
             self.last_theme_mtime = mtime
             logger.info(f"Theme file {self.theme_path.name} changed. Hot-reloading...")
             try:
-                from core.theme import Theme
+                from SpinRender.core.theme import Theme
                 Theme.reload()
                 
                 # Use the new orchestrated re-application method
