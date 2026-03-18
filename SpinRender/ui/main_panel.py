@@ -78,6 +78,7 @@ class SpinRenderPanel(wx.Panel):
         self.render_controller = RenderController()
         self.avg_frame_time = None
         self.frame_times = []
+        self.render_preview_active = False
 
         self.build_ui()
 
@@ -346,6 +347,10 @@ class SpinRenderPanel(wx.Panel):
 
         self.status_bar.reset()
 
+    def save_settings(self):
+        """Persist current settings to project-local config file."""
+        from core.presets import PresetManager
+        PresetManager(self.board_path).save_last_used_settings(self.settings)
 
     def on_preset_change(self, preset_id):
         """Delegates to PresetController."""
