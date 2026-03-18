@@ -1,13 +1,39 @@
-__pycache__/
 .DS_Store
-TODO.md
-*.kicad_pcb
-.dmux/
+.claude/
+.claude/*
 
-# Testing & coverage
+# Python
+__pycache__/
+__pycache__/*
+*.py[cod]
+*$py.class
+.venv/
+.venv/*
+
+# IDE & Editor
+.vscode/
+.vscode/*
+
+# Testing & Coverage
 .coverage
 htmlcov/
+htmlcov/*
+.pytest_cache/
+.pytest_cache/*
 SpinRender/logs/
+SpinRender/logs/*
 
-# Orchestration worktrees (actual git repos, not status files)
-.orchestration/*/worktree-*/
+# Hardware (KiCad)
+*.kicad_pcb
+
+# Development tools
+.dmux/
+.dmux/*
+.dmux-hooks/*
+.dmux-worktrees/
+.dmux-worktrees/*
+
+# Project-specific
+TODO.md
+.orchestration/
+.orchestration/*
