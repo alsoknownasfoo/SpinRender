@@ -1,7 +1,0 @@
-# Optional dependencies for 3D preview rendering
-# Install with: pip install -r requirements_preview.txt
-
-PyOpenGL>=3.1.0
-PyOpenGL-accelerate>=3.1.0
-trimesh>=4.0.0
-numpy>=1.20.0
