@@ -267,7 +267,7 @@ class SpinRenderPanel(wx.Panel):
         self.preview.preset_buttons = self.preset_buttons
 
         # Bind close button to handler
-        self.preview.ov_top_right.Bind(wx.EVT_LEFT_DOWN, self.on_close_render_preview)
+        self.preview.ov_top_right.Bind(wx.EVT_LEFT_DOWN, self.preview.on_close_render_preview)
 
         # Bind render mode buttons
         for mode_id, btn in self.preview.render_mode_btns.items():
