@@ -90,6 +90,9 @@ class SpinRenderPanel(wx.Panel):
 
         # Left: Controls panel - instantiate ControlsSidePanel
         self.controls_side_panel = ControlsSidePanel(top_panel, self.settings, self.board_path)
+        # Fixed width of 450px for controls panel
+        self.controls_side_panel.SetMinSize((450, -1))
+        self.controls_side_panel.SetMaxSize((450, -1))
         top_sizer.Add(self.controls_side_panel, 0, wx.EXPAND)
         # Expose commonly accessed controls from side panel
         self.render_btn = self.controls_side_panel.render_btn
@@ -105,7 +108,9 @@ class SpinRenderPanel(wx.Panel):
 
         # Right: Preview panel
         self.preview_panel = self.create_preview_panel(top_panel)
-        top_sizer.Add(self.preview_panel, 0, wx.EXPAND | wx.FIXED_MINSIZE)
+        # Ensure preview panel has minimum width of 700px BEFORE adding to sizer
+        self.preview_panel.SetMinSize((700, -1))
+        top_sizer.Add(self.preview_panel, 1, wx.EXPAND)
 
         top_panel.SetSizer(top_sizer)
         top_sizer.Fit(top_panel)
@@ -223,38 +228,7 @@ class SpinRenderPanel(wx.Panel):
         self.controls_side_panel.res_choice.Bind(wx.EVT_CHOICE, pc.on_resolution_change)
         # Background color
         if self.controls_side_panel.bg_picker:
-            self.controls_side_panel.bg_picker.Bind(wx.EVT_COLOURPICKER_CHANGED, lambda e: pc.on_bg_color_change(e.GetColour().GetAsString(wx.C2S_HTML_SYNTAX)))
-
-    def _init_preset_controller(self):
-        """Collect control references and instantiate PresetController."""
-        # Controls are now on self.controls_side_panel
-        csp = self.controls_side_panel
-        controls = {
-            'preset_buttons': getattr(csp, 'preset_buttons', {}),
-            'bg_picker': getattr(csp, 'bg_picker', None),
-            'board_tilt_slider': getattr(csp, 'board_tilt_slider', None),
-            'board_tilt_input': getattr(csp, 'board_tilt_input', None),
-            'board_roll_slider': getattr(csp, 'board_roll_slider', None),
-            'board_roll_input': getattr(csp, 'board_roll_input', None),
-            'spin_tilt_slider': getattr(csp, 'spin_tilt_slider', None),
-            'spin_tilt_input': getattr(csp, 'spin_tilt_input', None),
-            'spin_heading_slider': getattr(csp, 'spin_heading_slider', None),
-            'spin_heading_input': getattr(csp, 'spin_heading_input', None),
-            'period_slider': getattr(csp, 'period_slider', None),
-            'period_input': getattr(csp, 'period_input', None),
-            'frame_count': getattr(csp, 'frame_count', None),
-            'dir_toggle': getattr(csp, 'dir_toggle', None),
-            'light_toggle': getattr(csp, 'light_toggle', None),
-            'light_options': getattr(csp, 'light_options', []),
-        }
-
-        self.preset_controller = PresetController(
-            parent=self,
-            board_path=self.board_path,
-            settings=self.settings,
-            controls=controls,
-            preview=self.preview
-        )
+            self.controls_side_panel.bg_picker.Bind(wx.EVT_COLOURPICKER_CHANGED, lambda e: pc.on_bg_color_change(e.GetString()))
 
     def create_preview_panel(self, parent):
         """Create the preview panel using the extracted PreviewPanel component."""

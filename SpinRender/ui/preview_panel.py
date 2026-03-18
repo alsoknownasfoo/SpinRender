@@ -56,8 +56,9 @@ class PreviewPanel(wx.Panel):
         self.Bind(wx.EVT_TIMER, self.on_playback_timer, self.playback_timer)
 
         # Build UI
-        self._create_overlay_widgets()
         self._create_viewport(board_path)
+        self._create_overlay_widgets()
+        self._setup_main_layout()
         self._initialize_from_settings()
 
         # Initial overlay update
@@ -110,9 +111,7 @@ class PreviewPanel(wx.Panel):
         # Event binding will be done by parent/orchestrator after construction
         top_sizer.Add(self.ov_top_right, 0, wx.ALIGN_CENTER_VERTICAL)
 
-        top_meta.SetSizerAndFit(top_sizer)
-        top_meta.SetPosition((12, 12))
-        top_meta.SetSize((-1, 30))
+        top_meta.SetSizer(top_sizer)
 
         # Bottom overlay container
         bottom_meta = wx.Panel(self)
@@ -135,17 +134,30 @@ class PreviewPanel(wx.Panel):
         bottom_sizer.Add(self.ov_bottom_right, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
         self.ov_bottom_right.SetWindowStyle(wx.ST_NO_AUTORESIZE | wx.ALIGN_RIGHT)
 
-        bottom_meta.SetSizerAndFit(bottom_sizer)
-        bottom_meta.SetPosition((12, -12))  # Will be positioned at bottom
+        bottom_meta.SetSizer(bottom_sizer)
 
         # Store references for later use
         self._top_meta = top_meta
         self._bottom_meta = bottom_meta
 
+    def _setup_main_layout(self):
+        """Set up the main sizer for PreviewPanel to manage all children."""
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Add top info overlay with 12px margins
+        main_sizer.Add(self._top_meta, 0, wx.EXPAND | wx.ALL, 12)
+
+        # Add viewport container with proportion=1 to fill remaining space
+        main_sizer.Add(self._viewport_container, 1, wx.EXPAND)
+
+        # Add bottom info overlay with 12px margins
+        main_sizer.Add(self._bottom_meta, 0, wx.EXPAND | wx.ALL, 12)
+
+        self.SetSizer(main_sizer)
+
     def _create_viewport(self, board_path: str):
         """Create the OpenGL viewport."""
         viewport_container = wx.Panel(self)
-        viewport_container.SetBackgroundColour(theme.BLACK)
         viewport_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.viewport = GLPreviewRenderer(viewport_container, board_path)
@@ -154,7 +166,6 @@ class PreviewPanel(wx.Panel):
 
         # Render preview overlay panel (for frames after export)
         self.render_preview_panel = wx.Panel(viewport_container, style=wx.BORDER_NONE)
-        self.render_preview_panel.SetBackgroundColour(theme.BLACK)
         self.render_preview_panel.Hide()
         self.render_preview_panel.Bind(wx.EVT_PAINT, self._on_render_preview_paint)
 

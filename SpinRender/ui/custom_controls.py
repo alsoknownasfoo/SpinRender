@@ -1244,11 +1244,10 @@ class CustomColorPicker(wx.Panel):
         ("#FFFFFF", "WHITE")
     ]
 
-    def __init__(self, parent, current_color="#000000", on_change=None):
+    def __init__(self, parent, current_color="#000000"):
         super().__init__(parent)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.current_color = current_color.upper()
-        self.on_change = on_change
 
         self.hover_idx = -1 # 0-3 for presets, 4 for custom
         self.selection = -1 # -1 if custom, 0-3 if preset
@@ -1418,7 +1417,10 @@ class CustomColorPicker(wx.Panel):
                 self.current_color = new_color
                 self.selection = clicked_idx
                 self.Refresh()
-                if self.on_change: self.on_change(new_color)
+                # Emit colour picker changed event
+                evt = wx.PyCommandEvent(wx.EVT_COLOURPICKER_CHANGED.typeId, self.GetId())
+                evt.SetString(new_color)
+                self.GetEventHandler().ProcessEvent(evt)
         else:
             # Custom clicked - show dialog
             curr_color = wx.Colour(self.current_color)
@@ -1431,7 +1433,10 @@ class CustomColorPicker(wx.Panel):
                 self.current_color = new_hex
                 self._update_selection()
                 self.Refresh()
-                if self.on_change: self.on_change(new_hex)
+                # Emit colour picker changed event
+                evt = wx.PyCommandEvent(wx.EVT_COLOURPICKER_CHANGED.typeId, self.GetId())
+                evt.SetString(new_hex)
+                self.GetEventHandler().ProcessEvent(evt)
             dlg.Destroy()
 
     def on_leave(self, event):
