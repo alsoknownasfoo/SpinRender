@@ -1,16 +1,14 @@
-#!/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
 """
 Typography system for SpinRender.
 
 Defines TextStyle dataclass and semantic text style tokens.
-Uses Theme singleton for font families.
+Uses Theme singleton for font families. Supports hot-reloading.
 """
 import wx
 from dataclasses import dataclass
 from typing import Optional
 
 from SpinRender.core.theme import Theme
-_theme = Theme.current()
 
 
 # ---------------------------------------------------------------------------
@@ -19,15 +17,7 @@ _theme = Theme.current()
 
 @dataclass(frozen=True)
 class TextStyle:
-    """Immutable text style specification.
-
-    Attributes:
-        family: Font family name (e.g., "JetBrains Mono", "Oswald")
-        size: Font size in points
-        weight: Font weight (400=normal, 600=semibold, 700=bold)
-        color: Optional wx.Colour for text (if None, uses default)
-        formatting: Optional text formatting like "uppercase", "lowercase", "italic"
-    """
+    """Immutable text style specification."""
     family: str
     size: int
     weight: int = 400
@@ -58,98 +48,99 @@ class TextStyle:
 
 
 # ---------------------------------------------------------------------------
-# Semantic Text Style Tokens (reference theme values)
+# Semantic Text Style Tokens (Dynamic via Properties)
 # ---------------------------------------------------------------------------
-
-# Resolve theme values once at module load
-_FONT_MONO = _theme.font_family("mono")
-_FONT_ICONS = _theme.font_family("icon")
-_FONT_DISPLAY = _theme.font_family("display")
-_FONT_SIZE_XS = _theme.font_size("xs")
-_FONT_SIZE_SM = _theme.font_size("sm")
-_FONT_SIZE_BASE = _theme.font_size("base")
-_FONT_SIZE_MD = _theme.font_size("md")
-_FONT_SIZE_LG = _theme.font_size("lg")
-_FONT_SIZE_XL = _theme.font_size("xl")
-_FONT_SIZE_ICON = _theme.font_size("icon")
-_FONT_SIZE_ICON_LG = _theme.font_size("icon-lg")  # Note: hyphen, not underscore
-_FONT_WEIGHT_NORMAL = _theme.font_weight("normal")
-_FONT_WEIGHT_SEMIBOLD = _theme.font_weight("semibold")
-_FONT_WEIGHT_BOLD = _theme.font_weight("bold")
-
 
 class TextStyles:
     """Container for predefined semantic text styles.
 
     These styles reference theme font families and are used throughout the UI.
-    Import and use like: TextStyles.body, TextStyles.section_heading, etc.
+    Values are fetched dynamically from the Theme singleton to support hot-reloading.
     """
-    # Base body text - JetBrains Mono, 11px, normal
-    body = TextStyle(
-        family=_FONT_MONO,
-        size=_FONT_SIZE_BASE,
-        weight=_FONT_WEIGHT_NORMAL
-    )
+    
+    @property
+    def theme(self):
+        return Theme.current()
 
-    # Strong body text - JetBrains Mono, 11px, semibold
-    body_strong = TextStyle(
-        family=_FONT_MONO,
-        size=_FONT_SIZE_BASE,
-        weight=_FONT_WEIGHT_SEMIBOLD
-    )
+    @property
+    def body(self) -> TextStyle:
+        return TextStyle(
+            family=self.theme.font_family("mono"),
+            size=self.theme.font_size("base"),
+            weight=self.theme.font_weight("normal")
+        )
 
-    # Small labels - 9px, semibold
-    label_sm = TextStyle(
-        family=_FONT_MONO,
-        size=_FONT_SIZE_SM,
-        weight=_FONT_WEIGHT_SEMIBOLD
-    )
+    @property
+    def body_strong(self) -> TextStyle:
+        return TextStyle(
+            family=self.theme.font_family("mono"),
+            size=self.theme.font_size("base"),
+            weight=self.theme.font_weight("semibold")
+        )
 
-    # Extra small labels (badges, captions) - 8px, bold
-    label_xs = TextStyle(
-        family=_FONT_MONO,
-        size=_FONT_SIZE_XS,
-        weight=_FONT_WEIGHT_BOLD
-    )
+    @property
+    def label_sm(self) -> TextStyle:
+        return TextStyle(
+            family=self.theme.font_family("mono"),
+            size=self.theme.font_size("sm"),
+            weight=self.theme.font_weight("semibold")
+        )
 
-    # Numeric display values - 13px, semibold (for tilt angles, etc.)
-    numeric_value = TextStyle(
-        family=_FONT_MONO,
-        size=_FONT_SIZE_MD,
-        weight=_FONT_WEIGHT_SEMIBOLD
-    )
+    @property
+    def label_xs(self) -> TextStyle:
+        return TextStyle(
+            family=self.theme.font_family("mono"),
+            size=self.theme.font_size("xs"),
+            weight=self.theme.font_weight("bold")
+        )
 
-    # Numeric units (°, %, etc.) - 11px, normal
-    numeric_unit = TextStyle(
-        family=_FONT_MONO,
-        size=_FONT_SIZE_BASE,
-        weight=_FONT_WEIGHT_NORMAL
-    )
+    @property
+    def numeric_value(self) -> TextStyle:
+        return TextStyle(
+            family=self.theme.font_family("mono"),
+            size=self.theme.font_size("md"),
+            weight=self.theme.font_weight("semibold")
+        )
 
-    # Section headings - Oswald, 13px, semibold, uppercase
-    section_heading = TextStyle(
-        family=_FONT_DISPLAY,
-        size=_FONT_SIZE_MD,
-        weight=_FONT_WEIGHT_SEMIBOLD,
-        formatting="uppercase"
-    )
+    @property
+    def numeric_unit(self) -> TextStyle:
+        return TextStyle(
+            family=self.theme.font_family("mono"),
+            size=self.theme.font_size("base"),
+            weight=self.theme.font_weight("normal")
+        )
 
-    # Panel titles - Oswald, 18px, bold, uppercase
-    panel_title = TextStyle(
-        family=_FONT_DISPLAY,
-        size=_FONT_SIZE_XL,
-        weight=_FONT_WEIGHT_BOLD,
-        formatting="uppercase"
-    )
+    @property
+    def section_heading(self) -> TextStyle:
+        return TextStyle(
+            family=self.theme.font_family("display"),
+            size=self.theme.font_size("md"),
+            weight=self.theme.font_weight("semibold"),
+            formatting="uppercase"
+        )
 
-    # MDI icons - Material Design Icons, 14px
-    icon = TextStyle(
-        family=_FONT_ICONS,
-        size=_FONT_SIZE_ICON
-    )
+    @property
+    def panel_title(self) -> TextStyle:
+        return TextStyle(
+            family=self.theme.font_family("display"),
+            size=self.theme.font_size("xl"),
+            weight=self.theme.font_weight("bold"),
+            formatting="uppercase"
+        )
 
-    # Large icons (button icons) - 20px
-    icon_lg = TextStyle(
-        family=_FONT_ICONS,
-        size=_FONT_SIZE_ICON_LG
-    )
+    @property
+    def icon(self) -> TextStyle:
+        return TextStyle(
+            family=self.theme.font_family("icon"),
+            size=self.theme.font_size("icon")
+        )
+
+    @property
+    def icon_lg(self) -> TextStyle:
+        return TextStyle(
+            family=self.theme.font_family("icon"),
+            size=self.theme.font_size("icon-lg")
+        )
+
+# Singleton access
+TextStyles = TextStyles()

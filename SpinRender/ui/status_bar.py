@@ -21,9 +21,9 @@ class StatusBar(wx.Panel):
 
         # State
         self._msg = "READY"
-        self._fg = _theme.color("colors.accent.success")
+        self._fg_override = None
         self._prog = 0.0
-        self._bar_color = _theme.color("colors.accent.primary")
+        self._bar_color_override = None
 
         # Bind paint handler
         self.Bind(wx.EVT_PAINT, self._on_paint)
@@ -36,22 +36,33 @@ class StatusBar(wx.Panel):
             return
 
         w, h = self.GetSize()
+        
+        # Dynamic theme lookups
+        bg_color = _theme.color("colors.bg.panel")
+        success_color = _theme.color("colors.accent.success")
+        primary_color = _theme.color("colors.accent.primary")
+        text_bg_color = _theme.color("colors.bg.input")
 
         # Background
-        gc.SetBrush(wx.Brush(_theme.color("colors.bg.panel")))
+        gc.SetBrush(wx.Brush(bg_color))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRectangle(0, 0, w, h)
 
         # Progress bar fill (from left)
+        bar_color = self._bar_color_override or primary_color
         fill_w = int(w * self._prog)
         if fill_w > 0:
-            gc.SetBrush(wx.Brush(self._bar_color))
+            gc.SetBrush(wx.Brush(bar_color))
             gc.DrawRectangle(0, 0, fill_w, h)
             gc.Clip(0, 0, fill_w, h)
 
         # Text
-        font = TextStyle(family=_theme.font_family("mono"), size=8, weight=400).create_font()
-        gc.SetFont(font, self._fg)
+        fg_color = self._fg_override or success_color
+        font_obj = TextStyle(family=_theme.font_family("mono"), size=8, weight=400).create_font()
+        
+        gfx_font = gc.CreateFont(font_obj, fg_color)
+        gc.SetFont(gfx_font)
+        
         tw, th = gc.GetTextExtent(self._msg)
         tx, ty = 10, (h - th) / 2
         gc.DrawText(self._msg, tx, ty)
@@ -59,34 +70,23 @@ class StatusBar(wx.Panel):
         if fill_w > 0:
             gc.ResetClip()
             # Draw text again in background color for the filled portion (inverted)
-            gc.SetFont(font, _theme.color("colors.bg.input"))
+            gfx_font_inv = gc.CreateFont(font_obj, text_bg_color)
+            gc.SetFont(gfx_font_inv)
+            gc.Clip(0, 0, fill_w, h) # Clip to filled portion for inverted text
             gc.DrawText(self._msg, tx, ty)
 
     def set_status(self, msg: str, fg_color=None, progress: float = 0.0, bar_color=None):
-        """Update status bar display.
-
-        Args:
-            msg: Status message text
-            fg_color: Foreground color (text color)
-            progress: Progress fraction (0.0 to 1.0)
-            bar_color: Progress bar fill color
-        """
+        """Update status bar display."""
         self._msg = msg
-        if fg_color is not None:
-            self._fg = fg_color
+        self._fg_override = fg_color
         self._prog = progress
-        if bar_color is not None:
-            self._bar_color = bar_color
+        self._bar_color_override = bar_color
         self.Refresh()
+        self.Update()
 
     def reset(self):
         """Reset to ready state."""
-        self.set_status(
-            msg="READY",
-            fg_color=_theme.color("colors.accent.success"),
-            progress=0.0,
-            bar_color=_theme.color("colors.accent.primary")
-        )
+        self.set_status(msg="READY", progress=0.0)
 
     def set_error(self, msg: str):
         """Set error state."""

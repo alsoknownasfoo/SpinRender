@@ -74,31 +74,28 @@ class PreviewPanel(wx.Panel):
         # Top-Left: Preset name OR parameters
         self.ov_top_left = wx.StaticText(top_meta, label="")
         self.ov_top_left.SetForegroundColour(_theme.WHITE_ALPHA_68)
-        self.ov_top_left.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=400).create_font())
+        self.ov_top_left.SetFont(TextStyles.label_sm.create_font())
         top_sizer.Add(self.ov_top_left, 1, wx.ALIGN_CENTER_VERTICAL)
 
         # Top-Right: Render mode buttons container
         self.render_mode_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.render_mode_btns = {}
+        self.render_mode_divs = []
 
-        mode_font = TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font()
         modes = [("WIREFRAME", "wireframe"), ("SHADED", "shaded"), ("BOTH", "both")]
 
         for i, (label, mode_id) in enumerate(modes):
             btn = wx.StaticText(top_meta, label=label)
-            btn.SetFont(mode_font)
+            btn.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font())
             btn.SetCursor(wx.Cursor(wx.CURSOR_HAND))
-            # Bind to handler that will be provided by parent/orchestrator
-            # In extracted form, we'll use a callback or let parent bind
-            # For now, keep same pattern as original - will be handled by parent
-            # But we need to store btn for update_render_mode_ui
             self.render_mode_btns[mode_id] = btn
             self.render_mode_sizer.Add(btn, 0, wx.ALIGN_CENTER_VERTICAL)
 
             if i < len(modes) - 1:
                 div = wx.StaticText(top_meta, label="  |  ")
-                div.SetFont(mode_font)
-                div.SetForegroundColour(_theme.SCROLLBAR_GREY)
+                div.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font())
+                div.SetForegroundColour(_theme.color("colors.border.default"))
+                self.render_mode_divs.append(div)
                 self.render_mode_sizer.Add(div, 0, wx.ALIGN_CENTER_VERTICAL)
 
         top_sizer.Add(self.render_mode_sizer, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
@@ -109,7 +106,6 @@ class PreviewPanel(wx.Panel):
         self.ov_top_right.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font())
         self.ov_top_right.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         self.ov_top_right.Hide()
-        # Event binding will be done by parent/orchestrator after construction
         top_sizer.Add(self.ov_top_right, 0, wx.ALIGN_CENTER_VERTICAL)
 
         top_meta.SetSizer(top_sizer)
@@ -120,18 +116,18 @@ class PreviewPanel(wx.Panel):
 
         self.ov_bottom_left = wx.StaticText(bottom_meta, label="")
         self.ov_bottom_left.SetForegroundColour(_theme.WHITE_ALPHA_68)
-        self.ov_bottom_left.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=400).create_font())
+        self.ov_bottom_left.SetFont(TextStyles.label_sm.create_font())
         bottom_sizer.Add(self.ov_bottom_left, 1, wx.ALIGN_CENTER_VERTICAL)
 
         self.ov_bottom_center = wx.StaticText(bottom_meta, label="")
         self.ov_bottom_center.SetForegroundColour(_theme.WHITE_ALPHA_68)
-        self.ov_bottom_center.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=400).create_font())
+        self.ov_bottom_center.SetFont(TextStyles.label_sm.create_font())
         bottom_sizer.Add(self.ov_bottom_center, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_CENTER_HORIZONTAL)
         self.ov_bottom_center.SetWindowStyle(wx.ST_NO_AUTORESIZE | wx.ALIGN_CENTRE_HORIZONTAL)
 
         self.ov_bottom_right = wx.StaticText(bottom_meta, label="")
         self.ov_bottom_right.SetForegroundColour(_theme.color("colors.accent.success"))
-        self.ov_bottom_right.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=400).create_font())
+        self.ov_bottom_right.SetFont(TextStyles.label_sm.create_font())
         bottom_sizer.Add(self.ov_bottom_right, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
         self.ov_bottom_right.SetWindowStyle(wx.ST_NO_AUTORESIZE | wx.ALIGN_RIGHT)
 
@@ -140,6 +136,36 @@ class PreviewPanel(wx.Panel):
         # Store references for later use
         self._top_meta = top_meta
         self._bottom_meta = bottom_meta
+
+    def reapply_theme(self):
+        """Re-apply theme to static overlay elements."""
+        self.SetBackgroundColour(_theme.color("colors.bg.page"))
+        
+        # Overlay labels
+        label_font = TextStyles.label_sm.create_font()
+        for lbl in [self.ov_top_left, self.ov_bottom_left, self.ov_bottom_center]:
+            lbl.SetForegroundColour(_theme.WHITE_ALPHA_68)
+            lbl.SetFont(label_font)
+            
+        self.ov_bottom_right.SetForegroundColour(_theme.color("colors.accent.success"))
+        self.ov_bottom_right.SetFont(label_font)
+        
+        self.ov_top_right.SetForegroundColour(_theme.color("colors.accent.primary"))
+        self.ov_top_right.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font())
+        
+        # Render mode buttons
+        mode_font = TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font()
+        for mode_id, btn in self.render_mode_btns.items():
+            btn.SetFont(mode_font)
+            # Active mode will be updated via update_render_mode_ui below
+            
+        for div in self.render_mode_divs:
+            div.SetFont(mode_font)
+            div.SetForegroundColour(_theme.color("colors.border.default"))
+            
+        self.update_render_mode_ui(self.settings.render_mode)
+        self.update_preview_overlay()
+        self.Refresh()
 
     def _setup_main_layout(self):
         """Set up the main sizer for PreviewPanel to manage all children."""

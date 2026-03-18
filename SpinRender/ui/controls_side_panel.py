@@ -21,15 +21,6 @@ from .helpers import create_section_label, create_numeric_input
 class ControlsSidePanel(wx.Panel):
     """
     Left sidebar panel containing all rendering controls.
-
-    Constructs the UI for presets, rotation parameters, lighting, output settings,
-    and export actions. All created controls are stored as instance attributes
-    for the parent to access.
-
-    Args:
-        parent: The SpinRenderPanel instance (used for event handlers and helpers)
-        settings: RenderSettings instance with current values
-        board_path: Path to the board file (for preset management)
     """
 
     def __init__(self, parent, settings, board_path):
@@ -50,49 +41,49 @@ class ControlsSidePanel(wx.Panel):
 
     def create_controls_panel(self, parent):
         """Create the main scrolled controls container."""
-        panel = scrolled.ScrolledPanel(parent, size=(400, -1))
-        panel.SetBackgroundColour(_theme.color("colors.bg.page"))
-        panel.SetupScrolling(scroll_x=False, scroll_y=True, rate_y=20)
+        self.scrolled_panel = scrolled.ScrolledPanel(parent, size=(400, -1))
+        self.scrolled_panel.SetBackgroundColour(_theme.color("colors.bg.page"))
+        self.scrolled_panel.SetupScrolling(scroll_x=False, scroll_y=True, rate_y=20)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         padding = 16
 
-        header = self.create_header(panel)
-        sizer.Add(header, 0, wx.EXPAND)
+        self.header_panel = self.create_header(self.scrolled_panel)
+        sizer.Add(self.header_panel, 0, wx.EXPAND)
 
-        div1 = wx.Panel(panel, size=(-1, 1))
-        div1.SetBackgroundColour(_theme.color("colors.border.default"))
-        sizer.Add(div1, 0, wx.EXPAND)
+        self.div1 = wx.Panel(self.scrolled_panel, size=(-1, 1))
+        self.div1.SetBackgroundColour(_theme.color("colors.border.default"))
+        sizer.Add(self.div1, 0, wx.EXPAND)
 
-        presets = self.create_preset_section(panel)
+        presets = self.create_preset_section(self.scrolled_panel)
         sizer.Add(presets, 0, wx.EXPAND | wx.ALL, padding)
 
-        div2 = wx.Panel(panel, size=(-1, 1))
-        div2.SetBackgroundColour(_theme.color("colors.border.default"))
-        sizer.Add(div2, 0, wx.EXPAND)
+        self.div2 = wx.Panel(self.scrolled_panel, size=(-1, 1))
+        self.div2.SetBackgroundColour(_theme.color("colors.border.default"))
+        sizer.Add(self.div2, 0, wx.EXPAND)
 
-        params = self.create_parameters_section(panel)
+        params = self.create_parameters_section(self.scrolled_panel)
         sizer.Add(params, 0, wx.EXPAND | wx.ALL, padding)
 
-        div3 = wx.Panel(panel, size=(-1, 1))
-        div3.SetBackgroundColour(_theme.color("colors.border.default"))
-        sizer.Add(div3, 0, wx.EXPAND)
+        self.div3 = wx.Panel(self.scrolled_panel, size=(-1, 1))
+        self.div3.SetBackgroundColour(_theme.color("colors.border.default"))
+        sizer.Add(self.div3, 0, wx.EXPAND)
 
-        output_settings = self.create_output_settings_section(panel)
+        output_settings = self.create_output_settings_section(self.scrolled_panel)
         sizer.Add(output_settings, 1, wx.EXPAND | wx.ALL, padding)
 
-        div4 = wx.Panel(panel, size=(-1, 1))
-        div4.SetBackgroundColour(_theme.color("colors.border.default"))
-        sizer.Add(div4, 0, wx.EXPAND)
+        self.div4 = wx.Panel(self.scrolled_panel, size=(-1, 1))
+        self.div4.SetBackgroundColour(_theme.color("colors.border.default"))
+        sizer.Add(self.div4, 0, wx.EXPAND)
 
-        export = self.create_export_section(panel)
+        export = self.create_export_section(self.scrolled_panel)
         sizer.Add(export, 0, wx.EXPAND | wx.ALL, padding)
 
-        panel.SetSizer(sizer)
+        self.scrolled_panel.SetSizer(sizer)
         required_h = sizer.CalcMin().y + 40
-        panel.SetMinSize((400, required_h))
-        sizer.Fit(panel)
-        return panel
+        self.scrolled_panel.SetMinSize((400, required_h))
+        sizer.Fit(self.scrolled_panel)
+        return self.scrolled_panel
 
     def create_header(self, parent):
         """Create the logo and title header."""
@@ -104,15 +95,15 @@ class ControlsSidePanel(wx.Panel):
         sizer.Add(logo, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 16)
 
         title_sizer = wx.BoxSizer(wx.VERTICAL)
-        title = wx.StaticText(header, label="SPINRENDER")
-        title.SetForegroundColour(_theme.color("colors.text.primary"))
-        title.SetFont(TextStyles.panel_title.create_font())
-        title_sizer.Add(title, 0)
+        self.header_title = wx.StaticText(header, label="SPINRENDER")
+        self.header_title.SetForegroundColour(_theme.color("colors.text.primary"))
+        self.header_title.SetFont(TextStyles.panel_title.create_font())
+        title_sizer.Add(self.header_title, 0)
 
-        subtitle = wx.StaticText(header, label="0.9 alpha")
-        subtitle.SetForegroundColour(_theme.color("colors.accent.primary"))
-        subtitle.SetFont(TextStyles.label_xs.create_font())
-        title_sizer.Add(subtitle, 0)
+        self.header_subtitle = wx.StaticText(header, label="0.9 alpha")
+        self.header_subtitle.SetForegroundColour(_theme.color("colors.accent.primary"))
+        self.header_subtitle.SetFont(TextStyles.label_xs.create_font())
+        title_sizer.Add(self.header_subtitle, 0)
         sizer.Add(title_sizer, 0, wx.ALIGN_CENTER_VERTICAL)
 
         sizer.AddStretchSpacer()
@@ -121,7 +112,6 @@ class ControlsSidePanel(wx.Panel):
         icon_color, icon_color_hover, icon_color_pressed = _theme.color_states("components.button.close.text")
         bg_color, bg_color_hover, bg_color_pressed = _theme.color_states("components.button.close.bg")
         border_color, border_color_hover, border_color_pressed = _theme.color_states("components.button.close.border")
-        radius = _theme.size("components.button.close.radius")
 
         self.header_close_btn = CustomButton(
             header, label="", icon='mdi-close', primary=False, ghost=True,
@@ -133,17 +123,83 @@ class ControlsSidePanel(wx.Panel):
             bg_color_pressed=bg_color_pressed,
             size=(36, 36)
         )
-        # CustomButton needs to support border_color overrides to fully implement the close button look
         self.header_close_btn.border_color_override = border_color
         self.header_close_btn.border_color_hover = border_color_hover
         self.header_close_btn.border_color_pressed = border_color_pressed
-        # Could also add border_radius support if needed, but sticking to colors for now
+        
         self.header_close_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_close)
         sizer.Add(self.header_close_btn, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 16)
 
         header.SetSizerAndFit(sizer)
         self.main_panel.enable_drag(header)
         return header
+
+    def reapply_theme(self):
+        """Re-apply theme to static container elements and labels after hot-reload."""
+        self.SetBackgroundColour(_theme.color("colors.bg.page"))
+        
+        # We'll use a recursive helper to catch all StaticText and Panels (dividers)
+        def update_recursive(window):
+            # Update Panels (mostly backgrounds and dividers)
+            if isinstance(window, wx.Panel):
+                # Don't overwrite specialized panel colors (like CustomButton) 
+                # if they handle their own themes in on_paint.
+                # Just handle standard panels.
+                from .custom_controls import CustomSlider, CustomToggleButton, CustomButton, PresetCard, CustomDropdown, CustomColorPicker
+                if not isinstance(window, (CustomSlider, CustomToggleButton, CustomButton, PresetCard, CustomDropdown, CustomColorPicker)):
+                    # Most of our container panels use bg.page or bg.panel
+                    if window == self.header_panel:
+                        window.SetBackgroundColour(_theme.color("colors.bg.panel"))
+                    elif window in [self.div1, self.div2, self.div3, self.div4]:
+                        window.SetBackgroundColour(_theme.color("colors.border.default"))
+                    else:
+                        window.SetBackgroundColour(_theme.color("colors.bg.page"))
+            
+            # Update StaticText (labels)
+            elif isinstance(window, wx.StaticText):
+                # Check for section labels (Oswald font) vs regular labels (Mono)
+                font = window.GetFont()
+                if font.GetFaceName() == _theme.font_family("display"):
+                    if window == self.header_title:
+                        window.SetFont(TextStyles.panel_title.create_font())
+                    else:
+                        window.SetFont(TextStyles.section_heading.create_font())
+                    window.SetForegroundColour(_theme.color("colors.text.primary"))
+                else:
+                    # Regular mono labels
+                    if window == self.header_subtitle:
+                        window.SetForegroundColour(_theme.color("colors.accent.primary"))
+                        window.SetFont(TextStyles.label_xs.create_font())
+                    else:
+                        # Catch-all for other mono labels
+                        window.SetFont(TextStyles.label_xs.create_font())
+                        # If it's a section label accent, it might be cyan
+                        if window.GetForegroundColour() != _theme.color("colors.text.muted"):
+                             window.SetForegroundColour(_theme.color("colors.text.primary"))
+
+            for child in window.GetChildren():
+                update_recursive(child)
+
+        update_recursive(self)
+        
+        # Specialized updates for stored attributes
+        if hasattr(self, 'header_close_btn'):
+            icon_c, icon_h, icon_p = _theme.color_states("components.button.close.text")
+            bg_c, bg_h, bg_p = _theme.color_states("components.button.close.bg")
+            brd_c, brd_h, brd_p = _theme.color_states("components.button.close.border")
+            
+            btn = self.header_close_btn
+            btn.icon_color_override = icon_c
+            btn.icon_color_hover = icon_h
+            btn.icon_color_pressed = icon_p
+            btn.bg_color_override = bg_c
+            btn.bg_color_hover = bg_h
+            btn.bg_color_pressed = bg_p
+            btn.border_color_override = brd_c
+            btn.border_color_hover = brd_h
+            btn.border_color_pressed = brd_p
+
+        self.Refresh()
 
     def create_preset_section(self, parent):
         """Create the preset selection buttons."""

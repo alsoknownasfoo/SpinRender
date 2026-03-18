@@ -84,12 +84,12 @@ class SpinRenderPanel(wx.Panel):
 
     def build_ui(self):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        top_panel = wx.Panel(self)
-        top_panel.SetBackgroundColour(_theme.color("colors.bg.page"))
+        self.top_container = wx.Panel(self)
+        self.top_container.SetBackgroundColour(_theme.color("colors.bg.page"))
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         # Left: Controls panel - instantiate ControlsSidePanel
-        self.controls_side_panel = ControlsSidePanel(top_panel, self.settings, self.board_path)
+        self.controls_side_panel = ControlsSidePanel(self.top_container, self.settings, self.board_path)
         # Fixed width of 450px for controls panel
         self.controls_side_panel.SetMinSize((450, -1))
         self.controls_side_panel.SetMaxSize((450, -1))
@@ -102,23 +102,23 @@ class SpinRenderPanel(wx.Panel):
         self.preset_buttons = self.controls_side_panel.preset_buttons
 
         # Center Divider
-        divider = wx.Panel(top_panel, size=(1, -1))
-        divider.SetBackgroundColour(_theme.color("colors.border.default"))
-        top_sizer.Add(divider, 0, wx.EXPAND)
+        self.center_divider = wx.Panel(self.top_container, size=(1, -1))
+        self.center_divider.SetBackgroundColour(_theme.color("colors.border.default"))
+        top_sizer.Add(self.center_divider, 0, wx.EXPAND)
 
         # Right: Preview panel
-        self.preview_panel = self.create_preview_panel(top_panel)
+        self.preview_panel = self.create_preview_panel(self.top_container)
         # Ensure preview panel has minimum width of 700px BEFORE adding to sizer
         self.preview_panel.SetMinSize((700, -1))
         top_sizer.Add(self.preview_panel, 1, wx.EXPAND)
 
-        top_panel.SetSizer(top_sizer)
-        top_sizer.Fit(top_panel)
-        main_sizer.Add(top_panel, 1, wx.EXPAND)
+        self.top_container.SetSizer(top_sizer)
+        top_sizer.Fit(self.top_container)
+        main_sizer.Add(self.top_container, 1, wx.EXPAND)
 
-        status_divider = wx.Panel(self, size=(-1, 1))
-        status_divider.SetBackgroundColour(_theme.color("colors.border.default"))
-        main_sizer.Add(status_divider, 0, wx.EXPAND)
+        self.status_divider = wx.Panel(self, size=(-1, 1))
+        self.status_divider.SetBackgroundColour(_theme.color("colors.border.default"))
+        main_sizer.Add(self.status_divider, 0, wx.EXPAND)
 
         self.status_bar = StatusBar(self)
         main_sizer.Add(self.status_bar, 0, wx.EXPAND)
@@ -138,6 +138,35 @@ class SpinRenderPanel(wx.Panel):
 
         # Perform initial preset match check (now via controller)
         self.preset_controller.check_preset_match(manual_change=False)
+
+    def reapply_theme(self):
+        """Orchestrate theme re-application across all sub-panels."""
+        self.SetBackgroundColour(_theme.color("colors.bg.page"))
+        
+        if hasattr(self, 'top_container'):
+            self.top_container.SetBackgroundColour(_theme.color("colors.bg.page"))
+            
+        if hasattr(self, 'center_divider'):
+            self.center_divider.SetBackgroundColour(_theme.color("colors.border.default"))
+            
+        if hasattr(self, 'status_divider'):
+            self.status_divider.SetBackgroundColour(_theme.color("colors.border.default"))
+            
+        # Call reapply_theme on sub-panels
+        if hasattr(self, 'controls_side_panel'):
+            self.controls_side_panel.reapply_theme()
+            
+        if hasattr(self, 'preview_panel'):
+            self.preview_panel.reapply_theme()
+            
+        # StatusBar handles its own dynamic lookups in _on_paint
+        if hasattr(self, 'status_bar'):
+            self.status_bar.SetBackgroundColour(_theme.color("colors.bg.panel"))
+            self.status_bar.Refresh()
+            self.status_bar.Update()
+            
+        self.Refresh()
+        self.Update()
 
     def _init_preset_controller(self):
         """Collect control references and instantiate PresetController."""
