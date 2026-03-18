@@ -17,9 +17,6 @@ from core.settings import RenderSettings
 from .preset_controller import PresetController
 from core.render_controller import RenderController
 from .controls_side_panel import ControlsSidePanel
-from .preset_controller import PresetController
-from core.render_controller import RenderController
-from .controls_side_panel import ControlsSidePanel
 from .status_bar import StatusBar
 from .parameter_controller import ParameterController
 
