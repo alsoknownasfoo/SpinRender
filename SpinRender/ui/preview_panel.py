@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 from typing import List, Optional
 
-from .text_styles import TextStyle
+from .text_styles import TextStyle, TextStyles
 from SpinRender.core.theme import Theme
 _theme = Theme.current()
 from SpinRender.core.preview import GLPreviewRenderer
