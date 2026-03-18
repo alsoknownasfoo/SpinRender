@@ -136,13 +136,13 @@ class ControlsSidePanel(wx.Panel):
 
     def reapply_theme(self):
         """Re-apply theme to static container elements after hot-reload."""
-        self.SetBackgroundColour(_theme.color("colors.bg.page"))
+        self.SetBackgroundColour(_theme.color("components.panel.bg"))
         
         if hasattr(self, 'scrolled_panel'):
-            self.scrolled_panel.SetBackgroundColour(_theme.color("colors.bg.page"))
+            self.scrolled_panel.SetBackgroundColour(_theme.color("components.panel.bg"))
             
         if hasattr(self, 'header_panel'):
-            self.header_panel.SetBackgroundColour(_theme.color("colors.bg.panel"))
+            self.header_panel.SetBackgroundColour(_theme.color("components.panel.header-bg"))
             
         if hasattr(self, 'header_title'):
             self.header_title.SetForegroundColour(_theme.color("colors.text.primary"))
@@ -155,7 +155,7 @@ class ControlsSidePanel(wx.Panel):
         # Dividers
         for attr in ['div1', 'div2', 'div3', 'div4']:
             if hasattr(self, attr):
-                getattr(self, attr).SetBackgroundColour(_theme.color("colors.border.default"))
+                getattr(self, attr).SetBackgroundColour(_theme.color("components.panel.header-border"))
                 
         # Close Button states update
         if hasattr(self, 'header_close_btn'):

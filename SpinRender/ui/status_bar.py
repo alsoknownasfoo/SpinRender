@@ -37,11 +37,11 @@ class StatusBar(wx.Panel):
 
         w, h = self.GetSize()
         
-        # Dynamic theme lookups
-        bg_color = _theme.color("colors.bg.panel")
-        success_color = _theme.color("colors.accent.success")
-        primary_color = _theme.color("colors.accent.primary")
-        text_bg_color = _theme.color("colors.bg.input")
+        # Dynamic theme lookups from component section
+        bg_color = _theme.color("components.status_bar.bg")
+        success_color = _theme.color("components.status_bar.text")
+        primary_color = _theme.color("components.status_bar.progress-bar")
+        text_bg_color = _theme.color("components.status_bar.text-filled")
 
         # Background
         gc.SetBrush(wx.Brush(bg_color))
@@ -58,7 +58,7 @@ class StatusBar(wx.Panel):
 
         # Text
         fg_color = self._fg_override or success_color
-        font_obj = TextStyle(family=_theme.font_family("mono"), size=8, weight=400).create_font()
+        font_obj = TextStyles.label_xs.create_font()
         
         gfx_font = gc.CreateFont(font_obj, fg_color)
         gc.SetFont(gfx_font)
@@ -90,8 +90,8 @@ class StatusBar(wx.Panel):
 
     def set_error(self, msg: str):
         """Set error state."""
-        self.set_status(msg, fg_color=_theme.color("colors.accent.warning"), progress=0.0, bar_color=_theme.color("colors.accent.warning"))
+        self.set_status(msg, fg_color=_theme.color("components.status_bar.text-error"), progress=0.0, bar_color=_theme.color("components.status_bar.text-error"))
 
     def set_complete(self):
         """Set complete state."""
-        self.set_status("RENDER COMPLETE", fg_color=_theme.color("colors.accent.success"), progress=1.0, bar_color=_theme.color("colors.accent.success"))
+        self.set_status("RENDER COMPLETE", fg_color=_theme.color("components.status_bar.text"), progress=1.0, bar_color=_theme.color("components.status_bar.text"))

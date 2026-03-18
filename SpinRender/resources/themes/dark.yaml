@@ -269,6 +269,13 @@ components:
     header-border:  ["colors.border.default"]
     padding:        {ref: "spacing.lg"}
     section-gap:    {ref: "spacing.lg"}
+    section-label:  {ref: "components.section_label"}
+
+  # Section Label
+  section_label:
+    text:           ["colors.text.secondary"]
+    line:           ["colors.border.default"]
+    font:           {ref: "typography.presets.section_heading"}
 
   # Slider
   slider:
@@ -344,13 +351,32 @@ components:
     # Explicit close button definition linked to ghost style
     close:          {ref: "components.button.ghost"}
 
+  # Text Input
+  text_input:       {ref: "components.numeric_input"}
+
+  # Path Input
+  path_input:
+    bg:             ["colors.bg.input"]
+    border:         ["colors.border.default"]
+    text:           ["colors.text.secondary"]
+    icon:           ["colors.text.secondary"]
+
   # Preset Card
   preset_card:
-    bg:             ["colors.bg.surface"]
-    border:         ["colors.border.default"]
-    accent:         ["colors.accent.primary"]
+    bg:             ["colors.bg.surface", "colors.bg.panel"]
+    border:         ["colors.border.default", "colors.accent.primary"]
+    text:           ["colors.text.secondary", "colors.accent.primary"]
 
   # Badge
   badge:
     bg:             ["colors.accent.warning"]
-    text:           ["colors.text.on-accent"]
+    text:           ["colors.bg.page"]
+
+  # Status Bar
+  status_bar:
+    bg:             ["colors.bg.panel"]
+    text:           ["colors.accent.success"]
+    text-error:     ["colors.accent.warning"]
+    text-filled:    ["colors.bg.input"]
+    progress-bar:   ["colors.accent.primary"]
+    font:           {ref: "typography.presets.label_xs"}
