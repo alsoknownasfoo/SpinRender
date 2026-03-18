@@ -67,9 +67,9 @@ class Theme:
             with open(path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
             
-            # Debug: Print full loaded theme data
-            # Note: We dump the freshly read 'data', not self._data
-            logger.debug(f"Theme '{name}' content loaded from {path}:\n{yaml.dump(data, default_flow_style=False)}")
+            # Print full loaded theme data at INFO level
+            debug_data = yaml.dump(data, sort_keys=False, default_flow_style=False)
+            logger.info(f"Theme Data (Loaded from {path.name}):\n{debug_data}")
 
             if cls._instance:
                 # CRITICAL: Update the existing instance's data dictionary in-place.
