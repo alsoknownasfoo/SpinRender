@@ -146,6 +146,11 @@ class SpinRenderFrame(wx.Frame):
         """Finalize window size and position"""
         if self:
             self.Fit()
+            # Enforce minimum width: controls (400) + divider (1) + preview (700) + padding
+            min_width = 1120  # 400 + 1 + 700 + ~19px for borders/sizer padding
+            current_size = self.GetSize()
+            if current_size.GetWidth() < min_width:
+                self.SetSize((min_width, current_size.GetHeight()))
             self.Centre()
 
     def on_close(self, event):

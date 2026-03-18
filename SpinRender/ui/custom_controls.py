@@ -251,7 +251,7 @@ class CustomToggleButton(wx.Panel):
 
         # Border logic - apply disabled state
         bg_color = theme.disabled(self.BG_COLOR) if not enabled else self.BG_COLOR
-        border_color = theme.disabled(self.BORDER_DEFAULT) if not enabled else theme.BORDER_DEFAULT
+        border_color = theme.disabled(theme.BORDER_DEFAULT) if not enabled else theme.BORDER_DEFAULT
         gc.SetBrush(wx.Brush(bg_color))
         gc.SetPen(wx.Pen(border_color, 1))
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)

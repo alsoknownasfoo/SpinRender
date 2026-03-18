@@ -423,15 +423,15 @@ class SpinRenderPanel(wx.Panel):
         self.status_bar.set_status("PREPARING RENDER...", fg_color=theme.ACCENT_CYAN, progress=0.0)
 
         # Start render state
-        self.stop_playback()
+        self.preview.stop_playback()
         # Cleanup previous frame dir if it exists
-        if self.last_frame_dir and os.path.exists(self.last_frame_dir):
+        if self.preview.last_frame_dir and os.path.exists(self.preview.last_frame_dir):
             try:
                 import shutil
-                shutil.rmtree(self.last_frame_dir)
+                shutil.rmtree(self.preview.last_frame_dir)
             except:
                 pass
-        self.last_frame_dir = None
+        self.preview.last_frame_dir = None
 
         # IMMEDIATELY ACTIVATE RENDER PREVIEW (hides wireframe)
         self.render_preview_active = True
