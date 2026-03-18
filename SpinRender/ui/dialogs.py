@@ -9,8 +9,8 @@ import threading
 from .custom_controls import CustomButton, CustomTextInput
 from .text_styles import TextStyle, TextStyles
 from SpinRender.core.theme import Theme
-from foundation.fonts import JETBRAINS_MONO, MDI_FONT_FAMILY, INTER
-from foundation.icons import STATUS_ICONS
+from SpinRender.foundation.fonts import JETBRAINS_MONO, MDI_FONT_FAMILY, INTER
+from SpinRender.foundation.icons import STATUS_ICONS
 
 _theme = Theme.current()
 

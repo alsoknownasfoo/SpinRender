@@ -84,7 +84,7 @@ class PresetController:
         # Note: Rendering check is performed by caller (SpinRenderPanel) before invoking.
         # This allows UI-layer decision making.
 
-        from core.renderer import RenderEngine
+        from SpinRender.core.renderer import RenderEngine
         presets = RenderEngine.PRESETS
 
         if preset_id == 'custom':
@@ -209,8 +209,8 @@ class PresetController:
         Check if current settings match any preset (built-in or custom).
         Updates preset button selection states and settings.preset accordingly.
         """
-        from core.renderer import RenderEngine
-        from core.presets import PresetManager
+        from SpinRender.core.renderer import RenderEngine
+        from SpinRender.core.presets import PresetManager
 
         presets = RenderEngine.PRESETS
         manager = PresetManager(self.board_path)
@@ -284,7 +284,7 @@ class PresetController:
 
         # Re-apply logging level in case it changed
         try:
-            from utils.logger import SpinLogger
+            from SpinRender.utils.logger import SpinLogger
             SpinLogger.setup(level=getattr(self.settings, 'logging_level', 'simple'))
         except ImportError:
             pass

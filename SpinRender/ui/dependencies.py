@@ -9,7 +9,7 @@ import threading
 import time
 import logging
 
-from utils.check_dependencies import DependencyChecker as PureDependencyChecker
+from SpinRender.utils.check_dependencies import DependencyChecker as PureDependencyChecker
 from SpinRender.foundation.fonts import JETBRAINS_MONO, MDI_FONT_FAMILY, OSWALD
 
 logger = logging.getLogger("SpinRender")
