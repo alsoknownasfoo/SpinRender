@@ -377,11 +377,6 @@ class PreviewPanel(wx.Panel):
             gc.SetInterpolationQuality(wx.INTERPOLATION_BEST)
             gc.DrawBitmap(self.render_preview_bitmap, x_offset, y_offset, display_w, display_h)
 
-            # Draw faint outline around render
-            gc.SetBrush(wx.TRANSPARENT_BRUSH)
-            gc.SetPen(wx.Pen(theme.WHITE_ALPHA_30, 1))
-            gc.DrawRectangle(x_offset, y_offset, display_w, display_h)
-
     # ------------------------------------------------------------------------
     # Viewport container size sync
     # ------------------------------------------------------------------------
