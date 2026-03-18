@@ -10,7 +10,7 @@ from pathlib import Path
 logger = logging.getLogger("SpinRender")
 
 try:
-    from .settings import RenderSettings
+    from SpinRender.core.settings import RenderSettings
 except ImportError:
     RenderSettings = None  # For backward compatibility if used standalone
 
