@@ -16,8 +16,18 @@ user_site = site.getusersitepackages()
 if user_site not in sys.path:
     sys.path.append(user_site)
 
-# Add plugin directory to path for imports
+# Add plugin parent directory to path for package-style imports
+# This ensures that 'from SpinRender.xxx' works correctly and consistently
 plugin_dir = os.path.dirname(os.path.abspath(__file__))
+plugin_parent = os.path.dirname(plugin_dir)
+
+if plugin_parent not in sys.path:
+    sys.path.insert(0, plugin_parent)
+
+# Remove the plugin_dir itself if it's in sys.path to avoid duplicate modules
+# (e.g. importing 'core.theme' vs 'SpinRender.core.theme')
+if plugin_dir in sys.path:
+    sys.path.remove(plugin_dir)
 
 # Initialize logging system
 from SpinRender.utils.logger import SpinLogger
@@ -106,7 +116,7 @@ class SpinRenderPlugin(pcbnew.ActionPlugin):
 
             # Import SpinRenderPanel only after dependencies are verified
             logger.debug("Dependencies OK, importing SpinRenderPanel...")
-            from ui.main_panel import SpinRenderPanel
+            from SpinRender.ui.main_panel import SpinRenderPanel
             logger.debug("SpinRenderPanel imported successfully")
 
             # Get board file path
@@ -163,7 +173,7 @@ class SpinRenderFrame(wx.Frame):
 
         # Create main panel - import here after dependencies are verified
         logger.debug("Importing SpinRenderPanel...")
-        from ui.main_panel import SpinRenderPanel
+        from SpinRender.ui.main_panel import SpinRenderPanel
         logger.debug("Creating SpinRenderPanel...")
         self.panel = SpinRenderPanel(self, board_path)
         logger.debug("Panel created")
