@@ -41,11 +41,10 @@ class Theme:
     def load(cls, name: str = "dark", force: bool = False) -> "Theme":
         """Load theme from YAML file. Sets singleton instance."""
         # Use resolve() to follow symlinks and get the absolute path
-        base_path = Path(__file__).parent.parent / "resources" / "themes" / f"{name}.yaml"
-        path = base_path.resolve()
+        path = (Path(__file__).parent.parent / "resources" / "themes" / f"{name}.yaml").resolve()
         
         if not path.exists():
-            error_msg = f"Theme file not found: {path} (resolved from {base_path})"
+            error_msg = f"Theme file not found: {path}"
             logger.error(error_msg)
             raise FileNotFoundError(error_msg)
 
@@ -57,7 +56,7 @@ class Theme:
         if cls._instance is not None and not force and not is_stale:
             return cls._instance
 
-        logger.info(f"Theme: {'Reloading' if (force or is_stale) else 'Initializing'} '{name}' theme from {path}")
+        logger.info(f"Theme: {'Reloading' if (force or is_stale) else 'Initializing'} '{name}' theme loading.")
 
         if not _yaml_available:
             error_msg = "PyYAML is not available. Theme system requires PyYAML."
@@ -69,10 +68,13 @@ class Theme:
                 data = yaml.safe_load(f)
             
             # Debug: Print full loaded theme data
-            logger.debug(f"Theme '{name}' [Path: {path}] content loaded:\n{yaml.dump(data, default_flow_style=False)}")
+            # Note: We dump the freshly read 'data', not self._data
+            logger.debug(f"Theme '{name}' content loaded from {path}:\n{yaml.dump(data, default_flow_style=False)}")
 
             if cls._instance:
-                # Update the existing instance's data dictionary in-place
+                # CRITICAL: Update the existing instance's data dictionary in-place.
+                # This ensures all modules that hold a reference to this instance 
+                # (via _theme = Theme.current()) see the new data immediately.
                 cls._instance._data = data
             else:
                 cls._instance = cls(data)
@@ -90,8 +92,22 @@ class Theme:
     @classmethod
     def reload(cls) -> "Theme":
         """Force a reload of the current theme from disk."""
+        # Use the name of the currently loaded theme, or default to dark
         name = cls._loaded_name if cls._loaded_name else "dark"
-        return cls.load(name=name, force=True)
+        instance = cls.load(name=name, force=True)
+        
+        if _yaml_available:
+            try:
+                # Print the full data as YAML for easy debugging
+                debug_data = yaml.dump(instance._data, sort_keys=False, default_flow_style=False)
+                logger.info(f"Theme Data (Reloaded):\n{debug_data}")
+            except Exception as e:
+                logger.info(f"Theme Data (Reloaded - Raw): {instance._data}")
+                logger.error(f"Failed to dump theme debug data: {e}")
+        else:
+            logger.info(f"Theme Data (Reloaded - Raw): {instance._data}")
+            
+        return instance
 
     @classmethod
     def current(cls) -> "Theme":
