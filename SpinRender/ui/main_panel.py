@@ -30,6 +30,8 @@ from .preview_panel import PreviewPanel
 
 # Import RenderSettings
 from core.settings import RenderSettings
+from .preset_controller import PresetController
+from core.render_controller import RenderController
 
 
 class SVGLogoPanel(wx.Panel):
@@ -130,8 +132,7 @@ class SpinRenderPanel(wx.Panel):
         self.SetBackgroundColour(theme.BG_PAGE)
         self.drag_start_pos = None
         self.frame_start_pos = None
-        self.is_rendering = False
-        self.render_engine = None
+        self.render_controller = RenderController()
         self.avg_frame_time = None
         self.frame_times = []
         
@@ -178,12 +179,45 @@ class SpinRenderPanel(wx.Panel):
         main_sizer.Layout()
         min_size = main_sizer.CalcMin()
         self.SetMinSize(min_size)
-        
+
         parent_frame = self.GetTopLevelParent()
         if parent_frame:
             main_sizer.SetSizeHints(parent_frame)
-            
-        self.check_preset_match(manual_change=False)
+
+        # Initialize preset controller after UI is built (controls exist)
+        self._init_preset_controller()
+
+        # Perform initial preset match check (now via controller)
+        self.preset_controller.check_preset_match(manual_change=False)
+
+    def _init_preset_controller(self):
+        """Collect control references and instantiate PresetController."""
+        controls = {
+            'preset_buttons': getattr(self, 'preset_buttons', {}),
+            'bg_picker': getattr(self, 'bg_picker', None),
+            'board_tilt_slider': getattr(self, 'board_tilt_slider', None),
+            'board_tilt_input': getattr(self, 'board_tilt_input', None),
+            'board_roll_slider': getattr(self, 'board_roll_slider', None),
+            'board_roll_input': getattr(self, 'board_roll_input', None),
+            'spin_tilt_slider': getattr(self, 'spin_tilt_slider', None),
+            'spin_tilt_input': getattr(self, 'spin_tilt_input', None),
+            'spin_heading_slider': getattr(self, 'spin_heading_slider', None),
+            'spin_heading_input': getattr(self, 'spin_heading_input', None),
+            'period_slider': getattr(self, 'period_slider', None),
+            'period_input': getattr(self, 'period_input', None),
+            'frame_count': getattr(self, 'frame_count', None),
+            'dir_toggle': getattr(self, 'dir_toggle', None),
+            'light_toggle': getattr(self, 'light_toggle', None),
+            'light_options': getattr(self, 'light_options', []),
+        }
+
+        self.preset_controller = PresetController(
+            parent=self,
+            board_path=self.board_path,
+            settings=self.settings,
+            controls=controls,
+            preview=self.preview
+        )
 
     def create_controls_panel(self, parent):
         panel = scrolled.ScrolledPanel(parent, size=(450, -1))
@@ -717,7 +751,8 @@ class SpinRenderPanel(wx.Panel):
 
     def reset_status_bar(self):
         """Resets the status bar to ready state if not currently rendering."""
-        if self.is_rendering: return
+        if self.render_controller.is_rendering():
+            return
         
         # Any adjustment closes render preview
         if self.render_preview_active:
@@ -754,142 +789,19 @@ class SpinRenderPanel(wx.Panel):
         else: return NumericDisplay(parent, value=v, unit=unit, size=(100, 32))
 
     def on_preset_change(self, preset_id):
-        if self.is_rendering: return
-        
-        # Choosing a preset closes render preview
+        """Delegates to PresetController."""
+        if self.render_controller.is_rendering():
+            return
         self.reset_status_bar()
-        
-        from core.renderer import RenderEngine
-        presets = RenderEngine.PRESETS
-        if preset_id == 'custom':
-            if 'custom' in self.preset_buttons: 
-                self.preset_buttons['custom'].SetSelected(False)
-            from ui.dialogs import RecallPresetDialog, ID_RESET
-            while True:
-                dlg = RecallPresetDialog(self, self.board_path)
-                result = dlg.ShowModal()
-                if result == wx.ID_OK:
-                    pd = dlg.GetSelectedSettings()
-                    pn = dlg.GetSelectedName()
-                    dlg.Destroy()
-                    if pd:
-                        if 'custom' in self.preset_buttons: 
-                            self.preset_buttons['custom'].SetLabel(pn)
-                        self.apply_preset_data(pd, f"CUSTOM: {pn.upper()}")
-                        pf = self.GetTopLevelParent()
-                        if pf: pf.Raise()
-                    return
-                elif result == ID_RESET:
-                    if 'custom' in self.preset_buttons: 
-                        self.preset_buttons['custom'].SetLabel("SELECT CUSTOM..")
-                    self.check_preset_match(manual_change=True)
-                    pf = self.GetTopLevelParent()
-                    if pf: pf.Raise()
-                    dlg.Destroy()
-                    continue
-                else:
-                    dlg.Destroy()
-                    self.check_preset_match()
-                    pf = self.GetTopLevelParent()
-                    if pf: pf.Raise()
-                    return
-        if preset_id in presets:
-            self.apply_preset_data(presets[preset_id], preset_id.replace('_', ' ').upper())
+        self.preset_controller.on_preset_change(preset_id)
 
-    def apply_preset_data(self, preset, label):
-        if not label.startswith("CUSTOM:"):
-            if 'custom' in self.preset_buttons: self.preset_buttons['custom'].SetLabel("SELECT CUSTOM..")
-        keys = ['board_tilt', 'board_roll', 'spin_tilt', 'spin_heading', 'period', 'direction', 'lighting', 'bg_color']
-        for k in keys:
-            if k in preset: setattr(self.settings, k, preset[k])
+        self.preset_controller.apply_preset_data(preset, label)
 
-        if 'bg_color' in preset and hasattr(self, 'bg_picker'):
-            self.bg_picker.SetColor(self.settings.bg_color)
-            if hasattr(self.preview, 'viewport'):
-                self.preview.viewport.set_background_color(self.settings.bg_color)
 
-        if hasattr(self, 'board_tilt_slider'):
- 
-            self.board_tilt_slider.SetValue(self.settings.board_tilt)
-            self.board_tilt_input.SetValue(self.settings.board_tilt)
-        if hasattr(self, 'board_roll_slider'):
-            self.board_roll_slider.SetValue(self.settings.board_roll)
-            self.board_roll_input.SetValue(self.settings.board_roll)
-        if hasattr(self, 'spin_tilt_slider'):
-            self.spin_tilt_slider.SetValue(self.settings.spin_tilt)
-            self.spin_tilt_input.SetValue(self.settings.spin_tilt)
-        if hasattr(self, 'spin_heading_slider'):
-            self.spin_heading_slider.SetValue(self.settings.spin_heading)
-            self.spin_heading_input.SetValue(self.settings.spin_heading)
-        if hasattr(self, 'period_slider'): 
-            p = self.settings.period
-            self.period_slider.SetValue(p)
-            self.period_input.SetValue(round(p, 1))
-            self.frame_count.SetLabel(f"{int(p * 30)} f")
-        if hasattr(self, 'dir_toggle'): 
-            self.dir_toggle.SetSelection(1 if self.settings.direction == 'cw' else 0)
-        if hasattr(self, 'light_toggle'): 
-            idx = next((i for i, o in enumerate(self.light_options) if o['id'] == self.settings.lighting), 0)
-            self.light_toggle.SetSelection(idx)
-        if hasattr(self.preview, 'viewport'):
-            self.preview.viewport.set_universal_joint_parameters(self.settings.board_tilt, self.settings.board_roll, self.settings.spin_tilt, self.settings.spin_heading)
-            self.preview.viewport.set_period(self.settings.period)
-            self.preview.viewport.set_direction(self.settings.direction)
-            self.preview.viewport.set_lighting(self.settings.lighting)
-        self.preview.update_preview_overlay()
-        self.check_preset_match(manual_change=False)
+        self.preset_controller.check_preset_match(manual_change)
 
-    def check_preset_match(self, manual_change=False):
-        from core.renderer import RenderEngine
-        from core.presets import PresetManager
-        presets = RenderEngine.PRESETS
-        manager = PresetManager(self.board_path)
-        custom_presets = manager.list_presets()
-        matched_any = False
-        for pid, btn in self.preset_buttons.items():
-            if pid == 'custom': continue
-            p = presets.get(pid)
-            if not p: btn.SetSelected(False); continue
-            # Convert p to dict if it's RenderSettings
-            p_dict = p.to_dict() if hasattr(p, 'to_dict') else p
-            is_match = all(abs(getattr(self.settings, k, 0) - p_dict.get(k, 0)) < 0.01 for k in ['board_tilt', 'board_roll', 'spin_tilt', 'spin_heading', 'period'])
-            is_match = is_match and getattr(self.settings, 'direction', '') == p_dict.get('direction', '')
-            is_match = is_match and getattr(self.settings, 'lighting', '') == p_dict.get('lighting', '')
-            btn.SetSelected(is_match)
-            if is_match:
-                matched_any = True
-                self.settings.preset = pid
-                if 'custom' in self.preset_buttons: self.preset_buttons['custom'].SetLabel("SELECT CUSTOM..")
-        cmn = None
-        if not matched_any and not manual_change:
-            for scope, name in custom_presets:
-                pd = manager.load_preset(name, is_global=(scope=='global'))
-                if not pd: continue
-                # Convert pd to dict if it's RenderSettings
-                pd_dict = pd.to_dict() if hasattr(pd, 'to_dict') else pd
-                match = all(abs(getattr(self.settings, k, 0) - pd_dict.get(k, 0)) < 0.01 for k in ['board_tilt', 'board_roll', 'spin_tilt', 'spin_heading', 'period'])
-                match = match and getattr(self.settings, 'direction', '') == pd_dict.get('direction', '')
-                match = match and getattr(self.settings, 'lighting', '') == pd_dict.get('lighting', '')
-                if match: cmn = name; matched_any = True; break
-        if 'custom' in self.preset_buttons:
-            if cmn:
-                self.preset_buttons['custom'].SetLabel(cmn); self.preset_buttons['custom'].SetSelected(True)
-                self.settings.preset = 'custom'
-            else:
-                self.preset_buttons['custom'].SetSelected(False)
-                if not matched_any: self.settings.preset = 'custom'
-                if manual_change and not matched_any: self.preset_buttons['custom'].SetLabel("SELECT CUSTOM..")
-        self.preview.update_preview_overlay()
-        self.save_settings()
 
-    def save_settings(self):
-        """Persist current settings to project-local config file"""
-        from core.presets import PresetManager
-        PresetManager(self.board_path).save_last_used_settings(self.settings)
-
-        # Re-apply logging level in case it changed
-        from utils.logger import SpinLogger
-        SpinLogger.setup(level=getattr(self.settings, 'logging_level', 'simple'))
+        self.preset_controller.save_settings()
 
     def on_board_tilt_change(self, event):
         self.reset_status_bar()
@@ -1037,25 +949,7 @@ class SpinRenderPanel(wx.Panel):
         self.preview.update_preview_overlay()
         self.save_settings()
 
-    def on_save_preset(self, event):
-        self.reset_status_bar()
-        from ui.dialogs import SavePresetDialog
-        from core.presets import PresetManager
-        dlg = SavePresetDialog(self, self.board_path)
-        result = dlg.ShowModal()
-        if result == wx.ID_OK:
-            name = dlg.GetPresetName()
-            if name:
-                manager = PresetManager(self.board_path)
-                if manager.save_preset(name, self.settings):
-                    if 'custom' in self.preset_buttons: 
-                        self.preset_buttons['custom'].SetLabel(name)
-                    self.check_preset_match(manual_change=False)
-        dlg.Destroy()
-        self.preview.update_preview_overlay()
-        pf = self.GetTopLevelParent()
-        if pf: 
-            pf.Raise()
+        self.preset_controller.on_save_preset(event)
 
     def on_advanced_options(self, event):
         self.reset_status_bar()
@@ -1071,41 +965,40 @@ class SpinRenderPanel(wx.Panel):
             pf.Raise()
 
     def on_cancel(self, event):
-        if self.is_rendering and self.render_engine:
-            self.render_engine.cancel()
-            
+        if self.render_controller.is_rendering():
+            self.render_controller.cancel()
+
         self.save_settings()
         f = self.GetTopLevelParent()
-        if f: 
+        if f:
             f.Close()
             
     def on_close(self, event):
-        if self.is_rendering and self.render_engine:
-            self.render_engine.cancel()
+        if self.render_controller.is_rendering():
+            self.render_controller.cancel()
 
         self.save_settings()
         f = self.GetTopLevelParent()
-        if f: 
+        if f:
             f.Close()
 
     def on_render(self, event):
-        if self.is_rendering:
-            if self.render_engine: 
-                self.render_engine.cancel()
+        # Check if already rendering via controller
+        if self.render_controller.is_rendering():
+            self.render_controller.cancel()
             self.status_msg = "STOPPING RENDER..."
             self.status_fg = theme.ACCENT_ORANGE
             self.status_bar_panel.Refresh()
             return
 
-        from core.renderer import RenderEngine
-        self.is_rendering = True
+        # Prepare UI for rendering
         self.render_btn.SetLabel("STOP")
         self.render_btn.SetIcon("mdi-stop")
         self.render_btn.SetDanger(True)
-        
+
         # Disable all controls during render
         self.enable_left_panel_controls(False)
-        
+
         # Hide CANCEL and ADVANCED buttons, expand STOP button
         if hasattr(self, 'can_btn'):
             self.can_btn.Hide()
@@ -1113,7 +1006,7 @@ class SpinRenderPanel(wx.Panel):
             self.adv_btn.Hide()
         if hasattr(self, 'export_row_sizer'):
             self.export_row_sizer.Layout()
-        
+
         # Ensure whole UI layout updates to reflect hidden buttons
         self.controls_panel.Layout()
         self.Layout()
@@ -1122,7 +1015,7 @@ class SpinRenderPanel(wx.Panel):
         self.status_fg = theme.ACCENT_CYAN
         self.status_prog = 0.0
         self.status_bar_panel.Refresh()
-        
+
         # Start render state
         self.stop_playback()
         # Cleanup previous frame dir if it exists
@@ -1133,15 +1026,15 @@ class SpinRenderPanel(wx.Panel):
             except:
                 pass
         self.last_frame_dir = None
-        
+
         # IMMEDIATELY ACTIVATE RENDER PREVIEW (hides wireframe)
         self.render_preview_active = True
-        self.render_preview_bitmap = None # Clear old frame
+        self.render_preview_bitmap = None  # Clear old frame
         self.preview_manually_closed = False
         self.current_render_frame = 0
         self.total_render_frames = 0
         self.final_output_type = None
-        
+
         if hasattr(self, 'render_preview_panel'):
             # Force size/pos sync before showing
             if hasattr(self.preview, 'viewport'):
@@ -1150,18 +1043,16 @@ class SpinRenderPanel(wx.Panel):
                 self.preview.render_preview_panel.SetPosition((0, 0))
             self.preview.render_preview_panel.Show()
             self.preview.render_preview_panel.Refresh()
-            
-        self.preview.update_preview_overlay()
-        
-        def run_render():
-            try:
-                self.render_engine = RenderEngine(self.board_path, self.settings, progress_callback=self.on_render_progress)
-                out = self.render_engine.render()
-                wx.CallAfter(self.on_render_finished, out)
-            except Exception as e:
-                wx.CallAfter(self.on_render_finished, None, str(e))
 
-        threading.Thread(target=run_render, daemon=True).start()
+        self.preview.update_preview_overlay()
+
+        # Delegate render orchestration to controller
+        self.render_controller.start_render(
+            board_path=self.board_path,
+            settings=self.settings,
+            progress_cb=self.on_render_progress,
+            complete_cb=self.on_render_finished
+        )
 
     def on_render_progress(self, current, total, message, frame_path=None):
         wx.CallAfter(self._update_progress_ui, current, total, message, frame_path)
@@ -1199,8 +1090,7 @@ class SpinRenderPanel(wx.Panel):
 
     def on_render_finished(self, result, error=None):
         if not self: return
-        self.is_rendering = False
-        self.render_engine = None
+        # RenderController handles engine cleanup; just update UI
         self.render_btn.SetLabel("RENDER")
         self.render_btn.SetIcon("mdi-video-vintage")
         self.render_btn.SetDanger(False)
