@@ -18,16 +18,19 @@ NC='\033[0m' # No Color
 # Flag parsing
 AUTO_YES=false
 REINSTALL_DEPS=false
+LINK_THEME=false
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -y|--yes) AUTO_YES=true ;;
         --reinstall-deps) REINSTALL_DEPS=true ;;
+        --link-theme) LINK_THEME=true ;;
         -h|--help)
             echo -e "${CYAN}SPINRENDER INSTALLER HELP${NC}"
             echo -e "${TEAL}Usage:${NC} ${DIM}./install.sh [options]${NC}"
             echo -e "${TEAL}Options:${NC}"
             echo -e "  ${TEAL}-y, --yes${NC}    ${DIM}Automatically overwrite existing installation${NC}"
             echo -e "  ${TEAL}--reinstall-deps${NC} ${DIM}Uninstall dependencies and fonts from KiCad Python before install${NC}"
+            echo -e "  ${TEAL}--link-theme${NC} ${DIM}Create a symbolic link for dark.yaml (facilitates live theme editing)${NC}"
             echo -e "  ${TEAL}-h, --help${NC}    ${DIM}Show this help message${NC}"
             exit 0
             ;;
@@ -193,6 +196,23 @@ if [ -n "$TARGET_PATH" ]; then
 
     if [ -f "$TARGET_DIR/__init__.py" ]; then
         echo -e "    ${GREEN}✓ DEPLOYMENT_COMPLETE: SpinRender is active.${NC}"
+        
+        # Handle theme linking if requested
+        if [ "$LINK_THEME" = true ]; then
+            THEME_FILE="resources/themes/dark.yaml"
+            TARGET_THEME="$TARGET_DIR/$THEME_FILE"
+            SOURCE_THEME="$SOURCE_DIR/$THEME_FILE"
+            
+            if [ -f "$SOURCE_THEME" ]; then
+                echo -e "    ${CYAN}[i] LINKING THEME: $THEME_FILE${NC}"
+                rm -f "$TARGET_THEME"
+                ln -s "$SOURCE_THEME" "$TARGET_THEME"
+                echo -e "    ${GREEN}✓ Theme symlinked for live editing.${NC}"
+            else
+                echo -e "    ${YELLOW}⚠ LINK_THEME_WARNING: Source theme not found at $SOURCE_THEME${NC}"
+            fi
+        fi
+
         echo
         echo -e "${CYAN}[i] NEXT STEPS:${NC}"
         echo -e "    ${DIM}1. Restart KiCad if active${NC}"
