@@ -135,54 +135,29 @@ class ControlsSidePanel(wx.Panel):
         return header
 
     def reapply_theme(self):
-        """Re-apply theme to static container elements and labels after hot-reload."""
+        """Re-apply theme to static container elements after hot-reload."""
         self.SetBackgroundColour(_theme.color("colors.bg.page"))
         
-        # We'll use a recursive helper to catch all StaticText and Panels (dividers)
-        def update_recursive(window):
-            # Update Panels (mostly backgrounds and dividers)
-            if isinstance(window, wx.Panel):
-                # Don't overwrite specialized panel colors (like CustomButton) 
-                # if they handle their own themes in on_paint.
-                # Just handle standard panels.
-                from .custom_controls import CustomSlider, CustomToggleButton, CustomButton, PresetCard, CustomDropdown, CustomColorPicker
-                if not isinstance(window, (CustomSlider, CustomToggleButton, CustomButton, PresetCard, CustomDropdown, CustomColorPicker)):
-                    # Most of our container panels use bg.page or bg.panel
-                    if window == self.header_panel:
-                        window.SetBackgroundColour(_theme.color("colors.bg.panel"))
-                    elif window in [self.div1, self.div2, self.div3, self.div4]:
-                        window.SetBackgroundColour(_theme.color("colors.border.default"))
-                    else:
-                        window.SetBackgroundColour(_theme.color("colors.bg.page"))
+        if hasattr(self, 'scrolled_panel'):
+            self.scrolled_panel.SetBackgroundColour(_theme.color("colors.bg.page"))
             
-            # Update StaticText (labels)
-            elif isinstance(window, wx.StaticText):
-                # Check for section labels (Oswald font) vs regular labels (Mono)
-                font = window.GetFont()
-                if font.GetFaceName() == _theme.font_family("display"):
-                    if window == self.header_title:
-                        window.SetFont(TextStyles.panel_title.create_font())
-                    else:
-                        window.SetFont(TextStyles.section_heading.create_font())
-                    window.SetForegroundColour(_theme.color("colors.text.primary"))
-                else:
-                    # Regular mono labels
-                    if window == self.header_subtitle:
-                        window.SetForegroundColour(_theme.color("colors.accent.primary"))
-                        window.SetFont(TextStyles.label_xs.create_font())
-                    else:
-                        # Catch-all for other mono labels
-                        window.SetFont(TextStyles.label_xs.create_font())
-                        # If it's a section label accent, it might be cyan
-                        if window.GetForegroundColour() != _theme.color("colors.text.muted"):
-                             window.SetForegroundColour(_theme.color("colors.text.primary"))
-
-            for child in window.GetChildren():
-                update_recursive(child)
-
-        update_recursive(self)
-        
-        # Specialized updates for stored attributes
+        if hasattr(self, 'header_panel'):
+            self.header_panel.SetBackgroundColour(_theme.color("colors.bg.panel"))
+            
+        if hasattr(self, 'header_title'):
+            self.header_title.SetForegroundColour(_theme.color("colors.text.primary"))
+            self.header_title.SetFont(TextStyles.panel_title.create_font())
+            
+        if hasattr(self, 'header_subtitle'):
+            self.header_subtitle.SetForegroundColour(_theme.color("colors.accent.primary"))
+            self.header_subtitle.SetFont(TextStyles.label_xs.create_font())
+            
+        # Dividers
+        for attr in ['div1', 'div2', 'div3', 'div4']:
+            if hasattr(self, attr):
+                getattr(self, attr).SetBackgroundColour(_theme.color("colors.border.default"))
+                
+        # Close Button states update
         if hasattr(self, 'header_close_btn'):
             icon_c, icon_h, icon_p = _theme.color_states("components.button.close.text")
             bg_c, bg_h, bg_p = _theme.color_states("components.button.close.bg")
@@ -199,7 +174,14 @@ class ControlsSidePanel(wx.Panel):
             btn.border_color_hover = brd_h
             btn.border_color_pressed = brd_p
 
-        self.Refresh()
+        # Refresh all components recursively to trigger their internal on_paint lookups
+        def refresh_recursive(window):
+            window.Refresh()
+            for child in window.GetChildren():
+                refresh_recursive(child)
+        
+        refresh_recursive(self)
+        self.Update()
 
     def create_preset_section(self, parent):
         """Create the preset selection buttons."""
