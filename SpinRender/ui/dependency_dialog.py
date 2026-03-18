@@ -109,7 +109,7 @@ class CustomButton(wx.Panel):
             # Hover: Red background, Page BG text color
             if self.hovered or self.pressed:
                 bg = ACCENT_DANGER
-                text_color = wx.Colour(255, 255, 255)
+                text_color = BG_PAGE
                 border_pen = wx.TRANSPARENT_PEN
             else:
                 bg = BG_PAGE
@@ -129,8 +129,8 @@ class CustomButton(wx.Panel):
         # Draw Label
         font_obj = wx.Font(11, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName=JETBRAINS_MONO)
         gfx_font = gc.CreateFont(font_obj, text_color)
+        # CRITICAL: Set font BEFORE measuring to ensure correct extent
         gc.SetFont(gfx_font)
-        
         tw, th = gc.GetTextExtent(self.label)
         gc.DrawText(self.label, (width - tw) / 2, (height - th) / 2)
 

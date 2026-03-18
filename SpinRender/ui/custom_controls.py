@@ -12,11 +12,6 @@ from .helpers import bind_mouse_events
 _theme = Theme.current()
 
 
-# Font Families - sourced from Theme singleton
-_JETBRAINS_MONO = _theme.font_family("mono")
-_MDI_FONT_FAMILY = _theme.font_family("icon")
-_OSWALD = _theme.font_family("display")
-
 # Tracking state
 _LOAD_ATTEMPTED = False
 
@@ -38,9 +33,9 @@ def ensure_fonts_loaded():
     # Load from resources folder
     fonts_dir = Path(__file__).resolve().parent.parent / "resources" / "fonts"
     font_files = {
-        _JETBRAINS_MONO: ["JetBrainsMono-VariableFont_wght.ttf"],
-        _MDI_FONT_FAMILY: ["MaterialDesignIconsDesktop.ttf"],
-        _OSWALD: ["Oswald-VariableFont_wght.ttf"]
+        _theme.font_family("mono"): ["JetBrainsMono-VariableFont_wght.ttf"],
+        _theme.font_family("icon"): ["MaterialDesignIconsDesktop.ttf"],
+        _theme.font_family("display"): ["Oswald-VariableFont_wght.ttf"]
     }
 
     for family, files in font_files.items():
@@ -290,6 +285,7 @@ class CustomToggleButton(wx.Panel):
             else:
                 icon_font_obj = TextStyles.icon.create_font()
             icon_gfx_font = gc.CreateFont(icon_font_obj, color)
+            # CRITICAL: Set font BEFORE measuring
             gc.SetFont(icon_gfx_font)
             iw, ih = gc.GetTextExtent(icon_char)
             
@@ -503,6 +499,7 @@ class CustomDropdown(wx.Panel):
         icon_color = _theme.color("colors.accent.primary") if self.is_open else _theme.color("colors.text.secondary")
         icon_color_disabled = _theme.disabled(icon_color) if not enabled else icon_color
         icon_gfx_font = gc.CreateFont(icon_font_obj, icon_color_disabled)
+        # CRITICAL: Set font BEFORE measuring
         gc.SetFont(icon_gfx_font)
         iw, ih = gc.GetTextExtent(icon_char)
         gc.DrawText(icon_char, width - iw - 12, (height - ih) / 2)
@@ -641,6 +638,7 @@ class CustomButton(wx.Panel):
         self.pressed = False
 
         self.Bind(wx.EVT_PAINT, self.on_paint)
+        self.Bind(wx.EVT_SIZE, self.on_size)
         self.Bind(wx.EVT_LEFT_UP, self.on_mouse_up)
         bind_mouse_events(
             self,
@@ -648,6 +646,10 @@ class CustomButton(wx.Panel):
             leave_handler=self.on_leave,
             click_handler=self.on_mouse_down
         )
+
+    def on_size(self, event):
+        self.Refresh()
+        event.Skip()
 
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
@@ -742,9 +744,10 @@ class CustomButton(wx.Panel):
         icon_char = self.ICONS.get(self.icon, self.icon) if self.icon else None
         
         tw, th = 0, 0
-        if self.label:
+        if self.label and len(self.label) > 0:
             font_obj = TextStyles.body_strong.create_font()
             gfx_font = gc.CreateFont(font_obj, final_text)
+            # CRITICAL: Set font BEFORE measuring
             gc.SetFont(gfx_font)
             tw, th = gc.GetTextExtent(self.label)
 
@@ -759,6 +762,8 @@ class CustomButton(wx.Panel):
                 icon_font_obj = TextStyles.icon.create_font()
             
             icon_gfx_font = gc.CreateFont(icon_font_obj, final_icon_color)
+            # CRITICAL: Set font BEFORE measuring
+            gc.SetFont(icon_gfx_font)
             iw, ih = gc.GetTextExtent(icon_char)
 
         # Calculate total group width for horizontal centering
@@ -766,16 +771,13 @@ class CustomButton(wx.Panel):
         total_w = iw + gap + tw
         start_x = (width - total_w) / 2
 
-        # Draw icon centered vertically (and horizontally if no label)
+        # Draw icon centered vertically
         if icon_char:
             gc.SetFont(icon_gfx_font)
-            # If no label, iw should be centered in width
-            icon_x = start_x if self.label else (width - iw) / 2
-            gc.DrawText(icon_char, icon_x, (height - ih) / 2)
+            gc.DrawText(icon_char, start_x, (height - ih) / 2)
 
         # Draw label centered vertically
         if self.label and len(self.label) > 0:
-            # Refresh font for text
             font_obj = TextStyles.body_strong.create_font()
             gfx_font = gc.CreateFont(font_obj, final_text)
             gc.SetFont(gfx_font)
@@ -889,15 +891,29 @@ class PresetCard(wx.Panel):
         
         icon_font_obj = TextStyles.icon_lg.create_font()
         icon_gfx_font = gc.CreateFont(icon_font_obj, text_color)
+        
+        label_font_obj = TextStyles.label_sm.create_font()
+        label_gfx_font = gc.CreateFont(label_font_obj, text_color)
+
+        # CRITICAL: Set font BEFORE measuring
         gc.SetFont(icon_gfx_font)
         iw, ih = gc.GetTextExtent(icon_char)
-        gc.DrawText(icon_char, (width - iw) / 2, 14)
-
-        font_obj = TextStyles.label_sm.create_font()
-        gfx_font = gc.CreateFont(font_obj, text_color)
-        gc.SetFont(gfx_font)
+        
+        gc.SetFont(label_gfx_font)
         tw, th = gc.GetTextExtent(self.label)
-        gc.DrawText(self.label, (width - tw) / 2, height - th - 8)
+
+        # Calculate group position
+        gap = 8
+        total_h = ih + gap + th
+        start_y = (height - total_h) / 2
+
+        # Draw Icon
+        gc.SetFont(icon_gfx_font)
+        gc.DrawText(icon_char, (width - iw) / 2, start_y)
+
+        # Draw Label
+        gc.SetFont(label_gfx_font)
+        gc.DrawText(self.label, (width - tw) / 2, start_y + ih + gap)
 
     def on_click(self, event):
         if not self.IsEnabled(): return
@@ -930,9 +946,6 @@ class SectionLabel(wx.Panel):
     """
     Section label matching Component/SectionLabel
     """
-    TEXT_COLOR = _theme.color("colors.text.secondary")
-    LINE_COLOR = _theme.color("colors.border.default")
-
     def __init__(self, parent, label="SECTION", size=(-1, 20)):
         super().__init__(parent, size=size)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
@@ -945,8 +958,12 @@ class SectionLabel(wx.Panel):
         if not gc: return
 
         width, height = self.GetSize()
+        text_color = _theme.color("colors.text.secondary")
+        line_color = _theme.color("colors.border.default")
+        
         font_obj = TextStyles.section_heading.create_font()
-        gfx_font = gc.CreateFont(font_obj, self.TEXT_COLOR)
+        gfx_font = gc.CreateFont(font_obj, text_color)
+        # CRITICAL: Set font BEFORE measuring
         gc.SetFont(gfx_font)
         tw, th = gc.GetTextExtent(self.label)
         gc.DrawText(self.label, 0, (height - th) / 2)
@@ -954,7 +971,7 @@ class SectionLabel(wx.Panel):
         line_x = tw + 8
         line_y = height / 2
         if width - line_x > 0:
-            gc.SetPen(wx.Pen(self.LINE_COLOR, 1))
+            gc.SetPen(wx.Pen(line_color, 1))
             gc.StrokeLine(line_x, line_y, width, line_y)
 
 
@@ -962,9 +979,6 @@ class NumericDisplay(wx.Panel):
     """
     Numeric value display matching Component/NumericInput
     """
-    BG_COLOR = _theme.color("colors.bg.input")
-    # Other colors inlined via theme.* in on_paint
-
     def __init__(self, parent, value=0.0, unit="", size=(100, 32)):
         super().__init__(parent, size=size)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
@@ -993,11 +1007,13 @@ class NumericDisplay(wx.Panel):
         v_str = f"{self.value:.2f}" if isinstance(self.value, float) else str(self.value)
         v_font_obj = TextStyles.numeric_value.create_font()
         v_gfx_font = gc.CreateFont(v_font_obj, accent)
+        # CRITICAL: Set font BEFORE measuring
         gc.SetFont(v_gfx_font)
         vw, vh = gc.GetTextExtent(v_str)
 
         u_font_obj = TextStyles.body.create_font()
         u_gfx_font = gc.CreateFont(u_font_obj, secondary)
+        # CRITICAL: Set font BEFORE measuring
         gc.SetFont(u_gfx_font)
         uw, uh = gc.GetTextExtent(self.unit)
 
@@ -1023,11 +1039,6 @@ class NumericInput(wx.Panel):
     """
     Editable numeric input matching Component/NumericInput
     """
-    BG_COLOR = _theme.color("colors.bg.input")
-    BORDER_FOCUS = _theme.color("colors.accent.primary")
-    VALUE_EDIT = _theme.color("colors.text.primary")
-    # Border default, VALUE_COLOR (ACCENT_YELLOW), UNIT_COLOR (TEXT_SECONDARY) inlined
-
     def __init__(self, parent, value=0.0, unit="", min_val=None, max_val=None, size=(100, 32)):
         super().__init__(parent, size=size)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
@@ -1067,12 +1078,14 @@ class NumericInput(wx.Panel):
         v_font_obj = TextStyles.numeric_value.create_font()
         v_color_disabled = _theme.disabled(v_color) if not enabled else v_color
         v_gfx_font = gc.CreateFont(v_font_obj, v_color_disabled)
+        # CRITICAL: Set font BEFORE measuring
         gc.SetFont(v_gfx_font)
         vw, vh = gc.GetTextExtent(v_str)
 
         u_font_obj = TextStyles.body.create_font()
         unit_color = _theme.disabled(_theme.color("colors.text.secondary")) if not enabled else _theme.color("colors.text.secondary")
         u_gfx_font = gc.CreateFont(u_font_obj, unit_color)
+        # CRITICAL: Set font BEFORE measuring
         gc.SetFont(u_gfx_font)
         uw, uh = gc.GetTextExtent(self.unit)
 
@@ -1090,7 +1103,8 @@ class NumericInput(wx.Panel):
         if self.editing:
             cx = start_x + vw + 2
             cy1 = (height - vh) / 2
-            edit_color = _theme.disabled(self.VALUE_EDIT) if not enabled else self.VALUE_EDIT
+            value_edit_color = _theme.color("colors.text.primary")
+            edit_color = _theme.disabled(value_edit_color) if not enabled else value_edit_color
             gc.SetPen(wx.Pen(edit_color, 1))
             gc.StrokeLine(cx, cy1, cx, cy1 + vh)
 
@@ -1145,38 +1159,27 @@ class NumericInput(wx.Panel):
 
     def _handle_arrow(self, key, shift_pressed):
         """Handle Up/Down arrow keys to increment/decrement value."""
-        # Determine step size: 0.1 for normal, 1.0 for Shift
         step = 1.0 if shift_pressed else 0.1
-
-        # Get current value from edit_text if editing, else from value
         try:
             current = float(self.edit_text) if self.editing and self.edit_text else self.value
         except (ValueError, TypeError):
             current = self.value
 
-        # Apply increment/decrement
         if key in (wx.WXK_UP, wx.WXK_NUMPAD_UP):
             new_val = current + step
-        else:  # Down
+        else:
             new_val = current - step
 
-        # Clamp to min/max
-        if self.min_val is not None:
-            new_val = max(self.min_val, new_val)
-        if self.max_val is not None:
-            new_val = min(self.max_val, new_val)
+        if self.min_val is not None: new_val = max(self.min_val, new_val)
+        if self.max_val is not None: new_val = min(self.max_val, new_val)
 
-        # Round to 1 decimal place to avoid floating point precision issues
         new_val = round(new_val, 1)
-
-        # Update value and edit_text
         self.value = new_val
         if self.editing:
             self.edit_text = f"{new_val:.2f}" if isinstance(new_val, float) else str(new_val)
-            self.text_selected = True  # Select all on next paint? We'll just refresh
+            self.text_selected = True
         self.Refresh(); self.Update()
 
-        # Emit change event
         evt = wx.PyCommandEvent(wx.EVT_TEXT_ENTER.typeId, self.GetId())
         evt.SetString(str(new_val))
         self.GetEventHandler().ProcessEvent(evt)
@@ -1218,11 +1221,6 @@ class CustomTextInput(wx.Panel):
     Custom text input using wx.Panel to avoid native OS focus highlights.
     Supports multiline and placeholder text.
     """
-    BG_COLOR = _theme.color("colors.bg.input")
-    TEXT_COLOR = _theme.color("colors.text.primary")
-    PLACEHOLDER_COLOR = _theme.color("colors.text.muted")
-    # BORDER_DEFAULT and ACCENT_CYAN inlined in on_paint
-
     def __init__(self, parent, value="", placeholder="", multiline=False, size=(-1, 36)):
         super().__init__(parent, size=size)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
@@ -1261,20 +1259,20 @@ class CustomTextInput(wx.Panel):
 
         if self.is_placeholder_active and not self.HasFocus():
             display_text = self.placeholder
-            text_color = self.PLACEHOLDER_COLOR
+            text_color = _theme.color("colors.text.muted")
         else:
             display_text = self.value
-            text_color = self.TEXT_COLOR
+            text_color = _theme.color("colors.text.primary")
 
         text_color_disabled = _theme.disabled(text_color) if not enabled else text_color
         gfx_font = gc.CreateFont(font_obj, text_color_disabled)
+        # CRITICAL: Set font BEFORE measuring
         gc.SetFont(gfx_font)
 
         if self.HasFocus():
             display_text += "|"
 
         if self.multiline:
-            # Simple wrapping/multiline support
             gc.DrawText(display_text, 12, 10)
         else:
             tw, th = gc.GetTextExtent(display_text)
@@ -1294,7 +1292,6 @@ class CustomTextInput(wx.Panel):
                 self.value += "\n"
                 self.Refresh(); self.Update()
             else:
-                # Trigger enter event for single line
                 evt = wx.PyCommandEvent(wx.EVT_TEXT_ENTER.typeId, self.GetId())
                 self.GetEventHandler().ProcessEvent(evt)
         elif key == wx.WXK_BACK:
@@ -1309,10 +1306,7 @@ class CustomTextInput(wx.Panel):
                 self.value += char.upper()
                 self.Refresh(); self.Update()
                 
-        # Update placeholder state
         self.is_placeholder_active = not self.value and self.placeholder
-                
-        # Trigger generic text event
         evt = wx.PyCommandEvent(wx.EVT_TEXT.typeId, self.GetId())
         evt.SetString(self.value)
         self.GetEventHandler().ProcessEvent(evt)
@@ -1365,6 +1359,7 @@ class ProjectFolderChip(wx.Panel):
 
         font_obj = TextStyles.label_xs.create_font()
         gfx_font = gc.CreateFont(font_obj, _theme.color("colors.bg.page"))
+        # CRITICAL: Set font BEFORE measuring
         gc.SetFont(gfx_font)
         tw, th = gc.GetTextExtent("PROJECT FOLDER")
         gc.DrawText("PROJECT FOLDER", (w - tw) / 2, (h - th) / 2)
@@ -1379,12 +1374,7 @@ class ProjectFolderChip(wx.Panel):
 class CustomColorPicker(wx.Panel):
     """
     Custom color picker matching Component/ColorPicker from Pencil design.
-    Features swatches for presets and an editable hex color input.
     """
-    BORDER_COLOR = _theme.color("colors.border.default")
-    BG_INPUT = _theme.color("colors.bg.input")
-    # BG_PANEL, ACCENT_CYAN, TEXT_MUTED, ACCENT_YELLOW inlined in on_paint
-
     PRESETS = [
         ("#000000", "BLACK"),
         ("#1A1F23", "SLATE"),
@@ -1397,42 +1387,22 @@ class CustomColorPicker(wx.Panel):
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.current_color = current_color.upper()
 
-        self.hover_idx = -1 # 0-3 for presets, 4 for custom
-        self.selection = -1 # -1 if custom, 0-3 if preset
+        self.hover_idx = -1 
+        self.selection = -1 
         self.editing = False
         self._update_selection()
 
-        # Hex color text input
-        self.hex_input = CustomTextInput(
-            self,
-            value=self.current_color,
-            placeholder="#000000",
-            multiline=False,
-            size=(-1, 28)
-        )
+        self.hex_input = CustomTextInput(self, value=self.current_color, placeholder="#000000", size=(-1, 28))
         self.hex_input.Bind(wx.EVT_TEXT_ENTER, self.on_hex_enter)
         self.hex_input.Bind(wx.EVT_KILL_FOCUS, self.on_hex_focus_lost)
-        self.hex_input.Bind(wx.EVT_TEXT, self.on_hex_change)
 
         self.Bind(wx.EVT_PAINT, self.on_paint)
-        bind_mouse_events(
-            self,
-            hover_handler=self.on_mouse_move,  # motion serves as hover update
-            click_handler=self.on_click,
-            leave_handler=self.on_leave
-        )
-
-        # Fixed size based on design
+        bind_mouse_events(self, hover_handler=self.on_mouse_move, click_handler=self.on_click, leave_handler=self.on_leave)
         self.SetMinSize((340, 64))
-
-        # Initial layout
         self._layout_input()
-
-        # Keep hex input positioned on resize
         self.Bind(wx.EVT_SIZE, self._on_size)
 
     def _on_size(self, event):
-        """Reposition hex input when parent resizes."""
         self._layout_input()
         event.Skip()
 
@@ -1451,75 +1421,43 @@ class CustomColorPicker(wx.Panel):
         self.Refresh(); self.Update()
 
     def _layout_input(self):
-        """Position the hex input widget."""
-        if not hasattr(self, 'hex_input'):
-            return
+        if not hasattr(self, 'hex_input'): return
         rects = self._get_rects()
         r_hex = rects['hex']
         self.hex_input.SetSize(r_hex.width, r_hex.height)
         self.hex_input.SetPosition((r_hex.x, r_hex.y))
 
-    def on_hex_enter(self, event):
-        """User pressed Enter in hex input."""
-        self._apply_hex_color()
-
-    def on_hex_change(self, event):
-        """Hex input text changed - optionally validate format."""
-        # Could add live validation here
-        pass
+    def on_hex_enter(self, event): self._apply_hex_color()
+    def on_hex_focus_lost(self, event): self._apply_hex_color(); event.Skip()
 
     def _apply_hex_color(self):
-        """Apply the current hex input value as the color."""
         hex_val = self.hex_input.GetValue().strip()
-        if not hex_val.startswith('#'):
-            hex_val = f"#{hex_val}"
-        # Validate hex format
+        if not hex_val.startswith('#'): hex_val = f"#{hex_val}"
         if len(hex_val) == 7 and all(c in '0123456789ABCDEFabcdef' for c in hex_val[1:]):
             hex_val = hex_val.upper()
             if hex_val != self.current_color:
                 self.current_color = hex_val
                 self._update_selection()
                 self.Refresh(); self.Update()
-                # Emit change event
                 evt = wx.PyCommandEvent(wx.EVT_COLOURPICKER_CHANGED.typeId, self.GetId())
                 evt.SetString(hex_val)
                 self.GetEventHandler().ProcessEvent(evt)
-        else:
-            # Reset to current valid color on invalid input
-            self.hex_input.SetValue(self.current_color)
-
-    def on_hex_focus_lost(self, event):
-        """Apply color when hex input loses focus."""
-        self._apply_hex_color()
-        event.Skip()
+        else: self.hex_input.SetValue(self.current_color)
 
     def _get_rects(self):
-        """Pre-calculate rectangles for hit detection and painting"""
         w, h = self.GetSize()
         rects = {}
-        
         x_cursor = 12
         swatch_size = 28
-        gap = 10 # Increased gap
-        
-        # Presets
+        gap = 10
         for i in range(len(self.PRESETS)):
             rects[f'preset_{i}'] = wx.Rect(x_cursor, 10, swatch_size, swatch_size)
             x_cursor += swatch_size + gap
-            
-        # Divider position
         rects['divider'] = x_cursor
         x_cursor += gap
-        
-        # Custom Swatch
         rects['custom'] = wx.Rect(x_cursor, 10, swatch_size, swatch_size)
         x_cursor += swatch_size + gap + 4
-        
-        # Hex Input
-        input_w = 100
-        input_h = 28
-        rects['hex'] = wx.Rect(x_cursor, (h - input_h) // 2, input_w, input_h)
-        
+        rects['hex'] = wx.Rect(x_cursor, (h - 28) // 2, 100, 28)
         return rects
 
     def on_paint(self, event):
@@ -1531,40 +1469,33 @@ class CustomColorPicker(wx.Panel):
         enabled = self.IsEnabled()
         rects = self._get_rects()
 
-        # 1. Background (No Border)
         bg = _theme.disabled(_theme.color("colors.bg.panel")) if not enabled else _theme.color("colors.bg.panel")
         gc.SetBrush(wx.Brush(bg))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRoundedRectangle(0, 0, w, h, 4)
 
-        # 2. Draw Presets
         for i, (hex_val, label) in enumerate(self.PRESETS):
             r = rects[f'preset_{i}']
             self._draw_swatch(gc, r.x, r.y, hex_val, label, i == self.selection, i == self.hover_idx, enabled)
 
-        # 3. Divider
-        border = _theme.disabled(self.BORDER_COLOR) if not enabled else self.BORDER_COLOR
+        border_color = _theme.color("colors.border.default")
+        border = _theme.disabled(border_color) if not enabled else border_color
         gc.SetPen(wx.Pen(border, 1))
         div_x = rects['divider']
         gc.StrokeLine(div_x, 10, div_x, h - 10)
 
-        # 4. Custom Swatch
         is_custom = self.selection == -1
         r_cust = rects['custom']
         self._draw_swatch(gc, r_cust.x, r_cust.y, self.current_color, "CUSTOM", is_custom, self.hover_idx == 4, enabled)
 
-        # 5. Hex Input Background (the CustomTextInput draws the actual text)
         r_hex = rects['hex']
-        hex_bg = _theme.disabled(self.BG_INPUT) if not enabled else self.BG_INPUT
+        hex_bg = _theme.disabled(_theme.color("colors.bg.input")) if not enabled else _theme.color("colors.bg.input")
         gc.SetBrush(wx.Brush(hex_bg))
-        hex_border = _theme.disabled(self.BORDER_COLOR) if not enabled else self.BORDER_COLOR
-        gc.SetPen(wx.Pen(hex_border, 1))
+        gc.SetPen(wx.Pen(border, 1))
         gc.DrawRoundedRectangle(r_hex.x, r_hex.y, r_hex.width, r_hex.height, 4)
 
     def _draw_swatch(self, gc, x, y, color_hex, label, is_selected, is_hovered, enabled):
         swatch_size = 28
-
-        # Color Box - apply disabled to actual color
         swatch_color = wx.Colour(color_hex)
         swatch_color_disabled = _theme.disabled(swatch_color) if not enabled else swatch_color
         gc.SetBrush(wx.Brush(swatch_color_disabled))
@@ -1580,10 +1511,10 @@ class CustomColorPicker(wx.Panel):
         gc.SetPen(wx.Pen(stroke_color_disabled, thickness))
         gc.DrawRoundedRectangle(x, y, swatch_size, swatch_size, 4)
 
-        # Label
         label_font_obj = TextStyles.label_xs.create_font()
         text_color = _theme.disabled(_theme.color("colors.text.muted")) if not enabled else _theme.color("colors.text.muted")
         gfx_font = gc.CreateFont(label_font_obj, text_color)
+        # CRITICAL: Set font BEFORE measuring
         gc.SetFont(gfx_font)
         tw, th = gc.GetTextExtent(label)
         gc.DrawText(label, x + (swatch_size - tw) / 2, y + swatch_size + 4)
@@ -1592,16 +1523,10 @@ class CustomColorPicker(wx.Panel):
         if not self.IsEnabled(): return
         pos = event.GetPosition()
         rects = self._get_rects()
-        
         new_hover = -1
         for i in range(len(self.PRESETS)):
-            if rects[f'preset_{i}'].Contains(pos):
-                new_hover = i
-                break
-        
-        if new_hover == -1 and rects['custom'].Contains(pos):
-            new_hover = 4
-            
+            if rects[f'preset_{i}'].Contains(pos): new_hover = i; break
+        if new_hover == -1 and rects['custom'].Contains(pos): new_hover = 4
         if self.hover_idx != new_hover:
             self.hover_idx = new_hover
             self.Refresh(); self.Update()
@@ -1610,34 +1535,22 @@ class CustomColorPicker(wx.Panel):
         if not self.IsEnabled(): return
         pos = event.GetPosition()
         rects = self._get_rects()
-        
         clicked_idx = -1
         for i in range(len(self.PRESETS)):
-            if rects[f'preset_{i}'].Contains(pos):
-                clicked_idx = i
-                break
-        
-        if clicked_idx == -1 and rects['custom'].Contains(pos):
-            clicked_idx = 4
-
+            if rects[f'preset_{i}'].Contains(pos): clicked_idx = i; break
+        if clicked_idx == -1 and rects['custom'].Contains(pos): clicked_idx = 4
         if clicked_idx == -1: return
-        
         if clicked_idx < 4:
-            # Preset selected
             new_color = self.PRESETS[clicked_idx][0]
             if new_color != self.current_color:
                 self.current_color = new_color
                 self.selection = clicked_idx
                 self.Refresh(); self.Update()
-                # Emit color picker changed event
                 evt = wx.PyCommandEvent(wx.EVT_COLOURPICKER_CHANGED.typeId, self.GetId())
                 evt.SetString(new_color)
                 self.GetEventHandler().ProcessEvent(evt)
         else:
-            # Custom clicked - show dialog
-            curr_color = wx.Colour(self.current_color)
-            data = wx.ColorData()
-            data.SetColor(curr_color)
+            data = wx.ColorData(); data.SetColor(wx.Colour(self.current_color))
             dlg = wx.ColorDialog(self, data)
             if dlg.ShowModal() == wx.ID_OK:
                 new_color_obj = dlg.GetColorData().GetColor()
@@ -1645,7 +1558,6 @@ class CustomColorPicker(wx.Panel):
                 self.current_color = new_hex
                 self._update_selection()
                 self.Refresh(); self.Update()
-                # Emit color picker changed event
                 evt = wx.PyCommandEvent(wx.EVT_COLOURPICKER_CHANGED.typeId, self.GetId())
                 evt.SetString(new_hex)
                 self.GetEventHandler().ProcessEvent(evt)
@@ -1660,33 +1572,20 @@ class PathInputControl(wx.Panel):
     """
     Styled path display with folder icon and project chip support
     """
-    BG_COLOR = _theme.color("colors.bg.input")
-    TEXT_COLOR = _theme.color("colors.text.secondary")
-    # BORDER_DEFAULT inlined in on_paint
-
     def __init__(self, parent, size=(-1, 36)):
         super().__init__(parent, size=size)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.path_text = ""
         self.show_chip = False
-        
-        self.chip = ProjectFolderChip(self)
-        self.chip.Hide()
-        
+        self.chip = ProjectFolderChip(self); self.chip.Hide()
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_SIZE, self.on_size)
 
-    def on_size(self, event):
-        self.update_chip_pos()
-        event.Skip()
-
-    def update_chip_pos(self):
-        # Position chip after the icon
-        self.chip.Move(wx.Point(36, (self.GetSize().y - 18) / 2))
+    def on_size(self, event): self.update_chip_pos(); event.Skip()
+    def update_chip_pos(self): self.chip.Move(wx.Point(36, (self.GetSize().y - 18) / 2))
 
     def SetPath(self, path, in_project=False):
-        self.path_text = path
-        self.show_chip = in_project
+        self.path_text = path; self.show_chip = in_project
         if self.show_chip: self.chip.Show()
         else: self.chip.Hide()
         self.Refresh(); self.Update()
@@ -1708,33 +1607,26 @@ class PathInputControl(wx.Panel):
 
         # Folder Icon
         icon_font_obj = TextStyles.icon.create_font()
-        text_color = _theme.disabled(self.TEXT_COLOR) if not enabled else self.TEXT_COLOR
+        text_color = _theme.disabled(_theme.color("colors.text.secondary")) if not enabled else _theme.color("colors.text.secondary")
         icon_gfx_font = gc.CreateFont(icon_font_obj, text_color)
+        # CRITICAL: Set font BEFORE measuring
         gc.SetFont(icon_gfx_font)
-        # mdi-folder: F024B
         itw, ih = gc.GetTextExtent('\U000F024B')
         gc.DrawText('\U000F024B', 12, (h - ih) / 2)
 
         # Path Text
         font_obj = TextStyles.body.create_font()
         gfx_font = gc.CreateFont(font_obj, text_color)
+        # CRITICAL: Set font BEFORE measuring
         gc.SetFont(gfx_font)
 
         text_x = 36
-        if self.show_chip:
-            text_x += self.chip.GetSize().x + 6
+        if self.show_chip: text_x += self.chip.GetSize().x + 6
 
-        # Truncate text if too long
         tw, th = gc.GetTextExtent(self.path_text)
         display_text = self.path_text
-        if text_x + tw > w - 12:
-            # Simple truncation for now
-            display_text = "..." + self.path_text[-25:]
-
+        if text_x + tw > w - 12: display_text = "..." + self.path_text[-25:]
         gc.DrawText(display_text, text_x, (h - th) / 2)
 
-    def AcceptsFocus(self):
-        return False
-
-    def AcceptsFocusFromKeyboard(self):
-        return False
+    def AcceptsFocus(self): return False
+    def AcceptsFocusFromKeyboard(self): return False
