@@ -40,10 +40,12 @@ class Theme:
     @classmethod
     def load(cls, name: str = "dark", force: bool = False) -> "Theme":
         """Load theme from YAML file. Sets singleton instance."""
-        path = Path(__file__).parent.parent / "resources" / "themes" / f"{name}.yaml"
+        # Use resolve() to follow symlinks and get the absolute path
+        base_path = Path(__file__).parent.parent / "resources" / "themes" / f"{name}.yaml"
+        path = base_path.resolve()
         
         if not path.exists():
-            error_msg = f"Theme file not found: {path}"
+            error_msg = f"Theme file not found: {path} (resolved from {base_path})"
             logger.error(error_msg)
             raise FileNotFoundError(error_msg)
 
@@ -55,7 +57,7 @@ class Theme:
         if cls._instance is not None and not force and not is_stale:
             return cls._instance
 
-        logger.info(f"Theme: {'Reloading' if (force or is_stale) else 'Initializing'} '{name}' theme loading.")
+        logger.info(f"Theme: {'Reloading' if (force or is_stale) else 'Initializing'} '{name}' theme from {path}")
 
         if not _yaml_available:
             error_msg = "PyYAML is not available. Theme system requires PyYAML."
@@ -67,16 +69,17 @@ class Theme:
                 data = yaml.safe_load(f)
             
             # Debug: Print full loaded theme data
-            logger.debug(f"Theme '{name}' content loaded:\n{yaml.dump(data, default_flow_style=False)}")
+            logger.debug(f"Theme '{name}' [Path: {path}] content loaded:\n{yaml.dump(data, default_flow_style=False)}")
 
             if cls._instance:
+                # Update the existing instance's data dictionary in-place
                 cls._instance._data = data
             else:
                 cls._instance = cls(data)
             
             cls._loaded_mtime = mtime
             cls._loaded_name = name
-            logger.info(f"Theme: '{name}' theme loaded successfully from {path.name}")
+            logger.info(f"Theme: '{name}' theme loaded successfully.")
         except Exception as e:
             error_msg = f"Failed to parse theme '{name}' from {path}: {e}"
             logger.error(error_msg)
@@ -87,9 +90,8 @@ class Theme:
     @classmethod
     def reload(cls) -> "Theme":
         """Force a reload of the current theme from disk."""
-        # Determine name of currently loaded theme if possible, else default to dark
-        # For now, we assume "dark" as it's the only one, or we could track name in instance
-        return cls.load(force=True)
+        name = cls._loaded_name if cls._loaded_name else "dark"
+        return cls.load(name=name, force=True)
 
     @classmethod
     def current(cls) -> "Theme":
