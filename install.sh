@@ -122,9 +122,8 @@ if [ "$REINSTALL_DEPS" = true ]; then
     echo
 
     echo -e "${GREEN}✓ Dependencies and fonts uninstalled.${NC}"
-    echo -e "${CYAN}[i] You can now reinstall the plugin with:${NC} ${TEAL}./install.sh${NC}"
+    echo -e "${CYAN}[i] Proceeding with plugin installation...${NC}"
     echo
-    exit 0
 fi
 
 # Determine the source directory
