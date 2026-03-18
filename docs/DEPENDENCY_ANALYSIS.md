@@ -8,21 +8,21 @@
 
 ## Executive Summary
 
-**Finding:** There is a **circular dependency** between `utils/dependencies.py` and `ui/custom_controls.py`.
+**Finding:** There is a **circular dependency** between `utils/check_dependencies.py` and `ui/custom_controls.py`.
 
-- `utils/dependencies.py` imports from `ui.custom_controls` at **3 locations**
+- `utils/check_dependencies.py` imports from `ui.custom_controls` at **3 locations**
 - `spinrender_plugin.py` imports from `utils.dependencies`
 - `ui/custom_controls.py` currently does NOT import from `utils`, so the cycle is not yet manifest
 - **Risk:** As soon as `ui/custom_controls.py` (or any `ui/` module) needs to import from `utils/`, a circular import will break the application
 
-**Root Cause:** `utils/dependencies.py` is not pure utility code—it contains UI components (`DependencyCheckDialog`) and depends on UI data/classes (`CustomButton`, `get_mdi_font`, font constants).
+**Root Cause:** `utils/check_dependencies.py` is not pure utility code—it contains UI components (`DependencyCheckDialog`) and depends on UI data/classes (`CustomButton`, `get_mdi_font`, font constants).
 
 **Dependency Direction (Current):**
 
 ```
 spinrender_plugin.py
         ↓
-utils/dependencies.py ──────→ ui/custom_controls.py
+utils/check_dependencies.py ──────→ ui/custom_controls.py
         │                               │
         └─────────────────────┬─────────┘
                               │ (potential future)
@@ -36,7 +36,7 @@ utils/dependencies.py ──────→ ui/custom_controls.py
 
 ### 2.1.1 Module Import Survey
 
-#### `utils/dependencies.py` imports from UI:
+#### `utils/check_dependencies.py` imports from UI:
 
 | Line | Import | Usage |
 |------|--------|-------|
@@ -60,7 +60,7 @@ According to `docs/ARCHITECTURE_IMPLEMENTATION.md` Section 5:
 
 > The intent is a **one-way dependency flow**: `ui` may import from `utils` and `core`, but `utils` and `core` must NOT import from `ui`.
 
-**Violation:** `utils/dependencies.py` → `ui/custom_controls.py` ❌
+**Violation:** `utils/check_dependencies.py` → `ui/custom_controls.py` ❌
 
 **Why it's problematic:**
 1. **Circular import risk:** If any `ui/` module later imports from `utils/` (e.g., for logging, config), Python will raise `ImportError` due to partial module initialization.
@@ -103,7 +103,7 @@ Two distinct concerns:
 ### 2.1.5 Impact on Architecture
 
 The circular dependency issue is **blocking** because:
-- **Phase 2** requires refining `utils/dependencies.py` to remove UI imports
+- **Phase 2** requires refining `utils/check_dependencies.py` to remove UI imports
 - **Phase 7** (God Class Extraction) will likely require `ui/main_panel.py` to import from `utils` for helper functions; if the cycle exists, that refactor will break
 - **Future** `settings` dataclass (Phase 2.3) might live in `core/` and be used by both `ui/` and `utils/`; cycles would prevent this
 
@@ -157,7 +157,7 @@ OSWALD = "Oswald"
 INTER = "Inter"
 ```
 
-Update `utils/dependencies.py`:
+Update `utils/check_dependencies.py`:
 ```python
 # Remove:
 # from ui.custom_controls import _JETBRAINS_MONO, _MDI_FONT_FAMILY, _OSWALD
@@ -184,7 +184,7 @@ STATUS_ICONS = {
 
 If `CustomButton.ICONS` contains these, extract them to this module.
 
-Then in `utils/dependencies.py`:
+Then in `utils/check_dependencies.py`:
 ```python
 # Remove:
 # from ui.custom_controls import CustomButton
@@ -211,11 +211,11 @@ icon_char = STATUS_ICONS.get(status_symbol, "")
   dialog = DependencyCheckDialog(...)
   ```
 
-**Critical:** This creates a dependency `utils/dependencies.py` → `ui/dialogs.py`. Is this allowed?
+**Critical:** This creates a dependency `utils/check_dependencies.py` → `ui/dialogs.py`. Is this allowed?
 
 #### **Action 4: Evaluate `utils` → `ui` imports after cleanup**
 
-After moving `DependencyCheckDialog` to `ui/`, `utils/dependencies.py` will still import it for `check_and_prompt()`.
+After moving `DependencyCheckDialog` to `ui/`, `utils/check_dependencies.py` will still import it for `check_and_prompt()`.
 
 **Allowed?** According to the architecture document, the ideal direction is:
 - `ui` may import from `utils` and `core` ✓
@@ -228,7 +228,7 @@ So even after moving the dialog to `ui`, `DependencyChecker` (in `utils`) import
 **Option A (Interface-based):** Define an abstract dialog interface in `utils/interfaces.py`, implement it in `ui/dialogs.py`, and inject the dialog class into `DependencyChecker`:
 
 ```python
-# utils/dependencies.py
+# utils/check_dependencies.py
 class DependencyChecker:
     def __init__(self, dialog_class=None):
         self.dialog_class = dialog_class or DependencyCheckDialog  # Problem: still imports
@@ -248,10 +248,10 @@ from utils.dependencies import DependencyChecker
 checker = DependencyChecker(dialog_class=DependencyCheckDialog)
 ```
 
-And in `utils/dependencies.py`, remove any direct import of the dialog class:
+And in `utils/check_dependencies.py`, remove any direct import of the dialog class:
 
 ```python
-# utils/dependencies.py
+# utils/check_dependencies.py
 class DependencyChecker:
     def __init__(self, dialog_factory=None):
         self.dialog_factory = dialog_factory
@@ -306,12 +306,12 @@ This is **dependency injection** - `DependencyChecker` doesn't know about the UI
 2. Create `SpinRender/foundation/fonts.py` with font name constants
 3. Create `SpinRender/foundation/icons.py` with icon glyph mappings
 4. Update `ui/custom_controls.py` to use `foundation.fonts` instead of private `_JETBRAINS_MONO` etc.
-5. Update `utils/dependencies.py` to import from `foundation.fonts` and `foundation.icons`
+5. Update `utils/check_dependencies.py` to import from `foundation.fonts` and `foundation.icons`
 
 #### Subtask B: Split `dependencies.py`
 1. In `utils/`:
    - Rename current file to `utils/_dependencies_ui.py` (temporary)
-   - Create new `utils/dependencies.py` with only pure logic:
+   - Create new `utils/check_dependencies.py` with only pure logic:
      - `REQUIRED_DEPS` dict
      - `DependencyChecker` methods: `__init__`, `_get_python_executable`, `check_dependency`, `check_python_package`, `check_all`, `install_dependency`
      - Keep `DependencyChecker` class but **remove** `check_and_prompt()` and `_ensure_macos_fonts()` (UI-specific)
@@ -385,9 +385,9 @@ checker = DependencyChecker(dialog_factory=DependencyCheckDialog)
 
 ```bash
 $ grep -rn "from ui.custom_controls" SpinRender/utils/
-SpinRender/utils/dependencies.py:14:from ui.custom_controls import CustomButton, get_mdi_font
-SpinRender/utils/dependencies.py:197:from ui.custom_controls import _JETBRAINS_MONO, _MDI_FONT_FAMILY, _OSWALD
-SpinRender/utils/dependencies.py:452:from ui.custom_controls import CustomButton
+SpinRender/utils/check_dependencies.py:14:from ui.custom_controls import CustomButton, get_mdi_font
+SpinRender/utils/check_dependencies.py:197:from ui.custom_controls import _JETBRAINS_MONO, _MDI_FONT_FAMILY, _OSWALD
+SpinRender/utils/check_dependencies.py:452:from ui.custom_controls import CustomButton
 
 $ grep -rn "from utils" SpinRender/ui/
 # (none found - good)

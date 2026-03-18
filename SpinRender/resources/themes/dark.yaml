@@ -1,0 +1,349 @@
+# SpinRender Theme — Dark (default)
+# File: SpinRender/resources/themes/dark.yaml
+#
+# This file is the single source of truth for all visual tokens.
+# Load with: from core.theme import Theme; t = Theme.load("dark")
+
+meta:
+  name: "Dark"
+  version: "1.0.0"
+  description: "Default dark theme matching the SpinRender design system"
+
+# ─────────────────────────────────────────────
+# 1. RAW PALETTE
+#    Low-level color definitions. Do NOT use these directly in
+#    components — use semantic tokens below instead.
+# ─────────────────────────────────────────────
+palette:
+  # Neutrals (darkest → lightest)
+  neutral-1:  "#0A0A0A"   # near-black (10)
+  neutral-2:  "#0D0D0D"   # input wells (13)
+  neutral-3:  "#121212"   # page background (18)
+  neutral-4:  "#1A1A1A"   # overlay panels (26)
+  neutral-5:  "#1A1A1A"   # side panels (26)
+  neutral-6:  "#222222"   # nested surfaces (34)
+  neutral-7:  "#1F1F1F"   # borders/dividers (31)
+  neutral-8:  "#222222"   # raised surfaces (34)
+  neutral-9:  "#2A2A2A"   # generic hover (42)
+  neutral-10: "#323232"   # track / subtle border (50)
+  neutral-11: "#777777"   # secondary text (119)
+  neutral-12: "#555555"   # muted text (85)
+  neutral-13: "#CCCCCC"   # light gray (204)
+  neutral-14: "#E0E0E0"   # primary text (224)
+  neutral-15: "#FFFFFF"   # white (255)
+  neutral-16: "#333333"   # modal border (51)
+  neutral-17: "#787878"   # hover highlight (120)
+  neutral-18: "#646464"   # grey-100 (100)
+
+  # Accent colors
+  cyan:       "#00BCD4"   # primary accent (0,188,212)
+  yellow:     "#FFD600"   # secondary/highlights
+  green:      "#4CAF50"   # success/info
+  orange:     "#FF6B35"   # warnings/badges
+  red:        "#FF3B30"   # errors/danger
+  purple:     "#AA6BFF"   # purple accent
+  pink:       "#FF4081"   # pink accent
+
+  # Preset card colors
+  preset-red:    "#FF6B6B"
+  preset-amber:  "#FFB46B"
+  preset-blue:   "#4D96FF"
+  preset-purple: "#AA6BFF"
+
+  # Danger button states
+  danger-dark:   "#8C0000"
+  danger-hover:  "#DC1414"
+  danger-medium: "#B40000"
+
+  # Overlays (RGBA with alpha)
+  overlay-faint:  "rgba(255,255,255,0.08)"
+  overlay-light:  "rgba(255,255,255,0.16)"
+  overlay-medium: "rgba(255,255,255,0.27)"
+  transparent:    "rgba(0,0,0,0)"
+  black-solid:    "#000000"
+
+# ─────────────────────────────────────────────
+# 2. SEMANTIC COLOR TOKENS
+#    Purpose-named aliases over the raw palette.
+#    These are what components should reference.
+# ─────────────────────────────────────────────
+colors:
+
+  # — Backgrounds —
+  bg:
+    page:       {ref: "palette.neutral-3"}   # Window/outermost container
+    panel:      {ref: "palette.neutral-5"}   # Side panels, scrolled areas
+    surface:    {ref: "palette.neutral-8"}   # Cards, elevated surfaces
+    input:      {ref: "palette.neutral-2"}   # Text fields, numeric inputs
+    inner:      {ref: "palette.neutral-6"}   # Nested surfaces
+    overlay:    {ref: "palette.neutral-4"}   # Color picker, popups
+    track:      {ref: "palette.neutral-10"}  # Slider track fill area
+    hover:      {ref: "palette.neutral-9"}   # Generic hover state
+    output:     {ref: "palette.neutral-1"}   # GL/video preview backdrop
+
+  # — Text —
+  text:
+    primary:    {ref: "palette.neutral-14"}  # Main body text
+    secondary:  {ref: "palette.neutral-11"}  # Subtitles, metadata
+    muted:      {ref: "palette.neutral-12"}  # Disabled, placeholders
+    on-accent:  {ref: "palette.neutral-2"}   # Text over accent bg
+    on-danger:  {ref: "palette.neutral-15"}  # Text over danger bg
+
+  # — Accent (primary brand color) —
+  accent:
+    primary:    {ref: "palette.cyan"}
+    secondary:  {ref: "palette.yellow"}
+    success:    {ref: "palette.green"}
+    warning:    {ref: "palette.orange"}
+
+  # — Borders —
+  border:
+    default:    {ref: "palette.neutral-7"}   # Panels, cards
+    subtle:     {ref: "palette.neutral-10"}  # Toggles, dropdowns
+    focus:      {ref: "palette.cyan"}        # Focused inputs
+    strong:     {ref: "palette.neutral-10"}  # Strong dividers
+
+  # — Preset card accent colors —
+  preset:
+    - {ref: "palette.preset-red"}
+    - {ref: "palette.preset-amber"}
+    - {ref: "palette.preset-blue"}
+    - {ref: "palette.preset-purple"}
+
+  # — State overlays (for hover, pressed, etc.) —
+  state:
+    hover-overlay:   {ref: "palette.overlay-light"}
+    pressed-overlay: {ref: "palette.overlay-medium"}
+    ghost-overlay:   {ref: "palette.overlay-faint"}
+    active:          {ref: "palette.green"}      # toggle/option active bg
+    danger:          {ref: "palette.danger-medium"}
+    danger-hover:    {ref: "palette.danger-hover"}
+    danger-pressed:  {ref: "palette.danger-dark"}
+
+# ─────────────────────────────────────────────
+# 3. TYPOGRAPHY
+# ─────────────────────────────────────────────
+typography:
+
+  # Font family stacks
+  families:
+    mono:    "JetBrains Mono"   # Primary UI font (monospaced)
+    display: "Oswald"           # Headings, panel titles
+    icon:    "Material Design Icons"  # MDI icon glyph font
+    inter:   "Inter"            # Alternative font (for progress dlg)
+
+  # Scale (point sizes)
+  scale:
+    xs:      8    # Tick marks, graph labels
+    sm:      9    # Icon labels on preset cards
+    base:    11   # Default body / button text
+    md:      13   # Numeric display values, section headings
+    lg:      14   # MDI icon default size
+    xl:      18   # Panel title (Oswald)
+    icon:    14   # MDI icons (same as lg, aliased for clarity)
+    icon-lg: 20   # Large icon buttons
+
+  # Weight aliases (map to wx.FONTWEIGHT_*)
+  weights:
+    normal:   400   # wx.FONTWEIGHT_NORMAL
+    semibold: 600   # wx.FONTWEIGHT_SEMIBOLD
+    bold:     700   # wx.FONTWEIGHT_BOLD
+
+  # Composite presets — (family, size, weight)
+  presets:
+    body:
+      family: {ref: "typography.families.mono"}
+      size:   {ref: "typography.scale.base"}
+      weight: {ref: "typography.weights.normal"}
+
+    body_strong:
+      family: {ref: "typography.families.mono"}
+      size:   {ref: "typography.scale.base"}
+      weight: {ref: "typography.weights.semibold"}
+
+    label_sm:
+      family: {ref: "typography.families.mono"}
+      size:   {ref: "typography.scale.sm"}
+      weight: {ref: "typography.weights.semibold"}
+
+    label_xs:
+      family: {ref: "typography.families.mono"}
+      size:   {ref: "typography.scale.xs"}
+      weight: {ref: "typography.weights.bold"}
+
+    numeric_value:
+      family: {ref: "typography.families.mono"}
+      size:   {ref: "typography.scale.md"}
+      weight: {ref: "typography.weights.semibold"}
+
+    numeric_unit:
+      family: {ref: "typography.families.mono"}
+      size:   {ref: "typography.scale.base"}
+      weight: {ref: "typography.weights.normal"}
+
+    section_heading:
+      family: {ref: "typography.families.display"}
+      size:   {ref: "typography.scale.md"}
+      weight: {ref: "typography.weights.semibold"}
+
+    panel_title:
+      family: {ref: "typography.families.display"}
+      size:   {ref: "typography.scale.xl"}
+      weight: {ref: "typography.weights.bold"}
+
+    icon:
+      family: {ref: "typography.families.icon"}
+      size:   {ref: "typography.scale.icon"}
+      weight: {ref: "typography.weights.normal"}
+
+    icon_lg:
+      family: {ref: "typography.families.icon"}
+      size:   {ref: "typography.scale.icon-lg"}
+      weight: {ref: "typography.weights.normal"}
+
+# ─────────────────────────────────────────────
+# 4. SPACING
+#    All layout/padding/gap values in pixels.
+# ─────────────────────────────────────────────
+spacing:
+  0:   0
+  xs:  4    # Tight gaps
+  sm:  6    # Icon+label gap (toggle button)
+  md:  10   # Icon+label gap (standard button)
+  lg:  16   # Main layout section padding
+  xl:  24   # Section-to-section gap (future)
+
+# ─────────────────────────────────────────────
+# 5. BORDERS
+#    Border radius values in pixels.
+# ─────────────────────────────────────────────
+borders:
+  radius:
+    sm:   4   # Small radius (toggles, sliders)
+    md:   6   # Medium radius (buttons, dropdowns)
+    lg:   8   # Large radius (cards, panels)
+    full: 9999   # Full radius (pill shapes, badges)
+
+# ─────────────────────────────────────────────
+# 6. COMPONENT TOKENS
+#    Per-component design decisions. Color properties use arrays:
+#    - [normal] → auto hover (+10 RGB) and active (-10 RGB)
+#    - [normal, hover] → auto active from hover (-10)
+#    - [normal, hover, active] → explicit all three
+# ─────────────────────────────────────────────
+components:
+
+  # Numeric Display (angle display, etc.)
+  numeric_display:
+    bg:         ["colors.bg.input"]
+    border:     ["colors.border.default"]
+    text-value: ["colors.text.primary"]
+    text-unit:  ["colors.text.secondary"]
+    font-value: {ref: "typography.presets.numeric-value"}
+    font-unit:  {ref: "typography.presets.numeric-unit"}
+
+  # Numeric Input (editable number fields)
+  numeric_input:
+    bg:             ["colors.bg.input"]
+    border:         ["colors.border.default"]
+    border-focus:   ["colors.border.focus"]
+    text:           ["colors.text.primary"]
+    placeholder:    ["colors.text.muted"]
+    font:           {ref: "typography.presets.body"}
+
+  # Color Picker
+  color_picker:
+    bg:             ["colors.bg.overlay"]
+    border:         ["colors.border.default"]
+    swatch-border:  ["colors.border.subtle"]
+    overlay-fg:     ["palette.overlay-medium"]
+    radius:         {ref: "borders.radius.md"}
+
+  # Main Panel / Header
+  panel:
+    bg:             ["colors.bg.page"]
+    header-bg:      ["colors.bg.panel"]
+    header-border:  ["colors.border.default"]
+    close-icon:     ["colors.text.muted"]
+    padding:        {ref: "spacing.lg"}
+    section-gap:    {ref: "spacing.lg"}
+
+  # Slider
+  slider:
+    height:         18
+    track:
+      color:        ["colors.bg.track"]
+      height:       4
+      radius:       {ref: "borders.radius.sm"}
+    fill:
+      color:        ["colors.accent.primary"]
+      radius:       {ref: "borders.radius.sm"}
+
+  # Toggle Button (segmented control)
+  toggle:
+    bg:             ["colors.bg.input"]
+    border:         ["colors.border.subtle"]
+    radius:         {ref: "borders.radius.md"}
+    option:
+      text:         ["colors.text.secondary"]
+      font:         {ref: "typography.presets.body-strong"}
+      icon_gap:     {ref: "spacing.sm"}
+    active:
+      bg:           ["colors.state.active"]
+      text:         ["colors.text.on-accent"]
+      font:         {ref: "typography.presets.body-strong"}
+
+  # Dropdown
+  dropdown:
+    height:         32
+    bg:             ["colors.bg.input"]
+    border:         ["colors.border.default"]
+    border-focus:   ["colors.border.focus"]
+    radius:         {ref: "borders.radius.md"}
+    text:           ["colors.text.primary"]
+    text-muted:     ["colors.text.muted"]
+    font:           {ref: "typography.presets.body-strong"}
+    popup:
+      bg:           ["colors.bg.inner"]
+      hover:        ["colors.bg.hover"]
+
+  # Button
+  button:
+    height:         36
+    radius:         {ref: "borders.radius.md"}
+    font:           {ref: "typography.presets.body-strong"}
+    icon_gap:       {ref: "spacing.md"}
+
+    primary:
+      bg:           ["colors.accent.primary"]
+      text:         ["colors.text.on-accent"]
+      hover:        ["colors.state.hover-overlay"]
+      pressed:      ["colors.state.pressed-overlay"]
+
+    secondary:
+      bg:           ["colors.bg.surface"]
+      text:         ["colors.text.primary"]
+      border:       ["colors.border.default"]
+      hover:        ["colors.state.hover-overlay"]
+
+    ghost:
+      bg:           ["palette.transparent"]
+      text:         ["colors.text.primary"]
+      hover:        ["colors.state.ghost-overlay"]
+
+    danger:
+      bg:           ["colors.state.danger"]
+      text:         ["colors.text.on-danger"]
+      hover-bg:     ["colors.state.danger-hover"]
+      pressed-bg:   ["colors.state.danger-pressed"]
+
+  # Preset Card
+  preset_card:
+    bg:             ["colors.bg.surface"]
+    border:         ["colors.border.default"]
+    accent:         ["colors.accent.primary"]
+
+  # Badge
+  badge:
+    bg:             ["colors.accent.warning"]
+    text:           ["colors.text.on-accent"]

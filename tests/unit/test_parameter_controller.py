@@ -8,7 +8,7 @@ import pytest
 from unittest.mock import MagicMock, PropertyMock
 
 from SpinRender.ui.parameter_controller import ParameterController
-from core.settings import RenderSettings
+from SpinRender.core.settings import RenderSettings
 
 
 class TestParameterController:

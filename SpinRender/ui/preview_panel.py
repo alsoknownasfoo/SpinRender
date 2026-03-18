@@ -11,7 +11,7 @@ from typing import List, Optional
 
 from .text_styles import TextStyle
 from . import theme
-from core.preview import GLPreviewRenderer
+from SpinRender.core.preview import GLPreviewRenderer
 
 
 class PreviewPanel(wx.Panel):

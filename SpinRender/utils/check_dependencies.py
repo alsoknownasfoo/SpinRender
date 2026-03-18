@@ -9,7 +9,9 @@ import sys
 import shutil
 import importlib
 import site
-import threading
+import logging
+
+logger = logging.getLogger("SpinRender")
 
 
 class DependencyChecker:
@@ -55,10 +57,14 @@ class DependencyChecker:
         self.missing_deps = []
         self.found_paths = {}  # Store paths where deps were found
 
+        logger.debug(f"DependencyChecker.__init__ on platform: {self.system}")
         # Ensure user site-packages are in sys.path
         user_site = site.getusersitepackages()
         if user_site not in sys.path:
             sys.path.append(user_site)
+            logger.debug(f"Added user site-packages: {user_site}")
+        else:
+            logger.debug(f"User site-packages already present: {user_site}")
 
     def _get_python_executable(self):
         """Find the actual Python executable"""
@@ -133,51 +139,62 @@ class DependencyChecker:
 
     def check_python_package(self, package_name):
         """Check if a Python package is available"""
+        logger.debug(f"Checking Python package: {package_name}")
         try:
             importlib.invalidate_caches()
             pkg = package_name.split()[0]
             if pkg == 'PyOpenGL':
                 pkg = 'OpenGL'
             __import__(pkg)
+            logger.debug(f"  Package {pkg} is available")
             return True
-        except ImportError:
+        except ImportError as e:
+            logger.debug(f"  Package not available: {e}")
             return False
 
     def check_all(self):
         """Check all required dependencies"""
+        logger.debug("check_all() starting")
         results = {}
         self.missing_deps = []
 
         for dep_name, dep_info in self.REQUIRED_DEPS.items():
+            logger.debug(f"Checking dependency: {dep_name}")
             if dep_info['type'] == 'command':
                 found = self.check_dependency(dep_name)
             elif dep_info['type'] == 'python':
                 found = self.check_python_package(dep_info['package_name'])
             else:
                 found = False
-
+            logger.debug(f"  {dep_name}: {'OK' if found else 'MISSING'}")
             results[dep_name] = found
             if not found:
                 self.missing_deps.append(dep_name)
 
+        logger.info(f"Dependency check complete: {len(self.missing_deps)} missing: {self.missing_deps}")
         return results
 
     def install_dependency(self, dep_name, callback=None):
         """Attempt to install a missing dependency with real-time feedback"""
+        logger.info(f"Attempting to install dependency: {dep_name}")
         dep_info = self.REQUIRED_DEPS.get(dep_name)
         if not dep_info:
+            logger.error(f"Unknown dependency requested: {dep_name}")
             return False, f"Unknown dependency: {dep_name}"
 
         if dep_info['type'] == 'python':
             package_name = dep_info.get('package_name', '')
             python_exe = self._get_python_executable()
+            logger.debug(f"Using Python executable: {python_exe}")
             install_cmd = [python_exe, "-m", "pip", "install", "--user"] + package_name.split()
             use_shell = False
         else:
             install_key = f'install_{self.system}' if 'darwin' not in self.system else 'install_macos'
             install_cmd_str = dep_info.get(install_key, '')
+            logger.debug(f"Install command string: {install_cmd_str}")
 
             if not install_cmd_str or install_cmd_str.startswith('Download from'):
+                logger.warning(f"No automatic install available for {dep_name}")
                 return False, install_cmd_str or "No install command"
 
             if 'darwin' in self.system or 'linux' in self.system:
@@ -197,13 +214,16 @@ class DependencyChecker:
                             break
 
                 if not cmd_to_run:
+                    logger.error(f"Package manager not found for: {install_cmd_str}")
                     return False, f"Package manager not found: {install_cmd_str}"
 
                 install_cmd = cmd_to_run
                 use_shell = True
             else:
+                logger.warning(f"Unsupported platform for auto-install: {self.system}")
                 return False, install_cmd_str
 
+        logger.debug(f"Executing: {install_cmd}")
         try:
             process = subprocess.Popen(
                 install_cmd,
@@ -218,17 +238,22 @@ class DependencyChecker:
             if process.stdout:
                 for line in process.stdout:
                     clean_line = line.strip()
-                    if clean_line and callback:
-                        callback(clean_line)
+                    if clean_line:
+                        logger.debug(f"[install] {clean_line}")
+                        if callback:
+                            callback(clean_line)
 
             process.wait()
 
             if process.returncode == 0:
+                logger.info(f"Successfully installed {dep_name}")
                 if dep_info['type'] == 'python':
                     importlib.invalidate_caches()
                 return True, "Success"
             else:
-                return False, "Failed"
+                logger.error(f"Installation failed for {dep_name} with exit code {process.returncode}")
+                return False, f"Install failed with exit code {process.returncode}"
 
         except Exception as e:
+            logger.error(f"Installation exception for {dep_name}: {e}", exc_info=True)
             return False, str(e)

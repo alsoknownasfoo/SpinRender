@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 
 # Import the module under test
 from SpinRender.ui.controls_side_panel import ControlsSidePanel
-from core.settings import RenderSettings
+from SpinRender.core.settings import RenderSettings
 
 
 class TestControlsSidePanel:

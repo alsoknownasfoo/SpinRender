@@ -17,7 +17,7 @@ Responsible for:
 """
 from typing import Dict, Any, Optional
 
-from core.settings import RenderSettings
+from SpinRender.core.settings import RenderSettings
 
 
 class ParameterController:

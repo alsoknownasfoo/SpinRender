@@ -166,11 +166,11 @@
 - **Effort:** 1.5d
 - **Dependencies:** 2.1
 - **Deliverables:**
-  - Remove any UI imports from `utils/dependencies.py`
+  - Remove any UI imports from `utils/check_dependencies.py`
   - Move pure functions to appropriate utils submodules
   - If UI needs something from dependencies, invert via interfaces/protocols
   - Add tests for moved functions
-- **Files:** `SpinRender/utils/dependencies.py`, possibly new files in `utils/`
+- **Files:** `SpinRender/utils/check_dependencies.py`, possibly new files in `utils/`
 - **Risk:** High — may break existing code, need careful coordination
 
 ### Task 2.3: Unify state management

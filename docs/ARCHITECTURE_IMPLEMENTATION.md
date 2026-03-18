@@ -1217,7 +1217,7 @@ After research, document the actual imports:
 | dialogs.py | utils.logger? | |
 | main_panel.py | utils.logger? | |
 | utils/logger.py | (might import wx, no ui) | |
-| utils/dependencies.py | (likely standalone) | |
+| utils/check_dependencies.py | (likely standalone) | |
 
 ### If Cycle Found: Break Strategy
 

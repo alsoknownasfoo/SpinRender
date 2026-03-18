@@ -13,9 +13,9 @@ from . import theme
 from .preview_panel import PreviewPanel
 
 # Import RenderSettings
-from core.settings import RenderSettings
+from SpinRender.core.settings import RenderSettings
 from .preset_controller import PresetController
-from core.render_controller import RenderController
+from SpinRender.core.render_controller import RenderController
 from .controls_side_panel import ControlsSidePanel
 from .status_bar import StatusBar
 from .parameter_controller import ParameterController

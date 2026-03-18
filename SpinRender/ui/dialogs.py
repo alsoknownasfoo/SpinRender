@@ -466,6 +466,26 @@ class RecallPresetDialog(BaseStyledDialog):
     def on_cancel(self, event): self.EndModal(wx.ID_CANCEL)
     def GetSelectedSettings(self): return self.selected_preset
     def GetSelectedName(self): return self.selected_name
+class RoundedPanel(wx.Panel):
+    """Panel with rounded corners"""
+    def __init__(self, parent, radius=4, bg_color=None):
+        super().__init__(parent)
+        self.radius = radius
+        self.bg_color = bg_color or theme.BG_INPUT
+        self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
+        self.Bind(wx.EVT_PAINT, self.on_paint)
+
+    def on_paint(self, event):
+        dc = wx.AutoBufferedPaintDC(self)
+        gc = wx.GraphicsContext.Create(dc)
+        if not gc:
+            return
+        w, h = self.GetSize()
+        gc.SetBrush(wx.Brush(self.bg_color))
+        gc.SetPen(wx.TRANSPARENT_PEN)
+        gc.DrawRoundedRectangle(0, 0, w, h, self.radius)
+
+
 class DependencyCheckDialog(wx.Dialog):
     """
     Dialog for dependency checking and installation
@@ -484,7 +504,7 @@ class DependencyCheckDialog(wx.Dialog):
         self.checker = checker
 
         # Design system colors - migrated to theme module
-        self.bg_color = theme.BG_SURFACE
+        self.bg_color = theme.BG_MODAL  # Dark gray modal background
         self.bg_input = theme.BG_INPUT
         self.text_primary = theme.TEXT_PRIMARY
         self.text_secondary = theme.TEXT_SECONDARY
@@ -527,7 +547,7 @@ class DependencyCheckDialog(wx.Dialog):
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         self.header_title = wx.StaticText(self.header, label="SETUP REQUIRED")
-        self.header_title.SetForegroundColour(self.accent_yellow)
+        self.header_title.SetForegroundColour(theme.TEXT_PRIMARY)  # White title
         self.header_title.SetFont(TextStyles.section_heading.create_font())
         
         header_sizer.Add(self.header_title, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 16)
@@ -550,8 +570,7 @@ class DependencyCheckDialog(wx.Dialog):
 
         # List existing dependencies
         for dep_name, is_found in self.dep_status.items():
-            dep_panel = wx.Panel(content)
-            dep_panel.SetBackgroundColour(self.bg_input)
+            dep_panel = RoundedPanel(content, radius=4, bg_color=self.bg_input)
             dep_sizer = wx.BoxSizer(wx.VERTICAL)
             row_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -560,8 +579,8 @@ class DependencyCheckDialog(wx.Dialog):
             dep_label.SetFont(TextStyle(family=theme.FONT_MONO, size=10, weight=400).create_font())
 
             # Use bundled MDI symbols (required)
-            status_symbol = "mdi-check-circle" if is_found else "mdi-close-circle"
-            status_color = self.accent_green if is_found else self.accent_orange
+            status_symbol = "mdi-check-circle" if is_found else "mdi-close"  # Red X for missing
+            status_color = self.accent_green if is_found else theme.ACCENT_RED
             
             # Get icon from foundation icons
             icon_char = STATUS_ICONS.get(status_symbol, "")
@@ -576,8 +595,11 @@ class DependencyCheckDialog(wx.Dialog):
             dep_sizer.Add(row_sizer, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 12)
 
             dep_panel.SetSizer(dep_sizer)
-            # Increase horizontal padding (inset more)
+            # Horizontal padding matching list items
             self.content_sizer.Add(dep_panel, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 24)
+
+        # Spacing between list and progress panel - double the item spacing
+        self.content_sizer.AddSpacer(16)
 
         # Integrated Progress Area
         self.progress_panel = wx.Panel(content)
@@ -604,7 +626,8 @@ class DependencyCheckDialog(wx.Dialog):
         progress_sizer.Add(self.progress_log, 1, wx.EXPAND)
         
         self.progress_panel.SetSizer(progress_sizer)
-        self.content_sizer.Add(self.progress_panel, 1, wx.EXPAND | wx.ALL, 16)
+        # Match list item padding: 24px horizontal, 8px bottom spacing
+        self.content_sizer.Add(self.progress_panel, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, 24)
 
         content.SetSizer(self.content_sizer)
         main_sizer.Add(content, 1, wx.EXPAND)

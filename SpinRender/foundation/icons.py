@@ -10,6 +10,7 @@ The actual rendering uses the appropriate font (MDI) to display these.
 STATUS_ICONS = {
     "mdi-check-circle": "\U000F05E0",
     "mdi-close-circle": "\U000F05E8",
+    "mdi-close": "\U000F0156",  # Plain X for missing dependencies
 }
 
 # Commonly used UI icons (subset from CustomButton.ICONS)

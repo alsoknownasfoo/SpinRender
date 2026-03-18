@@ -14,8 +14,8 @@ providing a focused interface for preset management.
 import wx
 from typing import Dict, Any, Optional
 
-from core.settings import RenderSettings
-from core.presets import PresetManager
+from SpinRender.core.settings import RenderSettings
+from SpinRender.core.presets import PresetManager
 
 # Import dialogs for custom preset selection
 try:

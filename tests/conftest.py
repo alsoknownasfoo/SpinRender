@@ -46,6 +46,9 @@ class FontMock:
     def GetPointSize(self):
         return self._size
 
+    def GetWeight(self):
+        return self._weight
+
 
 class DummyWindow:
     """Simple window mock that accepts arbitrary kwargs like wx.Window."""
