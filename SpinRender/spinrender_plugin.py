@@ -17,30 +17,35 @@ if user_site not in sys.path:
     sys.path.append(user_site)
 
 # Add plugin parent directory to path for package-style imports
-# This ensures that 'from SpinRender.xxx' works correctly and consistently
+# This ensures that 'from SpinRender.xxx' works correctly
 plugin_dir = os.path.dirname(os.path.abspath(__file__))
+plugin_real_dir = os.path.dirname(os.path.realpath(__file__))
 plugin_parent = os.path.dirname(plugin_dir)
 
-if plugin_parent not in sys.path:
-    sys.path.insert(0, plugin_parent)
-
-# Remove the plugin_dir itself if it's in sys.path to avoid duplicate modules
-# (e.g. importing 'core.theme' vs 'SpinRender.core.theme')
-if plugin_dir in sys.path:
-    sys.path.remove(plugin_dir)
+for p in [plugin_parent, plugin_dir]:
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
 # Initialize logging system
-from SpinRender.utils.logger import SpinLogger
-SpinLogger.setup(level='verbose')  # Enable DEBUG level logging for troubleshooting
+try:
+    from SpinRender.utils.logger import SpinLogger
+    SpinLogger.setup(level='verbose')
+except ImportError:
+    from utils.logger import SpinLogger
+    SpinLogger.setup(level='verbose')
+
 logger = logging.getLogger("SpinRender")
 logger.info(f"Loading SpinRender plugin from {plugin_dir}")
 logger.debug(f"Python executable: {sys.executable}")
 logger.debug(f"Python version: {sys.version}")
 logger.debug(f"Platform: {sys.platform}")
 
-# Import dependency checker early (doesn't require heavy dependencies)
+# Import dependency checker
 logger.debug("Importing dependency checker...")
-from SpinRender.ui.dependencies import DependencyChecker
+try:
+    from SpinRender.ui.dependencies import DependencyChecker
+except ImportError:
+    from ui.dependencies import DependencyChecker
 logger.debug("Dependency checker imported successfully")
 
 # NOTE: Do NOT import ui.main_panel here - it pulls in core.preview which requires
@@ -116,7 +121,10 @@ class SpinRenderPlugin(pcbnew.ActionPlugin):
 
             # Import SpinRenderPanel only after dependencies are verified
             logger.debug("Dependencies OK, importing SpinRenderPanel...")
-            from SpinRender.ui.main_panel import SpinRenderPanel
+            try:
+                from SpinRender.ui.main_panel import SpinRenderPanel
+            except ImportError:
+                from ui.main_panel import SpinRenderPanel
             logger.debug("SpinRenderPanel imported successfully")
 
             # Get board file path
@@ -173,7 +181,10 @@ class SpinRenderFrame(wx.Frame):
 
         # Create main panel - import here after dependencies are verified
         logger.debug("Importing SpinRenderPanel...")
-        from SpinRender.ui.main_panel import SpinRenderPanel
+        try:
+            from SpinRender.ui.main_panel import SpinRenderPanel
+        except ImportError:
+            from ui.main_panel import SpinRenderPanel
         logger.debug("Creating SpinRenderPanel...")
         self.panel = SpinRenderPanel(self, board_path)
         logger.debug("Panel created")
@@ -202,7 +213,8 @@ class SpinRenderFrame(wx.Frame):
 
     def _init_theme_watcher(self):
         """Initialize a timer to watch for theme file changes (Hot Reload)."""
-        self.theme_path = Path(__file__).parent / "resources" / "themes" / "dark.yaml"
+        # Use the real directory to follow symlinks to the repo version
+        self.theme_path = Path(plugin_real_dir) / "resources" / "themes" / "dark.yaml"
         self.last_theme_mtime = self.theme_path.stat().st_mtime if self.theme_path.exists() else 0
         
         self.theme_timer = wx.Timer(self)
@@ -220,7 +232,10 @@ class SpinRenderFrame(wx.Frame):
             self.last_theme_mtime = mtime
             logger.info(f"Theme file {self.theme_path.name} changed. Hot-reloading...")
             try:
-                from SpinRender.core.theme import Theme
+                try:
+                    from SpinRender.core.theme import Theme
+                except ImportError:
+                    from core.theme import Theme
                 Theme.reload()
                 
                 # Use the new orchestrated re-application method
