@@ -85,8 +85,23 @@ class Theme:
         return True
 
     def _resolve(self, path: str) -> Any:
-        """Resolve a dot-path token, following 'ref' references. Returns pink if undefined."""
+        """
+        Resolve a dot-path token, following 'ref' references. 
+        If path is not a valid token but looks like a color name, returns it as-is.
+        Returns pink if undefined.
+        """
         node = self._data
+        is_token_path = '.' in path or path in node
+        
+        if not is_token_path:
+            # Not a token path (no dots, not in root). 
+            # Could be a direct color name (e.g. "red") or hex.
+            if path.startswith("#") or path.startswith("rgba(") or len(path) == 6:
+                return path
+            # If it's a simple word, let _parse_color try wx.ColourDatabase
+            if path.isalpha():
+                return path
+
         for key in path.split("."):
             if isinstance(node, dict):
                 if key not in node:
@@ -200,7 +215,7 @@ class Theme:
         return self.color("colors.bg.page")
 
     def _parse_color(self, value: str):
-        """Parse color string to wx.Colour. Supports hex (#RRGGBB, RRGGBB, #RRGGBBAA), rgba(r,g,b,a)."""
+        """Parse color string to wx.Colour. Supports hex (#RRGGBB, RRGGBB, #RRGGBBAA), rgba(r,g,b,a), and basic color names."""
         import wx
         import re
 
@@ -210,7 +225,12 @@ class Theme:
         if not isinstance(value, str):
             raise ValueError(f"Theme: Invalid color value type: {type(value)}")
 
-        # Parse rgba(r, g, b, a)
+        # 1. Try wx.ColourDatabase for named colors (e.g. 'red', 'blue', 'LIGHT GREY')
+        named_color = wx.Colour(value)
+        if named_color.IsOk():
+            return named_color
+
+        # 2. Parse rgba(r, g, b, a)
         if value.startswith("rgba("):
             parts = re.findall(r"[\d.]+", value)
             if len(parts) != 4:
@@ -222,7 +242,7 @@ class Theme:
             except (ValueError, IndexError):
                 raise ValueError(f"Theme: Invalid rgba format: {value}")
 
-        # Parse hex #RRGGBB or RRGGBB or #RRGGBBAA
+        # 3. Parse hex #RRGGBB or RRGGBB or #RRGGBBAA
         clean = value.lstrip("#")
         try:
             if len(clean) == 6:
@@ -239,15 +259,15 @@ class Theme:
         except ValueError:
             pass
 
-        # Try named color strings as fallback
+        # 4. Final attempt at direct wx.Colour constructor
         try:
-            named = wx.Colour(value)
-            if named.IsOk():
-                return named
+            direct = wx.Colour(value)
+            if direct.IsOk():
+                return direct
         except Exception:
             pass
 
-        raise ValueError(f"Theme: Invalid color format: '{value}'")
+        raise ValueError(f"Theme: Invalid color format or unknown color name: '{value}'")
 
     def parse_color(self, value: str):
         """Public wrapper for _parse_color."""
