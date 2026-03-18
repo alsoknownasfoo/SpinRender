@@ -1021,20 +1021,74 @@ class NumericInput(wx.Panel):
     def on_char(self, event):
         if not self.IsEnabled(): return
         key = event.GetKeyCode()
-        if not self.editing: return
-        if key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER): self.confirm_edit()
-        elif key == wx.WXK_ESCAPE: self.cancel_edit()
-        elif key == wx.WXK_TAB: self.confirm_edit(); event.Skip()
+        if not self.editing:
+            # Allow arrow keys to adjust value even when not editing
+            if key in (wx.WXK_UP, wx.WXK_DOWN, wx.WXK_NUMPAD_UP, wx.WXK_NUMPAD_DOWN):
+                self._handle_arrow(key, event.ShiftDown())
+            event.Skip()
+            return
+
+        if key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+            self.confirm_edit()
+        elif key == wx.WXK_ESCAPE:
+            self.cancel_edit()
+        elif key == wx.WXK_TAB:
+            self.confirm_edit()
+            event.Skip()
+        elif key in (wx.WXK_UP, wx.WXK_DOWN, wx.WXK_NUMPAD_UP, wx.WXK_NUMPAD_DOWN):
+            self._handle_arrow(key, event.ShiftDown())
         elif key == wx.WXK_BACK:
-            if self.text_selected: self.edit_text, self.text_selected = "", False
-            else: self.edit_text = self.edit_text[:-1]
+            if self.text_selected:
+                self.edit_text, self.text_selected = "", False
+            else:
+                self.edit_text = self.edit_text[:-1]
             self.Refresh()
         else:
             char = chr(key) if key < 256 else None
             if char and (char.isdigit() or char in '.-'):
-                if self.text_selected: self.edit_text, self.text_selected = char, False
-                else: self.edit_text += char
+                if self.text_selected:
+                    self.edit_text, self.text_selected = char, False
+                else:
+                    self.edit_text += char
                 self.Refresh()
+
+    def _handle_arrow(self, key, shift_pressed):
+        """Handle Up/Down arrow keys to increment/decrement value."""
+        # Determine step size: 0.1 for normal, 1.0 for Shift
+        step = 1.0 if shift_pressed else 0.1
+
+        # Get current value from edit_text if editing, else from value
+        try:
+            current = float(self.edit_text) if self.editing and self.edit_text else self.value
+        except (ValueError, TypeError):
+            current = self.value
+
+        # Apply increment/decrement
+        if key in (wx.WXK_UP, wx.WXK_NUMPAD_UP):
+            new_val = current + step
+        else:  # Down
+            new_val = current - step
+
+        # Clamp to min/max
+        if self.min_val is not None:
+            new_val = max(self.min_val, new_val)
+        if self.max_val is not None:
+            new_val = min(self.max_val, new_val)
+
+        # Round to 1 decimal place to avoid floating point precision issues
+        new_val = round(new_val, 1)
+
+        # Update value and edit_text
+        self.value = new_val
+        if self.editing:
+            self.edit_text = f"{new_val:.2f}" if isinstance(new_val, float) else str(new_val)
+            self.text_selected = True  # Select all on next paint? We'll just refresh
+        self.Refresh()
+
+        # Emit change event
+        evt = wx.PyCommandEvent(wx.EVT_TEXT_ENTER.typeId, self.GetId())
+        evt.SetString(str(new_val))
+        self.GetEventHandler().ProcessEvent(evt)
 
     def on_focus_lost(self, event):
         if self.editing: self.confirm_edit()
@@ -1231,7 +1285,7 @@ class ProjectFolderChip(wx.Panel):
 class CustomColorPicker(wx.Panel):
     """
     Custom color picker matching Component/ColorPicker from Pencil design.
-    Features swatches for presets and a custom color button.
+    Features swatches for presets and an editable hex color input.
     """
     BORDER_COLOR = theme.BORDER_DEFAULT
     BG_INPUT = theme.BG_INPUT
@@ -1251,7 +1305,20 @@ class CustomColorPicker(wx.Panel):
 
         self.hover_idx = -1 # 0-3 for presets, 4 for custom
         self.selection = -1 # -1 if custom, 0-3 if preset
+        self.editing = False
         self._update_selection()
+
+        # Hex color text input
+        self.hex_input = CustomTextInput(
+            self,
+            value=self.current_color,
+            placeholder="#000000",
+            multiline=False,
+            size=(-1, 28)
+        )
+        self.hex_input.Bind(wx.EVT_TEXT_ENTER, self.on_hex_enter)
+        self.hex_input.Bind(wx.EVT_KILL_FOCUS, self.on_hex_focus_lost)
+        self.hex_input.Bind(wx.EVT_TEXT, self.on_hex_change)
 
         self.Bind(wx.EVT_PAINT, self.on_paint)
         bind_mouse_events(
@@ -1264,6 +1331,17 @@ class CustomColorPicker(wx.Panel):
         # Fixed size based on design
         self.SetMinSize((340, 64))
 
+        # Initial layout
+        self._layout_input()
+
+        # Keep hex input positioned on resize
+        self.Bind(wx.EVT_SIZE, self._on_size)
+
+    def _on_size(self, event):
+        """Reposition hex input when parent resizes."""
+        self._layout_input()
+        event.Skip()
+
     def _update_selection(self):
         self.selection = -1
         for i, (hex_val, _) in enumerate(self.PRESETS):
@@ -1274,7 +1352,52 @@ class CustomColorPicker(wx.Panel):
     def SetColor(self, hex_color):
         self.current_color = hex_color.upper()
         self._update_selection()
+        if hasattr(self, 'hex_input'):
+            self.hex_input.SetValue(self.current_color)
         self.Refresh()
+
+    def _layout_input(self):
+        """Position the hex input widget."""
+        if not hasattr(self, 'hex_input'):
+            return
+        rects = self._get_rects()
+        r_hex = rects['hex']
+        self.hex_input.SetSize(r_hex.width, r_hex.height)
+        self.hex_input.SetPosition((r_hex.x, r_hex.y))
+
+    def on_hex_enter(self, event):
+        """User pressed Enter in hex input."""
+        self._apply_hex_color()
+
+    def on_hex_change(self, event):
+        """Hex input text changed - optionally validate format."""
+        # Could add live validation here
+        pass
+
+    def _apply_hex_color(self):
+        """Apply the current hex input value as the color."""
+        hex_val = self.hex_input.GetValue().strip()
+        if not hex_val.startswith('#'):
+            hex_val = f"#{hex_val}"
+        # Validate hex format
+        if len(hex_val) == 7 and all(c in '0123456789ABCDEFabcdef' for c in hex_val[1:]):
+            hex_val = hex_val.upper()
+            if hex_val != self.current_color:
+                self.current_color = hex_val
+                self._update_selection()
+                self.Refresh()
+                # Emit change event
+                evt = wx.PyCommandEvent(wx.EVT_COLOURPICKER_CHANGED.typeId, self.GetId())
+                evt.SetString(hex_val)
+                self.GetEventHandler().ProcessEvent(evt)
+        else:
+            # Reset to current valid color on invalid input
+            self.hex_input.SetValue(self.current_color)
+
+    def on_hex_focus_lost(self, event):
+        """Apply color when hex input loses focus."""
+        self._apply_hex_color()
+        event.Skip()
 
     def _get_rects(self):
         """Pre-calculate rectangles for hit detection and painting"""
@@ -1336,19 +1459,13 @@ class CustomColorPicker(wx.Panel):
         r_cust = rects['custom']
         self._draw_swatch(gc, r_cust.x, r_cust.y, self.current_color, "CUSTOM", is_custom, self.hover_idx == 4, enabled)
 
-        # 5. Hex Display
+        # 5. Hex Input Background (the CustomTextInput draws the actual text)
         r_hex = rects['hex']
         hex_bg = theme.disabled(self.BG_INPUT) if not enabled else self.BG_INPUT
         gc.SetBrush(wx.Brush(hex_bg))
         hex_border = theme.disabled(self.BORDER_COLOR) if not enabled else self.BORDER_COLOR
         gc.SetPen(wx.Pen(hex_border, 1))
         gc.DrawRoundedRectangle(r_hex.x, r_hex.y, r_hex.width, r_hex.height, 4)
-
-        hex_font = TextStyles.body_strong.create_font()
-        hex_color = theme.disabled(theme.ACCENT_YELLOW) if not enabled else theme.ACCENT_YELLOW
-        gc.SetFont(hex_font, hex_color)
-        tw, th = gc.GetTextExtent(self.current_color)
-        gc.DrawText(self.current_color, r_hex.x + (r_hex.width - tw) / 2, r_hex.y + (r_hex.height - th) / 2)
 
     def _draw_swatch(self, gc, x, y, color_hex, label, is_selected, is_hovered, enabled):
         swatch_size = 28
