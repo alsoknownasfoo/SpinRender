@@ -357,6 +357,12 @@ class SpinRenderPanel(wx.Panel):
         self.reset_status_bar()
         self.preset_controller.on_preset_change(preset_id)
 
+    def on_save_preset(self, event=None):
+        """Delegates to PresetController."""
+        if self.render_controller.is_rendering():
+            return
+        self.reset_status_bar()
+        self.preset_controller.on_save_preset(event)
 
     def on_render_mode_change(self, mode_id):
         """Handle clicks on the WIREFRAME | SHADED | BOTH toggle"""
