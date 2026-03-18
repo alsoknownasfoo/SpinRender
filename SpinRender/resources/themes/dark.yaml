@@ -6,7 +6,6 @@
 
 # TODO:
 # - Remove neutral and color definitions and add a theme helpder function to obtain color values from names via wx.ColourDatabase
-# - Make definitions for every specific component, like all the sliders, and ensure that all components have a registered token prefix. Do we need a registry?
 
 meta:
   name: "Dark"
@@ -268,8 +267,6 @@ components:
     bg:             ["colors.bg.page"]
     header-bg:      ["colors.bg.panel"]
     header-border:  ["colors.border.default"]
-    close-icon:     ["colors.text.muted", "colors.accent.danger", "colors.accent.danger"]
-    close-bg:       [{ref: "palette.transparent"}, "colors.state.danger-hover", "colors.state.danger-pressed"]
     padding:        {ref: "spacing.lg"}
     section-gap:    {ref: "spacing.lg"}
 
@@ -335,12 +332,17 @@ components:
       bg:           ["palette.transparent"]
       text:         ["colors.text.primary"]
       hover:        ["colors.state.ghost-overlay"]
+      border:       ["palette.transparent"]
+      radius:       {ref: "borders.radius.md"}
 
     danger:
       bg:           ["colors.state.danger"]
       text:         ["colors.text.on-danger"]
       hover-bg:     ["colors.state.danger-hover"]
       pressed-bg:   ["colors.state.danger-pressed"]
+
+    # Explicit close button definition linked to ghost style
+    close:          {ref: "components.button.ghost"}
 
   # Preset Card
   preset_card:

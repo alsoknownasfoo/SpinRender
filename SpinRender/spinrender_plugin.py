@@ -184,9 +184,48 @@ class SpinRenderFrame(wx.Frame):
         SpinRenderFrame.active_instance = self
         logger.debug("Set as active_instance")
 
+        # Theme Hot-Reload Watcher
+        self._init_theme_watcher()
+
         # Bind close event
         self.Bind(wx.EVT_CLOSE, self.on_close)
         logger.debug("Close event bound, __init__ complete")
+
+    def _init_theme_watcher(self):
+        """Initialize a timer to watch for theme file changes (Hot Reload)."""
+        self.theme_path = Path(__file__).parent / "resources" / "themes" / "dark.yaml"
+        self.last_theme_mtime = self.theme_path.stat().st_mtime if self.theme_path.exists() else 0
+        
+        self.theme_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.on_theme_watch_timer, self.theme_timer)
+        self.theme_timer.Start(1000) # Check every second
+        logger.debug(f"Theme watcher initialized for {self.theme_path.name}")
+
+    def on_theme_watch_timer(self, event):
+        """Check if theme file has been modified and reload if needed."""
+        if not self.theme_path.exists():
+            return
+            
+        mtime = self.theme_path.stat().st_mtime
+        if mtime > self.last_theme_mtime:
+            self.last_theme_mtime = mtime
+            logger.info(f"Theme file {self.theme_path.name} changed. Hot-reloading...")
+            try:
+                from core.theme import Theme
+                Theme.reload()
+                # Refresh entire UI
+                self.panel.Refresh()
+                # Recursively refresh all children to catch cached GC objects
+                self._refresh_recursive(self.panel)
+                logger.info("Theme hot-reload complete.")
+            except Exception as e:
+                logger.error(f"Theme hot-reload failed: {e}")
+
+    def _refresh_recursive(self, window):
+        """Recursively refresh all child windows."""
+        window.Refresh()
+        for child in window.GetChildren():
+            self._refresh_recursive(child)
 
     def _finalize_init(self):
         """Finalize window size and position"""

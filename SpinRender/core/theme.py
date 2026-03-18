@@ -36,13 +36,13 @@ class Theme:
         self._data = data
 
     @classmethod
-    def load(cls, name: str = "dark") -> "Theme":
+    def load(cls, name: str = "dark", force: bool = False) -> "Theme":
         """Load theme from YAML file. Sets singleton instance."""
-        # Idempotent: if already loaded, return existing instance
-        if cls._instance is not None:
+        # Idempotent: if already loaded and not forcing, return existing instance
+        if cls._instance is not None and not force:
             return cls._instance
 
-        logger.info(f"Theme: Initializing '{name}' theme loading.")
+        logger.info(f"Theme: {'Reloading' if force else 'Initializing'} '{name}' theme loading.")
         path = Path(__file__).parent.parent / "resources" / "themes" / f"{name}.yaml"
 
         if not path.exists():
@@ -58,7 +58,12 @@ class Theme:
         try:
             with open(path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
-            cls._instance = cls(data)
+            
+            if force and cls._instance:
+                cls._instance._data = data
+            else:
+                cls._instance = cls(data)
+                
             logger.info(f"Theme: '{name}' theme loaded successfully from {path.name}")
         except Exception as e:
             error_msg = f"Failed to parse theme '{name}' from {path}: {e}"
@@ -66,6 +71,13 @@ class Theme:
             raise RuntimeError(error_msg)
 
         return cls._instance
+
+    @classmethod
+    def reload(cls) -> "Theme":
+        """Force a reload of the current theme from disk."""
+        # Determine name of currently loaded theme if possible, else default to dark
+        # For now, we assume "dark" as it's the only one, or we could track name in instance
+        return cls.load(force=True)
 
     @classmethod
     def current(cls) -> "Theme":
@@ -103,6 +115,10 @@ class Theme:
                 return path
 
         for key in path.split("."):
+            # If we encounter a ref during traversal, resolve it and continue from there
+            while isinstance(node, dict) and "ref" in node:
+                node = self._resolve(node["ref"])
+
             if isinstance(node, dict):
                 if key not in node:
                     logger.error(f"Theme: Undefined token: '{path}' (missing '{key}')")
@@ -112,9 +128,9 @@ class Theme:
                 logger.error(f"Theme: Cannot traverse into {type(node)} at '{key}' in '{path}'")
                 return "#FF00FF"
 
-        # Follow ref if present
-        if isinstance(node, dict) and "ref" in node:
-            return self._resolve(node["ref"])
+        # Follow ref if present at the leaf
+        while isinstance(node, dict) and "ref" in node:
+            node = self._resolve(node["ref"])
         return node
 
     def disabled(self, color) -> 'wx.Colour':

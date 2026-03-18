@@ -117,10 +117,11 @@ class ControlsSidePanel(wx.Panel):
 
         sizer.AddStretchSpacer()
         
-        # Close button - use theme tokens for colors
-        icon_color, icon_color_hover, icon_color_pressed = _theme.color_states("components.panel.close-icon")
-        
-        bg_color, bg_color_hover, bg_color_pressed = _theme.color_states("components.panel.close-bg")
+        # Close button - use the new explicit button.close tokens
+        icon_color, icon_color_hover, icon_color_pressed = _theme.color_states("components.button.close.text")
+        bg_color, bg_color_hover, bg_color_pressed = _theme.color_states("components.button.close.bg")
+        border_color, border_color_hover, border_color_pressed = _theme.color_states("components.button.close.border")
+        radius = _theme.size("components.button.close.radius")
 
         self.header_close_btn = CustomButton(
             header, label="", icon='mdi-close', primary=False, ghost=True,
@@ -132,6 +133,11 @@ class ControlsSidePanel(wx.Panel):
             bg_color_pressed=bg_color_pressed,
             size=(36, 36)
         )
+        # CustomButton needs to support border_color overrides to fully implement the close button look
+        self.header_close_btn.border_color_override = border_color
+        self.header_close_btn.border_color_hover = border_color_hover
+        self.header_close_btn.border_color_pressed = border_color_pressed
+        # Could also add border_radius support if needed, but sticking to colors for now
         self.header_close_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_close)
         sizer.Add(self.header_close_btn, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 16)
 
