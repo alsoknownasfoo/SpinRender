@@ -266,7 +266,7 @@ class CustomToggleButton(wx.Panel):
         # Draw each state
         for i, opt in enumerate(self.options):
             is_active = (i == self.selection)
-            base_color = self.TEXT_PRIMARY if is_active else self.TEXT_SECONDARY
+            base_color = theme.TEXT_PRIMARY if is_active else theme.TEXT_SECONDARY
             color = theme.disabled(base_color) if not enabled else base_color
             self._draw_side(gc, opt.get('label'), opt.get('icon'), i * state_width, state_width, height, color)
 
