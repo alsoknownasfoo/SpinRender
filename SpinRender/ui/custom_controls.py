@@ -679,11 +679,11 @@ class CustomButton(wx.Panel):
                     bg = _theme.WHITE_ALPHA_20
                     text_color = _theme.WHITE
 
-        # Apply disabled state directly (no _get_paint_color helper)
+        # Apply disabled state directly
         final_bg = _theme.disabled(bg) if not enabled else bg
         final_text = _theme.disabled(text_color) if not enabled else text_color
 
-        # Determine final icon color (priority to override with state-aware colors)
+        # Determine final icon color
         final_icon_color = final_text
         if self.icon_color_override:
             if self.pressed and self.icon_color_pressed:
@@ -704,23 +704,25 @@ class CustomButton(wx.Panel):
 
         # Prepare fonts and measure content
         icon_char = self.ICONS.get(self.icon, self.icon) if self.icon else None
-        label_font = TextStyles.body_strong.create_font()
-
+        
         tw, th = 0, 0
         if self.label:
-            gc.SetFont(label_font, final_text)
+            font_obj = TextStyles.body_strong.create_font()
+            gfx_font = gc.CreateFont(font_obj, final_text)
+            gc.SetFont(gfx_font)
             tw, th = gc.GetTextExtent(self.label)
 
         iw, ih = 0, 0
-        icon_font = None
+        icon_gfx_font = None
         if icon_char:
             if self.icon_font_family:
-                icon_font = TextStyle(family=self.icon_font_family, size=14, weight=400).create_font()
+                icon_font_obj = TextStyle(family=self.icon_font_family, size=14, weight=400).create_font()
             elif isinstance(self.icon, str) and self.icon.startswith("mdi-"):
-                icon_font = TextStyles.icon.create_font()
+                icon_font_obj = TextStyles.icon.create_font()
             else:
-                icon_font = TextStyles.icon.create_font()
-            gc.SetFont(icon_font, final_icon_color)
+                icon_font_obj = TextStyles.icon.create_font()
+            
+            icon_gfx_font = gc.CreateFont(icon_font_obj, final_icon_color)
             iw, ih = gc.GetTextExtent(icon_char)
 
         # Calculate total group width for horizontal centering
@@ -730,23 +732,28 @@ class CustomButton(wx.Panel):
 
         # Draw icon centered vertically
         if icon_char:
-            gc.SetFont(icon_font, final_icon_color)
+            gc.SetFont(icon_gfx_font)
             gc.DrawText(icon_char, start_x, (height - ih) / 2)
 
         # Draw label centered vertically
         if self.label:
-            gc.SetFont(label_font, final_text)
+            # Refresh font for text
+            font_obj = TextStyles.body_strong.create_font()
+            gfx_font = gc.CreateFont(font_obj, final_text)
+            gc.SetFont(gfx_font)
             gc.DrawText(self.label, start_x + iw + gap, (height - th) / 2)
 
     def on_mouse_down(self, event):
         if not self.IsEnabled(): return
         self.pressed = True
         self.Refresh()
+        self.Update()
 
     def on_mouse_up(self, event):
         if self.pressed:
             self.pressed = False
             self.Refresh()
+            self.Update()
             evt = wx.PyCommandEvent(wx.EVT_BUTTON.typeId, self.GetId())
             self.GetEventHandler().ProcessEvent(evt)
 
@@ -754,11 +761,13 @@ class CustomButton(wx.Panel):
         if not self.IsEnabled(): return
         self.hovered = True
         self.Refresh()
+        self.Update()
 
     def on_leave(self, event):
         self.hovered = False
         self.pressed = False
         self.Refresh()
+        self.Update()
 
     def SetLabel(self, label):
         self.label = str(label)
