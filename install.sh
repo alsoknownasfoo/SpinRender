@@ -188,10 +188,14 @@ if [ -n "$TARGET_PATH" ]; then
     fi
 
     echo -e "${CYAN}[i] DEPLOYING ASSETS TO:${NC} ${TEAL}$TARGET_DIR${NC}"
+    # Clean both source and target __pycache__ to be absolutely sure
+    find "$SOURCE_DIR" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+    if [ -d "$TARGET_DIR" ]; then
+        find "$TARGET_DIR" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+    fi
+    
     rm -rf "$TARGET_DIR"
     mkdir -p "$TARGET_DIR"
-    # Clean Python bytecode from source to avoid stale .pyc files
-    find "$SOURCE_DIR" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
     cp -R "$SOURCE_DIR/." "$TARGET_DIR/"
 
     if [ -f "$TARGET_DIR/__init__.py" ]; then

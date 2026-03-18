@@ -9,6 +9,9 @@ import site
 import logging
 from pathlib import Path
 
+# Disable bytecode generation to prevent stale __pycache__ issues during development
+sys.dont_write_bytecode = True
+
 
 # Add user site-packages to path
 # This is critical for KiCad bundled Python to find packages installed via 'pip install --user'
@@ -214,10 +217,14 @@ class SpinRenderFrame(wx.Frame):
             try:
                 from core.theme import Theme
                 Theme.reload()
-                # Refresh entire UI
-                self.panel.Refresh()
-                # Recursively refresh all children to catch cached GC objects
-                self._refresh_recursive(self.panel)
+                
+                # Use the new orchestrated re-application method
+                if hasattr(self.panel, 'reapply_theme'):
+                    self.panel.reapply_theme()
+                else:
+                    self.panel.Refresh()
+                    self._refresh_recursive(self.panel)
+                    
                 logger.info("Theme hot-reload complete.")
             except Exception as e:
                 logger.error(f"Theme hot-reload failed: {e}")
