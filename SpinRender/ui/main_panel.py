@@ -261,6 +261,9 @@ class SpinRenderPanel(wx.Panel):
         # Create the PreviewPanel component
         self.preview = PreviewPanel(parent, self.settings, self.board_path)
 
+        # Set preview panel width to 700px
+        self.preview.SetMinSize((700, -1))
+
         # Expose preset_buttons for overlay label overrides
         self.preview.preset_buttons = self.preset_buttons
 

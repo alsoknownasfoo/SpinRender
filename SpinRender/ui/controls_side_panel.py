@@ -49,7 +49,7 @@ class ControlsSidePanel(wx.Panel):
 
     def create_controls_panel(self, parent):
         """Create the main scrolled controls container."""
-        panel = scrolled.ScrolledPanel(parent, size=(450, -1))
+        panel = scrolled.ScrolledPanel(parent, size=(400, -1))
         panel.SetBackgroundColour(theme.BG_PAGE)
         panel.SetupScrolling(scroll_x=False, scroll_y=True, rate_y=20)
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -89,7 +89,7 @@ class ControlsSidePanel(wx.Panel):
 
         panel.SetSizer(sizer)
         required_h = sizer.CalcMin().y + 40
-        panel.SetMinSize((450, required_h))
+        panel.SetMinSize((400, required_h))
         sizer.Fit(panel)
         return panel
 
