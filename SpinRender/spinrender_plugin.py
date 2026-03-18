@@ -7,6 +7,7 @@ import os
 import sys
 import site
 import logging
+from pathlib import Path
 
 
 # Add user site-packages to path
