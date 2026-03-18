@@ -9,9 +9,6 @@ import site
 import logging
 from pathlib import Path
 
-# Disable bytecode generation to prevent stale __pycache__ issues during development
-sys.dont_write_bytecode = True
-
 
 # Add user site-packages to path
 # This is critical for KiCad bundled Python to find packages installed via 'pip install --user'
