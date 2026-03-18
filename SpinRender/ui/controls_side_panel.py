@@ -33,7 +33,8 @@ class ControlsSidePanel(wx.Panel):
 
     def __init__(self, parent, settings, board_path):
         super().__init__(parent)
-        self.parent = parent
+        self.parent = parent  # wx parent (top_panel)
+        self.main_panel = parent.GetParent()  # SpinRenderPanel for event handlers
         self.settings = settings
         self.board_path = board_path
 
@@ -118,11 +119,11 @@ class ControlsSidePanel(wx.Panel):
             header, label="", icon='mdi-close', primary=False, ghost=True,
             icon_color=theme.TEXT_MUTED, size=(36, 36)
         )
-        self.header_close_btn.Bind(wx.EVT_BUTTON, self.parent.on_close)
+        self.header_close_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_close)
         sizer.Add(self.header_close_btn, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 16)
 
         header.SetSizerAndFit(sizer)
-        self.parent.enable_drag(header)
+        self.main_panel.enable_drag(header)
         return header
 
     def create_preset_section(self, parent):
@@ -143,7 +144,7 @@ class ControlsSidePanel(wx.Panel):
         self.preset_buttons = {}
         for i, (pid, lbl, ico) in enumerate(presets_data):
             btn = PresetCard(preset_row, label=lbl, icon_name=ico, size=(90, 64))
-            btn.Bind(wx.EVT_BUTTON, lambda e, p=pid: self.parent.on_preset_change(p))
+            btn.Bind(wx.EVT_BUTTON, lambda e, p=pid: self.main_panel.on_preset_change(p))
             if self.settings.preset == pid:
                 btn.SetSelected(True)
             self.preset_buttons[pid] = btn
@@ -167,7 +168,7 @@ class ControlsSidePanel(wx.Panel):
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
         header_sizer.Add(create_section_label(header, "PARAMETERS"), 1, wx.ALIGN_CENTER_VERTICAL)
         save_btn = CustomButton(header, label="+ PRESET", primary=False, size=(120, 28))
-        save_btn.Bind(wx.EVT_BUTTON, self.parent.on_save_preset)
+        save_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_save_preset)
         header_sizer.Add(save_btn, 0, wx.ALIGN_CENTER_VERTICAL)
         header.SetSizerAndFit(header_sizer)
 
@@ -404,13 +405,13 @@ class ControlsSidePanel(wx.Panel):
         arow = wx.Panel(panel)
         asizer = wx.BoxSizer(wx.HORIZONTAL)
         self.adv_btn = CustomButton(arow, label="", icon='mdi-cog', primary=False, size=(36, 36))
-        self.adv_btn.Bind(wx.EVT_BUTTON, self.parent.on_advanced_options)
+        self.adv_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_advanced_options)
         asizer.Add(self.adv_btn, 0, wx.RIGHT, 8)
         self.can_btn = CustomButton(arow, label="CLOSE", icon='mdi-exit-to-app', primary=False, danger=True, size=(110, 36))
-        self.can_btn.Bind(wx.EVT_BUTTON, self.parent.on_cancel)
+        self.can_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_cancel)
         asizer.Add(self.can_btn, 0, wx.RIGHT, 8)
         self.render_btn = CustomButton(arow, label="RENDER", icon='mdi-video-vintage', primary=True, size=(150, 36))
-        self.render_btn.Bind(wx.EVT_BUTTON, self.parent.on_render)
+        self.render_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_render)
         asizer.Add(self.render_btn, 1, wx.EXPAND)
         arow.SetSizerAndFit(asizer)
         self.export_row_sizer = asizer
