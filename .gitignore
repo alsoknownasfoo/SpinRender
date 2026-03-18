@@ -1,39 +1,29 @@
 .DS_Store
-.claude/
-.claude/*
 
 # Python
 __pycache__/
-__pycache__/*
 *.py[cod]
 *$py.class
 .venv/
-.venv/*
 
 # IDE & Editor
 .vscode/
-.vscode/*
+.claude/
 
 # Testing & Coverage
 .coverage
 htmlcov/
-htmlcov/*
 .pytest_cache/
-.pytest_cache/*
 SpinRender/logs/
-SpinRender/logs/*
 
 # Hardware (KiCad)
 *.kicad_pcb
 
 # Development tools
 .dmux/
-.dmux/*
-.dmux-hooks/*
+.dmux-hooks/
 .dmux-worktrees/
-.dmux-worktrees/*
 
 # Project-specific
 TODO.md
 .orchestration/
-.orchestration/*
