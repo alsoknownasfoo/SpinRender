@@ -399,71 +399,83 @@
   - Identify natural module boundaries
   - Draft new module names and APIs
 - **References:** ARCHITECTURE_IMPLEMENTATION.md Section 6
+- **Status:** ✅ Complete — See `docs/TASK_7_1_ANALYSIS.md` for full analysis
 
-### Task 7.2: Extract Preview Manager
+### Task 7.2: Extract PreviewPanel
 - **Priority:** P2
 - **Effort:** 2d
 - **Dependencies:** 7.1
 - **Deliverables:**
-  - Create `SpinRender/ui/preview_manager.py`
-  - Move all preview-related methods and state
-  - Define `PreviewManager` class with clean interface
-  - Update SpinRenderPanel to hold `self.preview_manager` instance
-  - Tests: preview lifecycle, render triggering, error handling
-- **Files:** `SpinRender/ui/preview_manager.py` (new), `SpinRender/ui/main_panel.py` (refactor)
+  - Create `SpinRender/ui/preview_panel.py`
+  - Move preview-related methods: `update_preview_overlay`, `_on_render_preview_paint`, `start_playback`, `stop_playback`, `on_playback_timer`, `on_close_render_preview`, `_update_viewport_rotation`
+  - Define `PreviewPanel` class with clean interface (viewport, overlay, playback)
+  - Update `SpinRenderPanel.create_preview_panel()` to instantiate `PreviewPanel`
+  - Wire event bindings (drag, render mode buttons, close button)
+  - Tests: preview lifecycle, playback state, overlay updates
+- **Files:** `SpinRender/ui/preview_panel.py` (new), `SpinRender/ui/main_panel.py` (refactor)
 - **Risk:** High — preview logic tightly coupled with UI
+- **Status:** ✅ Complete
 
-### Task 7.3: Extract Render Controller
+### Task 7.3: Extract RenderController
 - **Priority:** P2
 - **Effort:** 2d
 - **Dependencies:** 7.2
 - **Deliverables:**
   - Create `SpinRender/core/render_controller.py`
-  - Move subprocess orchestration, build arguments, output handling
-  - Define `RenderController` class with `start_render()`, `stop_render()`, `get_progress()`
-  - Update PreviewManager to use RenderController (dependency injection)
-  - Tests: subprocess mocking, progress tracking
-- **Files:** `SpinRender/core/render_controller.py` (new), `SpinRender/core/__init__.py`
+  - Move render orchestration: `on_render`, `on_render_progress`, `on_render_finished` logic
+  - Define `RenderController` class with `start_render()`, `cancel()`, `is_rendering()`
+  - Use background thread with wx.CallAfter for UI callbacks
+  - Update `SpinRenderPanel.on_render()` to delegate to controller
+  - Tests: subprocess mocking, progress tracking, cancellation
+- **Files:** `SpinRender/core/render_controller.py` (new), `SpinRender/ui/main_panel.py` (refactor)
+- **Status:** ✅ Complete
 
-### Task 7.4: Extract State Manager
+### Task 7.4: Extract PresetController
 - **Priority:** P2
 - **Effort:** 1.5d
-- **Dependencies:** 7.3, Task 2.3 (state unification done)
+- **Dependencies:** 7.3
 - **Deliverables:**
-  - Create `SpinRender/core/state_manager.py`
-  - Move all settings/preset state from SpinRenderPanel
-  - Use the RenderSettings dataclass from Task 2.3
-  - Observer pattern for state changes (notify UI of updates)
-  - Tests: state mutations, persistence, notifications
-- **Files:** `SpinRender/core/state_manager.py` (new)
+  - Create `SpinRender/ui/preset_controller.py` (requires UI control refs → stays in ui/)
+  - Move preset logic: `on_preset_change`, `apply_preset_data`, `check_preset_match`, `save_settings`, `on_save_preset`
+  - Define `PresetController` class with adapter pattern: accepts `controls` dict and `preview` reference
+  - Use `PresetManager` for persistence
+  - Update `SpinRenderPanel._init_preset_controller()` to instantiate controller
+  - Tests: preset matching, custom preset dialogs, control updates
+- **Files:** `SpinRender/ui/preset_controller.py` (new), `SpinRender/ui/main_panel.py` (refactor)
+- **Status:** ✅ Complete
 
-### Task 7.5: Extract Project/Folder Management
+### Task 7.5: Extract ControlsSidePanel
 - **Priority:** P2
-- **Effort:** 1d
+- **Effort:** 2d
 - **Dependencies:** 7.4
 - **Deliverables:**
-  - Create `SpinRender/core/project_manager.py`
-  - Move project folder scanning, validation, presets loading
-  - Define `ProjectManager` with `load_project(path)`, `get_presets()`, `validate_folder()`
-  - Tests: project loading, preset discovery, error cases
-- **Files:** `SpinRender/core/project_manager.py` (new)
+  - Create `SpinRender/ui/controls_side_panel.py`
+  - Move UI construction methods: `create_controls_panel`, `create_header`, `create_preset_section`, `create_parameters_section`, `create_rotation_controls`, `create_axis_control`, `create_period_control`, `create_direction_control`, `create_lighting_control`, `create_output_settings_section`, `create_export_section`
+  - Keep in `SpinRenderPanel`: `create_status_bar`, `create_section_label`, `create_numeric_input` (helpers)
+  - `ControlsSidePanel` constructor: `__init__(self, parent, settings, board_path)`
+  - Store created controls as instance attributes for parent access
+  - Event handlers bound to parent callbacks (passed via constructor or direct refs)
+  - Update `SpinRenderPanel.build_ui()` to instantiate `ControlsSidePanel`
+  - Update `_init_preset_controller()` to pull controls from `self.controls_side_panel`
+  - Tests: UI construction, control creation, settings application
+- **Files:** `SpinRender/ui/controls_side_panel.py` (new), `SpinRender/ui/main_panel.py` (refactor)
+- **Risk:** Medium — many control references need correct wiring
+- **Status:** 🔄 In Progress (next task)
 
 ### Task 7.6: Refactor SpinRenderPanel to orchestrator
 - **Priority:** P2
 - **Effort:** 1.5d
 - **Dependencies:** 7.2, 7.3, 7.4, 7.5
 - **Deliverables:**
-  - Reduce SpinRenderPanel from ~1542 lines to ~300 lines
-  - It becomes a thin orchestrator: holds instances of:
-    - StateManager
-    - ProjectManager
-    - RenderController
-    - PreviewManager
-  - Handles UI layout only (wx.Panel construction)
-  - Wire events → forward to appropriate manager
-  - Update all external callers if API changed
-- **Files:** `SpinRender/ui/main_panel.py` (drastically simplified)
+  - Reduce `SpinRenderPanel` from ~1,200 lines to ~300 lines
+  - Remove all extracted methods
+  - Keep only: `__init__`, `build_ui`, event handlers that forward to controllers, `enable_left_panel_controls`, `cleanup`
+  - Instantiate and wire: `PreviewPanel`, `RenderController`, `PresetController`, `ControlsSidePanel`
+  - Simplify state management (pass RenderSettings to controllers)
+  - Tests: integration tests verify all delegates work
+- **Files:** `SpinRender/ui/main_panel.py` (final refactor)
 - **Verification:** Line count < 400, each extracted class has single responsibility
+- **Status:** Pending
 
 ### Task 7.7: Update module-level imports
 - **Priority:** P2
@@ -473,6 +485,7 @@
   - Update `SpinRender/__init__.py` to expose new simplified exports
   - Update any imports from external code (KiCad plugin entry point)
   - Verify import chain doesn't create cycles
+- **Status:** Pending
 
 ---
 
