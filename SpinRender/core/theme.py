@@ -31,6 +31,8 @@ class Theme:
     """
     _instance: "Theme | None" = None
     _data: dict[str, Any] = {}
+    _loaded_mtime: float = 0
+    _loaded_name: str = ""
 
     def __init__(self, data: dict):
         self._data = data
@@ -38,17 +40,22 @@ class Theme:
     @classmethod
     def load(cls, name: str = "dark", force: bool = False) -> "Theme":
         """Load theme from YAML file. Sets singleton instance."""
-        # Idempotent: if already loaded and not forcing, return existing instance
-        if cls._instance is not None and not force:
-            return cls._instance
-
-        logger.info(f"Theme: {'Reloading' if force else 'Initializing'} '{name}' theme loading.")
         path = Path(__file__).parent.parent / "resources" / "themes" / f"{name}.yaml"
-
+        
         if not path.exists():
             error_msg = f"Theme file not found: {path}"
             logger.error(error_msg)
             raise FileNotFoundError(error_msg)
+
+        # Check mtime to auto-detect disk changes
+        mtime = path.stat().st_mtime
+        is_stale = mtime > cls._loaded_mtime or name != cls._loaded_name
+        
+        # Idempotent: if already loaded and not forcing/stale, return existing instance
+        if cls._instance is not None and not force and not is_stale:
+            return cls._instance
+
+        logger.info(f"Theme: {'Reloading' if (force or is_stale) else 'Initializing'} '{name}' theme loading.")
 
         if not _yaml_available:
             error_msg = "PyYAML is not available. Theme system requires PyYAML."
@@ -59,11 +66,16 @@ class Theme:
             with open(path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
             
-            if force and cls._instance:
+            # Debug: Print full loaded theme data
+            logger.debug(f"Theme '{name}' content loaded:\n{yaml.dump(data, default_flow_style=False)}")
+
+            if cls._instance:
                 cls._instance._data = data
             else:
                 cls._instance = cls(data)
-                
+            
+            cls._loaded_mtime = mtime
+            cls._loaded_name = name
             logger.info(f"Theme: '{name}' theme loaded successfully from {path.name}")
         except Exception as e:
             error_msg = f"Failed to parse theme '{name}' from {path}: {e}"
