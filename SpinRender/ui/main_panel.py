@@ -305,7 +305,7 @@ class SpinRenderPanel(wx.Panel):
         # Only close if the control we clicked is actually enabled
         obj = event.GetEventObject()
         if obj and obj.IsEnabled():
-            self.status_bar.reset()
+            self.reset_status_bar()
         event.Skip()
 
     def reset_status_bar(self):

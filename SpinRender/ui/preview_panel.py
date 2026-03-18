@@ -174,6 +174,9 @@ class PreviewPanel(wx.Panel):
         # We'll keep that structure
         self._viewport_container = viewport_container
 
+        # Keep render_preview_panel sized to match viewport_container
+        viewport_container.Bind(wx.EVT_SIZE, self._on_viewport_container_size)
+
     def _initialize_from_settings(self):
         """Configure viewport from initial settings."""
         self.viewport.set_universal_joint_parameters(
@@ -378,6 +381,18 @@ class PreviewPanel(wx.Panel):
             gc.SetBrush(wx.TRANSPARENT_BRUSH)
             gc.SetPen(wx.Pen(theme.WHITE_ALPHA_30, 1))
             gc.DrawRectangle(x_offset, y_offset, display_w, display_h)
+
+    # ------------------------------------------------------------------------
+    # Viewport container size sync
+    # ------------------------------------------------------------------------
+
+    def _on_viewport_container_size(self, event):
+        """Keep render preview panel same size as viewport container."""
+        if hasattr(self, 'render_preview_panel') and self.render_preview_panel.IsShown():
+            container_size = self._viewport_container.GetSize()
+            self.render_preview_panel.SetSize(container_size)
+            self.render_preview_panel.SetPosition((0, 0))
+        event.Skip()
 
     # ------------------------------------------------------------------------
     # Close preview handler (to be bound by parent)
