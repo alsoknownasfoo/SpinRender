@@ -49,6 +49,10 @@ class DependencyChecker:
         'trimesh': {
             'package_name': 'trimesh',
             'type': 'python'
+        },
+        'PyYAML': {
+            'package_name': 'PyYAML',
+            'type': 'python'
         }
     }
 
