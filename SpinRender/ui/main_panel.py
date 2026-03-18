@@ -26,6 +26,7 @@ from core.preview import GLPreviewRenderer
 
 # Import theme module for centralized colors
 from . import theme
+from .preview_panel import PreviewPanel
 
 # Import RenderSettings
 from core.settings import RenderSettings
@@ -139,22 +140,7 @@ class SpinRenderPanel(wx.Panel):
         self.status_fg = theme.ACCENT_GREEN
         self.status_prog = 0.0
         self.status_bar_color = theme.ACCENT_CYAN
-        
-        # Initialize render state tracking
-        self.render_preview_active = False
-        self.current_render_frame = None
-        self.total_render_frames = None
-        self.final_output_type = None # 'mp4' or 'gif'
-        self.render_preview_bitmap = None
-        self.preview_manually_closed = False
-        
-        # Playback state for looped preview
-        self.playback_timer = wx.Timer(self)
-        self.playback_frames = []
-        self.playback_index = 0
-        self.last_frame_dir = None
-        self.Bind(wx.EVT_TIMER, self.on_playback_timer, self.playback_timer)
-        
+
         self.build_ui()
 
     def build_ui(self):
@@ -557,197 +543,30 @@ class SpinRenderPanel(wx.Panel):
         return panel
 
     def create_preview_panel(self, parent):
-        panel = wx.Panel(parent, size=(700, -1))
-        panel.SetBackgroundColour(theme.BG_OUTPUT_PREVIEW)
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        
-        # --- TOP OVERLAY ---
-        top_meta = wx.Panel(panel)
-        top_meta_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        
-        # Top-Left: Parameters OR Preset Name
-        self.ov_top_left = wx.StaticText(top_meta, label="")
-        self.ov_top_left.SetForegroundColour(theme.WHITE_ALPHA_68)
-        self.ov_top_left.SetFont(TextStyle(family=theme.FONT_MONO, size=9, weight=400).create_font())
-        top_meta_sizer.Add(self.ov_top_left, 1, wx.ALIGN_CENTER_VERTICAL)
+        """Create the preview panel using the extracted PreviewPanel component."""
+        # Create the PreviewPanel component
+        self.preview = PreviewPanel(parent, self.settings, self.board_path)
 
-        # Top-Right: Render Mode Toggle
-        self.render_mode_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.render_mode_btns = {}
-        
-        mode_font = TextStyle(family=theme.FONT_MONO, size=9, weight=700).create_font()
-        modes = [("WIREFRAME", "wireframe"), ("SHADED", "shaded"), ("BOTH", "both")]
-        
-        for i, (label, mode_id) in enumerate(modes):
-            btn = wx.StaticText(top_meta, label=label)
-            btn.SetFont(mode_font)
-            btn.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        # Expose preset_buttons for overlay label overrides
+        self.preview.preset_buttons = self.preset_buttons
+
+        # Bind close button to handler
+        self.preview.ov_top_right.Bind(wx.EVT_LEFT_DOWN, self.on_close_render_preview)
+
+        # Bind render mode buttons
+        for mode_id, btn in self.preview.render_mode_btns.items():
             btn.Bind(wx.EVT_LEFT_DOWN, lambda e, m=mode_id: self.on_render_mode_change(m))
-            
-            self.render_mode_btns[mode_id] = btn
-            self.render_mode_sizer.Add(btn, 0, wx.ALIGN_CENTER_VERTICAL)
-            
-            if i < len(modes) - 1:
-                div = wx.StaticText(top_meta, label="  |  ")
-                div.SetFont(mode_font)
-                div.SetForegroundColour(theme.SCROLLBAR_GREY)
-                self.render_mode_sizer.Add(div, 0, wx.ALIGN_CENTER_VERTICAL)
-        
-        top_meta_sizer.Add(self.render_mode_sizer, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
-        self.update_render_mode_ui(self.settings.render_mode)
-        
-        # Top-Right: CLOSE PREVIEW button
-        self.ov_top_right = wx.StaticText(top_meta, label="CLOSE PREVIEW")
-        self.ov_top_right.SetForegroundColour(theme.ACCENT_CYAN)
-        self.ov_top_right.SetFont(TextStyle(family=theme.FONT_MONO, size=9, weight=700).create_font())
-        self.ov_top_right.SetCursor(wx.Cursor(wx.CURSOR_HAND))
-        self.ov_top_right.Hide()
-        self.ov_top_right.Bind(wx.EVT_LEFT_DOWN, self.on_close_render_preview)
-        top_meta_sizer.Add(self.ov_top_right, 0, wx.ALIGN_CENTER_VERTICAL)
-        
-        top_meta.SetSizerAndFit(top_meta_sizer)
-        sizer.Add(top_meta, 0, wx.EXPAND | wx.ALL, 12)
 
-        # --- VIEWPORT CONTAINER ---
-        viewport_container = wx.Panel(panel)
-        viewport_container.SetBackgroundColour(theme.BLACK)
-        viewport_sizer = wx.BoxSizer(wx.VERTICAL)
+        # Enable drag on preview panel and its overlay widgets (excluding close button which handles its own clicks)
+        self.enable_drag(self.preview)
+        self.enable_drag(self.preview.ov_top_left)
+        self.enable_drag(self.preview.ov_bottom_left)
+        self.enable_drag(self.preview.ov_bottom_center)
+        self.enable_drag(self.preview.ov_bottom_right)
 
-        self.viewport = GLPreviewRenderer(viewport_container, self.board_path)
-        viewport_sizer.Add(self.viewport, 1, wx.EXPAND)
-        viewport_container.SetSizer(viewport_sizer)
+        # Initial overlay update will be called by PreviewPanel constructor
+        return self.preview
 
-        # Render preview overlay panel
-        self.render_preview_panel = wx.Panel(viewport_container, style=wx.BORDER_NONE)
-        self.render_preview_panel.SetBackgroundColour(theme.BLACK)
-        self.render_preview_panel.Hide()
-        self.render_preview_panel.Bind(wx.EVT_PAINT, self._on_render_preview_paint)
-
-        sizer.Add(viewport_container, 1, wx.EXPAND)
-        
-        # --- BOTTOM OVERLAY ---
-        bottom_meta = wx.Panel(panel)
-        bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        
-        # Bottom-Left: Lighting + BG
-        self.ov_bottom_left = wx.StaticText(bottom_meta, label="")
-        self.ov_bottom_left.SetForegroundColour(theme.WHITE_ALPHA_68)
-        self.ov_bottom_left.SetFont(TextStyle(family=theme.FONT_MONO, size=9, weight=400).create_font())
-        bottom_sizer.Add(self.ov_bottom_left, 1, wx.ALIGN_CENTER_VERTICAL)
-        
-        # Bottom-Center: Res + Ratio + FPS
-        self.ov_bottom_center = wx.StaticText(bottom_meta, label="")
-        self.ov_bottom_center.SetForegroundColour(theme.WHITE_ALPHA_68)
-        self.ov_bottom_center.SetFont(TextStyle(family=theme.FONT_MONO, size=9, weight=400).create_font())
-        bottom_sizer.Add(self.ov_bottom_center, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_CENTER_HORIZONTAL)
-        self.ov_bottom_center.SetWindowStyle(wx.ST_NO_AUTORESIZE | wx.ALIGN_CENTRE_HORIZONTAL)
-        
-        # Bottom-Right: State Info
-        self.ov_bottom_right = wx.StaticText(bottom_meta, label="")
-        self.ov_bottom_right.SetForegroundColour(theme.ACCENT_GREEN)
-        self.ov_bottom_right.SetFont(TextStyle(family=theme.FONT_MONO, size=9, weight=400).create_font())
-        bottom_sizer.Add(self.ov_bottom_right, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
-        self.ov_bottom_right.SetWindowStyle(wx.ST_NO_AUTORESIZE | wx.ALIGN_RIGHT)
-        
-        bottom_meta.SetSizerAndFit(bottom_sizer)
-        sizer.Add(bottom_meta, 0, wx.EXPAND | wx.ALL, 12)
-        
-        panel.SetSizer(sizer)
-        panel.SetMinSize((700, -1))
-        panel.SetMaxSize((700, -1))
-        
-        # Drag enabling - exclude the close preview button so it can handle its own clicks
-        for w in [panel, self.viewport, top_meta, self.ov_top_left, bottom_meta, self.ov_bottom_left, self.ov_bottom_center, self.ov_bottom_right]: 
-            self.enable_drag(w)
-            
-        self.viewport.set_universal_joint_parameters(self.settings.board_tilt, self.settings.board_roll, self.settings.spin_tilt, self.settings.spin_heading)
-        self.viewport.set_period(self.settings.period)
-        self.viewport.set_direction(self.settings.direction)
-        self.viewport.set_render_mode(getattr(self.settings, 'render_mode', 'both'))
-
-        # Initialize background color
-        self.viewport.set_background_color(getattr(self.settings, 'bg_color', '#000000'))
-        
-        # Initialize aspect ratio
-        try:
-            res = self.settings.resolution
-            w, h = map(int, res.split('x'))
-            self.viewport.set_aspect_ratio(w, h)
-        except: pass
-
-        self.viewport.start_preview()
-        
-        # Initial update
-        self.update_preview_overlay()
-        
-        return panel
-
-    def update_preview_overlay(self):
-        """Clean layout update for the preview information overlay"""
-        if not hasattr(self, 'ov_top_left'): return
-
-        # --- Top-Left: Parameters OR Preset Name ---
-        preset_id = self.settings.preset
-        if preset_id != 'custom':
-            label = preset_id.replace('_', ' ').upper()
-            if hasattr(self, 'preset_buttons') and preset_id in self.preset_buttons:
-                btn_label = self.preset_buttons[preset_id].label
-                if btn_label and btn_label != "SELECT CUSTOM..":
-                    label = btn_label
-            self.ov_top_left.SetLabel(label)
-        else:
-            # Show raw parameters
-            params = [
-                f"BT:{self.settings.board_tilt:.0f}°",
-                f"BR:{self.settings.board_roll:.0f}°",
-                f"ST:{self.settings.spin_tilt:.0f}°",
-                f"SH:{self.settings.spin_heading:.0f}°",
-                f"· {self.settings.period:.1f}s"
-            ]
-            self.ov_top_left.SetLabel("  ".join(params))
-
-        # --- Top-Right: CLOSE PREVIEW button and Render Mode Toggle ---
-        if self.render_preview_active and not self.preview_manually_closed and not self.is_rendering:
-            self.ov_top_right.Show()
-            if hasattr(self, 'render_mode_sizer'):
-                self.render_mode_sizer.ShowItems(False)
-        else:
-            self.ov_top_right.Hide()
-            if hasattr(self, 'render_mode_sizer'):
-                self.render_mode_sizer.ShowItems(True)
-
-        # --- Bottom-Left: Lighting + BG color ---
-        lighting = self.settings.lighting.upper()
-        bg_hex = self.settings.bg_color.upper()
-        self.ov_bottom_left.SetLabel(f"{lighting} · BG:{bg_hex}")
-
-        # --- Bottom-Center: Resolution + Ratio + FPS ---
-        res = self.settings.resolution
-        fps = "30fps"
-        try:
-            parts = res.split('x')
-            if len(parts) == 2:
-                w, h = map(int, parts)
-                if abs(w/h - 16/9) < 0.01: ratio = "16:9"
-                elif abs(w/h - 4/3) < 0.01: ratio = "4:3"
-                elif w == h: ratio = "1:1"
-                else: ratio = f"{w}:{h}"
-            else: ratio = "16:9"
-        except: ratio = "16:9"
-        self.ov_bottom_center.SetLabel(f"{res.replace('x', ' × ')}  ·  {ratio}  ·  {fps}")
-
-        # --- Bottom-Right: State Info ---
-        if self.render_preview_active and not self.preview_manually_closed:
-            if self.current_render_frame is not None:
-                self.ov_bottom_right.SetLabel(f"FRAME {self.current_render_frame} / {self.total_render_frames}")
-            elif self.final_output_type:
-                self.ov_bottom_right.SetLabel(f"{self.final_output_type.upper()} OUTPUT")
-            else:
-                self.ov_bottom_right.SetLabel("RENDER PREVIEW")
-        else:
-            self.ov_bottom_right.SetLabel("WIREFRAME")
-
-        self.Layout()
 
     def enable_left_panel_controls(self, enable=True):
         """Recursively enable or disable controls in the left panel and manage preview-closing bindings"""
@@ -787,55 +606,9 @@ class SpinRenderPanel(wx.Panel):
         # Force a refresh of all controls to update their visual state
         self.controls_panel.Refresh()
 
-    def on_close_render_preview(self, event):
-        """Hides the render overlay and resets to wireframe state"""
-        self.stop_playback()
-        self.render_preview_active = False
-        self.preview_manually_closed = True
-        self.final_output_type = None
-        if hasattr(self, 'render_preview_panel'):
-            self.render_preview_panel.Hide()
-        self.update_preview_overlay()
 
-    def start_playback(self, frame_dir, frame_count):
-        """Starts looping playback of rendered frames"""
-        self.stop_playback() # Ensure clean state
-        
-        if not frame_dir or not os.path.exists(frame_dir) or frame_count <= 0:
-            return
-            
-        self.playback_frames = [os.path.join(frame_dir, f"frame{i:04d}.png") for i in range(frame_count)]
-        self.playback_index = 0
-        self.last_frame_dir = frame_dir
-        
-        # Start at 30fps
-        self.playback_timer.Start(33)
 
-    def stop_playback(self):
-        """Stops the looping playback"""
-        if self.playback_timer.IsRunning():
-            self.playback_timer.Stop()
-        self.playback_frames = []
-        self.playback_index = 0
 
-    def on_playback_timer(self, event):
-        """Cycle through frames for looping preview"""
-        if not self.playback_frames:
-            self.stop_playback()
-            return
-            
-        frame_path = self.playback_frames[self.playback_index]
-        if os.path.exists(frame_path):
-            try:
-                img = wx.Image(frame_path, wx.BITMAP_TYPE_PNG)
-                if img.IsOk():
-                    self.render_preview_bitmap = wx.Bitmap(img)
-                    if hasattr(self, 'render_preview_panel'):
-                        self.render_preview_panel.Refresh()
-            except Exception:
-                pass
-                
-        self.playback_index = (self.playback_index + 1) % len(self.playback_frames)
 
     def on_left_panel_interaction(self, event):
         """Handle clicks on active controls in left panel to close preview"""
@@ -847,11 +620,11 @@ class SpinRenderPanel(wx.Panel):
 
     def _on_render_preview_paint(self, _event):
         """Paint handler for render preview overlay using GraphicsContext for high-DPI sharpness"""
-        dc = wx.AutoBufferedPaintDC(self.render_preview_panel)
+        dc = wx.AutoBufferedPaintDC(self.preview.render_preview_panel)
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
 
-        w, h = self.render_preview_panel.GetSize()
+        w, h = self.preview.render_preview_panel.GetSize()
         
         # 1. Get current background color
         bg_hex = self.settings.bg_color
@@ -951,8 +724,8 @@ class SpinRenderPanel(wx.Panel):
             self.render_preview_active = False
             self.final_output_type = None
             if hasattr(self, 'render_preview_panel'):
-                self.render_preview_panel.Hide()
-            self.update_preview_overlay()
+                self.preview.render_preview_panel.Hide()
+            self.preview.update_preview_overlay()
 
         if self.status_msg == "READY" and self.status_prog == 0.0: return
         self.status_msg = "READY"
@@ -1032,8 +805,8 @@ class SpinRenderPanel(wx.Panel):
 
         if 'bg_color' in preset and hasattr(self, 'bg_picker'):
             self.bg_picker.SetColor(self.settings.bg_color)
-            if hasattr(self, 'viewport'):
-                self.viewport.set_background_color(self.settings.bg_color)
+            if hasattr(self.preview, 'viewport'):
+                self.preview.viewport.set_background_color(self.settings.bg_color)
 
         if hasattr(self, 'board_tilt_slider'):
  
@@ -1058,12 +831,12 @@ class SpinRenderPanel(wx.Panel):
         if hasattr(self, 'light_toggle'): 
             idx = next((i for i, o in enumerate(self.light_options) if o['id'] == self.settings.lighting), 0)
             self.light_toggle.SetSelection(idx)
-        if hasattr(self, 'viewport'):
-            self.viewport.set_universal_joint_parameters(self.settings.board_tilt, self.settings.board_roll, self.settings.spin_tilt, self.settings.spin_heading)
-            self.viewport.set_period(self.settings.period)
-            self.viewport.set_direction(self.settings.direction)
-            self.viewport.set_lighting(self.settings.lighting)
-        self.update_preview_overlay()
+        if hasattr(self.preview, 'viewport'):
+            self.preview.viewport.set_universal_joint_parameters(self.settings.board_tilt, self.settings.board_roll, self.settings.spin_tilt, self.settings.spin_heading)
+            self.preview.viewport.set_period(self.settings.period)
+            self.preview.viewport.set_direction(self.settings.direction)
+            self.preview.viewport.set_lighting(self.settings.lighting)
+        self.preview.update_preview_overlay()
         self.check_preset_match(manual_change=False)
 
     def check_preset_match(self, manual_change=False):
@@ -1106,7 +879,7 @@ class SpinRenderPanel(wx.Panel):
                 self.preset_buttons['custom'].SetSelected(False)
                 if not matched_any: self.settings.preset = 'custom'
                 if manual_change and not matched_any: self.preset_buttons['custom'].SetLabel("SELECT CUSTOM..")
-        self.update_preview_overlay()
+        self.preview.update_preview_overlay()
         self.save_settings()
 
     def save_settings(self):
@@ -1175,18 +948,18 @@ class SpinRenderPanel(wx.Panel):
         self.check_preset_match(manual_change=True)
     
     def _update_viewport_rotation(self):
-        if hasattr(self, 'viewport'):
-            self.viewport.set_universal_joint_parameters(self.settings.board_tilt, self.settings.board_roll, self.settings.spin_tilt, self.settings.spin_heading)
-        self.update_preview_overlay()
+        if hasattr(self.preview, 'viewport'):
+            self.preview.viewport.set_universal_joint_parameters(self.settings.board_tilt, self.settings.board_roll, self.settings.spin_tilt, self.settings.spin_heading)
+        self.preview.update_preview_overlay()
 
     def on_period_change(self, event):
         self.reset_status_bar()
         self.settings.period = round(float(self.period_slider.GetValue()), 1)
         self.period_input.SetValue(self.settings.period)
         self.frame_count.SetLabel(f"{int(self.settings.period * 30)} f")
-        if hasattr(self, 'viewport'):
-            self.viewport.set_period(self.settings.period)
-        self.update_preview_overlay()
+        if hasattr(self.preview, 'viewport'):
+            self.preview.viewport.set_period(self.settings.period)
+        self.preview.update_preview_overlay()
         self.check_preset_match(manual_change=True)
 
     def on_period_input_change(self, event):
@@ -1195,31 +968,31 @@ class SpinRenderPanel(wx.Panel):
         self.settings.period = v
         self.period_slider.SetValue(v)
         self.frame_count.SetLabel(f"{int(v * 30)} f")
-        if hasattr(self, 'viewport'):
-            self.viewport.set_period(v)
-        self.update_preview_overlay()
+        if hasattr(self.preview, 'viewport'):
+            self.preview.viewport.set_period(v)
+        self.preview.update_preview_overlay()
         self.check_preset_match(manual_change=True)
         
     def on_direction_change(self, event):
         self.reset_status_bar()
         self.settings.direction = 'cw' if self.dir_toggle.GetSelection() == 1 else 'ccw'
-        if hasattr(self, 'viewport'):
-            self.viewport.set_direction(self.settings.direction)
-        self.update_preview_overlay()
+        if hasattr(self.preview, 'viewport'):
+            self.preview.viewport.set_direction(self.settings.direction)
+        self.preview.update_preview_overlay()
         self.check_preset_match(manual_change=True)
 
     def on_render_mode_change(self, mode_id):
         """Handle clicks on the WIREFRAME | SHADED | BOTH toggle"""
         self.settings.render_mode = mode_id
-        if hasattr(self, 'viewport'):
-            self.viewport.set_render_mode(mode_id)
+        if hasattr(self.preview, 'viewport'):
+            self.preview.viewport.set_render_mode(mode_id)
         self.update_render_mode_ui(mode_id)
         self.save_settings()
 
     def update_render_mode_ui(self, active_mode):
         """Updates the colors of the mode toggle labels"""
         if not hasattr(self, 'render_mode_btns'): return
-        for mode_id, btn in self.render_mode_btns.items():
+        for mode_id, btn in self.preview.render_mode_btns.items():
             if mode_id == active_mode:
                 btn.SetForegroundColour(theme.ACCENT_CYAN)
             else:
@@ -1230,15 +1003,15 @@ class SpinRenderPanel(wx.Panel):
         self.reset_status_bar()
         preset_id = self.light_options[self.light_toggle.GetSelection()]['id']
         self.settings.lighting = preset_id
-        if hasattr(self, 'viewport'):
-            self.viewport.set_lighting(preset_id)
-        self.update_preview_overlay()
+        if hasattr(self.preview, 'viewport'):
+            self.preview.viewport.set_lighting(preset_id)
+        self.preview.update_preview_overlay()
         self.check_preset_match(manual_change=True)        
 
     def on_format_change(self, event):
         self.reset_status_bar()
         self.settings.format = self.format_ids[self.format_choice.GetSelection()]
-        self.update_preview_overlay()
+        self.preview.update_preview_overlay()
         self.save_settings()
 
     def on_resolution_change(self, event):
@@ -1249,19 +1022,19 @@ class SpinRenderPanel(wx.Panel):
         # Update viewport aspect ratio for WYSIWYG
         try:
             w, h = map(int, res.split('x'))
-            if hasattr(self, 'viewport'):
-                self.viewport.set_aspect_ratio(w, h)
+            if hasattr(self.preview, 'viewport'):
+                self.preview.viewport.set_aspect_ratio(w, h)
         except: pass
             
-        self.update_preview_overlay()
+        self.preview.update_preview_overlay()
         self.save_settings()
 
     def on_bg_color_change(self, color_hex):
         self.reset_status_bar()
         self.settings.bg_color = color_hex
-        if hasattr(self, 'viewport'):
-            self.viewport.set_background_color(color_hex)
-        self.update_preview_overlay()
+        if hasattr(self.preview, 'viewport'):
+            self.preview.viewport.set_background_color(color_hex)
+        self.preview.update_preview_overlay()
         self.save_settings()
 
     def on_save_preset(self, event):
@@ -1279,7 +1052,7 @@ class SpinRenderPanel(wx.Panel):
                         self.preset_buttons['custom'].SetLabel(name)
                     self.check_preset_match(manual_change=False)
         dlg.Destroy()
-        self.update_preview_overlay()
+        self.preview.update_preview_overlay()
         pf = self.GetTopLevelParent()
         if pf: 
             pf.Raise()
@@ -1292,7 +1065,7 @@ class SpinRenderPanel(wx.Panel):
             self.save_settings()
             
         dlg.Destroy()
-        self.update_preview_overlay()
+        self.preview.update_preview_overlay()
         pf = self.GetTopLevelParent()
         if pf: 
             pf.Raise()
@@ -1371,14 +1144,14 @@ class SpinRenderPanel(wx.Panel):
         
         if hasattr(self, 'render_preview_panel'):
             # Force size/pos sync before showing
-            if hasattr(self, 'viewport'):
-                v_size = self.viewport.GetSize()
-                self.render_preview_panel.SetSize(v_size)
-                self.render_preview_panel.SetPosition((0, 0))
-            self.render_preview_panel.Show()
-            self.render_preview_panel.Refresh()
+            if hasattr(self.preview, 'viewport'):
+                v_size = self.preview.viewport.GetSize()
+                self.preview.render_preview_panel.SetSize(v_size)
+                self.preview.render_preview_panel.SetPosition((0, 0))
+            self.preview.render_preview_panel.Show()
+            self.preview.render_preview_panel.Refresh()
             
-        self.update_preview_overlay()
+        self.preview.update_preview_overlay()
         
         def run_render():
             try:
@@ -1403,7 +1176,7 @@ class SpinRenderPanel(wx.Panel):
         self.current_render_frame = current
         self.total_render_frames = total
         self.render_preview_active = True
-        self.update_preview_overlay()
+        self.preview.update_preview_overlay()
         
         if frame_path and hasattr(self, 'render_preview_panel'):
             try:
@@ -1414,13 +1187,13 @@ class SpinRenderPanel(wx.Panel):
                     self.render_preview_bitmap = wx.Bitmap(img)
                     if not self.preview_manually_closed:
                         # Position overlay to cover viewport exactly
-                        if hasattr(self, 'viewport'):
-                            v_size = self.viewport.GetSize()
-                            self.render_preview_panel.SetSize(v_size)
-                            self.render_preview_panel.SetPosition((0, 0))
-                        if not self.render_preview_panel.IsShown():
-                            self.render_preview_panel.Show()
-                        self.render_preview_panel.Refresh()
+                        if hasattr(self.preview, 'viewport'):
+                            v_size = self.preview.viewport.GetSize()
+                            self.preview.render_preview_panel.SetSize(v_size)
+                            self.preview.render_preview_panel.SetPosition((0, 0))
+                        if not self.preview.render_preview_panel.IsShown():
+                            self.preview.render_preview_panel.Show()
+                        self.preview.render_preview_panel.Refresh()
             except Exception as e:
                 logger.error(f"Failed to load frame bitmap: {e}", exc_info=True)
 
@@ -1457,7 +1230,7 @@ class SpinRenderPanel(wx.Panel):
             if not self.render_preview_bitmap:
                 self.render_preview_active = False
                 if hasattr(self, 'render_preview_panel'): 
-                    self.render_preview_panel.Hide()
+                    self.preview.render_preview_panel.Hide()
             
             self.final_output_type = None
             self.status_msg = f"ERROR: {error.upper()}"
@@ -1488,12 +1261,12 @@ class SpinRenderPanel(wx.Panel):
             self.final_output_type = self.settings.format
             
             if hasattr(self, 'render_preview_panel'):
-                if hasattr(self, 'viewport'):
-                    v_size = self.viewport.GetSize()
-                    self.render_preview_panel.SetSize(v_size)
-                    self.render_preview_panel.SetPosition((0, 0))
-                self.render_preview_panel.Show()
-                self.render_preview_panel.Refresh()
+                if hasattr(self.preview, 'viewport'):
+                    v_size = self.preview.viewport.GetSize()
+                    self.preview.render_preview_panel.SetSize(v_size)
+                    self.preview.render_preview_panel.SetPosition((0, 0))
+                self.preview.render_preview_panel.Show()
+                self.preview.render_preview_panel.Refresh()
 
             if frame_dir and frame_count:
                 self.start_playback(frame_dir, frame_count)
@@ -1514,18 +1287,18 @@ class SpinRenderPanel(wx.Panel):
             if self.render_preview_bitmap:
                 self.render_preview_active = True
                 if hasattr(self, 'render_preview_panel'):
-                    self.render_preview_panel.Show()
+                    self.preview.render_preview_panel.Show()
             else:
                 self.render_preview_active = False
                 if hasattr(self, 'render_preview_panel'):
-                    self.render_preview_panel.Hide()
+                    self.preview.render_preview_panel.Hide()
                 
             self.final_output_type = None
             self.status_msg = "RENDER STOPPED"
             self.status_fg = theme.ACCENT_ORANGE
             self.status_prog = 0.0
             
-        self.update_preview_overlay()
+        self.preview.update_preview_overlay()
         self.status_bar_panel.Refresh()
 
     def on_drag_start(self, event): 
@@ -1546,4 +1319,4 @@ class SpinRenderPanel(wx.Panel):
         widget.Bind(wx.EVT_MOTION, self.on_drag_motion)
         widget.Bind(wx.EVT_LEFT_UP, self.on_drag_end)
     def cleanup(self):
-        if hasattr(self, 'viewport') and self.viewport: self.viewport.cleanup()
+        if hasattr(self, 'viewport') and self.preview.viewport: self.preview.viewport.cleanup()
