@@ -171,7 +171,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         
         from .custom_controls import CustomToggleButton
         self.auto_toggle = CustomToggleButton(auto_row, size=(100, 28))
-        self.auto_toggle.SetValue(self.settings.get('output_auto', True))
+        self.auto_toggle.SetValue(self.settings.output_auto)
         self.auto_toggle.Bind(wx.EVT_TOGGLEBUTTON, self.on_auto_toggle)
         auto_sizer.Add(self.auto_toggle, 0, wx.ALIGN_CENTER_VERTICAL)
         
