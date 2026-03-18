@@ -8,13 +8,13 @@ import pytest
 import ast
 
 
-def extract_wx_colour_calls_from_source(file_path, module_name):
+def extract_wx_color_calls_from_source(file_path, module_name):
     """Parse Python file and find all wx.Colour(...) calls with hardcoded RGB literals."""
     with open(file_path, 'r') as f:
         content = f.read()
 
     tree = ast.parse(content)
-    colour_calls = []
+    color_calls = []
 
     class CallVisitor(ast.NodeVisitor):
         def visit_Call(self, node):
@@ -22,7 +22,7 @@ def extract_wx_colour_calls_from_source(file_path, module_name):
             if isinstance(node.func, ast.Attribute):
                 if (isinstance(node.func.value, ast.Name) and
                     node.func.value.id == 'wx' and
-                    node.func.attr == 'Colour'):
+                    node.func.attr == 'Color'):
                     # Check if ALL positional arguments are literal integers (hardcoded)
                     # We only flag as "hardcoded" if all args are integer constants
                     is_hardcoded = True
@@ -41,7 +41,7 @@ def extract_wx_colour_calls_from_source(file_path, module_name):
                     if is_hardcoded:
                         line_num = node.lineno
                         end_line = node.end_lineno if hasattr(node, 'end_lineno') else line_num
-                        colour_calls.append({
+                        color_calls.append({
                             'line': line_num,
                             'end_line': end_line,
                             'module': module_name
@@ -51,15 +51,15 @@ def extract_wx_colour_calls_from_source(file_path, module_name):
 
     visitor = CallVisitor()
     visitor.visit(tree)
-    return colour_calls
+    return color_calls
 
 
-class TestNoHardcodedColours:
+class TestNoHardcodedColors:
     """Ensure UI modules have zero inline wx.Colour() calls."""
 
-    def test_custom_controls_no_inline_colours(self):
+    def test_custom_controls_no_inline_colors(self):
         """custom_controls.py must not contain any wx.Colour() calls (all must use theme)."""
-        calls = extract_wx_colour_calls_from_source(
+        calls = extract_wx_color_calls_from_source(
             'SpinRender/ui/custom_controls.py',
             'custom_controls'
         )
@@ -67,9 +67,9 @@ class TestNoHardcodedColours:
             details = ', '.join([f"line {c['line']}" for c in calls])
             pytest.fail(f"custom_controls.py has {len(calls)} wx.Colour calls: {details}")
 
-    def test_dialogs_no_inline_colours(self):
+    def test_dialogs_no_inline_colors(self):
         """dialogs.py must not contain any wx.Colour() calls."""
-        calls = extract_wx_colour_calls_from_source(
+        calls = extract_wx_color_calls_from_source(
             'SpinRender/ui/dialogs.py',
             'dialogs'
         )
@@ -77,9 +77,9 @@ class TestNoHardcodedColours:
             details = ', '.join([f"line {c['line']}" for c in calls])
             pytest.fail(f"dialogs.py has {len(calls)} wx.Colour calls: {details}")
 
-    def test_main_panel_no_inline_colours(self):
+    def test_main_panel_no_inline_colors(self):
         """main_panel.py must not contain any wx.Colour() calls."""
-        calls = extract_wx_colour_calls_from_source(
+        calls = extract_wx_color_calls_from_source(
             'SpinRender/ui/main_panel.py',
             'main_panel'
         )

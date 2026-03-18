@@ -15,16 +15,16 @@ def test_wx_is_mocked():
     """Test that wxPython is properly mocked."""
     import wx
 
-    # Create a colour to verify the mock works
-    colour = wx.Colour(255, 128, 0)
-    assert colour.Red() == 255
-    assert colour.Green() == 128
-    assert colour.Blue() == 0
-    assert colour.Alpha() == 255  # default alpha
+    # Create a color to verify the mock works
+    color = wx.Colour(255, 128, 0)
+    assert color.Red() == 255
+    assert color.Green() == 128
+    assert color.Blue() == 0
+    assert color.Alpha() == 255  # default alpha
 
     # Test with alpha
-    colour_with_alpha = wx.Colour(255, 128, 0, 128)
-    assert colour_with_alpha.Alpha() == 128
+    color_with_alpha = wx.Colour(255, 128, 0, 128)
+    assert color_with_alpha.Alpha() == 128
 
 
 def test_wx_constants_available():

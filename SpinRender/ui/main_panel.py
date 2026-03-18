@@ -9,7 +9,8 @@ import logging
 logger = logging.getLogger("SpinRender")
 
 # Import theme module for centralized colors
-from . import theme
+from SpinRender.core.theme import Theme
+_theme = Theme.current()
 from .preview_panel import PreviewPanel
 
 # Import RenderSettings
@@ -72,7 +73,7 @@ class SpinRenderPanel(wx.Panel):
         from utils.logger import SpinLogger
         SpinLogger.setup(level=getattr(self.settings, 'logging_level', 'simple'))
             
-        self.SetBackgroundColour(theme.BG_PAGE)
+        self.SetBackgroundColour(_theme.color("colors.bg.page"))
         self.drag_start_pos = None
         self.frame_start_pos = None
         self.render_controller = RenderController()
@@ -84,7 +85,7 @@ class SpinRenderPanel(wx.Panel):
     def build_ui(self):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         top_panel = wx.Panel(self)
-        top_panel.SetBackgroundColour(theme.BG_PAGE)
+        top_panel.SetBackgroundColour(_theme.color("colors.bg.page"))
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         # Left: Controls panel - instantiate ControlsSidePanel
@@ -102,7 +103,7 @@ class SpinRenderPanel(wx.Panel):
 
         # Center Divider
         divider = wx.Panel(top_panel, size=(1, -1))
-        divider.SetBackgroundColour(theme.BORDER_DEFAULT)
+        divider.SetBackgroundColour(_theme.color("colors.border.default"))
         top_sizer.Add(divider, 0, wx.EXPAND)
 
         # Right: Preview panel
@@ -116,7 +117,7 @@ class SpinRenderPanel(wx.Panel):
         main_sizer.Add(top_panel, 1, wx.EXPAND)
 
         status_divider = wx.Panel(self, size=(-1, 1))
-        status_divider.SetBackgroundColour(theme.BORDER_DEFAULT)
+        status_divider.SetBackgroundColour(_theme.color("colors.border.default"))
         main_sizer.Add(status_divider, 0, wx.EXPAND)
 
         self.status_bar = StatusBar(self)
@@ -355,9 +356,9 @@ class SpinRenderPanel(wx.Panel):
         if not hasattr(self, 'render_mode_btns'): return
         for mode_id, btn in self.preview.render_mode_btns.items():
             if mode_id == active_mode:
-                btn.SetForegroundColour(theme.ACCENT_CYAN)
+                btn.SetForegroundColour(_theme.color("colors.accent.primary"))
             else:
-                btn.SetForegroundColour(theme.GREY_100)
+                btn.SetForegroundColour(_theme.GREY_100)
             btn.Refresh()
         
 
@@ -396,7 +397,7 @@ class SpinRenderPanel(wx.Panel):
         # Check if already rendering via controller
         if self.render_controller.is_rendering():
             self.render_controller.cancel()
-            self.status_bar.set_status("STOPPING RENDER...", fg_color=theme.ACCENT_ORANGE)
+            self.status_bar.set_status("STOPPING RENDER...", fg_color=_theme.color("colors.accent.warning"))
             return
 
         # Prepare UI for rendering
@@ -419,7 +420,7 @@ class SpinRenderPanel(wx.Panel):
         self.controls_side_panel.Layout()
         self.Layout()
 
-        self.status_bar.set_status("PREPARING RENDER...", fg_color=theme.ACCENT_CYAN, progress=0.0)
+        self.status_bar.set_status("PREPARING RENDER...", fg_color=_theme.color("colors.accent.primary"), progress=0.0)
 
         # Start render state
         self.preview.stop_playback()
@@ -584,7 +585,7 @@ class SpinRenderPanel(wx.Panel):
                     self.preview.render_preview_panel.Hide()
 
             self.preview.final_output_type = None
-            self.status_bar.set_status("RENDER STOPPED", fg_color=theme.ACCENT_ORANGE, progress=0.0)
+            self.status_bar.set_status("RENDER STOPPED", fg_color=_theme.color("colors.accent.warning"), progress=0.0)
 
         self.preview.update_preview_overlay()
         self.status_bar.Refresh()

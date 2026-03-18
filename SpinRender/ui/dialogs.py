@@ -8,9 +8,11 @@ import webbrowser
 import threading
 from .custom_controls import CustomButton, CustomTextInput
 from .text_styles import TextStyle, TextStyles
-from . import theme
+from SpinRender.core.theme import Theme
 from foundation.fonts import JETBRAINS_MONO, MDI_FONT_FAMILY, INTER
 from foundation.icons import STATUS_ICONS
+
+_theme = Theme.current()
 
 
 ID_RESET = 10001
@@ -37,7 +39,7 @@ class BaseStyledDialog(wx.Dialog):
         if wx.Platform == '__WXMSW__':
             self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         else:
-            self.SetBackgroundColour(theme.TRANSPARENT)
+            self.SetBackgroundColour(_theme.TRANSPARENT)
             self.SetCanFocus(True)
             
         self.logical_size = size
@@ -45,7 +47,7 @@ class BaseStyledDialog(wx.Dialog):
         
         # Layout container for the actual content (offset by shadow)
         self.main_container = wx.Panel(self, pos=(self.SHADOW_SIZE, self.SHADOW_SIZE), size=size)
-        self.main_container.SetBackgroundColour(theme.BG_MODAL)
+        self.main_container.SetBackgroundColour(_theme.color("colors.bg.page"))
         
         self.Bind(wx.EVT_CHAR_HOOK, self.on_char_hook)
         self.Bind(wx.EVT_PAINT, self.on_paint_window)
@@ -62,12 +64,12 @@ class BaseStyledDialog(wx.Dialog):
         for i in range(s):
             # Doubled base alpha (from 80 to 160) for much darker shadow
             alpha = int(160 * (1.0 - (i / s)**0.5))
-            gc.SetBrush(wx.Brush(wx.Colour(theme.BLACK.Red(), theme.BLACK.Green(), theme.BLACK.Blue(), alpha)))
+            gc.SetBrush(wx.Brush(wx.Colour(_theme.BLACK.Red(), _theme.BLACK.Green(), _theme.BLACK.Blue(), alpha)))
             gc.SetPen(wx.TRANSPARENT_PEN)
             gc.DrawRoundedRectangle(i, i, w - 2*i, h - 2*i, 12)
             
         # 2. Draw actual modal background (no border)
-        gc.SetBrush(wx.Brush(theme.BG_MODAL))
+        gc.SetBrush(wx.Brush(_theme.color("colors.bg.page")))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRoundedRectangle(s, s, self.logical_size[0], self.logical_size[1], 4)
 
@@ -79,18 +81,18 @@ class BaseStyledDialog(wx.Dialog):
 
     def create_header(self, title_text):
         header = wx.Panel(self.main_container, size=(-1, 48))
-        header.SetBackgroundColour(theme.BG_MODAL)
+        header.SetBackgroundColour(_theme.color("colors.bg.page"))
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.header_title = wx.StaticText(header, label=title_text)
-        self.header_title.SetForegroundColour(theme.ACCENT_YELLOW if "SETUP" in title_text else theme.TEXT_PRIMARY)
-        self.header_title.SetFont(TextStyle(family=theme.FONT_MONO, size=13, weight=600).create_font())
+        self.header_title.SetForegroundColour(_theme.color("colors.accent.secondary") if "SETUP" in title_text else _theme.color("colors.text.primary"))
+        self.header_title.SetFont(TextStyle(family=_theme.font_family("mono"), size=13, weight=600).create_font())
         
         header_sizer.Add(self.header_title, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 16)
         
         # Add standard close button to all headers
         header_sizer.AddStretchSpacer()
-        close_btn = CustomButton(header, label="", icon="mdi-close", primary=False, ghost=True, icon_color=theme.TEXT_MUTED, size=(32, 32))
+        close_btn = CustomButton(header, label="", icon="mdi-close", primary=False, ghost=True, icon_color=_theme.color("colors.text.muted"), size=(32, 32))
         close_btn.Bind(wx.EVT_BUTTON, self.on_cancel)
         header_sizer.Add(close_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 12)
         
@@ -150,7 +152,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
 
         # Border separator
         line = wx.Panel(self.main_container, size=(-1, 1))
-        line.SetBackgroundColour(theme.BORDER_MODAL)
+        line.SetBackgroundColour(_theme.color("colors.border.default"))
         main_sizer.Add(line, 0, wx.EXPAND)
 
         # Content
@@ -165,8 +167,8 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         auto_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         auto_desc = wx.StaticText(auto_row, label="Automatically save to time-stamped directories.")
-        auto_desc.SetForegroundColour(theme.TEXT_MUTED)
-        auto_desc.SetFont(TextStyle(family=theme.FONT_MONO, size=9, weight=400).create_font())
+        auto_desc.SetForegroundColour(_theme.color("colors.text.muted"))
+        auto_desc.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=400).create_font())
         auto_sizer.Add(auto_desc, 1, wx.ALIGN_CENTER_VERTICAL)
         
         from .custom_controls import CustomToggleButton
@@ -210,17 +212,17 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         link_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         info_icon = wx.StaticText(link_row, label='\U000F02FD') # mdi-information-outline
-        info_icon.SetForegroundColour(theme.TEXT_MUTED)
+        info_icon.SetForegroundColour(_theme.color("colors.text.muted"))
         info_icon.SetFont(TextStyles.icon.create_font())
         info_icon.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         link_sizer.Add(info_icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         
         see_txt = wx.StaticText(link_row, label="See ")
-        see_txt.SetForegroundColour(theme.TEXT_MUTED); see_txt.SetFont(TextStyle(family=theme.FONT_MONO, size=9, weight=400).create_font())
+        see_txt.SetForegroundColour(_theme.color("colors.text.muted")); see_txt.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=400).create_font())
         link_sizer.Add(see_txt, 0, wx.ALIGN_CENTER_VERTICAL)
         
         link_txt = wx.StaticText(link_row, label="kicad-cli render options")
-        link_txt.SetForegroundColour(theme.ACCENT_CYAN); link_txt.SetFont(TextStyle(family=theme.FONT_MONO, size=9, weight=400).create_font())
+        link_txt.SetForegroundColour(_theme.color("colors.accent.primary")); link_txt.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=400).create_font())
         link_txt.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         link_sizer.Add(link_txt, 0, wx.ALIGN_CENTER_VERTICAL)
         
@@ -252,14 +254,14 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         content_sizer.Add(log_row, 0, wx.EXPAND | wx.BOTTOM, 12)
         
         log_info = wx.StaticText(content, label="Logs are kept for 30 days. Useful for troubleshooting render failures.")
-        log_info.SetForegroundColour(theme.TEXT_MUTED)
-        log_info.SetFont(TextStyle(family=theme.FONT_MONO, size=8, weight=400).create_font())
+        log_info.SetForegroundColour(_theme.color("colors.text.muted"))
+        log_info.SetFont(TextStyle(family=_theme.font_family("mono"), size=8, weight=400).create_font())
         content_sizer.Add(log_info, 0, wx.EXPAND | wx.BOTTOM, 8)
 
         from utils.logger import SpinLogger
         open_logs_txt = wx.StaticText(content, label="OPEN LOGS FOLDER")
-        open_logs_txt.SetForegroundColour(theme.ACCENT_CYAN)
-        open_logs_txt.SetFont(TextStyle(family=theme.FONT_MONO, size=9, weight=700).create_font())
+        open_logs_txt.SetForegroundColour(_theme.color("colors.accent.primary"))
+        open_logs_txt.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font())
         open_logs_txt.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         open_logs_txt.Bind(wx.EVT_LEFT_DOWN, lambda e: SpinLogger.open_logs_folder())
         content_sizer.Add(open_logs_txt, 0, wx.BOTTOM, 12)
@@ -289,8 +291,8 @@ class AdvancedOptionsDialog(BaseStyledDialog):
 
     def create_section_label(self, parent, text):
         lbl = wx.StaticText(parent, label=text)
-        lbl.SetForegroundColour(theme.TEXT_PRIMARY)
-        lbl.SetFont(TextStyle(family=theme.FONT_MONO, size=10, weight=600).create_font())
+        lbl.SetForegroundColour(_theme.color("colors.text.primary"))
+        lbl.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=600).create_font())
         return lbl
 
     def update_path_display(self):
@@ -359,14 +361,14 @@ class SavePresetDialog(BaseStyledDialog):
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(self.create_header("SAVE PRESET"), 0, wx.EXPAND)
-        line = wx.Panel(self.main_container, size=(-1, 1)); line.SetBackgroundColour(theme.BORDER_MODAL)
+        line = wx.Panel(self.main_container, size=(-1, 1)); line.SetBackgroundColour(_theme.color("colors.border.default"))
         main_sizer.Add(line, 0, wx.EXPAND)
 
         content = wx.Panel(self.main_container)
         content_sizer = wx.BoxSizer(wx.VERTICAL)
         label = wx.StaticText(content, label="PRESET NAME")
-        label.SetForegroundColour(theme.TEXT_SECONDARY)
-        label.SetFont(TextStyle(family=theme.FONT_MONO, size=10, weight=700).create_font())
+        label.SetForegroundColour(_theme.color("colors.text.secondary"))
+        label.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=700).create_font())
         content_sizer.Add(label, 0, wx.LEFT | wx.TOP, 24)
 
         self.name_input = CustomTextInput(content, size=(-1, 36))
@@ -420,16 +422,16 @@ class RecallPresetDialog(BaseStyledDialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         header = self.create_header("SELECT CUSTOM PRESET")
         main_sizer.Add(header, 0, wx.EXPAND)
-        line = wx.Panel(self.main_container, size=(-1, 1)); line.SetBackgroundColour(theme.BORDER_MODAL)
+        line = wx.Panel(self.main_container, size=(-1, 1)); line.SetBackgroundColour(_theme.color("colors.border.default"))
         main_sizer.Add(line, 0, wx.EXPAND)
 
         import wx.lib.scrolledpanel as scrolled
         list_panel = scrolled.ScrolledPanel(self.main_container)
-        list_panel.SetBackgroundColour(theme.BG_MODAL); list_panel.SetupScrolling(scroll_x=False, scroll_y=True)
+        list_panel.SetBackgroundColour(_theme.color("colors.bg.page")); list_panel.SetupScrolling(scroll_x=False, scroll_y=True)
         list_sizer = wx.BoxSizer(wx.VERTICAL)
         if not presets:
-            empty_text = wx.StaticText(list_panel, label="No saved presets found."); empty_text.SetForegroundColour(theme.TEXT_MUTED)
-            empty_text.SetFont(TextStyle(family=theme.FONT_MONO, size=11, weight=400, formatting="italic").create_font()); list_sizer.Add(empty_text, 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 40)
+            empty_text = wx.StaticText(list_panel, label="No saved presets found."); empty_text.SetForegroundColour(_theme.color("colors.text.muted"))
+            empty_text.SetFont(TextStyle(family=_theme.font_family("mono"), size=11, weight=400, formatting="italic").create_font()); list_sizer.Add(empty_text, 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 40)
         else:
             for scope, name in presets:
                 item = self.create_preset_item(list_panel, scope, name)
@@ -438,15 +440,15 @@ class RecallPresetDialog(BaseStyledDialog):
         self.main_container.SetSizer(main_sizer)
 
     def create_preset_item(self, parent, scope, name):
-        panel = wx.Panel(parent, size=(-1, 40)); panel.SetBackgroundColour(theme.BG_SURFACE); panel.SetCursor(wx.Cursor(wx.CURSOR_HAND))
-        sizer = wx.BoxSizer(wx.HORIZONTAL); label = wx.StaticText(panel, label=name.upper()); label.SetForegroundColour(theme.TEXT_PRIMARY)
+        panel = wx.Panel(parent, size=(-1, 40)); panel.SetBackgroundColour(_theme.color("colors.bg.surface")); panel.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        sizer = wx.BoxSizer(wx.HORIZONTAL); label = wx.StaticText(panel, label=name.upper()); label.SetForegroundColour(_theme.color("colors.text.primary"))
         label.SetFont(TextStyles.body.create_font()); sizer.Add(label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)
         action_area = wx.Panel(panel); action_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        trash_btn = wx.StaticText(action_area, label='\U000F0A7A'); trash_btn.SetForegroundColour(theme.ACCENT_ORANGE)
+        trash_btn = wx.StaticText(action_area, label='\U000F0A7A'); trash_btn.SetForegroundColour(_theme.color("colors.accent.warning"))
         trash_btn.SetFont(TextStyles.icon.create_font()); trash_btn.SetCursor(wx.Cursor(wx.CURSOR_HAND)); action_sizer.Add(trash_btn, 0, wx.ALIGN_CENTER_VERTICAL)
-        cancel_icon = wx.StaticText(action_area, label='\U000F0156'); cancel_icon.SetForegroundColour(theme.ACCENT_ORANGE)
+        cancel_icon = wx.StaticText(action_area, label='\U000F0156'); cancel_icon.SetForegroundColour(_theme.color("colors.accent.warning"))
         cancel_icon.SetFont(TextStyles.icon.create_font()); cancel_icon.Hide(); confirm_icon = wx.StaticText(action_area, label='\U000F012C')
-        confirm_icon.SetForegroundColour(theme.ACCENT_GREEN); confirm_icon.SetFont(TextStyles.icon.create_font()); confirm_icon.Hide()
+        confirm_icon.SetForegroundColour(_theme.color("colors.accent.success")); confirm_icon.SetFont(TextStyles.icon.create_font()); confirm_icon.Hide()
         action_area.SetSizer(action_sizer); sizer.Add(action_area, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 12); panel.SetSizer(sizer)
         def show_confirm(e):
             trash_btn.Hide(); action_sizer.Clear(); action_sizer.Add(cancel_icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 16)
@@ -471,7 +473,7 @@ class RoundedPanel(wx.Panel):
     def __init__(self, parent, radius=4, bg_color=None):
         super().__init__(parent)
         self.radius = radius
-        self.bg_color = bg_color or theme.BG_INPUT
+        self.bg_color = bg_color or _theme.color("colors.bg.input")
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.Bind(wx.EVT_PAINT, self.on_paint)
 
@@ -504,15 +506,15 @@ class DependencyCheckDialog(wx.Dialog):
         self.checker = checker
 
         # Design system colors - migrated to theme module
-        self.bg_color = theme.BG_MODAL  # Dark gray modal background
-        self.bg_input = theme.BG_INPUT
-        self.text_primary = theme.TEXT_PRIMARY
-        self.text_secondary = theme.TEXT_SECONDARY
-        self.accent_yellow = theme.ACCENT_YELLOW
-        self.accent_green = theme.ACCENT_GREEN
-        self.accent_orange = theme.ACCENT_ORANGE
-        self.accent_cyan = theme.ACCENT_CYAN
-        self.border_default = theme.BORDER_DEFAULT
+        self.bg_color = _theme.color("colors.bg.page")  # Dark gray modal background
+        self.bg_input = _theme.color("colors.bg.input")
+        self.text_primary = _theme.color("colors.text.primary")
+        self.text_secondary = _theme.color("colors.text.secondary")
+        self.accent_yellow = _theme.color("colors.accent.secondary")
+        self.accent_green = _theme.color("colors.accent.success")
+        self.accent_orange = _theme.color("colors.accent.warning")
+        self.accent_cyan = _theme.color("colors.accent.primary")
+        self.border_default = _theme.color("colors.border.default")
 
         self.SetBackgroundColour(self.bg_color)
         
@@ -547,7 +549,7 @@ class DependencyCheckDialog(wx.Dialog):
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         self.header_title = wx.StaticText(self.header, label="SETUP REQUIRED")
-        self.header_title.SetForegroundColour(theme.TEXT_PRIMARY)  # White title
+        self.header_title.SetForegroundColour(_theme.color("colors.text.primary"))  # White title
         self.header_title.SetFont(TextStyles.section_heading.create_font())
         
         header_sizer.Add(self.header_title, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 16)
@@ -576,11 +578,11 @@ class DependencyCheckDialog(wx.Dialog):
 
             dep_label = wx.StaticText(dep_panel, label=dep_name)
             dep_label.SetForegroundColour(self.text_primary)
-            dep_label.SetFont(TextStyle(family=theme.FONT_MONO, size=10, weight=400).create_font())
+            dep_label.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=400).create_font())
 
             # Use bundled MDI symbols (required)
             status_symbol = "mdi-check-circle" if is_found else "mdi-close"  # Red X for missing
-            status_color = self.accent_green if is_found else theme.ACCENT_RED
+            status_color = self.accent_green if is_found else _theme.color("colors.accent.danger")
             
             # Get icon from foundation icons
             icon_char = STATUS_ICONS.get(status_symbol, "")
@@ -613,7 +615,7 @@ class DependencyCheckDialog(wx.Dialog):
         
         self.progress_status = wx.StaticText(self.progress_panel, label="Initializing...")
         self.progress_status.SetForegroundColour(self.text_primary)
-        self.progress_status.SetFont(TextStyle(family=theme.FONT_INTER, size=10, weight=700).create_font())
+        self.progress_status.SetFont(TextStyle(family=_theme.font_family("inter"), size=10, weight=700).create_font())
         progress_sizer.Add(self.progress_status, 0, wx.EXPAND | wx.BOTTOM, 8)
         
         self.progress_log = wx.TextCtrl(

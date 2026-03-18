@@ -5,7 +5,8 @@ Encapsulates the status bar UI at the bottom of SpinRenderPanel.
 """
 import wx
 from .text_styles import TextStyle
-from . import theme
+from SpinRender.core.theme import Theme
+_theme = Theme.current()
 
 
 class StatusBar(wx.Panel):
@@ -13,16 +14,16 @@ class StatusBar(wx.Panel):
 
     def __init__(self, parent):
         super().__init__(parent, size=(-1, 25))
-        self.SetBackgroundColour(theme.BG_PANEL)
+        self.SetBackgroundColour(_theme.color("colors.bg.panel"))
         self.SetMinSize((-1, 25))
         self.SetMaxSize((-1, 25))
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
 
         # State
         self._msg = "READY"
-        self._fg = theme.ACCENT_GREEN
+        self._fg = _theme.color("colors.accent.success")
         self._prog = 0.0
-        self._bar_color = theme.ACCENT_CYAN
+        self._bar_color = _theme.color("colors.accent.primary")
 
         # Bind paint handler
         self.Bind(wx.EVT_PAINT, self._on_paint)
@@ -37,7 +38,7 @@ class StatusBar(wx.Panel):
         w, h = self.GetSize()
 
         # Background
-        gc.SetBrush(wx.Brush(theme.BG_PANEL))
+        gc.SetBrush(wx.Brush(_theme.color("colors.bg.panel")))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRectangle(0, 0, w, h)
 
@@ -49,7 +50,7 @@ class StatusBar(wx.Panel):
             gc.Clip(0, 0, fill_w, h)
 
         # Text
-        font = TextStyle(family=theme.FONT_MONO, size=8, weight=400).create_font()
+        font = TextStyle(family=_theme.font_family("mono"), size=8, weight=400).create_font()
         gc.SetFont(font, self._fg)
         tw, th = gc.GetTextExtent(self._msg)
         tx, ty = 10, (h - th) / 2
@@ -58,7 +59,7 @@ class StatusBar(wx.Panel):
         if fill_w > 0:
             gc.ResetClip()
             # Draw text again in background color for the filled portion (inverted)
-            gc.SetFont(font, theme.BG_INPUT)
+            gc.SetFont(font, _theme.color("colors.bg.input"))
             gc.DrawText(self._msg, tx, ty)
 
     def set_status(self, msg: str, fg_color=None, progress: float = 0.0, bar_color=None):
@@ -82,15 +83,15 @@ class StatusBar(wx.Panel):
         """Reset to ready state."""
         self.set_status(
             msg="READY",
-            fg_color=theme.ACCENT_GREEN,
+            fg_color=_theme.color("colors.accent.success"),
             progress=0.0,
-            bar_color=theme.ACCENT_CYAN
+            bar_color=_theme.color("colors.accent.primary")
         )
 
     def set_error(self, msg: str):
         """Set error state."""
-        self.set_status(msg, fg_color=theme.ACCENT_ORANGE, progress=0.0, bar_color=theme.ACCENT_ORANGE)
+        self.set_status(msg, fg_color=_theme.color("colors.accent.warning"), progress=0.0, bar_color=_theme.color("colors.accent.warning"))
 
     def set_complete(self):
         """Set complete state."""
-        self.set_status("RENDER COMPLETE", fg_color=theme.ACCENT_GREEN, progress=1.0, bar_color=theme.ACCENT_GREEN)
+        self.set_status("RENDER COMPLETE", fg_color=_theme.color("colors.accent.success"), progress=1.0, bar_color=_theme.color("colors.accent.success"))

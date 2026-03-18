@@ -8,6 +8,9 @@ Painting behavior is visual and will be tested in integration/E2E.
 import pytest
 from unittest.mock import MagicMock, patch
 
+from SpinRender.core.theme import Theme
+_theme = Theme.current()
+
 from SpinRender.ui.status_bar import StatusBar
 
 
@@ -40,9 +43,12 @@ class TestStatusBar:
 
     def test_set_status_updates_color(self, status_bar):
         """Test set_status updates foreground color when provided."""
-        from SpinRender.ui import theme
-        status_bar.set_status("TEST", fg_color=theme.ACCENT_YELLOW)
-        assert status_bar._fg == theme.ACCENT_YELLOW
+        accent_yellow = _theme.color("colors.accent.yellow")
+        status_bar.set_status("TEST", fg_color=accent_yellow)
+        # Compare RGB values
+        assert status_bar._fg.Red() == accent_yellow.Red()
+        assert status_bar._fg.Green() == accent_yellow.Green()
+        assert status_bar._fg.Blue() == accent_yellow.Blue()
 
     def test_set_status_updates_progress(self, status_bar):
         """Test set_status updates progress bar."""
@@ -54,18 +60,18 @@ class TestStatusBar:
 
     def test_set_status_updates_bar_color(self, status_bar):
         """Test set_status updates progress bar color."""
-        from SpinRender.ui import theme
-        status_bar.set_status("COMPLETE", bar_color=theme.ACCENT_GREEN)
-        assert status_bar._bar_color == theme.ACCENT_GREEN
+        accent_green = _theme.color("colors.accent.green")
+        status_bar.set_status("COMPLETE", bar_color=accent_green)
+        assert status_bar._bar_color.Red() == accent_green.Red()
+        assert status_bar._bar_color.Green() == accent_green.Green()
+        assert status_bar._bar_color.Blue() == accent_green.Blue()
 
     def test_reset_clears_to_ready(self, status_bar):
         """Test reset returns status bar to ready state."""
-        # Set some non-default state
         status_bar._msg = "WORKING"
         status_bar._prog = 0.5
         status_bar._fg = "custom_color"
 
-        # Reset
         status_bar.reset()
 
         assert status_bar._msg == "READY"
@@ -80,21 +86,27 @@ class TestStatusBar:
 
     def test_set_error_sets_error_state(self, status_bar):
         """Test set_error sets appropriate error state."""
-        from SpinRender.ui import theme
+        accent_orange = _theme.color("colors.accent.orange")
         status_bar.set_error("CONNECTION FAILED")
 
         assert "ERROR" in status_bar._msg or "FAILED" in status_bar._msg
-        assert status_bar._fg == theme.ACCENT_ORANGE
+        assert status_bar._fg.Red() == accent_orange.Red()
+        assert status_bar._fg.Green() == accent_orange.Green()
+        assert status_bar._fg.Blue() == accent_orange.Blue()
 
     def test_set_complete_sets_success_state(self, status_bar):
         """Test set_complete sets appropriate success state."""
-        from SpinRender.ui import theme
+        accent_green = _theme.color("colors.accent.green")
         status_bar.set_complete()
 
         assert "COMPLETE" in status_bar._msg
-        assert status_bar._fg == theme.ACCENT_GREEN
+        assert status_bar._fg.Red() == accent_green.Red()
+        assert status_bar._fg.Green() == accent_green.Green()
+        assert status_bar._fg.Blue() == accent_green.Blue()
         assert status_bar._prog == 1.0
-        assert status_bar._bar_color == theme.ACCENT_GREEN
+        assert status_bar._bar_color.Red() == accent_green.Red()
+        assert status_bar._bar_color.Green() == accent_green.Green()
+        assert status_bar._bar_color.Blue() == accent_green.Blue()
 
     def test_refresh_called_on_state_change(self, status_bar):
         """Test that Refresh is called after state changes."""
@@ -134,15 +146,16 @@ class TestStatusBar:
 
     def test_set_status_with_all_parameters(self, status_bar):
         """Test set_status with all optional parameters."""
-        from SpinRender.ui import theme
+        accent_yellow = _theme.color("colors.accent.yellow")
+        accent_orange = _theme.color("colors.accent.orange")
         msg = "CUSTOM STATE"
-        fg = theme.ACCENT_YELLOW
+        fg = accent_yellow
         prog = 0.33
-        bar = theme.ACCENT_ORANGE
+        bar = accent_orange
 
         status_bar.set_status(msg, fg_color=fg, progress=prog, bar_color=bar)
 
         assert status_bar._msg == msg
-        assert status_bar._fg == fg
+        assert status_bar._fg.Red() == fg.Red() and status_bar._fg.Green() == fg.Green() and status_bar._fg.Blue() == fg.Blue()
         assert status_bar._prog == prog
-        assert status_bar._bar_color == bar
+        assert status_bar._bar_color.Red() == bar.Red() and status_bar._bar_color.Green() == bar.Green() and status_bar._bar_color.Blue() == bar.Blue()

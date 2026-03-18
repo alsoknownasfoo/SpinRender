@@ -10,7 +10,8 @@ from pathlib import Path
 from typing import List, Optional
 
 from .text_styles import TextStyle
-from . import theme
+from SpinRender.core.theme import Theme
+_theme = Theme.current()
 from SpinRender.core.preview import GLPreviewRenderer
 
 
@@ -72,15 +73,15 @@ class PreviewPanel(wx.Panel):
 
         # Top-Left: Preset name OR parameters
         self.ov_top_left = wx.StaticText(top_meta, label="")
-        self.ov_top_left.SetForegroundColour(theme.WHITE_ALPHA_68)
-        self.ov_top_left.SetFont(TextStyle(family=theme.FONT_MONO, size=9, weight=400).create_font())
+        self.ov_top_left.SetForegroundColour(_theme.WHITE_ALPHA_68)
+        self.ov_top_left.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=400).create_font())
         top_sizer.Add(self.ov_top_left, 1, wx.ALIGN_CENTER_VERTICAL)
 
         # Top-Right: Render mode buttons container
         self.render_mode_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.render_mode_btns = {}
 
-        mode_font = TextStyle(family=theme.FONT_MONO, size=9, weight=700).create_font()
+        mode_font = TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font()
         modes = [("WIREFRAME", "wireframe"), ("SHADED", "shaded"), ("BOTH", "both")]
 
         for i, (label, mode_id) in enumerate(modes):
@@ -97,15 +98,15 @@ class PreviewPanel(wx.Panel):
             if i < len(modes) - 1:
                 div = wx.StaticText(top_meta, label="  |  ")
                 div.SetFont(mode_font)
-                div.SetForegroundColour(theme.SCROLLBAR_GREY)
+                div.SetForegroundColour(_theme.SCROLLBAR_GREY)
                 self.render_mode_sizer.Add(div, 0, wx.ALIGN_CENTER_VERTICAL)
 
         top_sizer.Add(self.render_mode_sizer, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
 
         # Close Preview button (hidden by default)
         self.ov_top_right = wx.StaticText(top_meta, label="CLOSE PREVIEW")
-        self.ov_top_right.SetForegroundColour(theme.ACCENT_CYAN)
-        self.ov_top_right.SetFont(TextStyle(family=theme.FONT_MONO, size=9, weight=700).create_font())
+        self.ov_top_right.SetForegroundColour(_theme.color("colors.accent.primary"))
+        self.ov_top_right.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font())
         self.ov_top_right.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         self.ov_top_right.Hide()
         # Event binding will be done by parent/orchestrator after construction
@@ -118,19 +119,19 @@ class PreviewPanel(wx.Panel):
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.ov_bottom_left = wx.StaticText(bottom_meta, label="")
-        self.ov_bottom_left.SetForegroundColour(theme.WHITE_ALPHA_68)
-        self.ov_bottom_left.SetFont(TextStyle(family=theme.FONT_MONO, size=9, weight=400).create_font())
+        self.ov_bottom_left.SetForegroundColour(_theme.WHITE_ALPHA_68)
+        self.ov_bottom_left.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=400).create_font())
         bottom_sizer.Add(self.ov_bottom_left, 1, wx.ALIGN_CENTER_VERTICAL)
 
         self.ov_bottom_center = wx.StaticText(bottom_meta, label="")
-        self.ov_bottom_center.SetForegroundColour(theme.WHITE_ALPHA_68)
-        self.ov_bottom_center.SetFont(TextStyle(family=theme.FONT_MONO, size=9, weight=400).create_font())
+        self.ov_bottom_center.SetForegroundColour(_theme.WHITE_ALPHA_68)
+        self.ov_bottom_center.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=400).create_font())
         bottom_sizer.Add(self.ov_bottom_center, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_CENTER_HORIZONTAL)
         self.ov_bottom_center.SetWindowStyle(wx.ST_NO_AUTORESIZE | wx.ALIGN_CENTRE_HORIZONTAL)
 
         self.ov_bottom_right = wx.StaticText(bottom_meta, label="")
-        self.ov_bottom_right.SetForegroundColour(theme.ACCENT_GREEN)
-        self.ov_bottom_right.SetFont(TextStyle(family=theme.FONT_MONO, size=9, weight=400).create_font())
+        self.ov_bottom_right.SetForegroundColour(_theme.color("colors.accent.success"))
+        self.ov_bottom_right.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=400).create_font())
         bottom_sizer.Add(self.ov_bottom_right, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
         self.ov_bottom_right.SetWindowStyle(wx.ST_NO_AUTORESIZE | wx.ALIGN_RIGHT)
 
@@ -446,7 +447,7 @@ class PreviewPanel(wx.Panel):
         """
         for mode_id, btn in self.render_mode_btns.items():
             if mode_id == active_mode:
-                btn.SetForegroundColour(theme.ACCENT_CYAN)
+                btn.SetForegroundColour(_theme.color("colors.accent.primary"))
             else:
-                btn.SetForegroundColour(theme.GREY_100)
+                btn.SetForegroundColour(_theme.GREY_100)
             btn.Refresh()

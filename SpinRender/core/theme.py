@@ -25,7 +25,7 @@ class Theme:
     Usage:
         Theme.load("dark")           # Load theme by name, sets singleton
         Theme.current()              # Get loaded singleton
-        Theme.current().colour("colors.accent.primary")  # → wx.Colour
+        Theme.current().color("colors.accent.primary")  # → wx.Colour
         Theme.current().font("body")  # → wx.Font
         Theme.current().size("typography.scale.base")  # → int
     """
@@ -48,19 +48,17 @@ class Theme:
             raise FileNotFoundError(f"Theme file not found: {path}")
 
         if not _yaml_available:
-            # Fall back to hardcoded defaults
-            from SpinRender.ui import theme as hardcoded
-            cls._instance = cls(cls._build_full_fallback(hardcoded))
+            # Fall back to hardcoded defaults (self-contained, no ui.theme dependency)
+            cls._instance = cls(cls._build_fallback_data())
             return cls._instance
 
         try:
             with open(path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
             cls._instance = cls(data)
-        except Exception as e:
-            # Fall back to hardcoded on any YAML error
-            from SpinRender.ui import theme as hardcoded
-            cls._instance = cls(cls._build_full_fallback(hardcoded))
+        except Exception:
+            # Fall back to hardcoded on any YAML error (self-contained)
+            cls._instance = cls(cls._build_fallback_data())
 
         return cls._instance
 
@@ -113,9 +111,9 @@ class Theme:
         }
 
     @classmethod
-    def _build_full_fallback(cls, hardcoded: Any) -> dict:
-        """Build complete fallback data including palette, colors, typography, spacing, components."""
-        palette = cls._build_palette(hardcoded)
+    def _build_fallback_data(cls) -> dict:
+        """Build complete fallback data (self-contained, no dependencies)."""
+        palette = cls._build_palette(None)
         return {
             "palette": palette,
             "colors": {
@@ -163,35 +161,54 @@ class Theme:
                     "danger-pressed": {"ref": "palette.danger-dark"},
                 },
             },
-            "typography": cls._build_fallback_typography(hardcoded),
-            "spacing": cls._build_fallback_spacing(hardcoded),
+            "typography": cls._build_fallback_typography(),
+            "spacing": cls._build_fallback_spacing(),
             "components": cls._build_fallback_components(),
         }
 
     @classmethod
-    def _build_fallback_typography(cls, hardcoded: Any) -> dict:
-        """Build typography dict from hardcoded constants."""
+    def _build_fallback_typography(cls) -> dict:
+        """Build typography dict with hardcoded fallback values."""
+        # Font families (same as from foundation.fonts)
+        FONT_MONO = "JetBrains Mono"
+        FONT_DISPLAY = "Oswald"
+        FONT_ICONS = "Material Design Icons"
+        FONT_INTER = "Inter"
+        # Font sizes (points)
+        FONT_SIZE_XS = 8
+        FONT_SIZE_SM = 9
+        FONT_SIZE_BASE = 11
+        FONT_SIZE_MD = 13
+        FONT_SIZE_LG = 14
+        FONT_SIZE_XL = 18
+        FONT_SIZE_ICON = 14
+        FONT_SIZE_ICON_LG = 20
+        # Font weights
+        FONT_WEIGHT_NORMAL = 400
+        FONT_WEIGHT_SEMIBOLD = 600
+        FONT_WEIGHT_BOLD = 700
+
         return {
             "families": {
-                "mono": hardcoded.FONT_MONO,
-                "display": hardcoded.FONT_DISPLAY,
-                "icon": hardcoded.FONT_ICONS,
-                "inter": hardcoded.FONT_INTER,
+                "mono": FONT_MONO,
+                "display": FONT_DISPLAY,
+                "icon": FONT_ICONS,
+                "inter": FONT_INTER,
             },
             "scale": {
-                "xs": hardcoded.FONT_SIZE_XS,
-                "sm": hardcoded.FONT_SIZE_SM,
-                "base": hardcoded.FONT_SIZE_BASE,
-                "md": hardcoded.FONT_SIZE_MD,
-                "lg": hardcoded.FONT_SIZE_LG,
-                "xl": hardcoded.FONT_SIZE_XL,
-                "icon": hardcoded.FONT_SIZE_ICON,
-                "icon-lg": hardcoded.FONT_SIZE_ICON_LG,
+                "xs": FONT_SIZE_XS,
+                "sm": FONT_SIZE_SM,
+                "base": FONT_SIZE_BASE,
+                "md": FONT_SIZE_MD,
+                "lg": FONT_SIZE_LG,
+                "xl": FONT_SIZE_XL,
+                "icon": FONT_SIZE_ICON,
+                "icon-lg": FONT_SIZE_ICON_LG,
             },
             "weights": {
-                "normal": hardcoded.FONT_WEIGHT_NORMAL,
-                "semibold": hardcoded.FONT_WEIGHT_SEMIBOLD,
-                "bold": hardcoded.FONT_WEIGHT_BOLD,
+                "normal": FONT_WEIGHT_NORMAL,
+                "semibold": FONT_WEIGHT_SEMIBOLD,
+                "bold": FONT_WEIGHT_BOLD,
             },
             "presets": {
                 "body": {
@@ -248,7 +265,7 @@ class Theme:
         }
 
     @classmethod
-    def _build_fallback_spacing(cls, hardcoded: Any) -> dict:
+    def _build_fallback_spacing(cls) -> dict:
         """Build spacing dict."""
         return {
             "0": 0,
@@ -376,22 +393,132 @@ class Theme:
         }
 
     def _resolve(self, path: str) -> Any:
-        """Resolve a dot-path token, following 'ref' references."""
+        """Resolve a dot-path token, following 'ref' references. Returns pink if undefined."""
+        import logging
+        logger = logging.getLogger("SpinRender")
         node = self._data
         for key in path.split("."):
             if isinstance(node, dict):
                 if key not in node:
-                    raise KeyError(f"Token not found: '{path}' (missing '{key}')")
+                    logger.error(f"Undefined theme token: '{path}' (missing '{key}')")
+                    # Return pink as visible default for missing tokens
+                    return "#FF00FF"  # Magenta/pink for visibility
                 node = node[key]
             else:
-                raise KeyError(f"Cannot traverse into {type(node)} at '{key}' in '{path}'")
+                logger.error(f"Cannot traverse into {type(node)} at '{key}' in '{path}'")
+                return "#FF00FF"
 
         # Follow ref if present
         if isinstance(node, dict) and "ref" in node:
             return self._resolve(node["ref"])
         return node
 
-    def _parse_colour(self, value: str):
+    def disabled(self, color) -> 'wx.Colour':
+        """Return a copy of color with disabled opacity (alpha=128)."""
+        import wx
+        if isinstance(color, wx.Colour):
+            return wx.Colour(color.Red(), color.Green(), color.Blue(), 128)
+        raise ValueError(f"Expected wx.Colour, got {type(color)}")
+
+    def font_family(self, name: str) -> str:
+        """Get font family by name: 'mono', 'display', 'icon', 'inter'."""
+        try:
+            return self._resolve(f"typography.families.{name}")
+        except KeyError:
+            fallbacks = {
+                "mono": "JetBrains Mono",
+                "display": "Oswald",
+                "icon": "Material Design Icons",
+                "inter": "Inter",
+            }
+            return fallbacks.get(name, "")
+
+    def font_size(self, name: str) -> int:
+        """Get font size by name: 'xs', 'sm', 'base', 'md', 'lg', 'xl', 'icon', 'icon-lg'."""
+        value = self._resolve(f"typography.scale.{name}")
+        return int(value)
+
+    def font_weight(self, name: str) -> int:
+        """Get font weight by name: 'normal' (400), 'semibold' (600), 'bold' (700)."""
+        value = self._resolve(f"typography.weights.{name}")
+        return int(value)
+
+    def get_palette_color(self, name: str) -> 'wx.Colour':
+        """Get a raw palette color by name (e.g., 'cyan', 'yellow', 'neutral-3')."""
+        return self.color(f"palette.{name}")
+
+    # Special colors via properties for cleaner access
+    @property
+    def BLACK(self) -> 'wx.Colour':
+        """Solid black."""
+        return self.color("palette.black-solid")
+
+    @property
+    def TRANSPARENT(self) -> 'wx.Colour':
+        """Fully transparent."""
+        return self.parse_color("rgba(0,0,0,0)") if hasattr(self, '_parse_color') else self.color("palette.transparent")
+
+    @property
+    def HOVER_HIGHLIGHT(self) -> 'wx.Colour':
+        """Hover highlight color (used for scrollbars etc)."""
+        return self.color("colors.bg.hover")
+
+    @property
+    def SCROLLBAR_GREY(self) -> 'wx.Colour':
+        """Scrollbar track color."""
+        return self.get_palette_color("neutral-10")
+
+    @property
+    def GREY_100(self) -> 'wx.Colour':
+        """Secondary text subtler color."""
+        return self.get_palette_color("neutral-11")  # Note: comment said neutral-11 but was 100
+
+    @property
+    def DANGER_DARK(self) -> 'wx.Colour':
+        """Danger state (pressed)."""
+        return self.color("palette.danger-dark")
+
+    @property
+    def DANGER_HOVER(self) -> 'wx.Colour':
+        """Danger state (hover)."""
+        return self.color("palette.danger-hover")
+
+    @property
+    def DANGER_MEDIUM(self) -> 'wx.Colour':
+        """Danger state (default)."""
+        return self.color("palette.danger-medium")
+
+    @property
+    def WHITE(self) -> 'wx.Colour':
+        """Solid white."""
+        return self.color("palette.neutral-15")
+
+    @property
+    def WHITE_ALPHA_20(self) -> 'wx.Colour':
+        """White with 20% opacity (0.08 alpha ≈ 20)."""
+        return self.parse_color("rgba(255,255,255,0.08)")
+
+    @property
+    def WHITE_ALPHA_30(self) -> 'wx.Colour':
+        """White with 30% opacity (0.16)."""
+        return self.parse_color("rgba(255,255,255,0.16)")
+
+    @property
+    def WHITE_ALPHA_40(self) -> 'wx.Colour':
+        """White with 40% opacity (0.27)."""
+        return self.parse_color("rgba(255,255,255,0.27)")
+
+    @property
+    def WHITE_ALPHA_68(self) -> 'wx.Colour':
+        """White with 68% opacity (0.68)."""
+        return self.parse_color("rgba(255,255,255,0.68)")
+
+    @property
+    def BG_MODAL(self) -> 'wx.Colour':
+        """Modal background (same as BG_PAGE)."""
+        return self.color("colors.bg.page")
+
+    def _parse_color(self, value: str):
         """Parse color string to wx.Colour. Supports hex (#RRGGBB) and rgba(r,g,b,a)."""
         import wx
         import re
@@ -420,12 +547,12 @@ class Theme:
         b = int(clean[4:6], 16)
         return wx.Colour(r, g, b)
 
-    def parse_colour(self, value: str):
+    def parse_color(self, value: str):
         """
-        Public wrapper for _parse_colour. Use this from compatibility layers
+        Public wrapper for _parse_color. Use this from compatibility layers
         instead of accessing the private method.
         """
-        return self._parse_colour(value)
+        return self._parse_color(value)
 
     def _shift_color(self, color: 'wx.Colour', delta: int) -> 'wx.Colour':
         """
@@ -439,10 +566,11 @@ class Theme:
         a = color.Alpha()
         return wx.Colour(r, g, b, a)
 
-    def colour(self, token: str):
-        """Resolve a color token to a wx.Colour. e.g. 'colors.accent.primary'."""
-        value = self._resolve(token)
-        return self._parse_colour(value)
+    def color(self, token: str, state: int = 0) -> list:
+        """Resolve a color token to a wx.Colour. e.g. 'colors.accent.primary'.
+        by default return the normal state color and it's color in a state. By default, return the normal color state. States: 0=normal, 1=hover, 2=active."""
+        value = self.color_states(token)[state]
+        return self._parse_color(value)
 
     def get_preset_colors(self) -> list:
         """
@@ -462,7 +590,7 @@ class Theme:
                         color_str = self._resolve(ref_dict) if not ref_dict.startswith('#') and not ref_dict.startswith('rgba(') else ref_dict
                     else:
                         color_str = ref_dict
-                    colors.append(self._parse_colour(color_str))
+                    colors.append(self._parse_color(color_str))
                 return colors
         except (KeyError, AttributeError):
             pass
@@ -477,7 +605,7 @@ class Theme:
         colors = []
         for token, default in fallback:
             try:
-                colors.append(self.colour(token))
+                colors.append(self.color(token))
             except KeyError:
                 colors.append(default)
         return colors
@@ -490,7 +618,7 @@ class Theme:
         except AttributeError:
             return False
 
-    def colour_states(self, token: str, states: int = 3) -> list:
+    def color_states(self, token: str, states: int = 3) -> list:
         """
         Resolve a color token that may be a single value or an array.
         Returns list of wx.Colour objects for [normal, hover, active] states.
@@ -528,12 +656,12 @@ class Theme:
                 else:
                     raise ValueError(f"Invalid array element in token '{token}': {v}")
             # Parse all color strings
-            colors = [self._parse_colour(cs) for cs in color_strings]
+            colors = [self._parse_color(cs) for cs in color_strings]
         else:
             # Single value (string, ref dict)
             if isinstance(raw, dict) and 'ref' in raw:
                 raw = self._resolve(raw['ref'])
-            colors = [self._parse_colour(raw)]
+            colors = [self._parse_color(raw)]
 
         # Pad to required length with shifted colors
         while len(colors) < states:

@@ -3,23 +3,26 @@
 Shared helper functions for unified component construction.
 """
 import wx
-from . import theme
+from SpinRender.core.theme import Theme
+_theme = Theme.current()
 from .text_styles import TextStyle
 
 
-# Valid theme token names for validation
+# Valid theme token paths for validation (using Theme.color() API)
 VALID_BG_TOKENS = {
-    'BG_PAGE', 'BG_PANEL', 'BG_INPUT', 'BG_SURFACE', 'BG_MODAL'
+    'colors.bg.page', 'colors.bg.panel', 'colors.bg.input',
+    'colors.bg.surface', 'colors.bg.modal'
 }
 VALID_BORDER_TOKENS = {
-    'BORDER_DEFAULT', 'BORDER_MODAL', 'BORDER_FOCUS'
+    'colors.border.default', 'colors.border.modal', 'colors.border.focus'
 }
 VALID_ACCENT_TOKENS = {
-    'ACCENT_CYAN', 'ACCENT_YELLOW', 'ACCENT_GREEN', 'ACCENT_ORANGE',
-    'ACCENT_RED', 'ACCENT_AMBER', 'ACCENT_BLUE', 'ACCENT_PURPLE'
+    'colors.accent.cyan', 'colors.accent.yellow', 'colors.accent.green',
+    'colors.accent.orange', 'colors.accent.red', 'colors.accent.amber',
+    'colors.accent.blue', 'colors.accent.purple'
 }
 VALID_TEXT_TOKENS = {
-    'TEXT_PRIMARY', 'TEXT_SECONDARY', 'TEXT_MUTED'
+    'colors.text.primary', 'colors.text.secondary', 'colors.text.muted'
 }
 ALL_VALID_TOKENS = (
     VALID_BG_TOKENS | VALID_BORDER_TOKENS | VALID_ACCENT_TOKENS | VALID_TEXT_TOKENS
@@ -27,8 +30,8 @@ ALL_VALID_TOKENS = (
 
 
 def _resolve_token(token: str):
-    """Resolve theme token string to actual colour value."""
-    return getattr(theme, token)
+    """Resolve theme token path to actual color value."""
+    return _theme.color(token)
 
 
 def create_frame(parent: wx.Panel, style_token: str, **kwargs) -> wx.Panel:
@@ -37,11 +40,11 @@ def create_frame(parent: wx.Panel, style_token: str, **kwargs) -> wx.Panel:
 
     Args:
         parent: Parent wx.Window
-        style_token: Theme token name (e.g., 'BG_INPUT', 'BG_SURFACE')
+        style_token: Theme token path (e.g., 'colors.bg.input', 'colors.bg.surface')
         **kwargs: Additional wx.Panel constructor args
 
     Returns:
-        wx.Panel with background colour from theme token
+        wx.Panel with background color from theme token
 
     Raises:
         ValueError: If token is not recognized
@@ -50,8 +53,8 @@ def create_frame(parent: wx.Panel, style_token: str, **kwargs) -> wx.Panel:
         raise ValueError(f"Unknown theme token: {style_token}")
 
     frame = wx.Panel(parent, **kwargs)
-    colour = _resolve_token(style_token)
-    frame.SetBackgroundColour(colour)
+    color = _resolve_token(style_token)
+    frame.SetBackgroundColour(color)
     return frame
 
 
@@ -66,7 +69,7 @@ def create_text(parent: wx.Window, label: str, text_style, **kwargs) -> wx.Stati
         **kwargs: Additional wx.StaticText constructor args
 
     Returns:
-        wx.StaticText with font and foreground colour set, and mouse pass-through
+        wx.StaticText with font and foreground color set, and mouse pass-through
         for click events (EVT_LEFT_DOWN calls event.Skip()).
     """
     text = wx.StaticText(parent, label=label, **kwargs)
@@ -76,7 +79,7 @@ def create_text(parent: wx.Window, label: str, text_style, **kwargs) -> wx.Stati
         font = text_style.create_font()
         text.SetFont(font)
 
-        # Apply foreground colour if specified
+        # Apply foreground color if specified
         if text_style.color:
             text.SetForegroundColour(text_style.color)
 
@@ -113,16 +116,16 @@ def apply_disabled_state(widget: wx.Window, is_enabled: bool) -> None:
     """
     Apply disabled state visual effect to widget background.
 
-    Uses theme.disabled() to apply 50% opacity to the current background colour.
+    Uses _theme.disabled() to apply 50% opacity to the current background color.
 
     Args:
         widget: wx.Window to modify
         is_enabled: True for normal state, False for disabled
     """
     if not is_enabled:
-        current_colour = widget.GetBackgroundColour()
-        disabled_colour = theme.disabled(current_colour)
-        widget.SetBackgroundColour(disabled_colour)
+        current_color = widget.GetBackgroundColor()
+        disabled_color = _theme.disabled(current_color)
+        widget.SetBackgroundColour(disabled_color)
 
 
 def create_section_label(parent, text):
@@ -130,11 +133,11 @@ def create_section_label(parent, text):
     panel = wx.Panel(parent)
     sizer = wx.BoxSizer(wx.HORIZONTAL)
     label = wx.StaticText(panel, label=text)
-    label.SetForegroundColour(theme.ACCENT_CYAN)
-    label.SetFont(TextStyle(family=theme.FONT_DISPLAY, size=13, weight=600).create_font())
+    label.SetForegroundColour(_theme.color("colors.accent.primary"))
+    label.SetFont(TextStyle(family=_theme.font_family("display"), size=13, weight=600).create_font())
     sizer.Add(label, 0, wx.ALIGN_CENTER_VERTICAL)
     line = wx.Panel(panel, size=(60, 1))
-    line.SetBackgroundColour(theme.BORDER_DEFAULT)
+    line.SetBackgroundColour(_theme.color("colors.border.default"))
     sizer.Add(line, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 8)
     panel.SetSizerAndFit(sizer)
     return panel

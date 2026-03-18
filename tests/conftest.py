@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 import pytest
 
 
-class ColourMock:
+class ColorMock:
     """Mock for wx.Colour that behaves like a simple data object."""
 
     def __init__(self, r=0, g=0, b=0, a=255):
@@ -81,9 +81,9 @@ class Mockwx:
 
     def __getattr__(self, name):
         """Return mocked wx classes/functions based on name."""
-        # Colour/Color - return the ColourMock class itself (not a factory)
-        if name in ['Colour', 'Color']:
-            return ColourMock
+        # Color/Colour - return the ColorMock class itself (not a factory)
+        if name in ['Color', 'Colour']:
+            return ColorMock
 
         # Font - return FontMock class
         if name == 'Font':
@@ -202,8 +202,8 @@ def wx_mock():
 
     Usage in tests:
         def test_something(wx_mock):
-            colour = wx.Colour(255, 0, 0)
-            assert colour.Red() == 255
+            color = wx.Colour(255, 0, 0)
+            assert color.Red() == 255
     """
     return sys.modules['wx']
 

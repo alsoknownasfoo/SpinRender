@@ -7,7 +7,7 @@ import sys
 import wx
 
 # Mock wx.Colour with a proper test double
-class ColourMock:
+class ColorMock:
     def __init__(self, r=0, g=0, b=0, a=None):
         self._r = r
         self._g = g
@@ -27,13 +27,13 @@ class ColourMock:
         return self._a
 
     def __eq__(self, other):
-        if isinstance(other, ColourMock):
+        if isinstance(other, ColorMock):
             return (self._r, self._g, self._b, self._a) == (other._r, other._g, other._b, other._a)
         return False
 
 # Replace wx.Colour globally in this test module
-original_Colour = wx.Colour
-wx.Colour = ColourMock
+original_Color = wx.Colour
+wx.Colour = ColorMock
 
 from SpinRender.ui.validation import validate_all_tokens, ContrastChecker, validate_theme_schema
 from SpinRender.ui.helpers import VALID_BG_TOKENS, VALID_TEXT_TOKENS, ALL_VALID_TOKENS
@@ -44,86 +44,85 @@ class TestValidateAllTokens:
 
     def test_passes_with_all_tokens_present(self, monkeypatch):
         """Should return empty list when all required tokens exist and are valid."""
-        mock_theme = {}
+        mock_theme_data = {}
         for token in ALL_VALID_TOKENS:
-            mock_theme[token] = ColourMock(100, 100, 100)
+            mock_theme_data[token] = ColorMock(100, 100, 100)
 
         class MockTheme:
-            def __getattr__(self, name):
-                if name in mock_theme:
-                    return mock_theme[name]
-                raise AttributeError(f"no attribute {name}")
+            def color(self, token):
+                return mock_theme_data[token]
 
-        monkeypatch.setattr('SpinRender.ui.validation.theme', MockTheme())
+        monkeypatch.setattr('SpinRender.ui.validation._theme', MockTheme())
         errors = validate_all_tokens()
         assert errors == []
 
     def test_detects_missing_token(self, monkeypatch):
         """Should report missing token."""
-        mock_theme = {
-            'BG_PAGE': ColourMock(18, 18, 18),
-            'BG_PANEL': ColourMock(26, 26, 26),
+        # Only define a couple of tokens
+        mock_theme_data = {
+            'colors.bg.page': ColorMock(18, 18, 18),
+            'colors.bg.panel': ColorMock(26, 26, 26),
         }
 
         class MockTheme:
-            def __getattr__(self, name):
-                if name in mock_theme:
-                    return mock_theme[name]
-                raise AttributeError(f"no attribute {name}")
+            def color(self, token):
+                if token in mock_theme_data:
+                    return mock_theme_data[token]
+                raise KeyError(f"Token not found: {token}")
 
-        monkeypatch.setattr('SpinRender.ui.validation.theme', MockTheme())
+        monkeypatch.setattr('SpinRender.ui.validation._theme', MockTheme())
         errors = validate_all_tokens()
         assert len(errors) > 0
-        assert any("Missing required theme token" in e for e in errors)
+        assert any("failed to resolve" in e for e in errors)
 
-    def test_detects_non_wx_colour_type(self, monkeypatch):
+    def test_detects_non_wx_color_type(self, monkeypatch):
         """Should flag token that is not a wx.Colour."""
-        mock_theme = {token: ColourMock(100, 100, 100) for token in ALL_VALID_TOKENS}
-        mock_theme['BG_PAGE'] = "not a colour"
+        mock_theme_data = {token: ColorMock(100, 100, 100) for token in ALL_VALID_TOKENS}
+        mock_theme_data['colors.bg.page'] = "not a color"
 
         class MockTheme:
-            def __getattr__(self, name):
-                return mock_theme.get(name, ColourMock())
+            def color(self, token):
+                return mock_theme_data.get(token, ColorMock())
 
-        monkeypatch.setattr('SpinRender.ui.validation.theme', MockTheme())
+        monkeypatch.setattr('SpinRender.ui.validation._theme', MockTheme())
         errors = validate_all_tokens()
         assert any("is not a wx.Colour" in e for e in errors)
 
     def test_detects_rgb_out_of_range(self, monkeypatch):
         """Should flag RGB values outside 0-255."""
-        mock_theme = {token: ColourMock(100, 100, 100) for token in ALL_VALID_TOKENS}
-        mock_theme['BG_PAGE'] = ColourMock(300, -10, 128)
+        mock_theme_data = {token: ColorMock(100, 100, 100) for token in ALL_VALID_TOKENS}
+        mock_theme_data['colors.bg.page'] = ColorMock(300, -10, 128)
 
         class MockTheme:
-            def __getattr__(self, name):
-                return mock_theme.get(name, ColourMock())
+            def color(self, token):
+                return mock_theme_data.get(token, ColorMock())
 
-        monkeypatch.setattr('SpinRender.ui.validation.theme', MockTheme())
+        monkeypatch.setattr('SpinRender.ui.validation._theme', MockTheme())
         errors = validate_all_tokens()
         assert any("outside 0-255 range" in e for e in errors)
 
     def test_detects_alpha_out_of_range(self, monkeypatch):
         """Should flag alpha values outside 0-255."""
-        mock_theme = {token: ColourMock(100, 100, 100, 200) for token in ALL_VALID_TOKENS}
-        mock_theme['BG_PAGE'] = ColourMock(100, 100, 100, 300)
+        mock_theme_data = {token: ColorMock(100, 100, 100, 200) for token in ALL_VALID_TOKENS}
+        mock_theme_data['colors.bg.page'] = ColorMock(100, 100, 100, 300)
 
         class MockTheme:
-            def __getattr__(self, name):
-                return mock_theme.get(name, ColourMock(100, 100, 100, 200))
+            def color(self, token):
+                return mock_theme_data.get(token, ColorMock(100, 100, 100, 200))
 
-        monkeypatch.setattr('SpinRender.ui.validation.theme', MockTheme())
+        monkeypatch.setattr('SpinRender.ui.validation._theme', MockTheme())
         errors = validate_all_tokens()
         assert any("alpha value 300 outside 0-255 range" in e for e in errors)
 
     def test_valid_alpha_is_accepted(self, monkeypatch):
         """Should accept alpha in range 0-255."""
-        mock_theme = {token: ColourMock(100, 100, 100, 128) for token in ALL_VALID_TOKENS}
+        mock_theme_data = {token: ColorMock(100, 100, 100, 128) for token in ALL_VALID_TOKENS}
 
         class MockTheme:
-            def __getattr__(self, name):
-                return mock_theme.get(name, ColourMock(100, 100, 100, 128))
+            def color(self, token):
+                return mock_theme_data.get(token, ColorMock(100, 100, 100, 128))
 
-        monkeypatch.setattr('SpinRender.ui.validation.theme', MockTheme())
+        monkeypatch.setattr('SpinRender.ui.validation._theme', MockTheme())
         errors = validate_all_tokens()
         assert errors == []
 
@@ -133,34 +132,34 @@ class TestContrastChecker:
 
     def test_relative_luminance_black(self):
         """Black (0,0,0) luminance should be 0.0."""
-        black = ColourMock(0, 0, 0)
+        black = ColorMock(0, 0, 0)
         lum = ContrastChecker.relative_luminance(black)
         assert lum == 0.0
 
     def test_relative_luminance_white(self):
         """White (255,255,255) luminance should be 1.0."""
-        white = ColourMock(255, 255, 255)
+        white = ColorMock(255, 255, 255)
         lum = ContrastChecker.relative_luminance(white)
         assert abs(lum - 1.0) < 0.001
 
     def test_contrast_ratio_black_on_white(self):
         """Black on white should be 21:1."""
-        black = ColourMock(0, 0, 0)
-        white = ColourMock(255, 255, 255)
+        black = ColorMock(0, 0, 0)
+        white = ColorMock(255, 255, 255)
         ratio = ContrastChecker.contrast_ratio(black, white)
         assert abs(ratio - 21.0) < 0.1  # Allow floating point tolerance
 
     def test_contrast_ratio_white_on_black(self):
         """White on black should also be 21:1 (order independent)."""
-        black = ColourMock(0, 0, 0)
-        white = ColourMock(255, 255, 255)
+        black = ColorMock(0, 0, 0)
+        white = ColorMock(255, 255, 255)
         ratio = ContrastChecker.contrast_ratio(white, black)
         assert abs(ratio - 21.0) < 0.1
 
     def test_contrast_ratio_grey_on_white(self):
         """Mid-grey on white has lower contrast."""
-        grey = ColourMock(128, 128, 128)
-        white = ColourMock(255, 255, 255)
+        grey = ColorMock(128, 128, 128)
+        white = ColorMock(255, 255, 255)
         ratio = ContrastChecker.contrast_ratio(grey, white)
         # Expected around 3.95
         assert 3.8 < ratio < 4.2
@@ -177,8 +176,8 @@ class TestContrastChecker:
 
     def test_check_contrast_returns_tuple(self):
         """Should return (passes, ratio, message) tuple."""
-        fg = ColourMock(255, 255, 255)
-        bg = ColourMock(0, 0, 0)
+        fg = ColorMock(255, 255, 255)
+        bg = ColorMock(0, 0, 0)
         passes, ratio, msg = ContrastChecker.check_contrast(fg, bg)
         assert passes is True
         assert ratio > 20.0
@@ -187,16 +186,16 @@ class TestContrastChecker:
 
     def test_check_contrast_fails_with_low_contrast(self):
         """Should indicate failure for insufficient contrast."""
-        fg = ColourMock(150, 150, 150)
-        bg = ColourMock(100, 100, 100)
+        fg = ColorMock(150, 150, 150)
+        bg = ColorMock(100, 100, 100)
         passes, ratio, msg = ContrastChecker.check_contrast(fg, bg)
         assert passes is False
         assert "FAIL" in msg
 
     def test_check_contrast_large_text_flag(self):
         """Large text uses 3:1 threshold, normal uses 4.5:1."""
-        fg = ColourMock(180, 180, 180)
-        bg = ColourMock(80, 80, 80)
+        fg = ColorMock(180, 180, 180)
+        bg = ColorMock(80, 80, 80)
         ratio = ContrastChecker.contrast_ratio(fg, bg)
         assert 3.0 < ratio < 4.5  # Should be borderline
 

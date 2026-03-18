@@ -8,7 +8,8 @@ Provides:
 - Theme schema verification (when using YAML configs)
 """
 import wx
-from . import theme
+from SpinRender.core.theme import Theme
+_theme = Theme.current()
 from typing import List, Tuple, Optional
 
 
@@ -18,40 +19,39 @@ from typing import List, Tuple, Optional
 
 def validate_all_tokens() -> List[str]:
     """
-    Validate that all required theme tokens are defined and resolve to valid colours.
+    Validate that all required theme tokens are defined and resolve to valid colors.
 
     Returns:
         List of error messages. Empty list indicates success.
 
     Checks:
-        - All tokens listed in helpers.VALID_BG_TOKENS, etc. exist in theme module
+        - All tokens listed in helpers.VALID_BG_TOKENS, etc. resolve via Theme.color()
         - Each token is a wx.Colour instance
-        - Colour values are within valid RGB(A) ranges
+        - Color values are within valid RGB(A) ranges
     """
     from .helpers import ALL_VALID_TOKENS
 
     errors = []
 
     for token in ALL_VALID_TOKENS:
-        # Check existence
-        if not hasattr(theme, token):
-            errors.append(f"Missing required theme token: {token}")
+        try:
+            color = _theme.color(token)
+        except Exception as e:
+            errors.append(f"Token {token} failed to resolve: {e}")
             continue
 
-        colour = getattr(theme, token)
-
         # Check type
-        if not isinstance(colour, wx.Colour):
-            errors.append(f"Token {token} is not a wx.Colour (type: {type(colour).__name__})")
+        if not isinstance(color, wx.Colour):
+            errors.append(f"Token {token} is not a wx.Colour (type: {type(color).__name__})")
             continue
 
         # Check RGB range
-        for channel, name in [(colour.Red(), "Red"), (colour.Green(), "Green"), (colour.Blue(), "Blue")]:
+        for channel, name in [(color.Red(), "Red"), (color.Green(), "Green"), (color.Blue(), "Blue")]:
             if not (0 <= channel <= 255):
                 errors.append(f"Token {token} has {name} value {channel} outside 0-255 range")
 
         # Check alpha (if set) is 0-255
-        alpha = colour.Alpha()
+        alpha = color.Alpha()
         if alpha is not None and not (0 <= alpha <= 255):
             errors.append(f"Token {token} has alpha value {alpha} outside 0-255 range")
 
@@ -230,7 +230,7 @@ def validate_theme_resolution(theme_instance) -> List[str]:
     Validate that all semantic color references in a Theme instance resolve correctly.
 
     Args:
-        theme_instance: A Theme object (from ui.theme.Theme)
+        theme_instance: A Theme object (from core.theme.Theme)
 
     Returns:
         List of errors (empty if all references resolve)

@@ -12,8 +12,8 @@ class FakeStaticText:
         self.parent = parent
         self._label = label
         self._font = None
-        self._fg_colour = None
-        self._bg_colour = None
+        self._fg_color = None
+        self._bg_color = None
         self._bindings = {}
         self._visible = True
 
@@ -30,11 +30,11 @@ class FakeStaticText:
     def SetFont(self, font):
         self._font = font
 
-    def SetForegroundColour(self, colour):
-        self._fg_colour = colour
+    def SetForegroundColour(self, color):
+        self._fg_color = color
 
-    def SetBackgroundColour(self, colour):
-        self._bg_colour = colour
+    def SetBackgroundColour(self, color):
+        self._bg_color = color
 
     def SetCursor(self, cursor):
         self._cursor = cursor
@@ -80,7 +80,8 @@ wx.Timer = FakeTimer
 
 # Now import the module under test
 from SpinRender.ui.preview_panel import PreviewPanel
-from SpinRender.ui import theme
+from SpinRender.core.theme import Theme
+_theme = Theme.current()
 
 
 @pytest.fixture(autouse=True)
@@ -528,10 +529,10 @@ class TestPreviewPanelState:
 
         preview.update_render_mode_ui('shaded')
 
-        preview.render_mode_btns['shaded'].SetForegroundColour.assert_called_with(theme.ACCENT_CYAN)
+        preview.render_mode_btns['shaded'].SetForegroundColour.assert_called_with(_theme.color("colors.accent.cyan"))
         for mode, btn in preview.render_mode_btns.items():
             if mode != 'shaded':
-                btn.SetForegroundColour.assert_called_with(theme.GREY_100)
+                btn.SetForegroundColour.assert_called_with(_theme.GREY_100)
 
 
 class TestPreviewPanelIntegration:

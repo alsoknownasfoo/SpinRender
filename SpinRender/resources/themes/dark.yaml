@@ -4,6 +4,10 @@
 # This file is the single source of truth for all visual tokens.
 # Load with: from core.theme import Theme; t = Theme.load("dark")
 
+# TODO:
+# - Remove neutral and color definitions and add a theme helpder function to obtain color values from names via wx.ColourDatabase
+# - Make definitions for every specific component, like all the sliders, and ensure that all components have a registered token prefix. Do we need a registry?
+
 meta:
   name: "Dark"
   version: "1.0.0"
@@ -264,7 +268,8 @@ components:
     bg:             ["colors.bg.page"]
     header-bg:      ["colors.bg.panel"]
     header-border:  ["colors.border.default"]
-    close-icon:     ["colors.text.muted"]
+    close-icon:     ["colors.text.muted", "colors.accent.danger", "colors.accent.danger"]
+    close-bg:       [{ref: "palette.transparent"}, "colors.state.danger-hover", "colors.state.danger-pressed"]
     padding:        {ref: "spacing.lg"}
     section-gap:    {ref: "spacing.lg"}
 

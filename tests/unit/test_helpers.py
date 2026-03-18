@@ -6,25 +6,25 @@ import sys
 
 # Use conftest's wx mock. Define test doubles that track state.
 class FakePanel:
-    """Fake wx.Panel that tracks background colour."""
+    """Fake wx.Panel that tracks background color."""
     def __init__(self, parent, *args, **kwargs):
         self.parent = parent
-        self._bg_colour = None
+        self._bg_color = None
 
-    def SetBackgroundColour(self, colour):
-        self._bg_colour = colour
+    def SetBackgroundColour(self, color):
+        self._bg_color = color
 
-    def GetBackgroundColour(self):
-        return self._bg_colour
+    def GetBackgroundColor(self):
+        return self._bg_color
 
 
 class FakeStaticText:
-    """Fake wx.StaticText that tracks font, colour, and event bindings."""
+    """Fake wx.StaticText that tracks font, color, and event bindings."""
     def __init__(self, parent, label, **kwargs):
         self.parent = parent
         self.label = label
         self._font = None
-        self._fg_colour = None
+        self._fg_color = None
         self._bindings = {}  # event_type -> handler
 
     def SetFont(self, font):
@@ -33,11 +33,11 @@ class FakeStaticText:
     def GetFont(self):
         return self._font
 
-    def SetForegroundColour(self, colour):
-        self._fg_colour = colour
+    def SetForegroundColour(self, color):
+        self._fg_color = color
 
-    def GetForegroundColour(self):
-        return self._fg_colour
+    def GetForegroundColor(self):
+        return self._fg_color
 
     def GetLabel(self):
         return self.label
@@ -65,7 +65,8 @@ wx.EVT_ENTER_WINDOW = 1001
 wx.EVT_LEAVE_WINDOW = 1002
 wx.EVT_LEFT_DOWN = 1003
 
-from SpinRender.ui import theme
+from SpinRender.core.theme import Theme
+_theme = Theme.current()
 from SpinRender.ui.text_styles import TextStyle
 from SpinRender.ui import helpers
 
@@ -76,16 +77,18 @@ class TestCreateFrame:
     def test_creates_panel_with_parent(self):
         """Creates wx.Panel (FakePanel) with given parent."""
         parent = MagicMock()
-        frame = helpers.create_frame(parent, 'BG_INPUT')
+        frame = helpers.create_frame(parent, 'colors.bg.input')
         assert isinstance(frame, FakePanel)
         assert frame.parent is parent
 
     def test_applies_background_from_token(self):
-        """Background colour set from theme token."""
+        """Background color set from theme token."""
         parent = MagicMock()
-        frame = helpers.create_frame(parent, 'BG_SURFACE')
-        bg = frame.GetBackgroundColour()
-        assert bg is theme.BG_SURFACE
+        frame = helpers.create_frame(parent, 'colors.bg.surface')
+        bg = frame.GetBackgroundColor()
+        # Compare RGB values since we get a fresh wx.Colour each time
+        expected = _theme.color("colors.bg.surface")
+        assert bg.Red() == expected.Red() and bg.Green() == expected.Green() and bg.Blue() == expected.Blue()
 
     def test_token_validation_raises_for_unknown(self):
         """Unknown token raises ValueError."""
@@ -100,7 +103,7 @@ class TestCreateText:
     def test_creates_statictext_with_parent(self):
         """Creates wx.StaticText (FakeStaticText) with given parent."""
         parent = MagicMock()
-        style = TextStyle(family="Test", size=11, weight=400, color=theme.TEXT_PRIMARY)
+        style = TextStyle(family="Test", size=11, weight=400, color=_theme.color("colors.text.primary"))
         text = helpers.create_text(parent, "Label", style)
         assert isinstance(text, FakeStaticText)
         assert text.parent is parent
@@ -113,23 +116,26 @@ class TestCreateText:
         text = helpers.create_text(parent, "Label", style)
         font = text.GetFont()
         assert font is not None
-        # TextStyle.create_font returns a MagicMock in test environment
-        assert isinstance(font, MagicMock)
+        # Font can be FontMock (from conftest) - verify it has expected methods
+        assert hasattr(font, 'GetFaceName')
+        assert hasattr(font, 'GetPointSize')
+        assert hasattr(font, 'GetWeight')
 
     def test_applies_foreground_from_style_color(self):
-        """Foreground colour set from style.color when provided."""
+        """Foreground color set from style.color when provided."""
         parent = MagicMock()
-        style = TextStyle(family="Test", size=11, weight=400, color=theme.ACCENT_CYAN)
+        style = TextStyle(family="Test", size=11, weight=400, color=_theme.color("colors.accent.cyan"))
         text = helpers.create_text(parent, "Label", style)
-        fg = text.GetForegroundColour()
-        assert fg is theme.ACCENT_CYAN
+        fg = text.GetForegroundColor()
+        expected = _theme.color("colors.accent.cyan")
+        assert fg.Red() == expected.Red() and fg.Green() == expected.Green() and fg.Blue() == expected.Blue()
 
     def test_no_foreground_when_color_none(self):
         """Does not set foreground if color is None."""
         parent = MagicMock()
         style = TextStyle(family="Test", size=11, weight=400)
         text = helpers.create_text(parent, "Label", style)
-        fg = text.GetForegroundColour()
+        fg = text.GetForegroundColor()
         assert fg is None
 
     def test_enables_mouse_pass_through(self):
@@ -188,13 +194,13 @@ class TestApplyDisabledState:
     def test_applies_disabled_alpha_to_widget(self):
         """Sets widget to 50% opacity when disabled."""
         widget = FakePanel(None)
-        original = theme.ACCENT_CYAN
+        original = _theme.color("colors.accent.cyan")
         widget.SetBackgroundColour(original)
 
         helpers.apply_disabled_state(widget, is_enabled=False)
 
-        new_bg = widget.GetBackgroundColour()
-        # Should be a ColourMock with alpha=128
+        new_bg = widget.GetBackgroundColor()
+        # Should be a ColorMock with alpha=128
         assert new_bg.Alpha() == 128
         # RGB should be unchanged
         assert new_bg.Red() == original.Red()
@@ -202,13 +208,13 @@ class TestApplyDisabledState:
         assert new_bg.Blue() == original.Blue()
 
     def test_restores_enabled_state(self):
-        """Does not change colour when is_enabled=True."""
+        """Does not change color when is_enabled=True."""
         widget = FakePanel(None)
-        original = theme.ACCENT_CYAN
+        original = _theme.color("colors.accent.cyan")
         widget.SetBackgroundColour(original)
 
         helpers.apply_disabled_state(widget, is_enabled=True)
 
         # Should not have changed background
-        new_bg = widget.GetBackgroundColour()
+        new_bg = widget.GetBackgroundColor()
         assert new_bg is original

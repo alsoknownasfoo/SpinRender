@@ -2,168 +2,152 @@
 """
 Unit tests for custom_controls.py theme migration.
 
-Tests that all custom controls use theme constants instead of local definitions
+Tests that all custom controls use theme tokens instead of local definitions
 and hardcoded wx.Colour values.
-
-TDD Phases:
-- RED: Tests fail because custom_controls.py still uses local fonts and hardcoded colors
-- GREEN: Modify custom_controls.py to use theme.* constants
-- REFACTOR: Clean up and ensure consistency
 """
 import pytest
 import wx
 
+from SpinRender.core.theme import Theme
+_theme = Theme.current()
+
 
 class TestFontMigration:
-    def test_no_local_font_constants(self):
-        from SpinRender.ui import custom_controls
-        from SpinRender.ui.theme import FONT_MONO, FONT_ICONS, FONT_DISPLAY
+    """Test that module-level font constants use Theme.font_family()."""
 
-        # Font family constants should still exist for backward compatibility
-        if hasattr(custom_controls, '_JETBRAINS_MONO'):
-            assert getattr(custom_controls, '_JETBRAINS_MONO') == FONT_MONO
-        if hasattr(custom_controls, '_MDI_FONT_FAMILY'):
-            assert getattr(custom_controls, '_MDI_FONT_FAMILY') == FONT_ICONS
-        if hasattr(custom_controls, '_OSWALD'):
-            assert getattr(custom_controls, '_OSWALD') == FONT_DISPLAY
+    def test_jetbrains_mono_matches_theme_mono(self):
+        """_JETBRAINS_MONO should equal theme's mono font family."""
+        from SpinRender.ui.custom_controls import _JETBRAINS_MONO
+        assert _JETBRAINS_MONO == _theme.font_family("mono")
 
-    def test_deprecated_font_functions_removed(self):
-        """After migration, get_custom_font and get_mdi_font should no longer exist."""
-        from SpinRender.ui import custom_controls
-        assert not hasattr(custom_controls, 'get_custom_font'), "get_custom_font should be removed after migration"
-        assert not hasattr(custom_controls, 'get_mdi_font'), "get_mdi_font should be removed after migration"
+    def test_mdi_font_family_matches_theme_icon(self):
+        """_MDI_FONT_FAMILY should equal theme's icon font family."""
+        from SpinRender.ui.custom_controls import _MDI_FONT_FAMILY
+        assert _MDI_FONT_FAMILY == _theme.font_family("icon")
+
+    def test_oswald_matches_theme_display(self):
+        """_OSWALD should equal theme's display font family."""
+        from SpinRender.ui.custom_controls import _OSWALD
+        assert _OSWALD == _theme.font_family("display")
 
 
 class TestGetPaintColorReplacement:
-    def test_paint_helper_uses_theme_disabled(self):
-        from SpinRender.ui import custom_controls
-        from SpinRender.ui.theme import disabled as theme_disabled
+    """Test _get_paint_color uses _theme.disabled()."""
 
-        if hasattr(custom_controls, '_get_paint_color'):
-            fn = getattr(custom_controls, '_get_paint_color')
-            c = wx.Colour(255, 128, 0, 255)
-            result = fn(c, enabled=False)
-            expected = theme_disabled(c)
-            assert result.Red() == expected.Red()
-            assert result.Green() == expected.Green()
-            assert result.Blue() == expected.Blue()
-            assert result.Alpha() == expected.Alpha()
+    def test_paint_helper_uses_theme_disabled(self):
+        from SpinRender.ui.custom_controls import _get_paint_color
+        c = wx.Colour(255, 128, 0, 255)
+        result = _get_paint_color(c, enabled=False)
+        expected = _theme.disabled(c)
+        assert result.Red() == expected.Red()
+        assert result.Green() == expected.Green()
+        assert result.Blue() == expected.Blue()
+        assert result.Alpha() == expected.Alpha()
 
 
 class TestNoHardcodedColors:
-    """Verify class-level colour constants are only theme aliases and match exactly."""
+    """Verify class-level color constants are only theme aliases and match exactly."""
 
-    def _check(self, cls, expected):
+    def _check(self, cls, expected_attrs):
         """
-        expected: dict mapping attribute name to expected theme colour.
-        Ensures the class has exactly these colour attributes and they match.
+        expected_attrs: dict mapping attribute name to expected color (from _theme.color()).
+        Ensures the class has exactly these color attributes and they match.
         """
         class_vars = cls.__dict__
-        # Get all attribute names that look like colours (have Red/Green/Blue methods)
         found = []
         for name, val in class_vars.items():
             if hasattr(val, 'Red') and hasattr(val, 'Green') and hasattr(val, 'Blue'):
                 found.append(name)
-        expected_set = set(expected.keys())
+        expected_set = set(expected_attrs.keys())
         if set(found) != expected_set:
-            pytest.fail(f"{cls.__name__}: expected colour attrs {expected_set}, found {set(found)}")
-        for name, exp in expected.items():
+            pytest.fail(f"{cls.__name__}: expected color attrs {expected_set}, found {set(found)}")
+        for name, exp in expected_attrs.items():
             val = class_vars[name]
             if not (val.Red() == exp.Red() and val.Green() == exp.Green() and val.Blue() == exp.Blue()):
-                pytest.fail(f"{cls.__name__}.{name} does not match theme colour")
+                pytest.fail(f"{cls.__name__}.{name} does not match theme color")
 
     def test_custom_slider(self):
         from SpinRender.ui.custom_controls import CustomSlider
-        from SpinRender.ui.theme import BG_SURFACE
-        self._check(CustomSlider, {'TRACK_COLOR': BG_SURFACE})
+        self._check(CustomSlider, {'TRACK_COLOR': _theme.color("colors.bg.surface")})
 
     def test_custom_toggle_button(self):
         from SpinRender.ui.custom_controls import CustomToggleButton
-        from SpinRender.ui.theme import BG_SURFACE, ACCENT_CYAN, TEXT_PRIMARY
         self._check(CustomToggleButton, {
-            'BG_COLOR': BG_SURFACE,
-            'TEXT_PRIMARY': TEXT_PRIMARY,
-            'DEFAULT_ACTIVE_BG': ACCENT_CYAN,
+            'BG_COLOR': _theme.color("colors.bg.surface"),
+            'TEXT_PRIMARY': _theme.color("colors.text.primary"),
+            'DEFAULT_ACTIVE_BG': _theme.color("colors.accent.primary"),
         })
 
     def test_custom_dropdown(self):
         from SpinRender.ui.custom_controls import CustomDropdown
-        from SpinRender.ui.theme import BG_INPUT, BORDER_DEFAULT, TEXT_PRIMARY
         self._check(CustomDropdown, {
-            'BG_COLOR': BG_INPUT,
-            'BORDER_COLOR': BORDER_DEFAULT,
-            'TEXT_PRIMARY': TEXT_PRIMARY,
+            'BG_COLOR': _theme.color("colors.bg.input"),
+            'BORDER_COLOR': _theme.color("colors.border.default"),
+            'TEXT_PRIMARY': _theme.color("colors.text.primary"),
         })
 
-    def test_dropdown_popup_has_no_colour_attrs(self):
+    def test_dropdown_popup_has_no_color_attrs(self):
         from SpinRender.ui.custom_controls import DropdownPopup
         class_vars = DropdownPopup.__dict__
-        colour_attrs = [n for n, v in class_vars.items()
+        color_attrs = [n for n, v in class_vars.items()
                        if hasattr(v, 'Red') and hasattr(v, 'Green') and hasattr(v, 'Blue')]
-        assert not colour_attrs, f"DropdownPopup should have no class-level colours: {colour_attrs}"
+        assert not color_attrs, f"DropdownPopup should have no class-level colors: {color_attrs}"
 
-    def test_custom_button_has_no_colour_attrs(self):
+    def test_custom_button_has_no_color_attrs(self):
         from SpinRender.ui.custom_controls import CustomButton
         class_vars = CustomButton.__dict__
-        colour_attrs = [n for n, v in class_vars.items()
+        color_attrs = [n for n, v in class_vars.items()
                        if hasattr(v, 'Red') and hasattr(v, 'Green') and hasattr(v, 'Blue')]
-        assert not colour_attrs, f"CustomButton should have no class-level colours: {colour_attrs}"
+        assert not color_attrs, f"CustomButton should have no class-level colors: {color_attrs}"
 
     def test_preset_card(self):
         from SpinRender.ui.custom_controls import PresetCard
-        from SpinRender.ui.theme import BG_SURFACE
-        self._check(PresetCard, {'BG_COLOR': BG_SURFACE})
+        self._check(PresetCard, {'BG_COLOR': _theme.color("colors.bg.surface")})
 
     def test_section_label(self):
         from SpinRender.ui.custom_controls import SectionLabel
-        from SpinRender.ui.theme import TEXT_SECONDARY, BORDER_DEFAULT
         self._check(SectionLabel, {
-            'TEXT_COLOR': TEXT_SECONDARY,
-            'LINE_COLOR': BORDER_DEFAULT,
+            'TEXT_COLOR': _theme.color("colors.text.secondary"),
+            'LINE_COLOR': _theme.color("colors.border.default"),
         })
 
     def test_numeric_display(self):
         from SpinRender.ui.custom_controls import NumericDisplay
-        from SpinRender.ui.theme import BG_INPUT
-        self._check(NumericDisplay, {'BG_COLOR': BG_INPUT})
+        self._check(NumericDisplay, {'BG_COLOR': _theme.color("colors.bg.input")})
 
     def test_numeric_input(self):
         from SpinRender.ui.custom_controls import NumericInput
-        from SpinRender.ui.theme import BG_INPUT, ACCENT_CYAN, TEXT_PRIMARY
         self._check(NumericInput, {
-            'BG_COLOR': BG_INPUT,
-            'BORDER_FOCUS': ACCENT_CYAN,
-            'VALUE_EDIT': TEXT_PRIMARY,
+            'BG_COLOR': _theme.color("colors.bg.input"),
+            'BORDER_FOCUS': _theme.color("colors.accent.primary"),
+            'VALUE_EDIT': _theme.color("colors.text.primary"),
         })
 
     def test_custom_text_input(self):
         from SpinRender.ui.custom_controls import CustomTextInput
-        from SpinRender.ui.theme import BG_INPUT, TEXT_MUTED, TEXT_PRIMARY
         self._check(CustomTextInput, {
-            'BG_COLOR': BG_INPUT,
-            'TEXT_COLOR': TEXT_PRIMARY,
-            'PLACEHOLDER_COLOR': TEXT_MUTED,
+            'BG_COLOR': _theme.color("colors.bg.input"),
+            'TEXT_COLOR': _theme.color("colors.text.primary"),
+            'PLACEHOLDER_COLOR': _theme.color("colors.text.muted"),
         })
 
-    def test_project_folder_chip_has_no_colour_attrs(self):
+    def test_project_folder_chip_has_no_color_attrs(self):
         from SpinRender.ui.custom_controls import ProjectFolderChip
         class_vars = ProjectFolderChip.__dict__
-        colour_attrs = [n for n, v in class_vars.items()
+        color_attrs = [n for n, v in class_vars.items()
                        if hasattr(v, 'Red') and hasattr(v, 'Green') and hasattr(v, 'Blue')]
-        assert not colour_attrs, f"ProjectFolderChip should have no class-level colours: {colour_attrs}"
+        assert not color_attrs, f"ProjectFolderChip should have no class-level colors: {color_attrs}"
 
     def test_custom_color_picker(self):
         from SpinRender.ui.custom_controls import CustomColorPicker
-        from SpinRender.ui.theme import BORDER_DEFAULT, BG_INPUT
         self._check(CustomColorPicker, {
-            'BORDER_COLOR': BORDER_DEFAULT,
-            'BG_INPUT': BG_INPUT,
+            'BORDER_COLOR': _theme.color("colors.border.default"),
+            'BG_INPUT': _theme.color("colors.bg.input"),
         })
 
     def test_path_input_control(self):
         from SpinRender.ui.custom_controls import PathInputControl
-        from SpinRender.ui.theme import BG_INPUT, TEXT_SECONDARY
         self._check(PathInputControl, {
-            'BG_COLOR': BG_INPUT,
-            'TEXT_COLOR': TEXT_SECONDARY,
+            'BG_COLOR': _theme.color("colors.bg.input"),
+            'TEXT_COLOR': _theme.color("colors.text.secondary"),
         })

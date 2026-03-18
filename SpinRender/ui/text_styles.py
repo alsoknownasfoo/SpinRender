@@ -3,27 +3,14 @@
 Typography system for SpinRender.
 
 Defines TextStyle dataclass and semantic text style tokens.
-Imports font constants from theme module.
+Uses Theme singleton for font families.
 """
 import wx
 from dataclasses import dataclass
 from typing import Optional
-from .theme import (
-    FONT_MONO,
-    FONT_ICONS,
-    FONT_DISPLAY,
-    FONT_SIZE_XS,
-    FONT_SIZE_SM,
-    FONT_SIZE_BASE,
-    FONT_SIZE_MD,
-    FONT_SIZE_LG,
-    FONT_SIZE_XL,
-    FONT_SIZE_ICON,
-    FONT_SIZE_ICON_LG,
-    FONT_WEIGHT_NORMAL,
-    FONT_WEIGHT_SEMIBOLD,
-    FONT_WEIGHT_BOLD,
-)
+
+from SpinRender.core.theme import Theme
+_theme = Theme.current()
 
 
 # ---------------------------------------------------------------------------
@@ -71,8 +58,25 @@ class TextStyle:
 
 
 # ---------------------------------------------------------------------------
-# Semantic Text Style Tokens
+# Semantic Text Style Tokens (reference theme values)
 # ---------------------------------------------------------------------------
+
+# Resolve theme values once at module load
+_FONT_MONO = _theme.font_family("mono")
+_FONT_ICONS = _theme.font_family("icon")
+_FONT_DISPLAY = _theme.font_family("display")
+_FONT_SIZE_XS = _theme.font_size("xs")
+_FONT_SIZE_SM = _theme.font_size("sm")
+_FONT_SIZE_BASE = _theme.font_size("base")
+_FONT_SIZE_MD = _theme.font_size("md")
+_FONT_SIZE_LG = _theme.font_size("lg")
+_FONT_SIZE_XL = _theme.font_size("xl")
+_FONT_SIZE_ICON = _theme.font_size("icon")
+_FONT_SIZE_ICON_LG = _theme.font_size("icon-lg")  # Note: hyphen, not underscore
+_FONT_WEIGHT_NORMAL = _theme.font_weight("normal")
+_FONT_WEIGHT_SEMIBOLD = _theme.font_weight("semibold")
+_FONT_WEIGHT_BOLD = _theme.font_weight("bold")
+
 
 class TextStyles:
     """Container for predefined semantic text styles.
@@ -82,70 +86,70 @@ class TextStyles:
     """
     # Base body text - JetBrains Mono, 11px, normal
     body = TextStyle(
-        family=FONT_MONO,
-        size=FONT_SIZE_BASE,
-        weight=FONT_WEIGHT_NORMAL
+        family=_FONT_MONO,
+        size=_FONT_SIZE_BASE,
+        weight=_FONT_WEIGHT_NORMAL
     )
 
     # Strong body text - JetBrains Mono, 11px, semibold
     body_strong = TextStyle(
-        family=FONT_MONO,
-        size=FONT_SIZE_BASE,
-        weight=FONT_WEIGHT_SEMIBOLD
+        family=_FONT_MONO,
+        size=_FONT_SIZE_BASE,
+        weight=_FONT_WEIGHT_SEMIBOLD
     )
 
     # Small labels - 9px, semibold
     label_sm = TextStyle(
-        family=FONT_MONO,
-        size=FONT_SIZE_SM,
-        weight=FONT_WEIGHT_SEMIBOLD
+        family=_FONT_MONO,
+        size=_FONT_SIZE_SM,
+        weight=_FONT_WEIGHT_SEMIBOLD
     )
 
     # Extra small labels (badges, captions) - 8px, bold
     label_xs = TextStyle(
-        family=FONT_MONO,
-        size=FONT_SIZE_XS,
-        weight=FONT_WEIGHT_BOLD
+        family=_FONT_MONO,
+        size=_FONT_SIZE_XS,
+        weight=_FONT_WEIGHT_BOLD
     )
 
     # Numeric display values - 13px, semibold (for tilt angles, etc.)
     numeric_value = TextStyle(
-        family=FONT_MONO,
-        size=FONT_SIZE_MD,
-        weight=FONT_WEIGHT_SEMIBOLD
+        family=_FONT_MONO,
+        size=_FONT_SIZE_MD,
+        weight=_FONT_WEIGHT_SEMIBOLD
     )
 
     # Numeric units (°, %, etc.) - 11px, normal
     numeric_unit = TextStyle(
-        family=FONT_MONO,
-        size=FONT_SIZE_BASE,
-        weight=FONT_WEIGHT_NORMAL
+        family=_FONT_MONO,
+        size=_FONT_SIZE_BASE,
+        weight=_FONT_WEIGHT_NORMAL
     )
 
     # Section headings - Oswald, 13px, semibold, uppercase
     section_heading = TextStyle(
-        family=FONT_DISPLAY,
-        size=FONT_SIZE_MD,
-        weight=FONT_WEIGHT_SEMIBOLD,
+        family=_FONT_DISPLAY,
+        size=_FONT_SIZE_MD,
+        weight=_FONT_WEIGHT_SEMIBOLD,
         formatting="uppercase"
     )
 
     # Panel titles - Oswald, 18px, bold, uppercase
     panel_title = TextStyle(
-        family=FONT_DISPLAY,
-        size=FONT_SIZE_XL,
-        weight=FONT_WEIGHT_BOLD,
+        family=_FONT_DISPLAY,
+        size=_FONT_SIZE_XL,
+        weight=_FONT_WEIGHT_BOLD,
         formatting="uppercase"
     )
 
     # MDI icons - Material Design Icons, 14px
     icon = TextStyle(
-        family=FONT_ICONS,
-        size=FONT_SIZE_ICON
+        family=_FONT_ICONS,
+        size=_FONT_SIZE_ICON
     )
 
     # Large icons (button icons) - 20px
     icon_lg = TextStyle(
-        family=FONT_ICONS,
-        size=FONT_SIZE_ICON_LG
+        family=_FONT_ICONS,
+        size=_FONT_SIZE_ICON_LG
     )
