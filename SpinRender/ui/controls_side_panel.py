@@ -14,6 +14,7 @@ from .custom_controls import (
 )
 from .text_styles import TextStyle, TextStyles
 from . import theme
+from .helpers import create_section_label, create_numeric_input
 
 
 class ControlsSidePanel(wx.Panel):
@@ -129,7 +130,7 @@ class ControlsSidePanel(wx.Panel):
         panel = wx.Panel(parent)
         panel.SetBackgroundColour(theme.BG_PAGE)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.parent.create_section_label(panel, "LOOP PRESET"), 0, wx.EXPAND | wx.BOTTOM, 8)
+        sizer.Add(create_section_label(panel, "LOOP PRESET"), 0, wx.EXPAND | wx.BOTTOM, 8)
 
         preset_row = wx.Panel(panel)
         preset_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -164,7 +165,7 @@ class ControlsSidePanel(wx.Panel):
 
         header = wx.Panel(panel)
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        header_sizer.Add(self.parent.create_section_label(header, "PARAMETERS"), 1, wx.ALIGN_CENTER_VERTICAL)
+        header_sizer.Add(create_section_label(header, "PARAMETERS"), 1, wx.ALIGN_CENTER_VERTICAL)
         save_btn = CustomButton(header, label="+ PRESET", primary=False, size=(120, 28))
         save_btn.Bind(wx.EVT_BUTTON, self.parent.on_save_preset)
         header_sizer.Add(save_btn, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -193,22 +194,22 @@ class ControlsSidePanel(wx.Panel):
 
         row1 = self.create_axis_control(
             panel, "BOARD TILT", self.settings.board_tilt, cols[0], icons[0],
-            -90, 90, self.parent.on_board_tilt_change, self.parent.on_board_tilt_input
+            -90, 90
         )
         sizer.Add(row1, 0, wx.EXPAND | wx.BOTTOM, 4)
         row2 = self.create_axis_control(
             panel, "BOARD ROLL", self.settings.board_roll, cols[1], icons[1],
-            -180, 180, self.parent.on_board_roll_change, self.parent.on_board_roll_input
+            -180, 180
         )
         sizer.Add(row2, 0, wx.EXPAND | wx.BOTTOM, 4)
         row3 = self.create_axis_control(
             panel, "SPIN TILT", self.settings.spin_tilt, cols[2], icons[2],
-            -90, 90, self.parent.on_spin_tilt_change, self.parent.on_spin_tilt_input
+            -90, 90
         )
         sizer.Add(row3, 0, wx.EXPAND | wx.BOTTOM, 4)
         row4 = self.create_axis_control(
             panel, "SPIN HEADING", self.settings.spin_heading, cols[3], icons[3],
-            -180, 180, self.parent.on_spin_heading_change, self.parent.on_spin_heading_input
+            -180, 180
         )
         sizer.Add(row4, 0, wx.EXPAND | wx.BOTTOM, 4)
 
@@ -219,7 +220,7 @@ class ControlsSidePanel(wx.Panel):
         panel.SetSizerAndFit(sizer)
         return panel
 
-    def create_axis_control(self, parent, label_text, def_val, col, icon_name, min_val, max_val, s_hand, i_hand):
+    def create_axis_control(self, parent, label_text, def_val, col, icon_name, min_val, max_val):
         """Create a labeled slider + numeric input row."""
         row = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -245,11 +246,9 @@ class ControlsSidePanel(wx.Panel):
         sizer.Add(label_part, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
 
         slider = CustomSlider(row, value=def_val, min_val=min_val, max_val=max_val, size=(-1, 18), color=col)
-        slider.Bind(wx.EVT_SLIDER, s_hand)
         sizer.Add(slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
 
-        inp = self.parent.create_numeric_input(row, f"{def_val:.2f}", "°", editable=True, min_val=min_val, max_val=max_val)
-        inp.Bind(wx.EVT_TEXT_ENTER, i_hand)
+        inp = create_numeric_input(row, f"{def_val:.2f}", "°", editable=True, min_val=min_val, max_val=max_val)
         sizer.Add(inp, 0, wx.ALIGN_CENTER_VERTICAL)
 
         attr_name = label_text.lower().replace(" ", "_")
@@ -271,10 +270,8 @@ class ControlsSidePanel(wx.Panel):
         csizer = wx.BoxSizer(wx.HORIZONTAL)
         p_val = self.settings.period
         self.period_slider = CustomSlider(crow, value=p_val, min_val=0.1, max_val=30, size=(-1, 18))
-        self.period_slider.Bind(wx.EVT_SLIDER, self.parent.on_period_change)
         csizer.Add(self.period_slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
-        self.period_input = self.parent.create_numeric_input(crow, f"{p_val:.1f}", "sec", editable=True, min_val=0.1, max_val=30)
-        self.period_input.Bind(wx.EVT_TEXT_ENTER, self.parent.on_period_input_change)
+        self.period_input = create_numeric_input(crow, f"{p_val:.1f}", "sec", editable=True, min_val=0.1, max_val=30)
         csizer.Add(self.period_input, 0, wx.ALIGN_CENTER_VERTICAL)
         crow.SetSizerAndFit(csizer)
         sizer.Add(crow, 0, wx.EXPAND | wx.BOTTOM, 6)
@@ -306,7 +303,6 @@ class ControlsSidePanel(wx.Panel):
         self.dir_toggle = CustomToggleButton(panel, options=dir_options, size=(210, 32))
         initial_idx = 1 if self.settings.direction == 'cw' else 0
         self.dir_toggle.SetSelection(initial_idx)
-        self.dir_toggle.Bind(wx.EVT_TOGGLEBUTTON, self.parent.on_direction_change)
         sizer.Add(self.dir_toggle, 0)
         panel.SetSizerAndFit(sizer)
         return panel
@@ -329,7 +325,6 @@ class ControlsSidePanel(wx.Panel):
         current_light = self.settings.lighting
         initial_idx = next((i for i, opt in enumerate(self.light_options) if opt['id'] == current_light), 0)
         self.light_toggle.SetSelection(initial_idx)
-        self.light_toggle.Bind(wx.EVT_TOGGLEBUTTON, self.parent.on_lighting_change)
         sizer.Add(self.light_toggle, 0, wx.EXPAND)
 
         hint = wx.StaticText(panel, label="SELECT WORKSPACE TO USE KICAD 3D VIEWER SETTINGS")
@@ -345,7 +340,7 @@ class ControlsSidePanel(wx.Panel):
         panel = wx.Panel(parent)
         panel.SetBackgroundColour(theme.BG_PAGE)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.parent.create_section_label(panel, "OUTPUT SETTINGS"), 0, wx.EXPAND | wx.BOTTOM, 10)
+        sizer.Add(create_section_label(panel, "OUTPUT SETTINGS"), 0, wx.EXPAND | wx.BOTTOM, 10)
 
         # Row 1: Format and Resolution
         cols_panel = wx.Panel(panel)
@@ -362,7 +357,6 @@ class ControlsSidePanel(wx.Panel):
         curr_fmt = self.settings.format
         fmt_idx = self.format_ids.index(curr_fmt) if curr_fmt in self.format_ids else 0
         self.format_choice.SetSelection(fmt_idx)
-        self.format_choice.Bind(wx.EVT_CHOICE, self.parent.on_format_change)
         f_sizer.Add(self.format_choice, 0, wx.EXPAND)
         f_col.SetSizerAndFit(f_sizer)
         cols_sizer.Add(f_col, 1, wx.EXPAND | wx.RIGHT, 12)
@@ -379,7 +373,6 @@ class ControlsSidePanel(wx.Panel):
         curr_res = self.settings.resolution
         res_idx = self.res_ids.index(curr_res) if curr_res in self.res_ids else 0
         self.res_choice.SetSelection(res_idx)
-        self.res_choice.Bind(wx.EVT_CHOICE, self.parent.on_resolution_change)
         r_sizer.Add(self.res_choice, 0, wx.EXPAND)
         r_col.SetSizerAndFit(r_sizer)
         cols_sizer.Add(r_col, 1, wx.EXPAND)
@@ -394,7 +387,7 @@ class ControlsSidePanel(wx.Panel):
         bg_lbl.SetFont(TextStyle(family=theme.FONT_MONO, size=10, weight=600).create_font())
         bg_vsizer.Add(bg_lbl, 0, wx.BOTTOM, 6)
 
-        self.bg_picker = CustomColorPicker(bg_col, current_color=self.settings.bg_color, on_change=self.parent.on_bg_color_change)
+        self.bg_picker = CustomColorPicker(bg_col, current_color=self.settings.bg_color)
         bg_vsizer.Add(self.bg_picker, 0, wx.EXPAND)
 
         bg_col.SetSizer(bg_vsizer)

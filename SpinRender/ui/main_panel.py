@@ -2,27 +2,11 @@
 SpinRender Main UI Panel
 """
 import wx
-import wx.svg
-import wx.lib.scrolledpanel as scrolled
 import os
-import json
-import time
-import threading
 import subprocess
 import logging
-from pathlib import Path
 
 logger = logging.getLogger("SpinRender")
-
-# Use absolute imports from the plugin root for KiCad compatibility
-from ui.custom_controls import (
-    CustomSlider, CustomToggleButton, CustomButton,
-    PresetCard, SectionLabel, NumericDisplay, NumericInput
-)
-from .text_styles import TextStyle, TextStyles
-
-# Import preview renderers
-from core.preview import GLPreviewRenderer
 
 # Import theme module for centralized colors
 from . import theme
@@ -33,6 +17,11 @@ from core.settings import RenderSettings
 from .preset_controller import PresetController
 from core.render_controller import RenderController
 from .controls_side_panel import ControlsSidePanel
+from .preset_controller import PresetController
+from core.render_controller import RenderController
+from .controls_side_panel import ControlsSidePanel
+from .status_bar import StatusBar
+from .parameter_controller import ParameterController
 
 
 class SpinRenderPanel(wx.Panel):
@@ -92,12 +81,6 @@ class SpinRenderPanel(wx.Panel):
         self.render_controller = RenderController()
         self.avg_frame_time = None
         self.frame_times = []
-        
-        # Status state for custom paint
-        self.status_msg = "READY"
-        self.status_fg = theme.ACCENT_GREEN
-        self.status_prog = 0.0
-        self.status_bar_color = theme.ACCENT_CYAN
 
         self.build_ui()
 
@@ -134,8 +117,8 @@ class SpinRenderPanel(wx.Panel):
         status_divider.SetBackgroundColour(theme.BORDER_DEFAULT)
         main_sizer.Add(status_divider, 0, wx.EXPAND)
 
-        self.status_bar_panel = self.create_status_bar(self)
-        main_sizer.Add(self.status_bar_panel, 0, wx.EXPAND)
+        self.status_bar = StatusBar(self)
+        main_sizer.Add(self.status_bar, 0, wx.EXPAND)
 
         self.SetSizer(main_sizer)
 
@@ -152,6 +135,97 @@ class SpinRenderPanel(wx.Panel):
 
         # Perform initial preset match check (now via controller)
         self.preset_controller.check_preset_match(manual_change=False)
+
+    def _init_preset_controller(self):
+        """Collect control references and instantiate PresetController."""
+        # Controls are now on self.controls_side_panel
+        csp = self.controls_side_panel
+        controls = {
+            'preset_buttons': getattr(csp, 'preset_buttons', {}),
+            'bg_picker': getattr(csp, 'bg_picker', None),
+            'board_tilt_slider': getattr(csp, 'board_tilt_slider', None),
+            'board_tilt_input': getattr(csp, 'board_tilt_input', None),
+            'board_roll_slider': getattr(csp, 'board_roll_slider', None),
+            'board_roll_input': getattr(csp, 'board_roll_input', None),
+            'spin_tilt_slider': getattr(csp, 'spin_tilt_slider', None),
+            'spin_tilt_input': getattr(csp, 'spin_tilt_input', None),
+            'spin_heading_slider': getattr(csp, 'spin_heading_slider', None),
+            'spin_heading_input': getattr(csp, 'spin_heading_input', None),
+            'period_slider': getattr(csp, 'period_slider', None),
+            'period_input': getattr(csp, 'period_input', None),
+            'frame_count': getattr(csp, 'frame_count', None),
+            'dir_toggle': getattr(csp, 'dir_toggle', None),
+            'light_toggle': getattr(csp, 'light_toggle', None),
+            'light_options': getattr(csp, 'light_options', []),
+        }
+
+        self.preset_controller = PresetController(
+            parent=self,
+            board_path=self.board_path,
+            settings=self.settings,
+            controls=controls,
+            preview=self.preview
+        )
+
+        # Extract additional controls for parameter controller
+        param_controls = {
+            'board_tilt_slider': csp.board_tilt_slider,
+            'board_tilt_input': csp.board_tilt_input,
+            'board_roll_slider': csp.board_roll_slider,
+            'board_roll_input': csp.board_roll_input,
+            'spin_tilt_slider': csp.spin_tilt_slider,
+            'spin_tilt_input': csp.spin_tilt_input,
+            'spin_heading_slider': csp.spin_heading_slider,
+            'spin_heading_input': csp.spin_heading_input,
+            'period_slider': csp.period_slider,
+            'period_input': csp.period_input,
+            'frame_count': csp.frame_count,
+            'dir_toggle': csp.dir_toggle,
+            'light_toggle': csp.light_toggle,
+            'light_options': csp.light_options,
+            'format_choice': csp.format_choice,
+            'format_ids': csp.format_ids,
+            'res_choice': csp.res_choice,
+            'res_ids': csp.res_ids,
+            'bg_picker': csp.bg_picker,
+        }
+
+        self.parameter_controller = ParameterController(
+            settings=self.settings,
+            controls=param_controls,
+            preview=self.preview,
+            preset_controller=self.preset_controller
+        )
+
+        # Wire parameter control events to ParameterController
+        self._wire_parameter_events()
+
+    def _wire_parameter_events(self):
+        """Bind parameter control events to ParameterController methods."""
+        pc = self.parameter_controller
+        # Rotation controls
+        self.controls_side_panel.board_tilt_slider.Bind(wx.EVT_SLIDER, pc.on_board_tilt_change)
+        self.controls_side_panel.board_tilt_input.Bind(wx.EVT_TEXT_ENTER, pc.on_board_tilt_input)
+        self.controls_side_panel.board_roll_slider.Bind(wx.EVT_SLIDER, pc.on_board_roll_change)
+        self.controls_side_panel.board_roll_input.Bind(wx.EVT_TEXT_ENTER, pc.on_board_roll_input)
+        self.controls_side_panel.spin_tilt_slider.Bind(wx.EVT_SLIDER, pc.on_spin_tilt_change)
+        self.controls_side_panel.spin_tilt_input.Bind(wx.EVT_TEXT_ENTER, pc.on_spin_tilt_input)
+        self.controls_side_panel.spin_heading_slider.Bind(wx.EVT_SLIDER, pc.on_spin_heading_change)
+        self.controls_side_panel.spin_heading_input.Bind(wx.EVT_TEXT_ENTER, pc.on_spin_heading_input)
+        # Period
+        self.controls_side_panel.period_slider.Bind(wx.EVT_SLIDER, pc.on_period_change)
+        self.controls_side_panel.period_input.Bind(wx.EVT_TEXT_ENTER, pc.on_period_input_change)
+        # Direction
+        self.controls_side_panel.dir_toggle.Bind(wx.EVT_TOGGLEBUTTON, pc.on_direction_change)
+        # Lighting
+        self.controls_side_panel.light_toggle.Bind(wx.EVT_TOGGLEBUTTON, pc.on_lighting_change)
+        # Output format
+        self.controls_side_panel.format_choice.Bind(wx.EVT_CHOICE, pc.on_format_change)
+        # Resolution
+        self.controls_side_panel.res_choice.Bind(wx.EVT_CHOICE, pc.on_resolution_change)
+        # Background color
+        if self.controls_side_panel.bg_picker:
+            self.controls_side_panel.bg_picker.Bind(wx.EVT_COLOURPICKER_CHANGED, lambda e: pc.on_bg_color_change(e.GetColour().GetAsString(wx.C2S_HTML_SYNTAX)))
 
     def _init_preset_controller(self):
         """Collect control references and instantiate PresetController."""
@@ -257,111 +331,14 @@ class SpinRenderPanel(wx.Panel):
         # Only close if the control we clicked is actually enabled
         obj = event.GetEventObject()
         if obj and obj.IsEnabled():
-            self.reset_status_bar()
+            self.status_bar.reset()
         event.Skip()
-
-    def _on_render_preview_paint(self, _event):
-        """Paint handler for render preview overlay using GraphicsContext for high-DPI sharpness"""
-        dc = wx.AutoBufferedPaintDC(self.preview.render_preview_panel)
-        gc = wx.GraphicsContext.Create(dc)
-        if not gc: return
-
-        w, h = self.preview.render_preview_panel.GetSize()
-        
-        # 1. Get current background color
-        bg_hex = self.settings.bg_color
-        if bg_hex == 'opaque': bg_hex = '#000000'
-        bg_color = wx.Colour(bg_hex)
-        
-        # 2. Fill background with selected color
-        gc.SetBrush(wx.Brush(bg_color))
-        gc.SetPen(wx.TRANSPARENT_PEN)
-        gc.DrawRectangle(0, 0, w, h)
-
-        if self.render_preview_bitmap and self.render_preview_bitmap.IsOk():
-            bmp_width = self.render_preview_bitmap.GetWidth()
-            bmp_height = self.render_preview_bitmap.GetHeight()
-            if w <= 0 or h <= 0 or bmp_width <= 0 or bmp_height <= 0: return
-            panel_aspect = w / h
-            bmp_aspect = bmp_width / bmp_height
-            if bmp_aspect > panel_aspect:
-                display_width = w
-                display_height = w / bmp_aspect
-                x_offset = 0
-                y_offset = (h - display_height) / 2
-            else:
-                display_height = h
-                display_width = h * bmp_aspect
-                x_offset = (w - display_width) / 2
-                y_offset = 0
-            
-            # Note: We already filled the whole panel with bg_color, 
-            # but we could also specifically fill just the bitmap rect if needed.
-            
-            gc.SetInterpolationQuality(wx.INTERPOLATION_BEST)
-            gc.DrawBitmap(self.render_preview_bitmap, x_offset, y_offset, display_width, display_height)
-            
-            # Draw faint gray outline around the render
-            gc.SetBrush(wx.TRANSPARENT_BRUSH)
-            gc.SetPen(wx.Pen(theme.WHITE_ALPHA_30, 1))
-            gc.DrawRectangle(x_offset, y_offset, display_width, display_height)
-        else:
-            # Draw empty outline matching resolution if no bitmap yet
-            # Calculate Display Dimensions based on current settings resolution
-            try:
-                parts = self.settings.resolution.split('x')
-                bw, bh = map(int, parts)
-                panel_aspect = w / h
-                bmp_aspect = bw / bh
-                if bmp_aspect > panel_aspect:
-                    dw, dh = w, w / bmp_aspect
-                    ox, oy = 0, (h - dh) / 2
-                else:
-                    dh, dw = h, h * bmp_aspect
-                    ox, oy = (w - dw) / 2, 0
-                
-                gc.SetBrush(wx.TRANSPARENT_BRUSH)
-                gc.SetPen(wx.Pen(theme.WHITE_ALPHA_30, 1))
-                gc.DrawRectangle(ox, oy, dw, dh)
-            except: pass
-
-    def create_status_bar(self, parent):
-        panel = wx.Panel(parent, size=(-1, 25))
-        panel.SetBackgroundColour(theme.BG_PANEL)
-        panel.SetMinSize((-1, 25))
-        panel.SetMaxSize((-1, 25))
-        panel.SetBackgroundStyle(wx.BG_STYLE_PAINT)
-        panel.Bind(wx.EVT_PAINT, self.on_paint_status)
-        return panel
-
-    def on_paint_status(self, event):
-        win = event.GetEventObject()
-        dc = wx.AutoBufferedPaintDC(win)
-        gc = wx.GraphicsContext.Create(dc)
-        if not gc: return
-        w, h = win.GetSize()
-        gc.SetBrush(wx.Brush(theme.BG_PANEL))
-        gc.SetPen(wx.TRANSPARENT_PEN)
-        gc.DrawRectangle(0, 0, w, h)
-        font = TextStyle(family=theme.FONT_MONO, size=8, weight=400).create_font()
-        gc.SetFont(font, self.status_fg)
-        tw, th = gc.GetTextExtent(self.status_msg)
-        tx, ty = 10, (h - th) / 2
-        gc.DrawText(self.status_msg, tx, ty)
-        fill_w = int(w * self.status_prog)
-        if fill_w > 0:
-            gc.SetBrush(wx.Brush(self.status_bar_color))
-            gc.DrawRectangle(0, 0, fill_w, h)
-            gc.Clip(0, 0, fill_w, h)
-            gc.SetFont(font, theme.BG_INPUT)
-            gc.DrawText(self.status_msg, tx, ty)
-            gc.ResetClip()
 
     def reset_status_bar(self):
         """Resets the status bar to ready state if not currently rendering."""
         if self.render_controller.is_rendering():
             return
-        
+
         # Any adjustment closes render preview
         if self.render_preview_active:
             self.render_preview_active = False
@@ -370,31 +347,8 @@ class SpinRenderPanel(wx.Panel):
                 self.preview.render_preview_panel.Hide()
             self.preview.update_preview_overlay()
 
-        if self.status_msg == "READY" and self.status_prog == 0.0: return
-        self.status_msg = "READY"
-        self.status_fg = theme.ACCENT_GREEN
-        self.status_prog = 0.0
-        self.status_bar_color = theme.ACCENT_CYAN
-        if hasattr(self, 'status_bar_panel'):
-            self.status_bar_panel.Refresh()
+        self.status_bar.reset()
 
-    def create_section_label(self, parent, text):
-        panel = wx.Panel(parent)
-        sizer = wx.BoxSizer(wx.HORIZONTAL)
-        label = wx.StaticText(panel, label=text)
-        label.SetForegroundColour(theme.ACCENT_CYAN)
-        label.SetFont(TextStyle(family=theme.FONT_DISPLAY, size=13, weight=600).create_font())
-        sizer.Add(label, 0, wx.ALIGN_CENTER_VERTICAL)
-        line = wx.Panel(panel, size=(60, 1))
-        line.SetBackgroundColour(theme.BORDER_DEFAULT)
-        sizer.Add(line, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 8)
-        panel.SetSizerAndFit(sizer)
-        return panel
-
-    def create_numeric_input(self, parent, value, unit, editable=True, min_val=None, max_val=None):
-        v = float(value) if isinstance(value, str) else value
-        if editable: return NumericInput(parent, value=v, unit=unit, min_val=min_val, max_val=max_val, size=(100, 32))
-        else: return NumericDisplay(parent, value=v, unit=unit, size=(100, 32))
 
     def on_preset_change(self, preset_id):
         """Delegates to PresetController."""
@@ -403,95 +357,6 @@ class SpinRenderPanel(wx.Panel):
         self.reset_status_bar()
         self.preset_controller.on_preset_change(preset_id)
 
-    def on_board_tilt_change(self, event):
-        self.reset_status_bar()
-        self.settings.board_tilt = float(self.controls_side_panel.board_tilt_slider.GetValue())
-        self.controls_side_panel.board_tilt_input.SetValue(self.settings.board_tilt)
-        self._update_viewport_rotation()
-        self.check_preset_match(manual_change=True)
-
-    def on_board_tilt_input(self, event):
-        self.reset_status_bar()
-        self.settings.board_tilt = float(self.controls_side_panel.board_tilt_input.GetValue())
-        self.controls_side_panel.board_tilt_slider.SetValue(self.settings.board_tilt)
-        self._update_viewport_rotation()
-        self.check_preset_match(manual_change=True)
-
-    def on_board_roll_change(self, event):
-        self.reset_status_bar()
-        self.settings.board_roll = float(self.controls_side_panel.board_roll_slider.GetValue())
-        self.controls_side_panel.board_roll_input.SetValue(self.settings.board_roll)
-        self._update_viewport_rotation()
-        self.check_preset_match(manual_change=True)
-
-    def on_board_roll_input(self, event):
-        self.reset_status_bar()
-        self.settings.board_roll = float(self.controls_side_panel.board_roll_input.GetValue())
-        self.controls_side_panel.board_roll_slider.SetValue(self.settings.board_roll)
-        self._update_viewport_rotation()
-        self.check_preset_match(manual_change=True)
-
-    def on_spin_tilt_change(self, event):
-        self.reset_status_bar()
-        self.settings.spin_tilt = float(self.controls_side_panel.spin_tilt_slider.GetValue())
-        self.controls_side_panel.spin_tilt_input.SetValue(self.settings.spin_tilt)
-        self._update_viewport_rotation()
-        self.check_preset_match(manual_change=True)
-
-    def on_spin_tilt_input(self, event):
-        self.reset_status_bar()
-        self.settings.spin_tilt = float(self.controls_side_panel.spin_tilt_input.GetValue())
-        self.controls_side_panel.spin_tilt_slider.SetValue(self.settings.spin_tilt)
-        self._update_viewport_rotation()
-        self.check_preset_match(manual_change=True)
-
-    def on_spin_heading_change(self, event):
-        self.reset_status_bar()
-        self.settings.spin_heading = float(self.controls_side_panel.spin_heading_slider.GetValue())
-        self.controls_side_panel.spin_heading_input.SetValue(self.settings.spin_heading)
-        self._update_viewport_rotation()
-        self.check_preset_match(manual_change=True)
-
-    def on_spin_heading_input(self, event):
-        self.reset_status_bar()
-        self.settings.spin_heading = float(self.controls_side_panel.spin_heading_input.GetValue())
-        self.controls_side_panel.spin_heading_slider.SetValue(self.settings.spin_heading)
-        self._update_viewport_rotation()
-        self.check_preset_match(manual_change=True)
-    
-    def _update_viewport_rotation(self):
-        if hasattr(self.preview, 'viewport'):
-            self.preview.viewport.set_universal_joint_parameters(self.settings.board_tilt, self.settings.board_roll, self.settings.spin_tilt, self.settings.spin_heading)
-        self.preview.update_preview_overlay()
-
-    def on_period_change(self, event):
-        self.reset_status_bar()
-        self.settings.period = round(float(self.controls_side_panel.period_slider.GetValue()), 1)
-        self.controls_side_panel.period_input.SetValue(self.settings.period)
-        self.controls_side_panel.frame_count.SetLabel(f"{int(self.settings.period * 30)} f")
-        if hasattr(self.preview, 'viewport'):
-            self.preview.viewport.set_period(self.settings.period)
-        self.preview.update_preview_overlay()
-        self.check_preset_match(manual_change=True)
-
-    def on_period_input_change(self, event):
-        self.reset_status_bar()
-        v = round(float(self.controls_side_panel.period_input.GetValue()), 1)
-        self.settings.period = v
-        self.controls_side_panel.period_slider.SetValue(v)
-        self.controls_side_panel.frame_count.SetLabel(f"{int(v * 30)} f")
-        if hasattr(self.preview, 'viewport'):
-            self.preview.viewport.set_period(v)
-        self.preview.update_preview_overlay()
-        self.check_preset_match(manual_change=True)
-        
-    def on_direction_change(self, event):
-        self.reset_status_bar()
-        self.settings.direction = 'cw' if self.controls_side_panel.dir_toggle.GetSelection() == 1 else 'ccw'
-        if hasattr(self.preview, 'viewport'):
-            self.preview.viewport.set_direction(self.settings.direction)
-        self.preview.update_preview_overlay()
-        self.check_preset_match(manual_change=True)
 
     def on_render_mode_change(self, mode_id):
         """Handle clicks on the WIREFRAME | SHADED | BOTH toggle"""
@@ -511,43 +376,6 @@ class SpinRenderPanel(wx.Panel):
                 btn.SetForegroundColour(theme.GREY_100)
             btn.Refresh()
         
-    def on_lighting_change(self, event):
-        self.reset_status_bar()
-        preset_id = self.controls_side_panel.light_options[self.controls_side_panel.light_toggle.GetSelection()]['id']
-        self.settings.lighting = preset_id
-        if hasattr(self.preview, 'viewport'):
-            self.preview.viewport.set_lighting(preset_id)
-        self.preview.update_preview_overlay()
-        self.check_preset_match(manual_change=True)        
-
-    def on_format_change(self, event):
-        self.reset_status_bar()
-        self.settings.format = self.controls_side_panel.format_ids[self.controls_side_panel.format_choice.GetSelection()]
-        self.preview.update_preview_overlay()
-        self.save_settings()
-
-    def on_resolution_change(self, event):
-        self.reset_status_bar()
-        res = self.controls_side_panel.res_ids[self.controls_side_panel.res_choice.GetSelection()]
-        self.settings.resolution = res
-        
-        # Update viewport aspect ratio for WYSIWYG
-        try:
-            w, h = map(int, res.split('x'))
-            if hasattr(self.preview, 'viewport'):
-                self.preview.viewport.set_aspect_ratio(w, h)
-        except: pass
-            
-        self.preview.update_preview_overlay()
-        self.save_settings()
-
-    def on_bg_color_change(self, color_hex):
-        self.reset_status_bar()
-        self.settings.bg_color = color_hex
-        if hasattr(self.preview, 'viewport'):
-            self.preview.viewport.set_background_color(color_hex)
-        self.preview.update_preview_overlay()
-        self.save_settings()
 
     def on_advanced_options(self, event):
         self.reset_status_bar()
@@ -584,9 +412,7 @@ class SpinRenderPanel(wx.Panel):
         # Check if already rendering via controller
         if self.render_controller.is_rendering():
             self.render_controller.cancel()
-            self.status_msg = "STOPPING RENDER..."
-            self.status_fg = theme.ACCENT_ORANGE
-            self.status_bar_panel.Refresh()
+            self.status_bar.set_status("STOPPING RENDER...", fg_color=theme.ACCENT_ORANGE)
             return
 
         # Prepare UI for rendering
@@ -609,10 +435,7 @@ class SpinRenderPanel(wx.Panel):
         self.controls_side_panel.Layout()
         self.Layout()
 
-        self.status_msg = "PREPARING RENDER..."
-        self.status_fg = theme.ACCENT_CYAN
-        self.status_prog = 0.0
-        self.status_bar_panel.Refresh()
+        self.status_bar.set_status("PREPARING RENDER...", fg_color=theme.ACCENT_CYAN, progress=0.0)
 
         # Start render state
         self.stop_playback()
@@ -657,19 +480,18 @@ class SpinRenderPanel(wx.Panel):
 
     def _update_progress_ui(self, current, total, message, frame_path=None):
         if not self: return
-        self.status_msg = message
-        self.status_prog = current / total if total > 0 else 0.0
-        self.status_bar_panel.Refresh()
-        
+        progress = current / total if total > 0 else 0.0
+        self.status_bar.set_status(message, progress=progress)
+
         # Update overlay frame info
         self.current_render_frame = current
         self.total_render_frames = total
         self.render_preview_active = True
         self.preview.update_preview_overlay()
-        
+
         if frame_path and hasattr(self, 'render_preview_panel'):
             try:
-                if not os.path.exists(frame_path): 
+                if not os.path.exists(frame_path):
                     return
                 img = wx.Image(frame_path, wx.BITMAP_TYPE_ANY)
                 if img.IsOk():
@@ -717,13 +539,11 @@ class SpinRenderPanel(wx.Panel):
             # Only hide if no frames were actually rendered
             if not self.render_preview_bitmap:
                 self.render_preview_active = False
-                if hasattr(self, 'render_preview_panel'): 
+                if hasattr(self, 'render_preview_panel'):
                     self.preview.render_preview_panel.Hide()
-            
+
             self.final_output_type = None
-            self.status_msg = f"ERROR: {error.upper()}"
-            self.status_fg = theme.ACCENT_ORANGE
-            self.status_bar_color = theme.ACCENT_ORANGE
+            self.status_bar.set_error(f"ERROR: {error.upper()}")
             wx.MessageBox(error, "Render Error", wx.OK | wx.ICON_ERROR)
         elif result:
             # Handle new dict return format or legacy string format
@@ -738,16 +558,14 @@ class SpinRenderPanel(wx.Panel):
                 frame_dir = None
                 frame_count = 0
 
-            self.status_msg = "RENDER COMPLETE"
-            self.status_fg = theme.ACCENT_GREEN
-            self.status_bar_color = theme.ACCENT_GREEN
-            self.status_prog = 1.0
-            
+            self.status_bar.set_complete()
+            self.status_bar.set_status("RENDER COMPLETE", progress=1.0)
+
             # Start looping playback of the rendered result
             self.render_preview_active = True
             self.current_render_frame = None
             self.final_output_type = self.settings.format
-            
+
             if hasattr(self, 'render_preview_panel'):
                 if hasattr(self.preview, 'viewport'):
                     v_size = self.preview.viewport.GetSize()
@@ -758,17 +576,17 @@ class SpinRenderPanel(wx.Panel):
 
             if frame_dir and frame_count:
                 self.start_playback(frame_dir, frame_count)
-            
+
             try:
                 folder = os.path.dirname(output_path)
                 if os.path.isdir(folder):
-                    if wx.Platform == '__WXMSW__': 
+                    if wx.Platform == '__WXMSW__':
                         os.startfile(folder)
-                    elif wx.Platform == '__WXMAC__': 
+                    elif wx.Platform == '__WXMAC__':
                         subprocess.call(['open', folder])
-                    else: 
+                    else:
                         subprocess.call(['xdg-open', folder])
-            except Exception: 
+            except Exception:
                 pass
         else:
             # Stopped manually - keep preview active if we have frames
@@ -780,14 +598,12 @@ class SpinRenderPanel(wx.Panel):
                 self.render_preview_active = False
                 if hasattr(self, 'render_preview_panel'):
                     self.preview.render_preview_panel.Hide()
-                
+
             self.final_output_type = None
-            self.status_msg = "RENDER STOPPED"
-            self.status_fg = theme.ACCENT_ORANGE
-            self.status_prog = 0.0
-            
+            self.status_bar.set_status("RENDER STOPPED", fg_color=theme.ACCENT_ORANGE, progress=0.0)
+
         self.preview.update_preview_overlay()
-        self.status_bar_panel.Refresh()
+        self.status_bar.Refresh()
 
     def on_drag_start(self, event): 
         w = event.GetEventObject(); self.drag_start_pos = w.ClientToScreen(event.GetPosition())
@@ -807,4 +623,5 @@ class SpinRenderPanel(wx.Panel):
         widget.Bind(wx.EVT_MOTION, self.on_drag_motion)
         widget.Bind(wx.EVT_LEFT_UP, self.on_drag_end)
     def cleanup(self):
-        if hasattr(self, 'viewport') and self.preview.viewport: self.preview.viewport.cleanup()
+        if hasattr(self.preview, 'viewport') and self.preview.viewport:
+            self.preview.viewport.cleanup()
