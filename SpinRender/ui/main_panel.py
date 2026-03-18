@@ -78,7 +78,6 @@ class SpinRenderPanel(wx.Panel):
         self.render_controller = RenderController()
         self.avg_frame_time = None
         self.frame_times = []
-        self.render_preview_active = False
 
         self.build_ui()
 
@@ -315,10 +314,10 @@ class SpinRenderPanel(wx.Panel):
             return
 
         # Any adjustment closes render preview
-        if self.render_preview_active:
-            self.render_preview_active = False
-            self.final_output_type = None
-            if hasattr(self, 'render_preview_panel'):
+        if self.preview.render_preview_active:
+            self.preview.render_preview_active = False
+            self.preview.final_output_type = None
+            if hasattr(self.preview, 'render_preview_panel'):
                 self.preview.render_preview_panel.Hide()
             self.preview.update_preview_overlay()
 
@@ -434,12 +433,12 @@ class SpinRenderPanel(wx.Panel):
         self.preview.last_frame_dir = None
 
         # IMMEDIATELY ACTIVATE RENDER PREVIEW (hides wireframe)
-        self.render_preview_active = True
-        self.render_preview_bitmap = None  # Clear old frame
-        self.preview_manually_closed = False
-        self.current_render_frame = 0
-        self.total_render_frames = 0
-        self.final_output_type = None
+        self.preview.render_preview_active = True
+        self.preview.render_preview_bitmap = None  # Clear old frame
+        self.preview.preview_manually_closed = False
+        self.preview.current_render_frame = 0
+        self.preview.total_render_frames = 0
+        self.preview.final_output_type = None
 
         if hasattr(self, 'render_preview_panel'):
             # Force size/pos sync before showing
@@ -469,19 +468,19 @@ class SpinRenderPanel(wx.Panel):
         self.status_bar.set_status(message, progress=progress)
 
         # Update overlay frame info
-        self.current_render_frame = current
-        self.total_render_frames = total
-        self.render_preview_active = True
+        self.preview.current_render_frame = current
+        self.preview.total_render_frames = total
+        self.preview.render_preview_active = True
         self.preview.update_preview_overlay()
 
-        if frame_path and hasattr(self, 'render_preview_panel'):
+        if frame_path and hasattr(self.preview, 'render_preview_panel'):
             try:
                 if not os.path.exists(frame_path):
                     return
                 img = wx.Image(frame_path, wx.BITMAP_TYPE_ANY)
                 if img.IsOk():
-                    self.render_preview_bitmap = wx.Bitmap(img)
-                    if not self.preview_manually_closed:
+                    self.preview.render_preview_bitmap = wx.Bitmap(img)
+                    if not self.preview.preview_manually_closed:
                         # Position overlay to cover viewport exactly
                         if hasattr(self.preview, 'viewport'):
                             v_size = self.preview.viewport.GetSize()
@@ -522,12 +521,12 @@ class SpinRenderPanel(wx.Panel):
         
         if error:
             # Only hide if no frames were actually rendered
-            if not self.render_preview_bitmap:
-                self.render_preview_active = False
-                if hasattr(self, 'render_preview_panel'):
+            if not self.preview.render_preview_bitmap:
+                self.preview.render_preview_active = False
+                if hasattr(self.preview, 'render_preview_panel'):
                     self.preview.render_preview_panel.Hide()
 
-            self.final_output_type = None
+            self.preview.final_output_type = None
             self.status_bar.set_error(f"ERROR: {error.upper()}")
             wx.MessageBox(error, "Render Error", wx.OK | wx.ICON_ERROR)
         elif result:
@@ -547,11 +546,11 @@ class SpinRenderPanel(wx.Panel):
             self.status_bar.set_status("RENDER COMPLETE", progress=1.0)
 
             # Start looping playback of the rendered result
-            self.render_preview_active = True
-            self.current_render_frame = None
-            self.final_output_type = self.settings.format
+            self.preview.render_preview_active = True
+            self.preview.current_render_frame = None
+            self.preview.final_output_type = self.settings.format
 
-            if hasattr(self, 'render_preview_panel'):
+            if hasattr(self.preview, 'render_preview_panel'):
                 if hasattr(self.preview, 'viewport'):
                     v_size = self.preview.viewport.GetSize()
                     self.preview.render_preview_panel.SetSize(v_size)
@@ -560,7 +559,7 @@ class SpinRenderPanel(wx.Panel):
                 self.preview.render_preview_panel.Refresh()
 
             if frame_dir and frame_count:
-                self.start_playback(frame_dir, frame_count)
+                self.preview.start_playback(frame_dir, frame_count)
 
             try:
                 folder = os.path.dirname(output_path)
@@ -575,16 +574,16 @@ class SpinRenderPanel(wx.Panel):
                 pass
         else:
             # Stopped manually - keep preview active if we have frames
-            if self.render_preview_bitmap:
-                self.render_preview_active = True
-                if hasattr(self, 'render_preview_panel'):
+            if self.preview.render_preview_bitmap:
+                self.preview.render_preview_active = True
+                if hasattr(self.preview, 'render_preview_panel'):
                     self.preview.render_preview_panel.Show()
             else:
-                self.render_preview_active = False
-                if hasattr(self, 'render_preview_panel'):
+                self.preview.render_preview_active = False
+                if hasattr(self.preview, 'render_preview_panel'):
                     self.preview.render_preview_panel.Hide()
 
-            self.final_output_type = None
+            self.preview.final_output_type = None
             self.status_bar.set_status("RENDER STOPPED", fg_color=theme.ACCENT_ORANGE, progress=0.0)
 
         self.preview.update_preview_overlay()

@@ -68,7 +68,9 @@ class RenderController:
 
         def run_render():
             try:
-                self._engine = RenderEngine(board_path, settings, progress_callback=self._on_internal_progress)
+                # Convert RenderSettings to dict for RenderEngine compatibility
+                settings_dict = settings.to_dict() if hasattr(settings, 'to_dict') else dict(settings)
+                self._engine = RenderEngine(board_path, settings_dict, progress_callback=self._on_internal_progress)
                 result = self._engine.render()
                 if self._cancel_flag:
                     # Render was cancelled - treat as stopped, not error
