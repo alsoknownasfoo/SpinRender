@@ -27,3 +27,7 @@ SpinRender/logs/
 # Project-specific
 TODO.md
 .orchestration/
+
+# Theme validator generated files
+tests/theme_token_inventory.json
+*.baseline.json
