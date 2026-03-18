@@ -329,7 +329,7 @@ components:
       hover:        ["colors.state.hover-overlay"]
 
     ghost:
-      bg:           ["palette.transparent"]
+      bg:           ["palette.transparent", "red"]
       text:         ["colors.text.primary"]
       hover:        ["colors.state.ghost-overlay"]
       border:       ["palette.transparent"]
