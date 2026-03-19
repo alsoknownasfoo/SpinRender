@@ -131,10 +131,10 @@ def apply_disabled_state(widget: wx.Window, is_enabled: bool) -> None:
         widget.SetBackgroundColour(disabled_color)
 
 
-def create_section_label(parent, text):
+def create_section_label(parent, text, id="default"):
     """Create a section label with divider line."""
     from .custom_controls import SectionLabel
-    return SectionLabel(parent, label=text)
+    return SectionLabel(parent, label=text, id=id)
 
 
 def create_numeric_input(parent, value, unit, editable=True, min_val=None, max_val=None):

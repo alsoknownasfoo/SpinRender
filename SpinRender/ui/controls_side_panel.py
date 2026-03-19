@@ -215,32 +215,30 @@ class ControlsSidePanel(wx.Panel):
         label.SetFont(_theme.font("subheader"))
         sizer.Add(label, 0, wx.BOTTOM, 6)
 
-        cols = [_theme.color("colors.red"), _theme.color("colors.orange"), _theme.color("colors.cyan"), _theme.color("colors.purple")]
-
-        # V2: Fetch icon_ref from locale for each axis
+        # V2: Fetch icon_ref from locale for each axis. Colors are now ID-driven.
         row1 = self.create_axis_control(
-            panel, "BOARD TILT", self.settings.board_tilt, cols[0], 
+            panel, "BOARD TILT", self.settings.board_tilt, 
             _locale.get("parameters.board_tilt.icon_ref", "axis-x"),
             -90, 90, locale_key="parameters.board_tilt.label", id="primary"
         )
         sizer.Add(row1, 0, wx.EXPAND | wx.BOTTOM, 4)
         
         row2 = self.create_axis_control(
-            panel, "BOARD ROLL", self.settings.board_roll, cols[1], 
+            panel, "BOARD ROLL", self.settings.board_roll, 
             _locale.get("parameters.board_roll.icon_ref", "axis-y"),
             -180, 180, locale_key="parameters.board_roll.label", id="secondary"
         )
         sizer.Add(row2, 0, wx.EXPAND | wx.BOTTOM, 4)
         
         row3 = self.create_axis_control(
-            panel, "SPIN TILT", self.settings.spin_tilt, cols[2], 
+            panel, "SPIN TILT", self.settings.spin_tilt, 
             _locale.get("parameters.spin_tilt.icon_ref", "axis-y-rot"),
             -90, 90, locale_key="parameters.spin_tilt.label", id="tertiary"
         )
         sizer.Add(row3, 0, wx.EXPAND | wx.BOTTOM, 4)
         
         row4 = self.create_axis_control(
-            panel, "SPIN HEADING", self.settings.spin_heading, cols[3], 
+            panel, "SPIN HEADING", self.settings.spin_heading, 
             _locale.get("parameters.spin_heading.icon_ref", "axis-z-rot"),
             -180, 180, locale_key="parameters.spin_heading.label", id="quaternary"
         )
@@ -253,7 +251,7 @@ class ControlsSidePanel(wx.Panel):
         panel.SetSizerAndFit(sizer)
         return panel
 
-    def create_axis_control(self, parent, label_text, def_val, col, icon_name, min_val, max_val, locale_key=None, id="default"):
+    def create_axis_control(self, parent, label_text, def_val, icon_name, min_val, max_val, locale_key=None, id="default"):
         """Create a labeled slider + numeric input row."""
         row = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -261,20 +259,25 @@ class ControlsSidePanel(wx.Panel):
         lp_sizer = wx.BoxSizer(wx.HORIZONTAL)
         # icon_name is now a glyph name (e.g., 'axis-x-arrow'), call theme.glyph()
         icon_char = _theme.glyph(icon_name)
+        
+        # Get axis color from theme if it exists, otherwise default to primary
+        axis_token = f"components.slider.{id}.nub.color"
+        axis_col = _theme.color(axis_token) if _theme.has_token(axis_token) else _theme.color("colors.primary")
+
         if icon_char:
             icon_lbl = wx.StaticText(label_part, label=icon_char)
-            icon_lbl.SetForegroundColour(col)
+            icon_lbl.SetForegroundColour(axis_col)
             icon_lbl.SetFont(_theme.font("icon"))
             lp_sizer.Add(icon_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         resolved_label = _locale.get(locale_key, label_text) if locale_key else label_text
         lbl = wx.StaticText(label_part, label=f"{resolved_label}:")
-        lbl.SetForegroundColour(col)
+        lbl.SetForegroundColour(axis_col)
         lbl.SetFont(_theme.font("label"))
         lp_sizer.Add(lbl, 0, wx.ALIGN_CENTER_VERTICAL)
         label_part.SetSizer(lp_sizer)
         sizer.Add(label_part, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
 
-        slider = CustomSlider(row, value=def_val, min_val=min_val, max_val=max_val, size=(-1, 18), color=col, id=id)
+        slider = CustomSlider(row, value=def_val, min_val=min_val, max_val=max_val, size=(-1, 18), id=id)
         sizer.Add(slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
 
         inp = create_numeric_input(row, f"{def_val:.2f}", "°", editable=True, min_val=min_val, max_val=max_val)

@@ -437,10 +437,18 @@ components:
         border: "@borders.width.none"
         color: "@colors.primary"
       input: "@components.input.parameters"
-    primary: "@components.slider.default"
-    secondary: "@components.slider.default"
-    tertiary: "@components.slider.default"
-    quaternary: "@components.slider.default"
+    primary:
+      ref: "@components.slider.default"
+      nub: { color: "@colors.red" }
+    secondary:
+      ref: "@components.slider.default"
+      nub: { color: "@colors.orange" }
+    tertiary:
+      ref: "@components.slider.default"
+      nub: { color: "@colors.cyan" }
+    quaternary:
+      ref: "@components.slider.default"
+      nub: { color: "@colors.purple" }
 
   toggle:
     default:

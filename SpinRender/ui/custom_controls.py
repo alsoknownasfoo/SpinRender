@@ -62,7 +62,7 @@ class CustomSlider(wx.Panel):
     """
     Custom slider matching Component/Slider from Pencil design
     """
-    def __init__(self, parent, value=50, min_val=0, max_val=100, size=(240, 18), color=None, id=wx.ID_ANY):
+    def __init__(self, parent, value=50, min_val=0, max_val=100, size=(240, 18), id=wx.ID_ANY):
         if isinstance(id, str):
             self.style_id = id
             real_id = wx.ID_ANY
@@ -77,7 +77,6 @@ class CustomSlider(wx.Panel):
         self.min_val = min_val
         self.max_val = max_val
         self.dragging = False
-        self.color_override = color
         self._hovered = False
 
         # Standard mouse bindings for hover/click interactions
@@ -130,8 +129,8 @@ class CustomSlider(wx.Panel):
 
         # Fetch colors dynamically from component section
         track_color = _theme.color(f"{token}.track.color", self._hovered, False, enabled)
-        fill_color = self.color_override or _theme.color("colors.primary", self._hovered, False, enabled)
-        thumb_color = _theme.color(f"{token}.nub.color", self._hovered, False, enabled)
+        fill_color = _theme.color(f"{token}.nub.color", self._hovered, False, enabled)
+        thumb_color = fill_color
         
         gc.SetBrush(wx.Brush(track_color))
         gc.SetPen(wx.TRANSPARENT_PEN)
@@ -746,8 +745,9 @@ class SectionLabel(wx.Panel):
     """
     Section label matching Component/SectionLabel
     """
-    def __init__(self, parent, label="SECTION", size=(-1, 20)):
+    def __init__(self, parent, label="SECTION", size=(-1, 20), id="default"):
         super().__init__(parent, size=size)
+        self.style_id = id
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.label = label
         self.Bind(wx.EVT_PAINT, self.on_paint)
