@@ -184,17 +184,18 @@ class Theme:
             # If we are NOT at the leaf, and the current node is a reference,
             # we MUST resolve it now so we can traverse into it in the next loop.
             if i < len(parts) - 1:
-                while isinstance(node, dict) and "ref" in node:
-                    # Resolve ref, but we don't return! We continue traversal.
-                    node = self._resolve(node["ref"])
-                while isinstance(node, str) and node.startswith("@"):
-                    node = self._resolve(node)
+                while (isinstance(node, dict) and "ref" in node) or (isinstance(node, str) and str(node).startswith("@")):
+                    if isinstance(node, dict):
+                        node = self._resolve(node["ref"])
+                    else:
+                        node = self._resolve(node)
 
         # Final Leaf Resolution: follow ref if present
-        while isinstance(node, dict) and "ref" in node:
-            node = self._resolve(node["ref"])
-        if isinstance(node, str) and node.startswith("@"):
-            node = self._resolve(node)
+        while (isinstance(node, dict) and "ref" in node) or (isinstance(node, str) and str(node).startswith("@")):
+            if isinstance(node, dict):
+                node = self._resolve(node["ref"])
+            else:
+                node = self._resolve(node)
 
         return node
 
