@@ -106,7 +106,7 @@ class PreviewPanel(wx.Panel):
 
         # Close Preview button (hidden by default)
         self.ov_top_right = wx.StaticText(top_meta, label=_locale.get("component.button.close.label", "CLOSE PREVIEW"))
-        self.ov_top_right.SetForegroundColour(_theme.color("colors.accent.primary"))
+        self.ov_top_right.SetForegroundColour(_theme.color("colors.primary"))
         self.ov_top_right.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font())
         self.ov_top_right.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         self.ov_top_right.Hide()
@@ -151,10 +151,10 @@ class PreviewPanel(wx.Panel):
             lbl.SetForegroundColour(_theme.color("colors.white-68"))
             lbl.SetFont(label_font)
 
-        self.ov_bottom_right.SetForegroundColour(_theme.color("colors.accent.success"))
+        self.ov_bottom_right.SetForegroundColour(_theme.color("colors.ok"))
         self.ov_bottom_right.SetFont(label_font)
 
-        self.ov_top_right.SetForegroundColour(_theme.color("colors.accent.primary"))
+        self.ov_top_right.SetForegroundColour(_theme.color("colors.primary"))
         self.ov_top_right.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font())
 
         # Render mode buttons
@@ -477,7 +477,7 @@ class PreviewPanel(wx.Panel):
         """
         for mode_id, btn in self.render_mode_btns.items():
             if mode_id == active_mode:
-                btn.SetForegroundColour(_theme.color("colors.accent.primary"))
+                btn.SetForegroundColour(_theme.color("colors.primary"))
             else:
                 btn.SetForegroundColour(_theme.color("colors.gray-medium"))
             btn.Refresh()

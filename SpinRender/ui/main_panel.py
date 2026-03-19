@@ -387,7 +387,7 @@ class SpinRenderPanel(wx.Panel):
         if not hasattr(self, 'render_mode_btns'): return
         for mode_id, btn in self.preview.render_mode_btns.items():
             if mode_id == active_mode:
-                btn.SetForegroundColour(_theme.color("colors.accent.primary"))
+                btn.SetForegroundColour(_theme.color("colors.primary"))
             else:
                 btn.SetForegroundColour(_theme.GREY_100)
             btn.Refresh()
@@ -451,7 +451,7 @@ class SpinRenderPanel(wx.Panel):
         self.controls_side_panel.Layout()
         self.Layout()
 
-        self.status_bar.set_status("PREPARING RENDER...", fg_color=_theme.color("colors.accent.primary"), progress=0.0)
+        self.status_bar.set_status("PREPARING RENDER...", fg_color=_theme.color("colors.primary"), progress=0.0)
 
         # Start render state
         self.preview.stop_playback()
