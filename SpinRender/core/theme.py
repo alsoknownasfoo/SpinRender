@@ -107,42 +107,54 @@ class Theme:
         Resolve a dot-path token with robust Parent-Ref Recursive Lookup.
         
         Strategy:
-        1. Check direct path. If found, follow any leaf-level pointers.
-        2. If not found, probe parents for a 'ref' and continue lookup from base.
+        1. Start at data root.
+        2. Traverse keys. If a node is a pointer (@ or {ref:}), follow it 
+           to its target before continuing traversal.
+        3. If a key is missing, probe parents for a 'ref' and retry from base.
         """
         if visited is None: visited = set()
-        if path in visited: raise RecursionError(f"Circular reference detected at '{path}'")
-        visited.add(path)
-
         if not isinstance(path, str): return path
         if path.startswith("@"): path = path[1:]
         
+        if path in visited: raise RecursionError(f"Circular reference detected at '{path}'")
+        visited.add(path)
+
         # Fast path for literals
         if '.' not in path and path not in self._data:
             if path.startswith("#") or path.startswith("rgba(") or path.isalpha():
                 return path
 
-        # 1. Direct Lookup
-        curr = self._get_raw(path)
-        if curr is not None and curr != "#FF00FF":
-            # Follow terminal ref
-            while (isinstance(curr, dict) and "ref" in curr) or (isinstance(curr, str) and curr.startswith("@")):
-                ref_target = curr["ref"] if isinstance(curr, dict) else curr
-                curr = self._resolve(ref_target, visited)
-            return curr
+        parts = path.split(".")
+        node = self._data
+        
+        for i, key in enumerate(parts):
+            # 1. Follow any pointers at the current level BEFORE looking for key
+            while (isinstance(node, dict) and "ref" in node) or (isinstance(node, str) and node.startswith("@")):
+                ref_target = node["ref"] if isinstance(node, dict) else node
+                # follow pointer using COPY of visited to allow branching but prevent loops
+                node = self._resolve(ref_target, visited.copy())
 
-        # 2. Inherited Lookup
-        keys = path.split('.')
-        for i in range(len(keys) - 1, 0, -1):
-            parent_path = ".".join(keys[:i])
-            parent = self._get_raw(parent_path)
-            if isinstance(parent, dict) and "ref" in parent:
-                # Redirect to the base component
-                base_ref = parent["ref"]
-                remaining = ".".join(keys[i:])
-                return self._resolve(f"{base_ref}.{remaining}", visited)
+            # 2. Look for key in current node
+            if isinstance(node, dict) and key in node:
+                node = node[key]
+            else:
+                # 3. Inheritance: Climb parents of the ORIGINAL path to find a 'ref'
+                for j in range(i, 0, -1):
+                    parent_path = ".".join(parts[:j])
+                    parent = self._get_raw(parent_path)
+                    if isinstance(parent, dict) and "ref" in parent:
+                        base_ref = parent["ref"]
+                        remaining = ".".join(parts[j:])
+                        return self._resolve(f"{base_ref}.{remaining}", visited.copy())
+                
+                return "#FF00FF"
 
-        return "#FF00FF"
+        # 4. Final Leaf Follow (if result is a pointer)
+        while (isinstance(node, dict) and "ref" in node) or (isinstance(node, str) and node.startswith("@")):
+            ref_target = node["ref"] if isinstance(node, dict) else node
+            node = self._resolve(ref_target, visited.copy())
+
+        return node
 
     # --- COLOR ENGINE ---
 

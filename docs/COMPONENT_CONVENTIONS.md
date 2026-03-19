@@ -133,37 +133,51 @@ When adding a new button ID:
 
 ## Stateful Color Resolution
 
-SpinRender uses `Theme.color_states(token, states=3)` to resolve interactive colors. This function ensures that components always have feedback, even if the theme only defines a single base color.
+SpinRender uses a smart color engine that handles interaction states (hover, active, disabled) automatically. Components should use `_theme.color()` which centralizes state priority and fallback generation.
+
+### The Color API
+In `on_paint`, resolve properties using semantic flags. The engine applies priority: **Disabled > Pressed > Hovered > Normal**.
+
+```python
+# The clean, intent-focused way:
+bg = _theme.color("components.button.ok.frame.bg", self.hovered, self.pressed, self.IsEnabled())
+```
 
 ### Resolution Logic
 
-1.  **Explicit List**: If the token is a list, it uses the elements as `[normal, hover, active, disabled]`.
-    ```yaml
-    bg: ["@colors.gray-black", "@colors.gray-medium", "@colors.gray-dark", "@colors.gray-light"]
-    ```
-2.  **Explicit Dictionary**: If the token is a dict with `hover` or `active` keys, it maps them accordingly.
-    ```yaml
-    frame:
-      bg: "@colors.primary"
-      hover: "rgba(0, 188, 212, 0.8)"
-      active: "@colors.cyan-dark"
-    ```
-3.  **Sibling Lookup**: If you request `...frame.bg`, the system automatically checks for `...frame.hover` and `...frame.active` in the same parent node.
-4.  **Auto-Generation (The Fallback)**: If only one color is found, the system auto-generates the other states:
-    -   **Hover**: Base color shifted +10 RGB (brighter).
-    -   **Active/Pressed/Selected**: Base color shifted -10 RGB (darker).
-    -   **Disabled**: Alpha is shifted to 50%.
+1.  **Explicit List**: If the token is a list, it maps directly to `[normal, hover, active, disabled]`.
+2.  **Explicit Dictionary**: If the token is a dict with keys like `hover` or `active`, they are mapped accordingly.
+3.  **Sibling Probing**: If you request `...frame.bg`, the system automatically checks for `...frame.hover` and `...frame.active` in the same parent node or its inherited base.
+4.  **Data-Driven Auto-Generation**: If states are missing, the system generates them using the `colors.auto_states` deltas defined in the YAML:
+    -   **Hover**: Adds the `hover` delta (e.g., `rgb(10, 10, 10)`).
+    -   **Active**: Adds the `active` delta (usually darkening).
+    -   **Disabled**: Applies the `disabled` alpha multiplier (usually 50%).
 
-### Best Practice
-When migrating, use `_theme.color_states(token)` and store the resulting list. Then, in `on_paint`, select the color based on component state:
+---
 
-```python
-colors = _theme.color_states("components.button.ok.frame.bg")
-if self.disabled: bg = colors[3]
-elif self.active: bg = colors[2]
-elif self.hovered: bg = colors[1]
-else: bg = colors[0]
+## Theme Resolution Engine (Inheritance)
+
+The `_resolve` engine follows a **Recursive Parent-Ref** strategy. This ensures that the YAML remains DRY (Don't Repeat Yourself).
+
+### Mid-Path Pointers
+The engine transparently follows string pointers (`@references`) even when they appear in the middle of a path.
+*Example*: If `button.default.frame.border` points to `@borders.subtle`, requesting `button.default.frame.border.color` will correctly follow the pointer and resolve to `borders.subtle.color`.
+
+### Deep Inheritance
+If a key is missing in a specific override, the system automatically climbs the `ref` chain of the parent nodes.
+*Example*:
+```yaml
+button:
+  default:
+    frame: { bg: "@colors.black" }
+  ok:
+    ref: "@components.button.default"
+    # missing frame.bg!
 ```
+Requesting `components.button.ok.frame.bg` will see that `ok` has no `frame`, climb to the `ref` (`default`), and find the background there.
+
+### The Pink Guard
+Any resolution failure (missing token, circular reference, or parsing error) returns **Bright Pink (`#FF00FF`)**. If you see pink in the UI, it is a directive to update the YAML theme file.
 
 ---
 
