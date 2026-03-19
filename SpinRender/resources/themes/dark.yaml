@@ -192,11 +192,13 @@ text:
     font:
       typeface: "@typography.families.icon"
       size: "@typography.scale.md"
+      weight: 400
   icon_lg:
     color: "@colors.gray-white"
     font:
       typeface: "@typography.families.icon"
       size: "@typography.scale.lg"
+      weight: 400
 
 # ─────────────────────────────────────────────────────────────────
 # 6. GLYPHS (Symbol Aliases)
@@ -345,6 +347,7 @@ components:
       frame:
         width: 90
         height: 64
+        bg: "@colors.transparent"
         radius: "@radius.lg"
         padding:
           vertical: "@typography.spacing.sm"
