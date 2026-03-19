@@ -129,12 +129,13 @@ locale:
         icon_ref: "glyphs.alert"
       close:
         label: "CLOSE"
-        icon_ref: "glyphs.exit-action"
+        icon_ref: "glyphs.close"
       options:
         label: ""
         icon_ref: "glyphs.settings"
       save_preset:
         label: "+ PRESET"
+        icon_ref: "glyphs.plus"
       browse:
         label: "BROWSE"
         icon_ref: "glyphs.folder"
