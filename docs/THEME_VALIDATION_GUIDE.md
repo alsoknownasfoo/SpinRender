@@ -18,17 +18,36 @@ This is essential for maintaining a clean, consistent theme system as your appli
 
 ## 2. Installation
 
-The validator requires standard library modules plus PyYAML:
+### Required Dependencies
+
+The validator requires **PyYAML** to parse theme YAML files:
 
 ```bash
 pip install pyyaml
 ```
 
-For best results preserving YAML formatting and comments, also install ruamel.yaml:
+If you're using KiCad's bundled Python:
+
+```bash
+/path/to/kicad/python -m pip install pyyaml
+```
+
+### Optional Dependencies
+
+For best results preserving YAML formatting and comments during auto-fixes, also install ruamel.yaml:
 
 ```bash
 pip install ruamel.yaml
 ```
+
+### Alternative: Fallback Mode for Default Theme
+
+If PyYAML is **not installed**, the validator can still run using built-in fallback data — **but only for the default dark theme** (`SpinRender/resources/themes/dark.yaml`):
+
+- ✅ Validating the default theme → Works without PyYAML (uses embedded data)
+- ❌ Validating custom themes → Requires PyYAML (you'll see an error)
+
+The fallback mode is useful for quick checks in constrained environments (e.g., KiCad Python) where installing PyYAML is difficult.
 
 ---
 
@@ -41,6 +60,8 @@ python tools/validate_theme.py
 ```
 
 Scans `SpinRender/` source code and validates against `SpinRender/resources/themes/dark.yaml`.
+
+**Note**: This works even without PyYAML thanks to built-in fallback data. For custom themes, ensure `pyyaml` is installed.
 
 ### Custom paths
 
@@ -348,6 +369,22 @@ The scanner skips files with syntax errors. Fix Python syntax issues before vali
 The scanner only examines `.py` files. If tokens appear in CSS, JS, or config files, they won't be counted as "used". Either:
 - Add those references to code, or
 - Use `--purge-unused` selectively after manual review.
+
+### PyYAML not installed
+
+If you see a message "PyYAML is required", install the dependency:
+
+```bash
+pip install pyyaml
+```
+
+For KiCad Python users:
+
+```bash
+/path/to/kicad/python -m pip install pyyaml
+```
+
+The validator can work without PyYAML for the default dark theme using built-in fallback data. Custom themes always require PyYAML.
 
 ### YAML parsing errors
 
