@@ -137,13 +137,13 @@ def create_section_label(parent, text, id="default"):
     return SectionLabel(parent, label=text, id=id)
 
 
-def create_numeric_input(parent, value, unit, editable=True, min_val=None, max_val=None, id="slider"):
+def create_numeric_input(parent, value, unit, editable=True, min_val=None, max_val=None, id="slider", size=(100, 32)):
     """Create a numeric input or display widget using consolidated CustomInput."""
     from .custom_controls import CustomInput
     v = float(value) if isinstance(value, str) else value
     
     # Use provided style ID (defaulting to slider)
-    inp = CustomInput(parent, value=v, unit=unit, min_val=min_val, max_val=max_val, id=id)
+    inp = CustomInput(parent, value=v, unit=unit, min_val=min_val, max_val=max_val, id=id, size=size)
     if not editable:
         inp.Enable(False)
     return inp

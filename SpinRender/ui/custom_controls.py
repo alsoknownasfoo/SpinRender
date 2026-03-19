@@ -787,7 +787,11 @@ class CustomInput(wx.Panel):
             self.style_id = "default"
             real_id = id
 
-        super().__init__(parent, id=real_id, size=size)
+        # Enforce minimum width if size is default (-1, 32)
+        actual_size = list(size)
+        if actual_size[0] == -1: actual_size[0] = 100
+        
+        super().__init__(parent, id=real_id, size=tuple(actual_size))
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.SetCanFocus(True)
 
