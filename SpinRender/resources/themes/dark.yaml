@@ -197,6 +197,12 @@ text:
     font:
       typeface: "@typography.families.icon"
       size: "@typography.scale.lg"
+  xs:
+    color: "@colors.gray-text"
+    font:
+      typeface: "@typography.families.mono"
+      size: "@typography.scale.xs"
+      weight: 400
 
 # ─────────────────────────────────────────────────────────────────
 # 6. GLYPHS (Symbol Aliases)

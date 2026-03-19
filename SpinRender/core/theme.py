@@ -128,13 +128,11 @@ class Theme:
         node = self._data
         
         for i, key in enumerate(parts):
-            # 1. Follow any pointers at the current level BEFORE looking for key
-            while (isinstance(node, dict) and "ref" in node) or (isinstance(node, str) and node.startswith("@")):
-                ref_target = node["ref"] if isinstance(node, dict) else node
-                # follow pointer using COPY of visited to allow branching but prevent loops
-                node = self._resolve(ref_target, visited.copy())
+            # 1. Follow any string pointers (@refs) mid-path
+            while isinstance(node, str) and node.startswith("@"):
+                node = self._resolve(node[1:], visited.copy())
 
-            # 2. Look for key in current node
+            # 2. Look for key in current node (Dictionary lookup)
             if isinstance(node, dict) and key in node:
                 node = node[key]
             else:
