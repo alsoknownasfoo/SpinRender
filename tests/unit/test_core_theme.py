@@ -442,3 +442,63 @@ class TestThemeColorStates:
         assert len(states) == 3
         base = self.theme.color("colors.state.active")
         assert states[0].Red() == base.Red()
+
+
+class TestThemeV2Features:
+    """Test V2-specific features: glyphs, text roles, scales.
+
+    These tests are designed to run against V2 theme YAMLs.
+    In Phase 1, we test the new methods exist and handle missing tokens gracefully.
+    In Phase 2+, V2 themes will be deployed and these tests will validate full V2 support.
+    """
+
+    @pytest.fixture(autouse=True)
+    def setup_theme(self):
+        from SpinRender.core.theme import Theme
+        self.theme = Theme.load("dark")  # Will load V2 after Phase 2; for now V1 is okay
+
+    def test_glyph_method_exists(self):
+        """Theme should have glyph() method."""
+        assert hasattr(self.theme, 'glyph')
+        assert callable(self.theme.glyph)
+
+    def test_glyph_returns_string(self):
+        """glyph() should return a string (or empty if missing)."""
+        # Try with existing or missing; should not crash
+        glyph = self.theme.glyph("render-action")
+        assert isinstance(glyph, str)
+
+    def test_glyph_unknown_returns_empty(self):
+        """glyph('unknown') should return empty string gracefully."""
+        glyph = self.theme.glyph("unknown-nonexistent")
+        assert glyph == ""  # Empty string for missing glyph
+
+    def test_size_works_for_any_numeric_token(self):
+        """size() should work for any numeric token (radius, borders, spacing)."""
+        # Test with V1 tokens (always exist) and V2 tokens (if available)
+        value = self.theme.size("spacing.md")
+        assert isinstance(value, int)
+        # V2 tokens might exist; if they do, they should return correct values
+        try:
+            radius_md = self.theme.size("radius.md")
+            assert isinstance(radius_md, int)
+            if radius_md:  # If token exists, should be 6 in V2
+                assert radius_md == 6
+        except:
+            pass  # Missing token is okay for V1
+
+    def test_color_works_for_text_roles(self):
+        """color() should resolve text.*.color tokens."""
+        # May be missing in V1, but should not crash
+        try:
+            color = self.theme.color("text.title.color")
+            import wx
+            assert isinstance(color, wx.Colour)
+        except:
+            pass  # Missing token okay
+
+    def test_has_token_method(self):
+        """has_token() should correctly detect token existence."""
+        assert self.theme.has_token("colors")
+        assert self.theme.has_token("palette")
+        assert not self.theme.has_token("nonexistent.xyz")

@@ -12,11 +12,34 @@ import pytest
 class ColorMock:
     """Mock for wx.Colour that behaves like a simple data object."""
 
-    def __init__(self, r=0, g=0, b=0, a=255):
-        self._r = r
-        self._g = g
-        self._b = b
-        self._a = a
+    def __init__(self, *args, **kwargs):
+        # Support: ColorMock(r, g, b, a) OR ColorMock(hex_string) OR ColorMock(rgba_string)
+        if len(args) == 1 and isinstance(args[0], str):
+            val = args[0]
+            # Try to parse hex color string like "#RRGGBB" or "RRGGBB"
+            hex_str = val.lstrip('#')
+            if len(hex_str) in (6, 8) and all(c in '0123456789ABCDEFabcdef' for c in hex_str):
+                self._r = int(hex_str[0:2], 16)
+                self._g = int(hex_str[2:4], 16)
+                self._b = int(hex_str[4:6], 16)
+                self._a = int(hex_str[6:8], 16) if len(hex_str) == 8 else 255
+                return
+            # Try to parse rgba(r,g,b,a)
+            if val.startswith("rgba(") and val.endswith(")"):
+                parts = val[5:-1].split(',')
+                if len(parts) == 4:
+                    try:
+                        r, g, b = int(parts[0]), int(parts[1]), int(parts[2])
+                        a = max(0, min(255, int(round(float(parts[3]) * 255))))
+                        self._r, self._g, self._b, self._a = r, g, b, a
+                        return
+                    except (ValueError, IndexError):
+                        pass  # fall through to invalid
+        # Standard numeric construction
+        self._r = args[0] if args else kwargs.get('r', 0)
+        self._g = args[1] if len(args) > 1 else kwargs.get('g', 0)
+        self._b = args[2] if len(args) > 2 else kwargs.get('b', 0)
+        self._a = args[3] if len(args) > 3 else kwargs.get('a', 255)
 
     def Red(self):
         return self._r
@@ -29,6 +52,16 @@ class ColorMock:
 
     def Alpha(self):
         return self._a
+
+    def IsOk(self):
+        """Return True if color components are valid (0-255)."""
+        try:
+            # Check that all components are numbers and within 0-255
+            if not all(isinstance(v, (int, float)) for v in (self._r, self._g, self._b)):
+                return False
+            return 0 <= self._r <= 255 and 0 <= self._g <= 255 and 0 <= self._b <= 255
+        except TypeError:
+            return False
 
 
 class FontMock:
