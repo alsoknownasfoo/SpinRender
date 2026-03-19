@@ -63,6 +63,9 @@ class ColorMock:
         except TypeError:
             return False
 
+    def __repr__(self):
+        return f"ColorMock({self._r}, {self._g}, {self._b}, {self._a})"
+
 
 class FontMock:
     """Mock for wx.Font that returns configured faceName."""
@@ -86,10 +89,33 @@ class FontMock:
 class DummyWindow:
     """Simple window mock that accepts arbitrary kwargs like wx.Window."""
     def __init__(self, *args, **kwargs):
-        pass
+        self._size = (100, 100)  # default size
 
     def __getattr__(self, name):
         return MagicMock()
+
+    def GetSize(self):
+        """Return window size as (width, height) tuple."""
+        return self._size
+
+    def SetMinSize(self, size):
+        """Mock SetMinSize."""
+        pass
+
+    def SetSizerAndFit(self, sizer):
+        """Mock SetSizerAndFit."""
+        self.SetSizer(sizer)
+        # Optionally compute minimum size
+        min_size = sizer.CalcMin() if hasattr(sizer, 'CalcMin') else (100, 100)
+        self.SetMinSize(min_size)
+
+    def SetSizer(self, sizer):
+        """Mock SetSizer."""
+        self._sizer = sizer
+
+    def GetSizer(self):
+        """Mock GetSizer."""
+        return getattr(self, '_sizer', None)
 
 
 class Mockwx:

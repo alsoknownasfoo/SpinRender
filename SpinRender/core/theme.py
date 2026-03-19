@@ -274,7 +274,8 @@ class Theme:
         import wx
         import re
 
-        if isinstance(value, wx.Colour):
+        # Check if it's already a wx.Colour-like object (duck typing for test mocking)
+        if hasattr(value, 'Red') and hasattr(value, 'Green') and hasattr(value, 'Blue'):
             return value
 
         if not isinstance(value, str):
@@ -412,10 +413,21 @@ class Theme:
         return int(value)
 
     def font(self, preset: str) -> 'wx.Font':
-        """Resolve a font preset to a wx.Font."""
+        """Resolve a font preset to a wx.Font.
+
+        Supports V1 (typography.presets.{preset}) and V2 (text.{preset}.font) formats.
+        """
         logger.debug(f"Theme usage: resolve font preset '{preset}'")
         import wx
-        spec = self._resolve(f"typography.presets.{preset}")
+
+        # Try V2 format first: text.{preset}.font
+        v2_path = f"text.{preset}.font"
+        spec = self._resolve(v2_path)
+
+        # If resolution failed (pink hex), try V1 format
+        if isinstance(spec, str) and spec.startswith("#"):
+            logger.debug(f"V2 font path '{v2_path}' not found, trying V1 format")
+            spec = self._resolve(f"typography.presets.{preset}")
 
         if isinstance(spec, str) and spec.startswith("#"):
              # Failed resolution returned pink hex
@@ -423,22 +435,43 @@ class Theme:
              # Fallback to system font if resolution failed
              return wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
 
-        # Resolve family
-        family_spec = spec.get("family", "wx.FONTFAMILY_DEFAULT")
-        family = self._resolve(family_spec["ref"]) if isinstance(family_spec, dict) else family_spec
+        # Resolve family (V2 uses 'typeface', V1 uses 'family')
+        family_spec = spec.get("typeface") or spec.get("family", "wx.FONTFAMILY_DEFAULT")
+        if isinstance(family_spec, dict) and "ref" in family_spec:
+            family = self._resolve(family_spec["ref"])
+        elif isinstance(family_spec, str) and family_spec.startswith("@"):
+            family = self._resolve(family_spec[1:])  # strip '@'
+        else:
+            family = family_spec
 
         # Resolve size
         size_spec = spec.get("size", 11)
-        size = int(self._resolve(size_spec["ref"]) if isinstance(size_spec, dict) else size_spec)
+        if isinstance(size_spec, dict) and "ref" in size_spec:
+            size = int(self._resolve(size_spec["ref"]))
+        elif isinstance(size_spec, str) and size_spec.startswith("@"):
+            size = int(self._resolve(size_spec[1:]))
+        else:
+            size = int(size_spec) if not isinstance(size_spec, (int, float)) else int(size_spec)
 
         # Resolve weight
         weight_spec = spec.get("weight", 400)
-        weight = int(self._resolve(weight_spec["ref"]) if isinstance(weight_spec, dict) else weight_spec)
+        if isinstance(weight_spec, dict) and "ref" in weight_spec:
+            weight = int(self._resolve(weight_spec["ref"]))
+        elif isinstance(weight_spec, str) and weight_spec.startswith("@"):
+            weight = int(self._resolve(weight_spec[1:]))
+        else:
+            weight = int(weight_spec) if not isinstance(weight_spec, (int, float)) else int(weight_spec)
 
         weight_map = {
+            100: wx.FONTWEIGHT_THIN,
+            200: wx.FONTWEIGHT_LIGHT,
+            300: wx.FONTWEIGHT_LIGHT,
             400: wx.FONTWEIGHT_NORMAL,
+            500: wx.FONTWEIGHT_NORMAL,
             600: wx.FONTWEIGHT_SEMIBOLD,
             700: wx.FONTWEIGHT_BOLD,
+            800: wx.FONTWEIGHT_BOLD,
+            900: wx.FONTWEIGHT_BOLD,
         }
         wx_weight = weight_map.get(weight, wx.FONTWEIGHT_NORMAL)
 

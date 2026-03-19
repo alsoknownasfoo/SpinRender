@@ -14,7 +14,9 @@ from .custom_controls import (
 )
 from .text_styles import TextStyle, TextStyles
 from SpinRender.core.theme import Theme
+from SpinRender.core.locale import Locale
 _theme = Theme.current()
+_locale = Locale.current()
 from .helpers import create_section_label, create_numeric_input
 
 
@@ -42,7 +44,7 @@ class ControlsSidePanel(wx.Panel):
     def create_controls_panel(self, parent):
         """Create the main scrolled controls container."""
         self.scrolled_panel = scrolled.ScrolledPanel(parent, size=(400, -1))
-        self.scrolled_panel.SetBackgroundColour(_theme.color("colors.bg.page"))
+        self.scrolled_panel.SetBackgroundColour(_theme.color("components.main.frame.bg"))
         self.scrolled_panel.SetupScrolling(scroll_x=False, scroll_y=True, rate_y=20)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -52,28 +54,28 @@ class ControlsSidePanel(wx.Panel):
         sizer.Add(self.header_panel, 0, wx.EXPAND)
 
         self.div1 = wx.Panel(self.scrolled_panel, size=(-1, 1))
-        self.div1.SetBackgroundColour(_theme.color("colors.border.default"))
+        self.div1.SetBackgroundColour(_theme.color("borders.default.color"))
         sizer.Add(self.div1, 0, wx.EXPAND)
 
         presets = self.create_preset_section(self.scrolled_panel)
         sizer.Add(presets, 0, wx.EXPAND | wx.ALL, padding)
 
         self.div2 = wx.Panel(self.scrolled_panel, size=(-1, 1))
-        self.div2.SetBackgroundColour(_theme.color("colors.border.default"))
+        self.div2.SetBackgroundColour(_theme.color("borders.default.color"))
         sizer.Add(self.div2, 0, wx.EXPAND)
 
         params = self.create_parameters_section(self.scrolled_panel)
         sizer.Add(params, 0, wx.EXPAND | wx.ALL, padding)
 
         self.div3 = wx.Panel(self.scrolled_panel, size=(-1, 1))
-        self.div3.SetBackgroundColour(_theme.color("colors.border.default"))
+        self.div3.SetBackgroundColour(_theme.color("borders.default.color"))
         sizer.Add(self.div3, 0, wx.EXPAND)
 
         output_settings = self.create_output_settings_section(self.scrolled_panel)
         sizer.Add(output_settings, 1, wx.EXPAND | wx.ALL, padding)
 
         self.div4 = wx.Panel(self.scrolled_panel, size=(-1, 1))
-        self.div4.SetBackgroundColour(_theme.color("colors.border.default"))
+        self.div4.SetBackgroundColour(_theme.color("borders.default.color"))
         sizer.Add(self.div4, 0, wx.EXPAND)
 
         export = self.create_export_section(self.scrolled_panel)
@@ -88,20 +90,20 @@ class ControlsSidePanel(wx.Panel):
     def create_header(self, parent):
         """Create the logo and title header."""
         header = wx.Panel(parent, size=(-1, 90))
-        header.SetBackgroundColour(_theme.color("colors.bg.panel"))
+        header.SetBackgroundColour(_theme.color("components.main.leftpanel.bg"))
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         logo = SVGLogoPanel(header, size=(58, 58))
         sizer.Add(logo, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 16)
 
         title_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.header_title = wx.StaticText(header, label="SPINRENDER")
-        self.header_title.SetForegroundColour(_theme.color("colors.text.primary"))
+        self.header_title = wx.StaticText(header, label=_locale.get("component.main.header.title", "SPINRENDER"))
+        self.header_title.SetForegroundColour(_theme.color("text.body.color"))
         self.header_title.SetFont(TextStyles.panel_title.create_font())
         title_sizer.Add(self.header_title, 0)
 
-        self.header_subtitle = wx.StaticText(header, label="0.9 alpha")
-        self.header_subtitle.SetForegroundColour(_theme.color("colors.accent.primary"))
+        self.header_subtitle = wx.StaticText(header, label=_locale.get("component.main.header.subtitle", "0.9 alpha"))
+        self.header_subtitle.SetForegroundColour(_theme.color("text.subtitle.color"))
         self.header_subtitle.SetFont(TextStyles.label_xs.create_font())
         title_sizer.Add(self.header_subtitle, 0)
         sizer.Add(title_sizer, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -136,26 +138,26 @@ class ControlsSidePanel(wx.Panel):
 
     def reapply_theme(self):
         """Re-apply theme to static container elements after hot-reload."""
-        self.SetBackgroundColour(_theme.color("components.panel.bg"))
+        self.SetBackgroundColour(_theme.color("components.main.frame.bg"))
         
         if hasattr(self, 'scrolled_panel'):
-            self.scrolled_panel.SetBackgroundColour(_theme.color("components.panel.bg"))
+            self.scrolled_panel.SetBackgroundColour(_theme.color("components.main.frame.bg"))
             
         if hasattr(self, 'header_panel'):
-            self.header_panel.SetBackgroundColour(_theme.color("components.panel.header-bg"))
+            self.header_panel.SetBackgroundColour(_theme.color("components.main.header.bg"))
             
         if hasattr(self, 'header_title'):
-            self.header_title.SetForegroundColour(_theme.color("colors.text.primary"))
+            self.header_title.SetForegroundColour(_theme.color("text.body.color"))
             self.header_title.SetFont(TextStyles.panel_title.create_font())
             
         if hasattr(self, 'header_subtitle'):
-            self.header_subtitle.SetForegroundColour(_theme.color("colors.accent.primary"))
+            self.header_subtitle.SetForegroundColour(_theme.color("text.subtitle.color"))
             self.header_subtitle.SetFont(TextStyles.label_xs.create_font())
             
         # Dividers
         for attr in ['div1', 'div2', 'div3', 'div4']:
             if hasattr(self, attr):
-                getattr(self, attr).SetBackgroundColour(_theme.color("components.panel.header-border"))
+                getattr(self, attr).SetBackgroundColour(_theme.color("components.main.divider.bg"))
                 
         # Close Button states update
         if hasattr(self, 'header_close_btn'):
@@ -186,17 +188,17 @@ class ControlsSidePanel(wx.Panel):
     def create_preset_section(self, parent):
         """Create the preset selection buttons."""
         panel = wx.Panel(parent)
-        panel.SetBackgroundColour(_theme.color("colors.bg.page"))
+        panel.SetBackgroundColour(_theme.color("components.main.frame.bg"))
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(create_section_label(panel, "LOOP PRESET"), 0, wx.EXPAND | wx.BOTTOM, 8)
+        sizer.Add(create_section_label(panel, _locale.get("sections.presets", "LOOP PRESET")), 0, wx.EXPAND | wx.BOTTOM, 8)
 
         preset_row = wx.Panel(panel)
         preset_sizer = wx.BoxSizer(wx.HORIZONTAL)
         presets_data = [
-            ("hero", "HERO", "mdi-rotate-cw"),
-            ("spin", "SPIN", "mdi-rotate-360"),
-            ("flip", "FLIP", "mdi-rotate-orbit"),
-            ("custom", "SELECT CUSTOM..", "mdi-star-settings-outline")
+            ("hero", _locale.get("component.preset_card.card1.label", "HERO"), _theme.glyph("preset-hero")),
+            ("spin", _locale.get("component.preset_card.card2.label", "SPIN"), _theme.glyph("preset-spin")),
+            ("flip", _locale.get("component.preset_card.card3.label", "FLIP"), _theme.glyph("preset-flip")),
+            ("custom", _locale.get("component.preset_card.card4.label", "SELECT CUSTOM..."), _theme.glyph("preset-custom"))
         ]
         self.preset_buttons = {}
         for i, (pid, lbl, ico) in enumerate(presets_data):
@@ -218,12 +220,12 @@ class ControlsSidePanel(wx.Panel):
     def create_parameters_section(self, parent):
         """Create the collapsible parameters section."""
         panel = wx.Panel(parent)
-        panel.SetBackgroundColour(_theme.color("colors.bg.page"))
+        panel.SetBackgroundColour(_theme.color("components.main.frame.bg"))
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         header = wx.Panel(panel)
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        header_sizer.Add(create_section_label(header, "PARAMETERS"), 1, wx.ALIGN_CENTER_VERTICAL)
+        header_sizer.Add(create_section_label(header, _locale.get("sections.parameters", "PARAMETERS")), 1, wx.ALIGN_CENTER_VERTICAL)
         save_btn = CustomButton(header, label="+ PRESET", primary=False, size=(120, 28))
         save_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_save_preset)
         header_sizer.Add(save_btn, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -242,61 +244,56 @@ class ControlsSidePanel(wx.Panel):
         """Create all rotation axis controls."""
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        label = wx.StaticText(panel, label="ROTATION SETTINGS")
-        label.SetForegroundColour(_theme.color("colors.text.primary"))
+        label = wx.StaticText(panel, label=_locale.get("parameters.rotation_heading", "ROTATION SETTINGS"))
+        label.SetForegroundColour(_theme.color("text.body.color"))
         label.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=600).create_font())
         sizer.Add(label, 0, wx.BOTTOM, 6)
 
-        cols = [_theme.get_palette_color("preset-red"), _theme.get_palette_color("preset-amber"), _theme.get_palette_color("preset-blue"), _theme.get_palette_color("preset-purple")]
-        icons = ["mdi-axis-x-arrow", "mdi-axis-y-arrow", "mdi-axis-y-rotate-counterclockwise", "mdi-axis-z-rotate-counterclockwise"]
+        cols = [_theme.color("colors.red"), _theme.color("colors.orange"), _theme.color("colors.cyan"), _theme.color("colors.purple")]
 
         row1 = self.create_axis_control(
-            panel, "BOARD TILT", self.settings.board_tilt, cols[0], icons[0],
-            -90, 90
+            panel, "BOARD TILT", self.settings.board_tilt, cols[0], "axis-x",
+            -90, 90, locale_key="parameters.board_tilt.label"
         )
         sizer.Add(row1, 0, wx.EXPAND | wx.BOTTOM, 4)
         row2 = self.create_axis_control(
-            panel, "BOARD ROLL", self.settings.board_roll, cols[1], icons[1],
-            -180, 180
+            panel, "BOARD ROLL", self.settings.board_roll, cols[1], "axis-y-arrow",
+            -180, 180, locale_key="parameters.board_roll.label"
         )
         sizer.Add(row2, 0, wx.EXPAND | wx.BOTTOM, 4)
         row3 = self.create_axis_control(
-            panel, "SPIN TILT", self.settings.spin_tilt, cols[2], icons[2],
-            -90, 90
+            panel, "SPIN TILT", self.settings.spin_tilt, cols[2], "axis-y-rot",
+            -90, 90, locale_key="parameters.spin_tilt.label"
         )
         sizer.Add(row3, 0, wx.EXPAND | wx.BOTTOM, 4)
         row4 = self.create_axis_control(
-            panel, "SPIN HEADING", self.settings.spin_heading, cols[3], icons[3],
-            -180, 180
+            panel, "SPIN HEADING", self.settings.spin_heading, cols[3], "axis-z-rot",
+            -180, 180, locale_key="parameters.spin_heading.label"
         )
         sizer.Add(row4, 0, wx.EXPAND | wx.BOTTOM, 4)
 
-        desc = wx.StaticText(panel, label="BOARD: ORIENT ON SPINDLE | SPIN: ORIENT THE SPINDLE ITSELF")
-        desc.SetForegroundColour(_theme.color("colors.text.muted"))
+        desc = wx.StaticText(panel, label=_locale.get("parameters.rotation_desc", "BOARD: ORIENT ON SPINDLE | SPIN: ORIENT THE SPINDLE ITSELF"))
+        desc.SetForegroundColour(_theme.color("text.metadata.color"))
         desc.SetFont(TextStyles.label_xs.create_font())
         sizer.Add(desc, 0)
         panel.SetSizerAndFit(sizer)
         return panel
 
-    def create_axis_control(self, parent, label_text, def_val, col, icon_name, min_val, max_val):
+    def create_axis_control(self, parent, label_text, def_val, col, icon_name, min_val, max_val, locale_key=None):
         """Create a labeled slider + numeric input row."""
         row = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         label_part = wx.Panel(row, size=(130, -1))
         lp_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        mdi_icons = {
-            'mdi-axis-x-arrow': '\U000F0D4C',
-            'mdi-axis-y-arrow': '\U000F0D51',
-            'mdi-axis-y-rotate-counterclockwise': '\U000F0D54',
-            'mdi-axis-z-rotate-counterclockwise': '\U000F0D58'
-        }
-        icon_char = mdi_icons.get(icon_name, '')
+        # icon_name is now a glyph name (e.g., 'axis-x-arrow'), call theme.glyph()
+        icon_char = _theme.glyph(icon_name)
         if icon_char:
             icon_lbl = wx.StaticText(label_part, label=icon_char)
             icon_lbl.SetForegroundColour(col)
             icon_lbl.SetFont(TextStyles.icon.create_font())
             lp_sizer.Add(icon_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
-        lbl = wx.StaticText(label_part, label=f"{label_text}:")
+        resolved_label = _locale.get(locale_key, label_text) if locale_key else label_text
+        lbl = wx.StaticText(label_part, label=f"{resolved_label}:")
         lbl.SetForegroundColour(col)
         lbl.SetFont(TextStyles.label_xs.create_font())
         lp_sizer.Add(lbl, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -319,8 +316,8 @@ class ControlsSidePanel(wx.Panel):
         """Create the rotation period control."""
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        lbl = wx.StaticText(panel, label="ROTATION PERIOD")
-        lbl.SetForegroundColour(_theme.color("colors.text.primary"))
+        lbl = wx.StaticText(panel, label=_locale.get("parameters.period.label", "ROTATION PERIOD"))
+        lbl.SetForegroundColour(_theme.color("text.body.color"))
         lbl.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=600).create_font())
         sizer.Add(lbl, 0, wx.BOTTOM, 6)
 
@@ -329,19 +326,20 @@ class ControlsSidePanel(wx.Panel):
         p_val = self.settings.period
         self.period_slider = CustomSlider(crow, value=p_val, min_val=0.1, max_val=30, size=(-1, 18))
         csizer.Add(self.period_slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
-        self.period_input = create_numeric_input(crow, f"{p_val:.1f}", "sec", editable=True, min_val=0.1, max_val=30)
+        unit = _locale.get("parameters.period.unit", "sec")
+        self.period_input = create_numeric_input(crow, f"{p_val:.1f}", unit, editable=True, min_val=0.1, max_val=30)
         csizer.Add(self.period_input, 0, wx.ALIGN_CENTER_VERTICAL)
         crow.SetSizerAndFit(csizer)
         sizer.Add(crow, 0, wx.EXPAND | wx.BOTTOM, 6)
 
         mrow = wx.Panel(panel)
         msizer = wx.BoxSizer(wx.HORIZONTAL)
-        desc = wx.StaticText(mrow, label="SPEED OF 360° SPIN")
-        desc.SetForegroundColour(_theme.color("colors.text.muted"))
+        desc = wx.StaticText(mrow, label=_locale.get("parameters.period.desc", "SPEED OF 360° SPIN"))
+        desc.SetForegroundColour(_theme.color("text.metadata.color"))
         desc.SetFont(TextStyles.label_xs.create_font())
         msizer.Add(desc, 1)
         self.frame_count = wx.StaticText(mrow, label=f"{int(p_val * 30)} f")
-        self.frame_count.SetForegroundColour(_theme.color("colors.text.secondary"))
+        self.frame_count.SetForegroundColour(_theme.color("text.subheader.color"))
         self.frame_count.SetFont(TextStyles.label_xs.create_font())
         msizer.Add(self.frame_count, 0)
         mrow.SetSizerAndFit(msizer)
@@ -353,11 +351,14 @@ class ControlsSidePanel(wx.Panel):
         """Create the direction toggle (CW/CCW)."""
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        lbl = wx.StaticText(panel, label="DIRECTION")
-        lbl.SetForegroundColour(_theme.color("colors.text.primary"))
+        lbl = wx.StaticText(panel, label=_locale.get("parameters.direction.label", "DIRECTION"))
+        lbl.SetForegroundColour(_theme.color("text.body.color"))
         lbl.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=600).create_font())
         sizer.Add(lbl, 0, wx.BOTTOM, 6)
-        dir_options = [{'label': 'CCW', 'icon': 'mdi-restore'}, {'label': 'CW', 'icon': 'mdi-reload'}]
+        dir_options = [
+            {'label': _locale.get("parameters.direction.options.ccw.label", "CCW"), 'icon': _locale.get("parameters.direction.options.ccw.icon_ref", "glyphs.ccw")},
+            {'label': _locale.get("parameters.direction.options.cw.label", "CW"), 'icon': _locale.get("parameters.direction.options.cw.icon_ref", "glyphs.cw")}
+        ]
         self.dir_toggle = CustomToggleButton(panel, options=dir_options, size=(210, 32))
         initial_idx = 1 if self.settings.direction == 'cw' else 0
         self.dir_toggle.SetSelection(initial_idx)
@@ -369,24 +370,24 @@ class ControlsSidePanel(wx.Panel):
         """Create the lighting preset toggle."""
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        lbl = wx.StaticText(panel, label="LIGHTING")
-        lbl.SetForegroundColour(_theme.color("colors.text.primary"))
+        lbl = wx.StaticText(panel, label=_locale.get("parameters.lighting.label", "LIGHTING"))
+        lbl.SetForegroundColour(_theme.color("text.body.color"))
         lbl.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=600).create_font())
         sizer.Add(lbl, 0, wx.BOTTOM, 6)
         self.light_options = [
-            {'id': 'studio', 'label': 'STUDIO', 'icon': 'mdi-weather-sunny'},
-            {'id': 'dramatic', 'label': 'DRAMATIC', 'icon': 'mdi-lightning-bolt'},
-            {'id': 'soft', 'label': 'SOFT', 'icon': 'mdi-image-filter-drama-outline'},
-            {'id': 'workspace', 'label': 'WORKSPACE', 'icon': 'mdi-application-edit'}
+            {'id': 'studio', 'label': _locale.get("parameters.lighting.options.studio.label", "STUDIO"), 'icon': _theme.glyph("sun")},
+            {'id': 'dramatic', 'label': _locale.get("parameters.lighting.options.dramatic.label", "DRAMATIC"), 'icon': _theme.glyph("bolt")},
+            {'id': 'soft', 'label': _locale.get("parameters.lighting.options.soft.label", "SOFT"), 'icon': _theme.glyph("cloud")},
+            {'id': 'workspace', 'label': _locale.get("parameters.lighting.options.workspace.label", "WORKSPACE"), 'icon': _theme.glyph("edit")}
         ]
-        self.light_toggle = CustomToggleButton(panel, options=self.light_options, size=(320, 32), active_color=_theme.color("colors.accent.secondary"))
+        self.light_toggle = CustomToggleButton(panel, options=self.light_options, size=(320, 32), active_color=_theme.color("colors.secondary"))
         current_light = self.settings.lighting
         initial_idx = next((i for i, opt in enumerate(self.light_options) if opt['id'] == current_light), 0)
         self.light_toggle.SetSelection(initial_idx)
         sizer.Add(self.light_toggle, 0, wx.EXPAND)
 
-        hint = wx.StaticText(panel, label="SELECT WORKSPACE TO USE KICAD 3D VIEWER SETTINGS")
-        hint.SetForegroundColour(_theme.color("colors.text.muted"))
+        hint = wx.StaticText(panel, label=_locale.get("parameters.lighting_hint", "SELECT WORKSPACE TO USE KICAD 3D VIEWER SETTINGS"))
+        hint.SetForegroundColour(_theme.color("text.metadata.color"))
         hint.SetFont(TextStyle(family=_theme.font_family("mono"), size=7, weight=400).create_font())
         sizer.Add(hint, 0, wx.TOP, 4)
 
@@ -396,17 +397,17 @@ class ControlsSidePanel(wx.Panel):
     def create_output_settings_section(self, parent):
         """Create format, resolution, and background color controls."""
         panel = wx.Panel(parent)
-        panel.SetBackgroundColour(_theme.color("colors.bg.page"))
+        panel.SetBackgroundColour(_theme.color("components.main.frame.bg"))
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(create_section_label(panel, "OUTPUT SETTINGS"), 0, wx.EXPAND | wx.BOTTOM, 10)
+        sizer.Add(create_section_label(panel, _locale.get("sections.output", "OUTPUT SETTINGS")), 0, wx.EXPAND | wx.BOTTOM, 10)
 
         # Row 1: Format and Resolution
         cols_panel = wx.Panel(panel)
         cols_sizer = wx.BoxSizer(wx.HORIZONTAL)
         f_col = wx.Panel(cols_panel)
         f_sizer = wx.BoxSizer(wx.VERTICAL)
-        f_lbl = wx.StaticText(f_col, label="FORMAT")
-        f_lbl.SetForegroundColour(_theme.color("colors.text.primary"))
+        f_lbl = wx.StaticText(f_col, label=_locale.get("parameters.format.label", "FORMAT"))
+        f_lbl.SetForegroundColour(_theme.color("text.body.color"))
         f_lbl.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=600).create_font())
         f_sizer.Add(f_lbl, 0, wx.BOTTOM, 6)
         self.format_choices = ["MP4 (H.264)", "GIF", "PNG Sequence"]
@@ -421,8 +422,8 @@ class ControlsSidePanel(wx.Panel):
 
         r_col = wx.Panel(cols_panel)
         r_sizer = wx.BoxSizer(wx.VERTICAL)
-        r_lbl = wx.StaticText(r_col, label="RESOLUTION")
-        r_lbl.SetForegroundColour(_theme.color("colors.text.primary"))
+        r_lbl = wx.StaticText(r_col, label=_locale.get("parameters.resolution.label", "RESOLUTION"))
+        r_lbl.SetForegroundColour(_theme.color("text.body.color"))
         r_lbl.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=600).create_font())
         r_sizer.Add(r_lbl, 0, wx.BOTTOM, 6)
         self.res_choices = ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
@@ -440,8 +441,8 @@ class ControlsSidePanel(wx.Panel):
         # Row 2: Background Color
         bg_col = wx.Panel(panel)
         bg_vsizer = wx.BoxSizer(wx.VERTICAL)
-        bg_lbl = wx.StaticText(bg_col, label="BACKGROUND COLOR")
-        bg_lbl.SetForegroundColour(_theme.color("colors.text.primary"))
+        bg_lbl = wx.StaticText(bg_col, label=_locale.get("parameters.bg_color.label", "BACKGROUND COLOR"))
+        bg_lbl.SetForegroundColour(_theme.color("text.body.color"))
         bg_lbl.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=600).create_font())
         bg_vsizer.Add(bg_lbl, 0, wx.BOTTOM, 6)
 
@@ -461,13 +462,13 @@ class ControlsSidePanel(wx.Panel):
         sizer.AddStretchSpacer()
         arow = wx.Panel(panel)
         asizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.adv_btn = CustomButton(arow, label="", icon='mdi-cog', primary=False, size=(36, 36))
+        self.adv_btn = CustomButton(arow, label="", icon=_theme.glyph("settings"), primary=False, size=(36, 36))
         self.adv_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_advanced_options)
         asizer.Add(self.adv_btn, 0, wx.RIGHT, 8)
-        self.can_btn = CustomButton(arow, label="CLOSE", icon='mdi-exit-to-app', primary=False, danger=True, size=(110, 36))
+        self.can_btn = CustomButton(arow, label=_locale.get("component.button.close.label", "CLOSE"), icon=_theme.glyph("exit-action"), primary=False, danger=True, size=(110, 36))
         self.can_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_cancel)
         asizer.Add(self.can_btn, 0, wx.RIGHT, 8)
-        self.render_btn = CustomButton(arow, label="RENDER", icon='mdi-video-vintage', primary=True, size=(150, 36))
+        self.render_btn = CustomButton(arow, label=_locale.get("component.button.render.label", "RENDER"), icon=_theme.glyph("render-action"), primary=True, size=(150, 36))
         self.render_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_render)
         asizer.Add(self.render_btn, 1, wx.EXPAND)
         arow.SetSizerAndFit(asizer)
@@ -510,5 +511,5 @@ class SVGLogoPanel(wx.Panel):
             try:
                 self.svg_image.RenderToGC(gc, 1.0)
             except Exception:
-                gc.SetBrush(wx.Brush(_theme.color("colors.accent.primary")))
+                gc.SetBrush(wx.Brush(_theme.color("colors.primary")))
                 gc.DrawRectangle(0, 0, width, height)

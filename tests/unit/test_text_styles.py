@@ -1,23 +1,18 @@
 #!/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
 """Tests for TextStyle class and semantic font system."""
 import pytest
-from unittest.mock import MagicMock
-import sys
-
-# Mock wx before SpinRender imports
-wx_mock = MagicMock()
-wx_mock.FONTWEIGHT_NORMAL = 400
-wx_mock.FONTWEIGHT_SEMIBOLD = 600
-wx_mock.FONTWEIGHT_BOLD = 700
-wx_mock.FONTSTYLE_NORMAL = 0
-wx_mock.FONTSTYLE_ITALIC = 1
-wx_mock.FONTFAMILY_DEFAULT = 0
-sys.modules['wx'] = wx_mock
-
+import wx
 from SpinRender.core.theme import Theme
 _theme = Theme.current()
 
 from SpinRender.ui.text_styles import TextStyle, TextStyles
+
+
+@pytest.fixture
+def wx_mock():
+    """Provide access to the wx mock."""
+    import sys
+    return sys.modules['wx']
 
 
 class TestTextStyle:
@@ -25,7 +20,7 @@ class TestTextStyle:
 
     def test_textstyle_creation(self):
         """Test TextStyle can be created with all fields."""
-        color = _theme.color("colors.text.primary")
+        color = _theme.color("colors.gray-white")  # V2: primary text color
         style = TextStyle(
             family="JetBrains Mono",
             size=11,
@@ -54,7 +49,7 @@ class TestTextStyle:
 
     def test_textstyle_is_frozen(self):
         """Test that TextStyle instances are immutable."""
-        color = _theme.color("colors.text.primary")
+        color = _theme.color("colors.gray-white")  # V2: primary text color
         style = TextStyle(
             family="JetBrains Mono",
             size=11,
@@ -65,20 +60,22 @@ class TestTextStyle:
             style.size = 12
 
     def test_textstyle_create_font_returns_wx_font(self):
-        """Test .create_font() calls wx.Font with correct args."""
-        wx_mock.Font.reset_mock()
+        """Test .create_font() returns a wx.Font-compatible object."""
         style = TextStyle(
             family="JetBrains Mono",
             size=11,
             weight=600
         )
         font = style.create_font()
-        assert isinstance(font, MagicMock)
-        wx_mock.Font.assert_called_once_with(11, wx_mock.FONTFAMILY_DEFAULT, wx_mock.FONTSTYLE_NORMAL, 600, faceName="JetBrains Mono")
+        # Font should be an object with expected attributes
+        assert hasattr(font, 'GetFaceName') and hasattr(font, 'GetPointSize')
+        # The returned font is a FontMock; check its properties
+        assert font.GetFaceName() == "JetBrains Mono"
+        assert font.GetPointSize() == 11
+        assert font.GetWeight() == 600
 
     def test_textstyle_create_font_with_italic(self):
         """Test .create_font() respects italic formatting."""
-        wx_mock.Font.reset_mock()
         style = TextStyle(
             family="JetBrains Mono",
             size=11,
@@ -86,7 +83,9 @@ class TestTextStyle:
             formatting="italic"
         )
         font = style.create_font()
-        wx_mock.Font.assert_called_once_with(11, wx_mock.FONTFAMILY_DEFAULT, wx_mock.FONTSTYLE_ITALIC, 400, faceName="JetBrains Mono")
+        # FontMock stores the style; we can check it
+        assert font._style == wx.FONTSTYLE_ITALIC
+        assert font.GetFaceName() == "JetBrains Mono"
 
     def test_textstyle_format_text_uppercase(self):
         """Test .format_text() applies uppercase."""
@@ -146,7 +145,8 @@ class TestTextStyle:
         assert text == "PANEL TITLE"
 
         font = style.create_font()
-        assert wx_mock.Font.called
+        # Font should be created successfully
+        assert font is not None
 
 
 class TestTextStyles:
@@ -176,16 +176,16 @@ class TestTextStyles:
         assert style.family == _theme.font_family("mono")
 
     def test_label_xs_token(self):
-        """Test label-xs uses extra small size and bold."""
+        """Test label-xs uses extra small size (xs=7) and bold."""
         style = TextStyles.label_xs
-        assert style.size == 8
+        assert style.size == 7  # V2: typography.scale.xs
         assert style.weight == 700
         assert style.family == _theme.font_family("mono")
 
     def test_numeric_value_token(self):
-        """Test numeric-value uses medium size and semibold."""
+        """Test numeric-value uses medium size (md=14) and semibold."""
         style = TextStyles.numeric_value
-        assert style.size == 13
+        assert style.size == 14  # V2: typography.scale.md
         assert style.weight == 600
         assert style.family == _theme.font_family("mono")
 
@@ -197,26 +197,26 @@ class TestTextStyles:
         assert style.family == _theme.font_family("mono")
 
     def test_section_heading_token(self):
-        """Test section-heading uses Oswald, medium size, semibold, uppercase."""
+        """Test section-heading uses Oswald, medium size (md=14), semibold, uppercase."""
         style = TextStyles.section_heading
         assert style.family == _theme.font_family("display")
-        assert style.size == 13
+        assert style.size == 14  # V2: typography.scale.md
         assert style.weight == 600
         assert style.formatting == "uppercase"
 
     def test_panel_title_token(self):
-        """Test panel-title uses Oswald, large, bold, uppercase."""
+        """Test panel-title uses Oswald, extra large (xl=24), bold, uppercase."""
         style = TextStyles.panel_title
         assert style.family == _theme.font_family("display")
-        assert style.size == 18
+        assert style.size == 24  # V2: typography.scale.xl
         assert style.weight == 700
         assert style.formatting == "uppercase"
 
     def test_icon_token(self):
-        """Test icon uses MDI font at 14px."""
+        """Test icon uses MDI font at 16px (V2 typography.scale.icon)."""
         style = TextStyles.icon
         assert style.family == _theme.font_family("icon")
-        assert style.size == 14
+        assert style.size == 16  # V2: typography.scale.icon
 
     def test_icon_lg_token(self):
         """Test icon-lg uses 20px size."""

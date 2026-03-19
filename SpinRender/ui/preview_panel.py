@@ -11,7 +11,9 @@ from typing import List, Optional
 
 from .text_styles import TextStyle, TextStyles
 from SpinRender.core.theme import Theme
+from SpinRender.core.locale import Locale
 _theme = Theme.current()
+_locale = Locale.current()
 from SpinRender.core.preview import GLPreviewRenderer
 
 
@@ -73,7 +75,7 @@ class PreviewPanel(wx.Panel):
 
         # Top-Left: Preset name OR parameters
         self.ov_top_left = wx.StaticText(top_meta, label="")
-        self.ov_top_left.SetForegroundColour(_theme.WHITE_ALPHA_68)
+        self.ov_top_left.SetForegroundColour(_theme.color("colors.white-68"))
         self.ov_top_left.SetFont(TextStyles.label_sm.create_font())
         top_sizer.Add(self.ov_top_left, 1, wx.ALIGN_CENTER_VERTICAL)
 
@@ -82,7 +84,9 @@ class PreviewPanel(wx.Panel):
         self.render_mode_btns = {}
         self.render_mode_divs = []
 
-        modes = [("WIREFRAME", "wireframe"), ("SHADED", "shaded"), ("BOTH", "both")]
+        modes = [(_locale.get("viewport.mode.wireframe", "WIREFRAME"), "wireframe"),
+                 (_locale.get("viewport.mode.shaded", "SHADED"), "shaded"),
+                 (_locale.get("viewport.mode.both", "BOTH"), "both")]
 
         for i, (label, mode_id) in enumerate(modes):
             btn = wx.StaticText(top_meta, label=label)
@@ -101,7 +105,7 @@ class PreviewPanel(wx.Panel):
         top_sizer.Add(self.render_mode_sizer, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
 
         # Close Preview button (hidden by default)
-        self.ov_top_right = wx.StaticText(top_meta, label="CLOSE PREVIEW")
+        self.ov_top_right = wx.StaticText(top_meta, label=_locale.get("component.button.close.label", "CLOSE PREVIEW"))
         self.ov_top_right.SetForegroundColour(_theme.color("colors.accent.primary"))
         self.ov_top_right.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font())
         self.ov_top_right.SetCursor(wx.Cursor(wx.CURSOR_HAND))
@@ -115,12 +119,12 @@ class PreviewPanel(wx.Panel):
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.ov_bottom_left = wx.StaticText(bottom_meta, label="")
-        self.ov_bottom_left.SetForegroundColour(_theme.WHITE_ALPHA_68)
+        self.ov_bottom_left.SetForegroundColour(_theme.color("colors.white-68"))
         self.ov_bottom_left.SetFont(TextStyles.label_sm.create_font())
         bottom_sizer.Add(self.ov_bottom_left, 1, wx.ALIGN_CENTER_VERTICAL)
 
         self.ov_bottom_center = wx.StaticText(bottom_meta, label="")
-        self.ov_bottom_center.SetForegroundColour(_theme.WHITE_ALPHA_68)
+        self.ov_bottom_center.SetForegroundColour(_theme.color("colors.white-68"))
         self.ov_bottom_center.SetFont(TextStyles.label_sm.create_font())
         bottom_sizer.Add(self.ov_bottom_center, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_CENTER_HORIZONTAL)
         self.ov_bottom_center.SetWindowStyle(wx.ST_NO_AUTORESIZE | wx.ALIGN_CENTRE_HORIZONTAL)
@@ -140,29 +144,29 @@ class PreviewPanel(wx.Panel):
     def reapply_theme(self):
         """Re-apply theme to static overlay elements."""
         self.SetBackgroundColour(_theme.color("colors.bg.page"))
-        
+
         # Overlay labels
         label_font = TextStyles.label_sm.create_font()
         for lbl in [self.ov_top_left, self.ov_bottom_left, self.ov_bottom_center]:
-            lbl.SetForegroundColour(_theme.WHITE_ALPHA_68)
+            lbl.SetForegroundColour(_theme.color("colors.white-68"))
             lbl.SetFont(label_font)
-            
+
         self.ov_bottom_right.SetForegroundColour(_theme.color("colors.accent.success"))
         self.ov_bottom_right.SetFont(label_font)
-        
+
         self.ov_top_right.SetForegroundColour(_theme.color("colors.accent.primary"))
         self.ov_top_right.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font())
-        
+
         # Render mode buttons
         mode_font = TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font()
         for mode_id, btn in self.render_mode_btns.items():
             btn.SetFont(mode_font)
             # Active mode will be updated via update_render_mode_ui below
-            
+
         for div in self.render_mode_divs:
             div.SetFont(mode_font)
             div.SetForegroundColour(_theme.color("colors.border.default"))
-            
+
         self.update_render_mode_ui(self.settings.render_mode)
         self.update_preview_overlay()
         self.Refresh()
@@ -475,5 +479,5 @@ class PreviewPanel(wx.Panel):
             if mode_id == active_mode:
                 btn.SetForegroundColour(_theme.color("colors.accent.primary"))
             else:
-                btn.SetForegroundColour(_theme.GREY_100)
+                btn.SetForegroundColour(_theme.color("colors.gray-medium"))
             btn.Refresh()

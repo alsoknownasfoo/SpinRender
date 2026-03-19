@@ -77,11 +77,26 @@ typography:
     display: "Oswald"
     icon:    "Material Design Icons"
 
+  weights:
+    hairline: 100
+    thin:     200
+    light:    300
+    normal:   400
+    medium:   500
+    semibold: 600
+    bold:     700
+    extrabold: 800
+    black:    900
+
   scale:
+    xs: 7
     sm: 9
     base: 11
     md: 14
     lg: 18
+    xl: 24
+    icon: 16
+    icon-lg: 20
 
   spacing:
     none: 0

@@ -19,8 +19,10 @@ class StatusBar(wx.Panel):
         self.SetMaxSize((-1, 25))
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
 
-        # State
-        self._msg = "READY"
+        # State - import Locale for status messages
+        from SpinRender.core.locale import Locale
+        _locale = Locale.current()
+        self._msg = _locale.get("component.status.ready", "READY")
         self._fg_override = None
         self._prog = 0.0
         self._bar_color_override = None
@@ -37,11 +39,11 @@ class StatusBar(wx.Panel):
 
         w, h = self.GetSize()
         
-        # Dynamic theme lookups from component section
-        bg_color = _theme.color("components.status_bar.bg")
-        success_color = _theme.color("components.status_bar.text")
-        primary_color = _theme.color("components.status_bar.progress-bar")
-        text_bg_color = _theme.color("components.status_bar.text-filled")
+        # Dynamic theme lookups from component section (V2 tokens)
+        bg_color = _theme.color("components.status.default.bg")
+        success_color = _theme.color("components.status.default.label.color")
+        primary_color = _theme.color("components.status.progress.bg")
+        text_bg_color = _theme.color("components.status.default.bg")  # inverted text uses bg
 
         # Background
         gc.SetBrush(wx.Brush(bg_color))
@@ -90,8 +92,10 @@ class StatusBar(wx.Panel):
 
     def set_error(self, msg: str):
         """Set error state."""
-        self.set_status(msg, fg_color=_theme.color("components.status_bar.text-error"), progress=0.0, bar_color=_theme.color("components.status_bar.text-error"))
+        self.set_status(msg, fg_color=_theme.color("components.status.error.label.color"), progress=0.0, bar_color=_theme.color("components.status.error.label.color"))
 
     def set_complete(self):
         """Set complete state."""
-        self.set_status("RENDER COMPLETE", fg_color=_theme.color("components.status_bar.text"), progress=1.0, bar_color=_theme.color("components.status_bar.text"))
+        from SpinRender.core.locale import Locale
+        _locale = Locale.current()
+        self.set_status(_locale.get("component.status.complete", "RENDER COMPLETE"), fg_color=_theme.color("components.status.complete.label.color"), progress=1.0, bar_color=_theme.color("components.status.complete.label.color"))

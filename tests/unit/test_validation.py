@@ -26,6 +26,15 @@ class ColorMock:
     def Alpha(self):
         return self._a
 
+    def IsOk(self):
+        """Return True if color components are valid (0-255)."""
+        try:
+            if not all(isinstance(v, (int, float)) for v in (self._r, self._g, self._b)):
+                return False
+            return 0 <= self._r <= 255 and 0 <= self._g <= 255 and 0 <= self._b <= 255
+        except TypeError:
+            return False
+
     def __eq__(self, other):
         if isinstance(other, ColorMock):
             return (self._r, self._g, self._b, self._a) == (other._r, other._g, other._b, other._a)

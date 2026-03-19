@@ -10,7 +10,9 @@ logger = logging.getLogger("SpinRender")
 
 # Import theme module for centralized colors
 from SpinRender.core.theme import Theme
+from SpinRender.core.locale import Locale
 _theme = Theme.current()
+_locale = Locale.current()
 from .preview_panel import PreviewPanel
 
 # Import RenderSettings
@@ -426,12 +428,12 @@ class SpinRenderPanel(wx.Panel):
         # Check if already rendering via controller
         if self.render_controller.is_rendering():
             self.render_controller.cancel()
-            self.status_bar.set_status("STOPPING RENDER...", fg_color=_theme.color("colors.accent.warning"))
+            self.status_bar.set_status(_locale.get("component.status.stopping", "STOPPING RENDER..."), fg_color=_theme.color("colors.accent.warning"))
             return
 
         # Prepare UI for rendering
-        self.render_btn.SetLabel("STOP")
-        self.render_btn.SetIcon("mdi-stop")
+        self.render_btn.SetLabel(_locale.get("component.button.stop.label", "STOP"))
+        self.render_btn.SetIcon(_theme.glyph("stop"))
         self.render_btn.SetDanger(True)
 
         # Disable all controls during render
@@ -525,8 +527,8 @@ class SpinRenderPanel(wx.Panel):
     def on_render_finished(self, result, error=None):
         if not self: return
         # RenderController handles engine cleanup; just update UI
-        self.render_btn.SetLabel("RENDER")
-        self.render_btn.SetIcon("mdi-video-vintage")
+        self.render_btn.SetLabel(_locale.get("component.button.render.label", "RENDER"))
+        self.render_btn.SetIcon(_theme.glyph("render-action"))
         self.render_btn.SetDanger(False)
         
         # Re-enable all controls

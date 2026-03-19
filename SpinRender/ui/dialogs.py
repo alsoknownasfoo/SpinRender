@@ -9,10 +9,12 @@ import threading
 from .custom_controls import CustomButton, CustomTextInput
 from .text_styles import TextStyle, TextStyles
 from SpinRender.core.theme import Theme
+from SpinRender.core.locale import Locale
 from SpinRender.foundation.fonts import JETBRAINS_MONO, MDI_FONT_FAMILY, INTER
 from SpinRender.foundation.icons import STATUS_ICONS
 
 _theme = Theme.current()
+_locale = Locale.current()
 
 
 ID_RESET = 10001
@@ -92,7 +94,7 @@ class BaseStyledDialog(wx.Dialog):
         
         # Add standard close button to all headers
         header_sizer.AddStretchSpacer()
-        close_btn = CustomButton(header, label="", icon="mdi-close", primary=False, ghost=True, icon_color=_theme.color("colors.text.muted"), size=(32, 32))
+        close_btn = CustomButton(header, label="", icon=_theme.glyph("close"), primary=False, ghost=True, icon_color=_theme.color("colors.text.muted"), size=(32, 32))
         close_btn.Bind(wx.EVT_BUTTON, self.on_cancel)
         header_sizer.Add(close_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 12)
         
@@ -160,13 +162,13 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         content_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # 1. OUTPUT PATH section
-        content_sizer.Add(self.create_section_label(content, "OUTPUT PATH"), 0, wx.EXPAND | wx.BOTTOM, 12)
+        content_sizer.Add(self.create_section_label(content, _locale.get("parameters.output_path.label", "OUTPUT PATH")), 0, wx.EXPAND | wx.BOTTOM, 12)
 
         # Auto Row
         auto_row = wx.Panel(content)
         auto_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
-        auto_desc = wx.StaticText(auto_row, label="Automatically save to time-stamped directories.")
+        auto_desc = wx.StaticText(auto_row, label=_locale.get("output.auto_desc", "Automatically save to time-stamped directories."))
         auto_desc.SetForegroundColour(_theme.color("colors.text.muted"))
         auto_desc.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=400).create_font())
         auto_sizer.Add(auto_desc, 1, wx.ALIGN_CENTER_VERTICAL)
@@ -188,7 +190,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         self.path_display = PathInputControl(path_input_row, size=(-1, 36))
         path_input_sizer.Add(self.path_display, 1, wx.RIGHT, 8)
         
-        self.browse_btn = CustomButton(path_input_row, label="BROWSE", icon="mdi-folder", primary=False, size=(110, 36))
+        self.browse_btn = CustomButton(path_input_row, label=_locale.get("component.button.browse.label", "BROWSE"), icon=_theme.glyph("folder"), primary=False, size=(110, 36))
         self.browse_btn.Bind(wx.EVT_BUTTON, self.on_browse)
         path_input_sizer.Add(self.browse_btn, 0)
         
@@ -211,17 +213,17 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         link_row = wx.Panel(content)
         link_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
-        info_icon = wx.StaticText(link_row, label='\U000F02FD') # mdi-information-outline
+        info_icon = wx.StaticText(link_row, label=_theme.glyph("info"))
         info_icon.SetForegroundColour(_theme.color("colors.text.muted"))
         info_icon.SetFont(TextStyles.icon.create_font())
         info_icon.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         link_sizer.Add(info_icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         
-        see_txt = wx.StaticText(link_row, label="See ")
+        see_txt = wx.StaticText(link_row, label=_locale.get("dialog.advanced.see", "See "))
         see_txt.SetForegroundColour(_theme.color("colors.text.muted")); see_txt.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=400).create_font())
         link_sizer.Add(see_txt, 0, wx.ALIGN_CENTER_VERTICAL)
-        
-        link_txt = wx.StaticText(link_row, label="kicad-cli render options")
+
+        link_txt = wx.StaticText(link_row, label=_locale.get("dialog.advanced.docs_link", "kicad-cli render options"))
         link_txt.SetForegroundColour(_theme.color("colors.accent.primary")); link_txt.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=400).create_font())
         link_txt.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         link_sizer.Add(link_txt, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -253,13 +255,13 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         log_row.SetSizer(log_hsizer)
         content_sizer.Add(log_row, 0, wx.EXPAND | wx.BOTTOM, 12)
         
-        log_info = wx.StaticText(content, label="Logs are kept for 30 days. Useful for troubleshooting render failures.")
+        log_info = wx.StaticText(content, label=_locale.get("parameters.log_info", "Logs are kept for 30 days. Useful for troubleshooting render failures."))
         log_info.SetForegroundColour(_theme.color("colors.text.muted"))
         log_info.SetFont(TextStyle(family=_theme.font_family("mono"), size=8, weight=400).create_font())
         content_sizer.Add(log_info, 0, wx.EXPAND | wx.BOTTOM, 8)
 
         from utils.logger import SpinLogger
-        open_logs_txt = wx.StaticText(content, label="OPEN LOGS FOLDER")
+        open_logs_txt = wx.StaticText(content, label=_locale.get("parameters.open_logs", "OPEN LOGS FOLDER"))
         open_logs_txt.SetForegroundColour(_theme.color("colors.accent.primary"))
         open_logs_txt.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font())
         open_logs_txt.SetCursor(wx.Cursor(wx.CURSOR_HAND))
@@ -273,10 +275,10 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         footer = wx.Panel(self.main_container, size=(-1, 60))
         footer_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        cancel_btn = CustomButton(footer, label="CANCEL", icon="mdi-close", primary=False, size=(120, 36))
+        cancel_btn = CustomButton(footer, label=_locale.get("component.button.cancel.label", "CANCEL"), icon=_theme.glyph("close"), primary=False, size=(120, 36))
         cancel_btn.Bind(wx.EVT_BUTTON, self.on_cancel)
 
-        ok_btn = CustomButton(footer, label="OK", icon="mdi-check", primary=True, size=(120, 36))
+        ok_btn = CustomButton(footer, label=_locale.get("component.button.ok.label", "OK"), icon=_theme.glyph("save"), primary=True, size=(120, 36))
         ok_btn.Bind(wx.EVT_BUTTON, self.on_ok)
 
         footer_sizer.AddStretchSpacer()
@@ -366,7 +368,7 @@ class SavePresetDialog(BaseStyledDialog):
 
         content = wx.Panel(self.main_container)
         content_sizer = wx.BoxSizer(wx.VERTICAL)
-        label = wx.StaticText(content, label="PRESET NAME")
+        label = wx.StaticText(content, label=_locale.get("dialog.save_preset.field_name", "PRESET NAME"))
         label.SetForegroundColour(_theme.color("colors.text.secondary"))
         label.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=700).create_font())
         content_sizer.Add(label, 0, wx.LEFT | wx.TOP, 24)
@@ -381,9 +383,9 @@ class SavePresetDialog(BaseStyledDialog):
 
         footer = wx.Panel(self.main_container, size=(-1, 60))
         footer_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        cancel_btn = CustomButton(footer, label="CANCEL", icon="mdi-close", primary=False, size=(110, 36))
+        cancel_btn = CustomButton(footer, label=_locale.get("component.button.cancel.label", "CANCEL"), icon=_theme.glyph("close"), primary=False, size=(110, 36))
         cancel_btn.Bind(wx.EVT_BUTTON, self.on_cancel)
-        self.save_btn = CustomButton(footer, label="SAVE", icon="mdi-check", primary=True, size=(110, 36))
+        self.save_btn = CustomButton(footer, label=_locale.get("component.button.save.label", "SAVE"), icon=_theme.glyph("save"), primary=True, size=(110, 36))
         self.save_btn.Bind(wx.EVT_BUTTON, self.on_save)
         footer_sizer.AddStretchSpacer(); footer_sizer.Add(cancel_btn, 0, wx.RIGHT, 12); footer_sizer.Add(self.save_btn, 0, wx.RIGHT, 16)
         footer.SetSizer(footer_sizer)
@@ -396,9 +398,9 @@ class SavePresetDialog(BaseStyledDialog):
     def on_text_change(self, event):
         val = self.name_input.GetValue().upper(); is_overwrite = val in self.existing_names
         if is_overwrite:
-            self.save_btn.SetLabel("OVERWRITE"); self.save_btn.SetIcon("mdi-alert-octagram"); self.save_btn.SetDanger(True)
+            self.save_btn.SetLabel(_locale.get("component.button.overwrite.label", "OVERWRITE")); self.save_btn.SetIcon(_theme.glyph("alert")); self.save_btn.SetDanger(True)
         else:
-            self.save_btn.SetLabel("SAVE"); self.save_btn.SetIcon("mdi-check"); self.save_btn.SetDanger(False)
+            self.save_btn.SetLabel(_locale.get("component.button.save.label", "SAVE")); self.save_btn.SetIcon(_theme.glyph("save")); self.save_btn.SetDanger(False)
     def GetPresetName(self): return self.name_input.GetValue()
 
 
@@ -430,7 +432,7 @@ class RecallPresetDialog(BaseStyledDialog):
         list_panel.SetBackgroundColour(_theme.color("colors.bg.page")); list_panel.SetupScrolling(scroll_x=False, scroll_y=True)
         list_sizer = wx.BoxSizer(wx.VERTICAL)
         if not presets:
-            empty_text = wx.StaticText(list_panel, label="No saved presets found."); empty_text.SetForegroundColour(_theme.color("colors.text.muted"))
+            empty_text = wx.StaticText(list_panel, label=_locale.get("component.status.no_presets", "No saved presets found.")); empty_text.SetForegroundColour(_theme.color("colors.text.muted"))
             empty_text.SetFont(TextStyle(family=_theme.font_family("mono"), size=11, weight=400, formatting="italic").create_font()); list_sizer.Add(empty_text, 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 40)
         else:
             for scope, name in presets:
@@ -444,10 +446,10 @@ class RecallPresetDialog(BaseStyledDialog):
         sizer = wx.BoxSizer(wx.HORIZONTAL); label = wx.StaticText(panel, label=name.upper()); label.SetForegroundColour(_theme.color("colors.text.primary"))
         label.SetFont(TextStyles.body.create_font()); sizer.Add(label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)
         action_area = wx.Panel(panel); action_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        trash_btn = wx.StaticText(action_area, label='\U000F0A7A'); trash_btn.SetForegroundColour(_theme.color("colors.accent.warning"))
+        trash_btn = wx.StaticText(action_area, label=_theme.glyph("trash")); trash_btn.SetForegroundColour(_theme.color("colors.accent.warning"))
         trash_btn.SetFont(TextStyles.icon.create_font()); trash_btn.SetCursor(wx.Cursor(wx.CURSOR_HAND)); action_sizer.Add(trash_btn, 0, wx.ALIGN_CENTER_VERTICAL)
-        cancel_icon = wx.StaticText(action_area, label='\U000F0156'); cancel_icon.SetForegroundColour(_theme.color("colors.accent.warning"))
-        cancel_icon.SetFont(TextStyles.icon.create_font()); cancel_icon.Hide(); confirm_icon = wx.StaticText(action_area, label='\U000F012C')
+        cancel_icon = wx.StaticText(action_area, label=_theme.glyph("close")); cancel_icon.SetForegroundColour(_theme.color("colors.accent.warning"))
+        cancel_icon.SetFont(TextStyles.icon.create_font()); cancel_icon.Hide(); confirm_icon = wx.StaticText(action_area, label=_theme.glyph("save"))
         confirm_icon.SetForegroundColour(_theme.color("colors.accent.success")); confirm_icon.SetFont(TextStyles.icon.create_font()); confirm_icon.Hide()
         action_area.SetSizer(action_sizer); sizer.Add(action_area, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 12); panel.SetSizer(sizer)
         def show_confirm(e):
