@@ -805,6 +805,10 @@ class CustomInput(wx.Panel):
         self.min_val = kwargs.get('min_val')
         self.max_val = kwargs.get('max_val')
         
+        # Initial editable state from theme or kwarg
+        theme_editable = _theme._resolve(f"{self.token}.editable")
+        self.Enable(kwargs.get('editable', True if theme_editable is None else theme_editable))
+        
         # Rich state
         self.icon_ref = _theme._resolve(f"{self.token}.icon")
         self.show_chip = False # Toggled via method
@@ -1001,7 +1005,13 @@ class CustomInput(wx.Panel):
             if self.case == "upper": self.value = self.value.upper()
         self.Refresh(); self.Update()
 
+    def SetEditable(self, editable):
+        """Toggle editable state. Read-only state is derived from IsEnabled()."""
+        self.Enable(editable)
+        self.Refresh(); self.Update()
+
     def SetPath(self, path, in_project=False):
+
         self.value = path
         self.show_chip = in_project
         if self.chip:
