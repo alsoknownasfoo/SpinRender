@@ -800,8 +800,12 @@ class CustomInput(wx.Panel):
         self.case = _theme._resolve(f"{self.token}.case") or "none"
         self.multiline = kwargs.get('multiline', False)
         self.unit = kwargs.get('unit') or _theme._resolve(f"{self.token}.unit") or ""
-        self.prefix = kwargs.get('prefix') or _theme._resolve(f"{self.token}.prefix") or ""
-        self.step = float(kwargs.get('step') or _theme._resolve(f"{self.token}.step") or 0.1)
+        self.prefix = kwargs.get('prefix') or _theme._resolve(f"{self.token}.prefix")
+        if not isinstance(self.prefix, str) or self.prefix == "#FF00FF": self.prefix = ""
+        
+        step_val = kwargs.get('step') or _theme._resolve(f"{self.token}.step")
+        try: self.step = float(step_val)
+        except: self.step = 0.1
         self.min_val = kwargs.get('min_val')
         self.max_val = kwargs.get('max_val')
         
