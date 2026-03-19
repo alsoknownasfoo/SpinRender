@@ -8,21 +8,22 @@ _theme = Theme.current()
 from .text_styles import TextStyle
 
 
-# Valid theme token paths for validation (using Theme.color() API)
+# Valid theme token paths for validation (V2 Mastering Schema)
 VALID_BG_TOKENS = {
-    'colors.bg.page', 'colors.bg.panel', 'colors.bg.input',
-    'colors.bg.surface', 'colors.bg.modal'
+    'colors.bg.page', 'colors.bg.panel', 'colors.bg.surface', 
+    'components.main.frame.bg', 'components.main.leftpanel.bg'
 }
 VALID_BORDER_TOKENS = {
-    'colors.border.default', 'colors.border.modal', 'colors.border.focus'
+    'borders.default.color', 'borders.subtle.color', 'borders.focus.color',
+    'components.main.divider.bg'
 }
 VALID_ACCENT_TOKENS = {
-    'colors.accent.cyan', 'colors.accent.yellow', 'colors.accent.green',
-    'colors.accent.orange', 'colors.accent.red', 'colors.accent.amber',
-    'colors.accent.blue', 'colors.accent.purple'
+    'colors.primary', 'colors.secondary', 'colors.success',
+    'colors.red', 'colors.orange', 'colors.cyan', 'colors.purple'
 }
 VALID_TEXT_TOKENS = {
-    'colors.text.primary', 'colors.text.secondary', 'colors.text.muted'
+    'text.body.color', 'text.subtitle.color', 'text.metadata.color',
+    'text.subheader.color', 'text.button.color', 'text.label.color'
 }
 ALL_VALID_TOKENS = (
     VALID_BG_TOKENS | VALID_BORDER_TOKENS | VALID_ACCENT_TOKENS | VALID_TEXT_TOKENS

@@ -130,7 +130,7 @@ class PreviewPanel(wx.Panel):
         self.ov_bottom_center.SetWindowStyle(wx.ST_NO_AUTORESIZE | wx.ALIGN_CENTRE_HORIZONTAL)
 
         self.ov_bottom_right = wx.StaticText(bottom_meta, label="")
-        self.ov_bottom_right.SetForegroundColour(_theme.color("colors.accent.success"))
+        self.ov_bottom_right.SetForegroundColour(_theme.color("colors.success"))
         self.ov_bottom_right.SetFont(TextStyles.label_sm.create_font())
         bottom_sizer.Add(self.ov_bottom_right, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
         self.ov_bottom_right.SetWindowStyle(wx.ST_NO_AUTORESIZE | wx.ALIGN_RIGHT)

@@ -504,21 +504,24 @@ class Theme:
 
         Example:
             theme.glyph("render-action") → "\U000F0A1C"
+            theme.glyph("glyphs.render-action") → "\U000F0A1C"
 
         Returns:
             Unicode string representing the glyph, or empty string if not found.
         """
-        token = f"glyphs.{name}"
+        # Strip 'glyphs.' prefix if provided (allows direct use of locale icon_ref)
+        token_name = name.replace("glyphs.", "")
+        token = f"glyphs.{token_name}"
         value = self._resolve(token)
 
         # If resolution failed, _resolve returns pink hex; detect that
         if isinstance(value, str) and (value == "#FF00FF" or value == "#FF00FFFF"):
-            logger.warning(f"Theme: Glyph '{name}' not found")
+            logger.warning(f"Theme: Glyph '{token_name}' not found")
             return ""
 
         # Return string value directly
         if isinstance(value, str):
             return value
 
-        logger.warning(f"Theme: Glyph '{name}' has unexpected type {type(value)}")
+        logger.warning(f"Theme: Glyph '{token_name}' has unexpected type {type(value)}")
         return ""

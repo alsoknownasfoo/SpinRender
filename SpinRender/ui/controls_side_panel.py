@@ -110,7 +110,7 @@ class ControlsSidePanel(wx.Panel):
 
         sizer.AddStretchSpacer()
         
-        # Close button - use the new explicit button.close tokens
+        # Close button - use locale for icon_ref
         icon_color, icon_color_hover, icon_color_pressed = _theme.color_states("components.button.close.text")
         bg_color, bg_color_hover, bg_color_pressed = _theme.color_states("components.button.close.bg")
         border_color, border_color_hover, border_color_pressed = _theme.color_states("components.button.close.border")
@@ -194,15 +194,27 @@ class ControlsSidePanel(wx.Panel):
 
         preset_row = wx.Panel(panel)
         preset_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        
+        # V2: Fetch both labels and icon references from locale
         presets_data = [
-            ("hero", _locale.get("component.preset_card.card1.label", "HERO"), _theme.glyph("preset-hero")),
-            ("spin", _locale.get("component.preset_card.card2.label", "SPIN"), _theme.glyph("preset-spin")),
-            ("flip", _locale.get("component.preset_card.card3.label", "FLIP"), _theme.glyph("preset-flip")),
-            ("custom", _locale.get("component.preset_card.card4.label", "SELECT CUSTOM..."), _theme.glyph("preset-custom"))
+            ("hero", 
+             _locale.get("component.preset_card.card1.label", "HERO"), 
+             _locale.get("component.preset_card.card1.icon_ref", "preset-hero")),
+            ("spin", 
+             _locale.get("component.preset_card.card2.label", "SPIN"), 
+             _locale.get("component.preset_card.card2.icon_ref", "preset-spin")),
+            ("flip", 
+             _locale.get("component.preset_card.card3.label", "FLIP"), 
+             _locale.get("component.preset_card.card3.icon_ref", "preset-flip")),
+            ("custom", 
+             _locale.get("component.preset_card.card4.label", "SELECT CUSTOM..."), 
+             _locale.get("component.preset_card.card4.icon_ref", "preset-custom"))
         ]
+        
         self.preset_buttons = {}
-        for i, (pid, lbl, ico) in enumerate(presets_data):
-            btn = PresetCard(preset_row, label=lbl, icon_name=ico, size=(90, 64))
+        for i, (pid, lbl, ico_ref) in enumerate(presets_data):
+            # PresetCard handles glyph lookup internally via _theme.glyph(ico_ref)
+            btn = PresetCard(preset_row, label=lbl, icon_name=ico_ref, size=(90, 64))
             btn.Bind(wx.EVT_BUTTON, lambda e, p=pid: self.main_panel.on_preset_change(p))
             if self.settings.preset == pid:
                 btn.SetSelected(True)
@@ -226,7 +238,15 @@ class ControlsSidePanel(wx.Panel):
         header = wx.Panel(panel)
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
         header_sizer.Add(create_section_label(header, _locale.get("sections.parameters", "PARAMETERS")), 1, wx.ALIGN_CENTER_VERTICAL)
-        save_btn = CustomButton(header, label="+ PRESET", primary=False, size=(120, 28))
+        
+        # Save Preset Button - V2 Locale lookup
+        save_btn = CustomButton(
+            header, 
+            label=_locale.get("component.button.save_preset.label", "+ PRESET"),
+            icon=_locale.get("component.button.save_preset.icon_ref", "plus"),
+            primary=False, 
+            size=(120, 28)
+        )
         save_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_save_preset)
         header_sizer.Add(save_btn, 0, wx.ALIGN_CENTER_VERTICAL)
         header.SetSizerAndFit(header_sizer)
@@ -251,23 +271,31 @@ class ControlsSidePanel(wx.Panel):
 
         cols = [_theme.color("colors.red"), _theme.color("colors.orange"), _theme.color("colors.cyan"), _theme.color("colors.purple")]
 
+        # V2: Fetch icon_ref from locale for each axis
         row1 = self.create_axis_control(
-            panel, "BOARD TILT", self.settings.board_tilt, cols[0], "axis-x",
+            panel, "BOARD TILT", self.settings.board_tilt, cols[0], 
+            _locale.get("parameters.board_tilt.icon_ref", "axis-x"),
             -90, 90, locale_key="parameters.board_tilt.label"
         )
         sizer.Add(row1, 0, wx.EXPAND | wx.BOTTOM, 4)
+        
         row2 = self.create_axis_control(
-            panel, "BOARD ROLL", self.settings.board_roll, cols[1], "axis-y-arrow",
+            panel, "BOARD ROLL", self.settings.board_roll, cols[1], 
+            _locale.get("parameters.board_roll.icon_ref", "axis-y"),
             -180, 180, locale_key="parameters.board_roll.label"
         )
         sizer.Add(row2, 0, wx.EXPAND | wx.BOTTOM, 4)
+        
         row3 = self.create_axis_control(
-            panel, "SPIN TILT", self.settings.spin_tilt, cols[2], "axis-y-rot",
+            panel, "SPIN TILT", self.settings.spin_tilt, cols[2], 
+            _locale.get("parameters.spin_tilt.icon_ref", "axis-y-rot"),
             -90, 90, locale_key="parameters.spin_tilt.label"
         )
         sizer.Add(row3, 0, wx.EXPAND | wx.BOTTOM, 4)
+        
         row4 = self.create_axis_control(
-            panel, "SPIN HEADING", self.settings.spin_heading, cols[3], "axis-z-rot",
+            panel, "SPIN HEADING", self.settings.spin_heading, cols[3], 
+            _locale.get("parameters.spin_heading.icon_ref", "axis-z-rot"),
             -180, 180, locale_key="parameters.spin_heading.label"
         )
         sizer.Add(row4, 0, wx.EXPAND | wx.BOTTOM, 4)
@@ -355,10 +383,15 @@ class ControlsSidePanel(wx.Panel):
         lbl.SetForegroundColour(_theme.color("text.body.color"))
         lbl.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=600).create_font())
         sizer.Add(lbl, 0, wx.BOTTOM, 6)
+        
+        # V2: Fetch labels and icon refs from locale
         dir_options = [
-            {'label': _locale.get("parameters.direction.options.ccw.label", "CCW"), 'icon': _locale.get("parameters.direction.options.ccw.icon_ref", "glyphs.ccw")},
-            {'label': _locale.get("parameters.direction.options.cw.label", "CW"), 'icon': _locale.get("parameters.direction.options.cw.icon_ref", "glyphs.cw")}
+            {'label': _locale.get("parameters.direction.options.ccw.label", "CCW"), 
+             'icon': _locale.get("parameters.direction.options.ccw.icon_ref", "glyphs.ccw")},
+            {'label': _locale.get("parameters.direction.options.cw.label", "CW"), 
+             'icon': _locale.get("parameters.direction.options.cw.icon_ref", "glyphs.cw")}
         ]
+        
         self.dir_toggle = CustomToggleButton(panel, options=dir_options, size=(210, 32))
         initial_idx = 1 if self.settings.direction == 'cw' else 0
         self.dir_toggle.SetSelection(initial_idx)
@@ -374,12 +407,23 @@ class ControlsSidePanel(wx.Panel):
         lbl.SetForegroundColour(_theme.color("text.body.color"))
         lbl.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=600).create_font())
         sizer.Add(lbl, 0, wx.BOTTOM, 6)
+        
+        # V2: Fetch labels and icon refs from locale
         self.light_options = [
-            {'id': 'studio', 'label': _locale.get("parameters.lighting.options.studio.label", "STUDIO"), 'icon': _theme.glyph("sun")},
-            {'id': 'dramatic', 'label': _locale.get("parameters.lighting.options.dramatic.label", "DRAMATIC"), 'icon': _theme.glyph("bolt")},
-            {'id': 'soft', 'label': _locale.get("parameters.lighting.options.soft.label", "SOFT"), 'icon': _theme.glyph("cloud")},
-            {'id': 'workspace', 'label': _locale.get("parameters.lighting.options.workspace.label", "WORKSPACE"), 'icon': _theme.glyph("edit")}
+            {'id': 'studio', 
+             'label': _locale.get("parameters.lighting.options.studio.label", "STUDIO"), 
+             'icon': _locale.get("parameters.lighting.options.studio.icon_ref", "glyphs.sun")},
+            {'id': 'dramatic', 
+             'label': _locale.get("parameters.lighting.options.dramatic.label", "DRAMATIC"), 
+             'icon': _locale.get("parameters.lighting.options.dramatic.icon_ref", "glyphs.bolt")},
+            {'id': 'soft', 
+             'label': _locale.get("parameters.lighting.options.soft.label", "SOFT"), 
+             'icon': _locale.get("parameters.lighting.options.soft.icon_ref", "glyphs.cloud")},
+            {'id': 'workspace', 
+             'label': _locale.get("parameters.lighting.options.workspace.label", "WORKSPACE"), 
+             'icon': _locale.get("parameters.lighting.options.workspace.icon_ref", "glyphs.edit")}
         ]
+        
         self.light_toggle = CustomToggleButton(panel, options=self.light_options, size=(320, 32), active_color=_theme.color("colors.secondary"))
         current_light = self.settings.lighting
         initial_idx = next((i for i, opt in enumerate(self.light_options) if opt['id'] == current_light), 0)
@@ -462,15 +506,32 @@ class ControlsSidePanel(wx.Panel):
         sizer.AddStretchSpacer()
         arow = wx.Panel(panel)
         asizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.adv_btn = CustomButton(arow, label="", icon=_theme.glyph("settings"), primary=False, size=(36, 36))
+        
+        # V2: Fetch labels and icon references from locale for export row
+        self.adv_btn = CustomButton(
+            arow, label="", 
+            icon=_locale.get("component.button.options.icon_ref", "glyphs.settings"), 
+            primary=False, size=(36, 36)
+        )
         self.adv_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_advanced_options)
         asizer.Add(self.adv_btn, 0, wx.RIGHT, 8)
-        self.can_btn = CustomButton(arow, label=_locale.get("component.button.close.label", "CLOSE"), icon=_theme.glyph("exit-action"), primary=False, danger=True, size=(110, 36))
+        
+        self.can_btn = CustomButton(
+            arow, label=_locale.get("component.button.exit.label", "EXIT"), 
+            icon=_locale.get("component.button.exit.icon_ref", "glyphs.exit-action"), 
+            primary=False, danger=True, size=(110, 36)
+        )
         self.can_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_cancel)
         asizer.Add(self.can_btn, 0, wx.RIGHT, 8)
-        self.render_btn = CustomButton(arow, label=_locale.get("component.button.render.label", "RENDER"), icon=_theme.glyph("render-action"), primary=True, size=(150, 36))
+        
+        self.render_btn = CustomButton(
+            arow, label=_locale.get("component.button.render.label", "RENDER"), 
+            icon=_locale.get("component.button.render.icon_ref", "glyphs.render-action"), 
+            primary=True, size=(150, 36)
+        )
         self.render_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_render)
         asizer.Add(self.render_btn, 1, wx.EXPAND)
+        
         arow.SetSizerAndFit(asizer)
         self.export_row_sizer = asizer
         sizer.Add(arow, 0, wx.EXPAND)

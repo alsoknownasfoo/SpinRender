@@ -92,9 +92,15 @@ class BaseStyledDialog(wx.Dialog):
         
         header_sizer.Add(self.header_title, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 16)
         
-        # Add standard close button to all headers
+        # Add standard close button to all headers - V2 Locale lookup
         header_sizer.AddStretchSpacer()
-        close_btn = CustomButton(header, label="", icon=_theme.glyph("close"), primary=False, ghost=True, icon_color=_theme.color("colors.text.muted"), size=(32, 32))
+        close_btn = CustomButton(
+            header, label="", 
+            icon=_locale.get("component.button.close.icon_ref", "close"), 
+            primary=False, ghost=True, 
+            icon_color=_theme.color("colors.text.muted"), 
+            size=(32, 32)
+        )
         close_btn.Bind(wx.EVT_BUTTON, self.on_cancel)
         header_sizer.Add(close_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 12)
         
@@ -275,10 +281,20 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         footer = wx.Panel(self.main_container, size=(-1, 60))
         footer_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        cancel_btn = CustomButton(footer, label=_locale.get("component.button.cancel.label", "CANCEL"), icon=_theme.glyph("close"), primary=False, size=(120, 36))
+        cancel_btn = CustomButton(
+            footer, 
+            label=_locale.get("component.button.cancel.label", "CANCEL"), 
+            icon=_locale.get("component.button.cancel.icon_ref", "close"), 
+            primary=False, size=(120, 36)
+        )
         cancel_btn.Bind(wx.EVT_BUTTON, self.on_cancel)
 
-        ok_btn = CustomButton(footer, label=_locale.get("component.button.ok.label", "OK"), icon=_theme.glyph("save"), primary=True, size=(120, 36))
+        ok_btn = CustomButton(
+            footer, 
+            label=_locale.get("component.button.ok.label", "OK"), 
+            icon=_locale.get("component.button.ok.icon_ref", "save"), 
+            primary=True, size=(120, 36)
+        )
         ok_btn.Bind(wx.EVT_BUTTON, self.on_ok)
 
         footer_sizer.AddStretchSpacer()
@@ -383,10 +399,23 @@ class SavePresetDialog(BaseStyledDialog):
 
         footer = wx.Panel(self.main_container, size=(-1, 60))
         footer_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        cancel_btn = CustomButton(footer, label=_locale.get("component.button.cancel.label", "CANCEL"), icon=_theme.glyph("close"), primary=False, size=(110, 36))
+        
+        cancel_btn = CustomButton(
+            footer, 
+            label=_locale.get("component.button.cancel.label", "CANCEL"), 
+            icon=_locale.get("component.button.cancel.icon_ref", "close"), 
+            primary=False, size=(110, 36)
+        )
         cancel_btn.Bind(wx.EVT_BUTTON, self.on_cancel)
-        self.save_btn = CustomButton(footer, label=_locale.get("component.button.save.label", "SAVE"), icon=_theme.glyph("save"), primary=True, size=(110, 36))
+        
+        self.save_btn = CustomButton(
+            footer, 
+            label=_locale.get("component.button.save.label", "SAVE"), 
+            icon=_locale.get("component.button.save.icon_ref", "save"), 
+            primary=True, size=(110, 36)
+        )
         self.save_btn.Bind(wx.EVT_BUTTON, self.on_save)
+        
         footer_sizer.AddStretchSpacer(); footer_sizer.Add(cancel_btn, 0, wx.RIGHT, 12); footer_sizer.Add(self.save_btn, 0, wx.RIGHT, 16)
         footer.SetSizer(footer_sizer)
         main_sizer.Add(footer, 0, wx.EXPAND | wx.BOTTOM, 16)
@@ -398,9 +427,9 @@ class SavePresetDialog(BaseStyledDialog):
     def on_text_change(self, event):
         val = self.name_input.GetValue().upper(); is_overwrite = val in self.existing_names
         if is_overwrite:
-            self.save_btn.SetLabel(_locale.get("component.button.overwrite.label", "OVERWRITE")); self.save_btn.SetIcon(_theme.glyph("alert")); self.save_btn.SetDanger(True)
+            self.save_btn.SetLabel(_locale.get("component.button.overwrite.label", "OVERWRITE")); self.save_btn.SetIcon(_theme.glyph(_locale.get("component.button.alert.icon_ref", "alert"))); self.save_btn.SetDanger(True)
         else:
-            self.save_btn.SetLabel(_locale.get("component.button.save.label", "SAVE")); self.save_btn.SetIcon(_theme.glyph("save")); self.save_btn.SetDanger(False)
+            self.save_btn.SetLabel(_locale.get("component.button.save.label", "SAVE")); self.save_btn.SetIcon(_theme.glyph(_locale.get("component.button.save.icon_ref", "save"))); self.save_btn.SetDanger(False)
     def GetPresetName(self): return self.name_input.GetValue()
 
 
@@ -439,17 +468,23 @@ class RecallPresetDialog(BaseStyledDialog):
                 item = self.create_preset_item(list_panel, scope, name)
                 list_sizer.Add(item, 0, wx.EXPAND | wx.BOTTOM, 8)
         list_panel.SetSizer(list_sizer); main_sizer.Add(list_panel, 1, wx.EXPAND | wx.ALL, 16)
-        self.main_container.SetSizer(main_sizer)
+        self.main_container.SetSizer(main_sizer)colors
 
-    def create_preset_item(self, parent, scope, name):
+    def create_preset_item(self, parent, scope, name):colors
         panel = wx.Panel(parent, size=(-1, 40)); panel.SetBackgroundColour(_theme.color("colors.bg.surface")); panel.SetCursor(wx.Cursor(wx.CURSOR_HAND))
-        sizer = wx.BoxSizer(wx.HORIZONTAL); label = wx.StaticText(panel, label=name.upper()); label.SetForegroundColour(_theme.color("colors.text.primary"))
+        sizer = wx.BoxSizer(wx.HORIZONTAL); label = wx.colorsnel, label=name.upper()); label.SetForegroundColour(_theme.color("colors.text.primary"))
         label.SetFont(TextStyles.body.create_font()); sizer.Add(label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)
         action_area = wx.Panel(panel); action_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        trash_btn = wx.StaticText(action_area, label=_theme.glyph("trash")); trash_btn.SetForegroundColour(_theme.color("colors.accent.warning"))
+        
+        # V2: Fetch icons from locale references
+        trash_ico_ref = _locale.get("component.button.trash.icon_ref", "trash")
+        close_ico_ref = _locale.get("component.button.close.icon_ref", "close")
+        save_ico_ref = _locale.get("component.button.save.icon_ref", "save")
+        
+        trash_btn = wx.StaticText(action_area, label=_theme.glyph(trash_ico_ref)); trash_btn.SetForegroundColour(_theme.color("colors.accent.warning"))
         trash_btn.SetFont(TextStyles.icon.create_font()); trash_btn.SetCursor(wx.Cursor(wx.CURSOR_HAND)); action_sizer.Add(trash_btn, 0, wx.ALIGN_CENTER_VERTICAL)
-        cancel_icon = wx.StaticText(action_area, label=_theme.glyph("close")); cancel_icon.SetForegroundColour(_theme.color("colors.accent.warning"))
-        cancel_icon.SetFont(TextStyles.icon.create_font()); cancel_icon.Hide(); confirm_icon = wx.StaticText(action_area, label=_theme.glyph("save"))
+        cancel_icon = wx.StaticText(action_area, label=_theme.glyph(close_ico_ref)); cancel_icon.SetForegroundColour(_theme.color("colors.accent.warning"))
+        cancel_icon.SetFont(TextStyles.icon.create_font()); cancel_icon.Hide(); confirm_icon = wx.StaticText(action_area, label=_theme.glyph(save_ico_ref))
         confirm_icon.SetForegroundColour(_theme.color("colors.accent.success")); confirm_icon.SetFont(TextStyles.icon.create_font()); confirm_icon.Hide()
         action_area.SetSizer(action_sizer); sizer.Add(action_area, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 12); panel.SetSizer(sizer)
         def show_confirm(e):

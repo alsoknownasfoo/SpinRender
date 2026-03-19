@@ -1102,8 +1102,10 @@ class PathInputControl(wx.Panel):
         gc.DrawRoundedRectangle(1, 1, w - 2, h - 2, 6)
         
         tc = _theme.color("colors.gray-white")
+        # V2 Glyph resolution
+        icon_char = _theme.glyph("folder")
         gf_i = gc.CreateFont(TextStyles.icon.create_font(), _theme.disabled(tc) if not enabled else tc)
-        gc.SetFont(gf_i); itw, ih = gc.GetTextExtent('\U000F024B'); gc.DrawText('\U000F024B', 12, (h - ih) / 2)
+        gc.SetFont(gf_i); itw, ih = gc.GetTextExtent(icon_char); gc.DrawText(icon_char, 12, (h - ih) / 2)
         gf_t = gc.CreateFont(TextStyles.body.create_font(), _theme.disabled(tc) if not enabled else tc)
         gc.SetFont(gf_t); tx = 36 + (self.chip.GetSize().x + 6 if self.show_chip else 0)
         tw, th = gc.GetTextExtent(self.path_text); dt = self.path_text
