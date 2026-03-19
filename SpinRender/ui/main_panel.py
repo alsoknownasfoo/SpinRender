@@ -75,7 +75,7 @@ class SpinRenderPanel(wx.Panel):
         from utils.logger import SpinLogger
         SpinLogger.setup(level=getattr(self.settings, 'logging_level', 'simple'))
             
-        self.SetBackgroundColour(_theme.color("colors.bg.page"))
+        self.SetBackgroundColour(_theme.color("components.main.frame.bg"))
         self.drag_start_pos = None
         self.frame_start_pos = None
         self.render_controller = RenderController()
@@ -87,7 +87,7 @@ class SpinRenderPanel(wx.Panel):
     def build_ui(self):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.top_container = wx.Panel(self)
-        self.top_container.SetBackgroundColour(_theme.color("colors.bg.page"))
+        self.top_container.SetBackgroundColour(_theme.color("components.main.frame.bg"))
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         # Left: Controls panel - instantiate ControlsSidePanel
@@ -105,7 +105,7 @@ class SpinRenderPanel(wx.Panel):
 
         # Center Divider
         self.center_divider = wx.Panel(self.top_container, size=(1, -1))
-        self.center_divider.SetBackgroundColour(_theme.color("colors.border.default"))
+        self.center_divider.SetBackgroundColour(_theme.color("borders.default.color"))
         top_sizer.Add(self.center_divider, 0, wx.EXPAND)
 
         # Right: Preview panel
@@ -119,7 +119,7 @@ class SpinRenderPanel(wx.Panel):
         main_sizer.Add(self.top_container, 1, wx.EXPAND)
 
         self.status_divider = wx.Panel(self, size=(-1, 1))
-        self.status_divider.SetBackgroundColour(_theme.color("colors.border.default"))
+        self.status_divider.SetBackgroundColour(_theme.color("borders.default.color"))
         main_sizer.Add(self.status_divider, 0, wx.EXPAND)
 
         self.status_bar = StatusBar(self)
@@ -143,16 +143,16 @@ class SpinRenderPanel(wx.Panel):
 
     def reapply_theme(self):
         """Orchestrate theme re-application across all sub-panels."""
-        self.SetBackgroundColour(_theme.color("colors.bg.page"))
+        self.SetBackgroundColour(_theme.color("components.main.frame.bg"))
         
         if hasattr(self, 'top_container'):
-            self.top_container.SetBackgroundColour(_theme.color("colors.bg.page"))
+            self.top_container.SetBackgroundColour(_theme.color("components.main.frame.bg"))
             
         if hasattr(self, 'center_divider'):
-            self.center_divider.SetBackgroundColour(_theme.color("colors.border.default"))
+            self.center_divider.SetBackgroundColour(_theme.color("borders.default.color"))
             
         if hasattr(self, 'status_divider'):
-            self.status_divider.SetBackgroundColour(_theme.color("colors.border.default"))
+            self.status_divider.SetBackgroundColour(_theme.color("borders.default.color"))
             
         # Call reapply_theme on sub-panels
         if hasattr(self, 'controls_side_panel'):
@@ -163,7 +163,7 @@ class SpinRenderPanel(wx.Panel):
             
         # StatusBar handles its own dynamic lookups in _on_paint
         if hasattr(self, 'status_bar'):
-            self.status_bar.SetBackgroundColour(_theme.color("colors.bg.panel"))
+            self.status_bar.SetBackgroundColour(_theme.color("components.main.status.default.bg"))
             self.status_bar.Refresh()
             self.status_bar.Update()
             
@@ -384,12 +384,12 @@ class SpinRenderPanel(wx.Panel):
 
     def update_render_mode_ui(self, active_mode):
         """Updates the colors of the mode toggle labels"""
-        if not hasattr(self, 'render_mode_btns'): return
+        if not hasattr(self.preview, 'render_mode_btns'): return
         for mode_id, btn in self.preview.render_mode_btns.items():
             if mode_id == active_mode:
                 btn.SetForegroundColour(_theme.color("colors.primary"))
             else:
-                btn.SetForegroundColour(_theme.GREY_100)
+                btn.SetForegroundColour(_theme.color("colors.gray-white"))
             btn.Refresh()
         
 

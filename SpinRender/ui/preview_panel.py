@@ -75,7 +75,7 @@ class PreviewPanel(wx.Panel):
 
         # Top-Left: Preset name OR parameters
         self.ov_top_left = wx.StaticText(top_meta, label="")
-        self.ov_top_left.SetForegroundColour(_theme.color("colors.white-68"))
+        self.ov_top_left.SetForegroundColour(_theme.color("colors.gray-white"))
         self.ov_top_left.SetFont(TextStyles.label_sm.create_font())
         top_sizer.Add(self.ov_top_left, 1, wx.ALIGN_CENTER_VERTICAL)
 
@@ -98,7 +98,7 @@ class PreviewPanel(wx.Panel):
             if i < len(modes) - 1:
                 div = wx.StaticText(top_meta, label="  |  ")
                 div.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font())
-                div.SetForegroundColour(_theme.color("colors.border.default"))
+                div.SetForegroundColour(_theme.color("borders.default.color"))
                 self.render_mode_divs.append(div)
                 self.render_mode_sizer.Add(div, 0, wx.ALIGN_CENTER_VERTICAL)
 
@@ -119,18 +119,18 @@ class PreviewPanel(wx.Panel):
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.ov_bottom_left = wx.StaticText(bottom_meta, label="")
-        self.ov_bottom_left.SetForegroundColour(_theme.color("colors.white-68"))
+        self.ov_bottom_left.SetForegroundColour(_theme.color("colors.gray-white"))
         self.ov_bottom_left.SetFont(TextStyles.label_sm.create_font())
         bottom_sizer.Add(self.ov_bottom_left, 1, wx.ALIGN_CENTER_VERTICAL)
 
         self.ov_bottom_center = wx.StaticText(bottom_meta, label="")
-        self.ov_bottom_center.SetForegroundColour(_theme.color("colors.white-68"))
+        self.ov_bottom_center.SetForegroundColour(_theme.color("colors.gray-white"))
         self.ov_bottom_center.SetFont(TextStyles.label_sm.create_font())
         bottom_sizer.Add(self.ov_bottom_center, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_CENTER_HORIZONTAL)
         self.ov_bottom_center.SetWindowStyle(wx.ST_NO_AUTORESIZE | wx.ALIGN_CENTRE_HORIZONTAL)
 
         self.ov_bottom_right = wx.StaticText(bottom_meta, label="")
-        self.ov_bottom_right.SetForegroundColour(_theme.color("colors.success"))
+        self.ov_bottom_right.SetForegroundColour(_theme.color("colors.ok"))
         self.ov_bottom_right.SetFont(TextStyles.label_sm.create_font())
         bottom_sizer.Add(self.ov_bottom_right, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
         self.ov_bottom_right.SetWindowStyle(wx.ST_NO_AUTORESIZE | wx.ALIGN_RIGHT)
@@ -143,12 +143,12 @@ class PreviewPanel(wx.Panel):
 
     def reapply_theme(self):
         """Re-apply theme to static overlay elements."""
-        self.SetBackgroundColour(_theme.color("colors.bg.page"))
+        self.SetBackgroundColour(_theme.color("components.main.frame.bg"))
 
         # Overlay labels
         label_font = TextStyles.label_sm.create_font()
         for lbl in [self.ov_top_left, self.ov_bottom_left, self.ov_bottom_center]:
-            lbl.SetForegroundColour(_theme.color("colors.white-68"))
+            lbl.SetForegroundColour(_theme.color("colors.gray-white"))
             lbl.SetFont(label_font)
 
         self.ov_bottom_right.SetForegroundColour(_theme.color("colors.ok"))
@@ -165,7 +165,7 @@ class PreviewPanel(wx.Panel):
 
         for div in self.render_mode_divs:
             div.SetFont(mode_font)
-            div.SetForegroundColour(_theme.color("colors.border.default"))
+            div.SetForegroundColour(_theme.color("borders.default.color"))
 
         self.update_render_mode_ui(self.settings.render_mode)
         self.update_preview_overlay()

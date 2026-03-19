@@ -12,7 +12,7 @@ from .text_styles import TextStyle
 VALID_BG_TOKENS = {
     'components.main.frame.bg', 'components.main.leftpanel.bg', 
     'components.main.header.bg', 'components.main.rightpanel.bg',
-    'colors.gray-dark', 'colors.gray-black'
+    'colors.gray-dark', 'colors.gray-black', 'colors.transparent'
 }
 VALID_BORDER_TOKENS = {
     'borders.default.color', 'borders.subtle.color', 'borders.focus.color',
@@ -140,7 +140,7 @@ def create_section_label(parent, text):
     label.SetFont(TextStyle(family=_theme.font_family("display"), size=13, weight=600).create_font())
     sizer.Add(label, 0, wx.ALIGN_CENTER_VERTICAL)
     line = wx.Panel(panel, size=(60, 1))
-    line.SetBackgroundColour(_theme.color("colors.border.default"))
+    line.SetBackgroundColour(_theme.color("borders.default.color"))
     sizer.Add(line, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 8)
     panel.SetSizerAndFit(sizer)
     return panel
