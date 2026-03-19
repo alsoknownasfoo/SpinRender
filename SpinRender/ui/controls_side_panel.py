@@ -157,7 +157,7 @@ class ControlsSidePanel(wx.Panel):
         panel = wx.Panel(parent)
         panel.SetBackgroundColour(_theme.color("components.main.frame.bg"))
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(create_section_label(panel, _locale.get("sections.presets", "LOOP PRESET")), 0, wx.EXPAND | wx.BOTTOM, 8)
+        sizer.Add(create_section_label(panel, _locale.get("sections.presets", "LOOP PRESET"), id="presets"), 0, wx.EXPAND | wx.BOTTOM, 8)
 
         preset_row = wx.Panel(panel)
         preset_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -189,7 +189,7 @@ class ControlsSidePanel(wx.Panel):
 
         header = wx.Panel(panel)
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        header_sizer.Add(create_section_label(header, _locale.get("sections.parameters", "PARAMETERS")), 1, wx.ALIGN_CENTER_VERTICAL)
+        header_sizer.Add(create_section_label(header, _locale.get("sections.parameters", "PARAMETERS"), id="parameters"), 1, wx.ALIGN_CENTER_VERTICAL)
         
         # Save Preset Button - simplified id syntax
         save_btn = CustomButton(header, id="save_preset", size=(120, 28))
@@ -392,7 +392,7 @@ class ControlsSidePanel(wx.Panel):
         panel = wx.Panel(parent)
         panel.SetBackgroundColour(_theme.color("components.main.frame.bg"))
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(create_section_label(panel, _locale.get("sections.output", "OUTPUT SETTINGS")), 0, wx.EXPAND | wx.BOTTOM, 10)
+        sizer.Add(create_section_label(panel, _locale.get("sections.output", "OUTPUT SETTINGS"), id="output"), 0, wx.EXPAND | wx.BOTTOM, 10)
 
         # Row 1: Format and Resolution
         cols_panel = wx.Panel(panel)
