@@ -773,12 +773,6 @@ class SectionLabel(wx.Panel):
         tw, th = gc.GetTextExtent(self.label)
         gc.DrawText(self.label, 0, (height - th) / 2)
 
-        line_x = tw + 8
-        line_y = height / 2
-        if width - line_x > 0:
-            gc.SetPen(wx.Pen(line_color, line_size))
-            gc.StrokeLine(line_x, line_y, width, line_y)
-
 
 class CustomInput(wx.Panel):
     """
