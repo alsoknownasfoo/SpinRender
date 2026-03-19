@@ -155,7 +155,7 @@ class ControlsSidePanel(wx.Panel):
     def create_preset_section(self, parent):
         """Create the preset selection buttons."""
         panel = wx.Panel(parent)
-        panel.SetBackgroundColour(_theme.color("components.main.frame.bg"))
+        panel.SetBackgroundColour(_theme.TRANSPARENT)
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(create_section_label(panel, _locale.get("sections.presets", "LOOP PRESET"), id="presets"), 0, wx.EXPAND | wx.BOTTOM, 8)
 
@@ -184,7 +184,7 @@ class ControlsSidePanel(wx.Panel):
     def create_parameters_section(self, parent):
         """Create the collapsible parameters section."""
         panel = wx.Panel(parent)
-        panel.SetBackgroundColour(_theme.color("components.main.frame.bg"))
+        panel.SetBackgroundColour(_theme.TRANSPARENT)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         header = wx.Panel(panel)
@@ -390,7 +390,7 @@ class ControlsSidePanel(wx.Panel):
     def create_output_settings_section(self, parent):
         """Create format, resolution, and background color controls."""
         panel = wx.Panel(parent)
-        panel.SetBackgroundColour(_theme.color("components.main.frame.bg"))
+        panel.SetBackgroundColour(_theme.TRANSPARENT)
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(create_section_label(panel, _locale.get("sections.output", "OUTPUT SETTINGS"), id="output"), 0, wx.EXPAND | wx.BOTTOM, 10)
 
