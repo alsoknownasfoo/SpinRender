@@ -241,7 +241,7 @@ _FALLBACK_DARK_THEME = {
                 "radius": {"ref": "borders.radius.sm"}
             },
             "fill": {
-                "color": ["colors.accent.primary"],
+                "color": ["colors.primary"],
                 "radius": {"ref": "borders.radius.sm"}
             }
         },
@@ -280,7 +280,7 @@ _FALLBACK_DARK_THEME = {
             "font": {"ref": "typography.presets.body-strong"},
             "icon_gap": {"ref": "spacing.md"},
             "primary": {
-                "bg": ["colors.accent.primary"],
+                "bg": ["colors.primary"],
                 "text": ["colors.text.on-accent"],
                 "hover": ["colors.state.hover-overlay"],
                 "pressed": ["colors.state.pressed-overlay"]
@@ -309,7 +309,7 @@ _FALLBACK_DARK_THEME = {
         "preset_card": {
             "bg": ["colors.bg.surface"],
             "border": ["colors.border.default"],
-            "accent": ["colors.accent.primary"]
+            "accent": ["colors.primary"]
         },
         "badge": {
             "bg": ["colors.accent.warning"],

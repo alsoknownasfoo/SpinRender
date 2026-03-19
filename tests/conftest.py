@@ -66,6 +66,11 @@ class ColorMock:
     def __repr__(self):
         return f"ColorMock({self._r}, {self._g}, {self._b}, {self._a})"
 
+    def __eq__(self, other):
+        if isinstance(other, ColorMock):
+            return (self._r, self._g, self._b, self._a) == (other._r, other._g, other._b, other._a)
+        return False
+
 
 class FontMock:
     """Mock for wx.Font that returns configured faceName."""
@@ -181,7 +186,7 @@ class Mockwx:
             'PopupTransientWindow'
         ]
         if name in window_classes:
-            return DummyWindow
+            return DummyWindow  # Return the class, not an instance
 
         # Other classes
         if name == 'GraphicsContext':
@@ -269,5 +274,41 @@ def wx_mock():
 
 @pytest.fixture(scope='function', autouse=True)
 def reset_mocks():
-    """Reset all mock calls before each test."""
+    """Reset all mock calls and module patching before each test."""
+    import wx
+
+    # Helper to get actual attribute from wx.__dict__ if set, avoiding __getattr__
+    def get_original(attr):
+        return wx.__dict__.get(attr)
+
+    # Restore original wx classes that may have been monkeypatched by test modules
+    orig_panel = get_original('_original_Panel')
+    if orig_panel is not None:
+        wx.Panel = orig_panel
+
+    orig_static = get_original('_original_StaticText')
+    if orig_static is not None:
+        wx.StaticText = orig_static
+
+    # Reset mock call counts
+    mock_wx = sys.modules['wx']
+    if hasattr(mock_wx, '_objects'):
+        for mock in mock_wx._objects.values():
+            mock.reset_mock()
+
+    # Reset Theme and Locale singletons to prevent state pollution
+    from SpinRender.core.theme import Theme
+    from SpinRender.core.locale import Locale
+    Theme._instance = None
+    Locale._instance = None
+
     yield
+
+    # Cleanup after test - restore again
+    orig_panel = get_original('_original_Panel')
+    if orig_panel is not None:
+        wx.Panel = orig_panel
+
+    orig_static = get_original('_original_StaticText')
+    if orig_static is not None:
+        wx.StaticText = orig_static

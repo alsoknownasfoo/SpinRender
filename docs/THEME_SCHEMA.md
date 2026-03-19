@@ -291,10 +291,10 @@ components:
       height:       4
       radius:       {ref: "borders.radius.sm"}
     fill:
-      color:        {ref: "colors.accent.primary"}
+      color:        {ref: "colors.primary"}
       radius:       {ref: "borders.radius.sm"}
     thumb:
-      color:        {ref: "colors.accent.primary"}
+      color:        {ref: "colors.primary"}
       radius:       8    # half of 16px diameter = circular
       width:        16
       height:       16
@@ -336,7 +336,7 @@ components:
     icon_gap:       {ref: "spacing.md"}
 
     primary:
-      bg:           {ref: "colors.accent.primary"}
+      bg:           {ref: "colors.primary"}
       text:         {ref: "colors.text.on-accent"}
       hover:        {ref: "colors.state.hover-overlay"}
       pressed:      {ref: "colors.state.pressed-overlay"}
@@ -363,7 +363,7 @@ components:
     bg:             {ref: "colors.bg.surface"}
     border:         {ref: "colors.border.default"}
     radius:         {ref: "borders.radius.lg"}
-    accent:         {ref: "colors.accent.primary"}
+    accent:         {ref: "colors.primary"}
     text:           {ref: "colors.text.primary"}
     text-muted:     {ref: "colors.text.muted"}
     font-label:     {ref: "typography.presets.label-sm"}
@@ -377,7 +377,7 @@ components:
     border:         {ref: "colors.border.subtle"}
     text:           {ref: "colors.text.primary"}
     text-secondary: {ref: "colors.text.secondary"}
-    accent:         {ref: "colors.accent.primary"}
+    accent:         {ref: "colors.primary"}
     font:           {ref: "typography.presets.section-heading"}
 
   # ── Numeric Display ─────────────────────────
@@ -467,7 +467,7 @@ class Theme:
         return cls._instance
 
     def colour(self, token: str) -> "wx.Colour":
-        """Resolve a dot-path token to a wx.Colour. e.g. 'colors.accent.primary'"""
+        """Resolve a dot-path token to a wx.Colour. e.g. 'colors.primary'"""
         import wx
         value = self._resolve(token)
         return self._parse_colour(value)

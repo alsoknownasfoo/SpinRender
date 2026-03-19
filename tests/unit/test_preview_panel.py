@@ -529,10 +529,10 @@ class TestPreviewPanelState:
 
         preview.update_render_mode_ui('shaded')
 
-        preview.render_mode_btns['shaded'].SetForegroundColour.assert_called_with(_theme.color("colors.accent.cyan"))
+        preview.render_mode_btns['shaded'].SetForegroundColour.assert_called_with(_theme.color("colors.primary"))
         for mode, btn in preview.render_mode_btns.items():
             if mode != 'shaded':
-                btn.SetForegroundColour.assert_called_with(_theme.GREY_100)
+                btn.SetForegroundColour.assert_called_with(_theme.color("colors.gray-medium"))
 
 
 class TestPreviewPanelIntegration:

@@ -135,7 +135,7 @@ some_object.theme.color("ignore.me")
         """Test token categorization by type."""
         tokens = {
             'colors.bg.page',
-            'colors.accent.primary',
+            'colors.primary',
             'palette.neutral-3',
             'palette.cyan',
             'spacing.md',
@@ -147,7 +147,7 @@ some_object.theme.color("ignore.me")
         
         # Colors (colors.* and palette.*)
         assert 'colors.bg.page' in categorized['colors']
-        assert 'colors.accent.primary' in categorized['colors']
+        assert 'colors.primary' in categorized['colors']
         assert 'palette.neutral-3' in categorized['colors']
         assert 'palette.cyan' in categorized['colors']
         
@@ -333,14 +333,14 @@ class TestComparator:
     def test_compare_tokens_basic(self):
         """Test basic comparison logic."""
         used = {
-            'all': {'colors.bg.page', 'colors.bg.panel', 'colors.accent.primary'}
+            'all': {'colors.bg.page', 'colors.bg.panel', 'colors.primary'}
         }
         defined = {
             'all': {
                 'colors.bg.page',
                 'colors.bg.panel',
                 'colors.bg.surface',
-                'colors.accent.primary',
+                'colors.primary',
                 'colors.text.primary'
             }
         }
@@ -357,7 +357,7 @@ class TestComparator:
     def test_compare_tokens_with_missing(self):
         """Test when there are missing tokens."""
         used = {'all': {'colors.bg.page', 'colors.bg.panel', 'colors.accent.missing'}}
-        defined = {'all': {'colors.bg.page', 'colors.bg.panel', 'colors.accent.primary'}}
+        defined = {'all': {'colors.bg.page', 'colors.bg.panel', 'colors.primary'}}
         
         result = compare_tokens(used, defined)
         
@@ -578,7 +578,7 @@ class TestFixer:
         assert _generate_placeholder('colors.bg.page') == {'ref': 'palette.neutral-3'}
         assert _generate_placeholder('colors.bg.modal') == {'ref': 'palette.neutral-3'}
         assert _generate_placeholder('colors.text.primary') == {'ref': 'palette.neutral-14'}
-        assert _generate_placeholder('colors.accent.primary') == {'ref': 'palette.cyan'}
+        assert _generate_placeholder('colors.primary') == {'ref': 'palette.cyan'}
         assert _generate_placeholder('colors.border.default') == {'ref': 'palette.neutral-7'}
         assert _generate_placeholder('colors.state.hover') == {'ref': 'palette.overlay-light'}
         assert _generate_placeholder('colors.state.pressed') == {'ref': 'palette.overlay-medium'}
