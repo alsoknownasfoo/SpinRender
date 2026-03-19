@@ -7,30 +7,37 @@ No dependencies on core.theme or ui.custom_controls.
 import wx
 import threading
 import logging
+from SpinRender.core.theme import Theme
+from SpinRender.foundation.icons import get_glyph
 
 logger = logging.getLogger("SpinRender")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# HARDCODED THEME & FONT CONSTANTS
+# BOOTSTRAP FALLBACKS (Used if Theme is not available)
 # ─────────────────────────────────────────────────────────────────────────────
-BG_PAGE = wx.Colour(18, 18, 18)      # palette.neutral-3
-BG_INPUT = wx.Colour(13, 13, 13)     # palette.neutral-2
-TEXT_PRIMARY = wx.Colour(224, 224, 224)  # palette.neutral-14
-TEXT_SECONDARY = wx.Colour(119, 119, 119) # palette.neutral-11
-ACCENT_CYAN = wx.Colour(0, 188, 212) # palette.cyan
-ACCENT_GREEN = wx.Colour(76, 175, 80) # palette.green
-ACCENT_DANGER = wx.Colour(180, 0, 0) # palette.danger-medium
-BORDER_DEFAULT = wx.Colour(31, 31, 31) # palette.neutral-7
+def _get_color(token, fallback):
+    try:
+        t = Theme.current()
+        if t and t._data:
+            return t.color(token)
+    except Exception:
+        pass
+    return fallback
+
+# Hardcoded theme & font constants (Legacy fallbacks)
+BG_PAGE_FB = wx.Colour(18, 18, 18)      # palette.neutral-3
+BG_INPUT_FB = wx.Colour(13, 13, 13)     # palette.neutral-2
+TEXT_PRIMARY_FB = wx.Colour(224, 224, 224)  # palette.neutral-14
+TEXT_SECONDARY_FB = wx.Colour(119, 119, 119) # palette.neutral-11
+ACCENT_CYAN_FB = wx.Colour(0, 188, 212) # palette.cyan
+ACCENT_GREEN_FB = wx.Colour(76, 175, 80) # palette.green
+ACCENT_DANGER_FB = wx.Colour(180, 0, 0) # palette.danger-medium
+BORDER_DEFAULT_FB = wx.Colour(31, 31, 31) # palette.neutral-7
 
 JETBRAINS_MONO = "JetBrains Mono"
 MDI_FONT_FAMILY = "Material Design Icons"
 OSWALD = "Oswald"
 INTER = "Inter"
-
-STATUS_ICONS = {
-    "mdi-check-circle": "\U000F05E0",
-    "mdi-close": "\U000F0156",
-}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CUSTOM CONTROLS (BOOTSTRAP VERSIONS)
@@ -41,7 +48,7 @@ class RoundedPanel(wx.Panel):
     def __init__(self, parent, radius=4, bg_color=None):
         super().__init__(parent)
         self.radius = radius
-        self.bg_color = bg_color or BG_INPUT
+        self.bg_color = bg_color or _get_color("components.main.frame.bg", BG_INPUT_FB)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_SIZE, self.on_size)
@@ -94,8 +101,8 @@ class CustomButton(wx.Panel):
         # Determine colors based on type and interaction state
         if self.primary:
             # Action Button: Cyan background, Dark text
-            bg_base = ACCENT_CYAN
-            text_color = BG_INPUT
+            bg_base = _get_color("colors.primary", ACCENT_CYAN_FB)
+            text_color = _get_color("colors.gray-black", BG_INPUT_FB)
             border_pen = wx.TRANSPARENT_PEN
             
             if self.pressed:
@@ -105,21 +112,20 @@ class CustomButton(wx.Panel):
             else:
                 bg = bg_base
         elif self.danger:
-            # Exit Button: Page BG, White text, 1px Border
-            # Hover: Red background, Page BG text color
+            # Exit Button
             if self.hovered or self.pressed:
-                bg = ACCENT_DANGER
-                text_color = BG_PAGE
+                bg = _get_color("palette.danger-medium", ACCENT_DANGER_FB)
+                text_color = _get_color("colors.bg.page", BG_PAGE_FB)
                 border_pen = wx.TRANSPARENT_PEN
             else:
-                bg = BG_PAGE
-                text_color = wx.Colour(255, 255, 255) # Explicit pure white
-                border_pen = wx.Pen(BORDER_DEFAULT, 1)
+                bg = _get_color("colors.bg.page", BG_PAGE_FB)
+                text_color = wx.Colour(255, 255, 255)
+                border_pen = wx.Pen(_get_color("borders.default.color", BORDER_DEFAULT_FB), 1)
         else:
-            # Secondary: Input BG, White text, 1px Border
-            bg = BG_INPUT
-            text_color = TEXT_PRIMARY
-            border_pen = wx.Pen(BORDER_DEFAULT, 1)
+            # Secondary
+            bg = _get_color("components.component.input.default.frame.bg", BG_INPUT_FB)
+            text_color = _get_color("text.body.color", TEXT_PRIMARY_FB)
+            border_pen = wx.Pen(_get_color("borders.default.color", BORDER_DEFAULT_FB), 1)
 
         # Draw Background
         gc.SetBrush(wx.Brush(bg))
@@ -129,7 +135,6 @@ class CustomButton(wx.Panel):
         # Draw Label
         font_obj = wx.Font(11, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName=JETBRAINS_MONO)
         gfx_font = gc.CreateFont(font_obj, text_color)
-        # CRITICAL: Set font BEFORE measuring to ensure correct extent
         gc.SetFont(gfx_font)
         tw, th = gc.GetTextExtent(self.label)
         gc.DrawText(self.label, (width - tw) / 2, (height - th) / 2)
@@ -148,109 +153,74 @@ class CustomButton(wx.Panel):
     def on_enter(self, event):
         self.hovered = True
         self.Refresh()
-        self.Update()
 
     def on_leave(self, event):
         self.hovered = False
         self.pressed = False
         self.Refresh()
-        self.Update()
 
-# ─────────────────────────────────────────────────────────────────────────────
-# MAIN DIALOG
-# ─────────────────────────────────────────────────────────────────────────────
-
-class DependencyCheckDialog(wx.Dialog):
+class DependencyDialog(wx.Dialog):
     """
-    Setup dialog that implements the High-Density aesthetic EXACTLY.
-    Uses hardcoded values to remain safe for PyYAML-less bootstrap.
+    Chromeless, styled dialog for dependency checking.
+    Follows High-Density V2 aesthetic.
     """
-
-    def __init__(self, parent, dep_status, checker):
-        super().__init__(
-            parent,
-            title="SpinRender - Setup Required",
-            size=(500, 650),
-            style=wx.FRAME_NO_TASKBAR | wx.BORDER_NONE | wx.STAY_ON_TOP
-        )
-
-        self.dep_status = dep_status
+    def __init__(self, parent, checker):
+        super().__init__(parent, style=wx.FRAME_NO_TASKBAR | wx.BORDER_NONE | wx.STAY_ON_TOP)
         self.checker = checker
-        self.SetBackgroundColour(BG_PAGE)
-        
-        # UI state
-        self.current_dep_index = 0
-        self.num_deps = 0
+        self.dep_status = checker.get_status()
         self.drag_pos = None
-        
+        self.current_dep_index = 0
         self.timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.on_timer, self.timer)
+        self.Bind(wx.EVT_TIMER, self.on_timer)
 
-        self.build_ui()
+        self.SetSize((480, 520))
         self.Centre()
+        self.SetBackgroundColour(_get_color("colors.bg.page", BG_PAGE_FB))
 
-        # Dragging support
-        self.header.Bind(wx.EVT_LEFT_DOWN, self.on_left_down)
-        self.header.Bind(wx.EVT_LEFT_UP, self.on_left_up)
-        self.header.Bind(wx.EVT_MOTION, self.on_mouse_motion)
-        self.header_title.Bind(wx.EVT_LEFT_DOWN, self.on_left_down)
-        self.header_title.Bind(wx.EVT_LEFT_UP, self.on_left_up)
-        self.header_title.Bind(wx.EVT_MOTION, self.on_mouse_motion)
-        
-        self.Bind(wx.EVT_PAINT, self.on_paint_dialog)
-
-    def on_paint_dialog(self, event):
-        """Draw a 1px border around the entire dialog."""
-        dc = wx.PaintDC(self)
-        dc.SetPen(wx.Pen(BORDER_DEFAULT, 1))
-        dc.SetBrush(wx.TRANSPARENT_BRUSH)
-        w, h = self.GetSize()
-        dc.DrawRectangle(0, 0, w, h)
-
-    def build_ui(self):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        # 1. Header (Drag handle)
-        self.header = wx.Panel(self, size=(-1, 48))
-        self.header.SetBackgroundColour(BG_PAGE)
+        # 1. Header
+        header = wx.Panel(self, size=(-1, 60))
+        header.SetBackgroundColour(_get_color("colors.bg.page", BG_PAGE_FB))
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
-        self.header_title = wx.StaticText(self.header, label="SETUP REQUIRED")
-        self.header_title.SetForegroundColour(TEXT_PRIMARY)
-        self.header_title.SetFont(wx.Font(13, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName=OSWALD))
+        title = wx.StaticText(header, label="DEPENDENCY CHECK")
+        title.SetForegroundColour(_get_color("colors.secondary", ACCENT_CYAN_FB))
+        title.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName=JETBRAINS_MONO))
+        header_sizer.Add(title, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 24)
         
-        header_sizer.Add(self.header_title, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 16)
-        self.header.SetSizer(header_sizer)
-        main_sizer.Add(self.header, 0, wx.EXPAND)
+        header.SetSizer(header_sizer)
+        main_sizer.Add(header, 0, wx.EXPAND)
 
-        # Border separator
-        line = wx.Panel(self, size=(-1, 1))
-        line.SetBackgroundColour(BORDER_DEFAULT)
-        main_sizer.Add(line, 0, wx.EXPAND)
+        # Dragging bindings
+        header.Bind(wx.EVT_LEFT_DOWN, self.on_left_down)
+        header.Bind(wx.EVT_LEFT_UP, self.on_left_up)
+        header.Bind(wx.EVT_MOTION, self.on_mouse_motion)
 
         # 2. Content Area
         content = wx.Panel(self)
-        content.SetBackgroundColour(BG_PAGE)
+        content.SetBackgroundColour(_get_color("colors.bg.page", BG_PAGE_FB))
         self.content_sizer = wx.BoxSizer(wx.VERTICAL)
-        
-        msg = wx.StaticText(content, label="SpinRender requires the following dependencies to function:")
-        msg.SetForegroundColour(TEXT_SECONDARY)
-        msg.SetFont(wx.Font(11, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName=JETBRAINS_MONO))
-        self.content_sizer.Add(msg, 0, wx.ALL, 16)
 
-        # Dependency rows
+        msg = wx.StaticText(content, label="SpinRender requires the following dependencies to be installed in the KiCad Python environment:")
+        msg.SetForegroundColour(_get_color("text.body.color", TEXT_PRIMARY_FB))
+        msg.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName=INTER))
+        msg.Wrap(430)
+        self.content_sizer.Add(msg, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 24)
+
+        # Dependency List
         for dep_name, is_found in self.dep_status.items():
-            dep_panel = RoundedPanel(content, radius=4, bg_color=BG_INPUT)
+            dep_panel = RoundedPanel(content, radius=6, bg_color=_get_color("components.component.input.default.frame.bg", BG_INPUT_FB))
             dep_sizer = wx.BoxSizer(wx.VERTICAL)
             row_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-            dep_label = wx.StaticText(dep_panel, label=dep_name)
-            dep_label.SetForegroundColour(TEXT_PRIMARY)
+            dep_label = wx.StaticText(dep_panel, label=dep_name.upper())
+            dep_label.SetForegroundColour(_get_color("text.body.color", TEXT_PRIMARY_FB))
             dep_label.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName=JETBRAINS_MONO))
 
             icon_name = "mdi-check-circle" if is_found else "mdi-close"
-            icon_char = STATUS_ICONS.get(icon_name, "?")
-            status_color = ACCENT_GREEN if is_found else ACCENT_DANGER
+            icon_char = get_glyph(icon_name)
+            status_color = _get_color("colors.success", ACCENT_GREEN_FB) if is_found else _get_color("palette.danger-medium", ACCENT_DANGER_FB)
             
             status_label = wx.StaticText(dep_panel, label=icon_char)
             status_label.SetForegroundColour(status_color)
@@ -268,17 +238,17 @@ class DependencyCheckDialog(wx.Dialog):
 
         # 3. Progress Panel (hidden initially)
         self.progress_panel = wx.Panel(content)
-        self.progress_panel.SetBackgroundColour(BG_PAGE)
+        self.progress_panel.SetBackgroundColour(_get_color("colors.bg.page", BG_PAGE_FB))
         self.progress_panel.Hide()
         progress_sizer = wx.BoxSizer(wx.VERTICAL)
         
         self.progress_gauge = wx.Gauge(self.progress_panel, range=100, size=(-1, 4))
-        self.progress_gauge.SetBackgroundColour(BG_INPUT)
-        self.progress_gauge.SetForegroundColour(ACCENT_CYAN)
+        self.progress_gauge.SetBackgroundColour(_get_color("components.component.input.default.frame.bg", BG_INPUT_FB))
+        self.progress_gauge.SetForegroundColour(_get_color("colors.primary", ACCENT_CYAN_FB))
         progress_sizer.Add(self.progress_gauge, 0, wx.EXPAND | wx.BOTTOM, 8)
         
         self.progress_status = wx.StaticText(self.progress_panel, label="Initializing...")
-        self.progress_status.SetForegroundColour(TEXT_PRIMARY)
+        self.progress_status.SetForegroundColour(_get_color("text.body.color", TEXT_PRIMARY_FB))
         self.progress_status.SetFont(wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName=INTER))
         progress_sizer.Add(self.progress_status, 0, wx.EXPAND | wx.BOTTOM, 8)
         
@@ -286,8 +256,8 @@ class DependencyCheckDialog(wx.Dialog):
             self.progress_panel, 
             style=wx.TE_MULTILINE | wx.TE_READONLY | wx.NO_BORDER | wx.TE_RICH
         )
-        self.progress_log.SetBackgroundColour(BG_INPUT)
-        self.progress_log.SetForegroundColour(TEXT_SECONDARY)
+        self.progress_log.SetBackgroundColour(_get_color("components.component.input.default.frame.bg", BG_INPUT_FB))
+        self.progress_log.SetForegroundColour(_get_color("colors.gray-text", TEXT_SECONDARY_FB))
         self.progress_log.SetFont(wx.Font(8, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName=JETBRAINS_MONO))
         progress_sizer.Add(self.progress_log, 1, wx.EXPAND)
         
@@ -299,7 +269,7 @@ class DependencyCheckDialog(wx.Dialog):
 
         # 4. Footer
         footer = wx.Panel(self)
-        footer.SetBackgroundColour(BG_PAGE)
+        footer.SetBackgroundColour(_get_color("colors.bg.page", BG_PAGE_FB))
         footer_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         self.close_btn = CustomButton(footer, label="EXIT", primary=False, danger=True, size=(90, 36))
@@ -397,4 +367,3 @@ class DependencyCheckDialog(wx.Dialog):
             self.install_btn.Enable(True)
             self.close_btn.Enable(True)
             self.progress_status.SetLabel("Some installations failed.")
-            self.Layout()

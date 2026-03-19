@@ -4,6 +4,7 @@ Icon glyph mappings for UI.
 These map semantic icon names to their Unicode/character representation.
 The actual rendering uses the appropriate font (MDI) to display these.
 """
+from SpinRender.core.theme import Theme
 
 # Status icons used in dependency dialogs and other UI
 # These are Material Design Icons (MDI) hex code values
@@ -44,4 +45,28 @@ UI_ICONS = {
     "mdi-palette": "\U000F03E8",
 }
 
-__all__ = ["STATUS_ICONS", "UI_ICONS"]
+def get_glyph(name: str) -> str:
+    """
+    Get a glyph by name. 
+    Prioritizes V2 Theme resolution, falls back to legacy UI_ICONS/STATUS_ICONS.
+    """
+    # 1. Try V2 Theme
+    try:
+        t = Theme.current()
+        # Clean 'mdi-' if present for theme lookup
+        clean_name = name.replace('mdi-', '')
+        val = t.glyph(clean_name)
+        if val:
+            return val
+    except Exception:
+        pass
+
+    # 2. Try legacy mappings
+    if name in UI_ICONS:
+        return UI_ICONS[name]
+    if name in STATUS_ICONS:
+        return STATUS_ICONS[name]
+        
+    return name
+
+__all__ = ["STATUS_ICONS", "UI_ICONS", "get_glyph"]
