@@ -211,8 +211,10 @@ class ControlsSidePanel(wx.Panel):
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
         label = wx.StaticText(panel, label=_locale.get("parameters.rotation_heading", "ROTATION SETTINGS"))
-        label.SetForegroundColour(_theme.color("text.body.color"))
-        label.SetFont(_theme.font("subheader"))
+        lbl.SetForegroundColour(_theme.color("text.subheader.color"))
+        lbl.SetFont(_theme.font("subheader"))
+
+
         sizer.Add(label, 0, wx.BOTTOM, 6)
 
         # V2: Fetch icon_ref from locale for each axis. Colors are now ID-driven.
@@ -294,8 +296,9 @@ class ControlsSidePanel(wx.Panel):
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
         lbl = wx.StaticText(panel, label=_locale.get("parameters.period.label", "ROTATION PERIOD"))
-        lbl.SetForegroundColour(_theme.color("text.body.color"))
+        lbl.SetForegroundColour(_theme.color("text.subheader.color"))
         lbl.SetFont(_theme.font("subheader"))
+
         sizer.Add(lbl, 0, wx.BOTTOM, 6)
 
         crow = wx.Panel(panel)
@@ -329,8 +332,9 @@ class ControlsSidePanel(wx.Panel):
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
         lbl = wx.StaticText(panel, label=_locale.get("parameters.direction.label", "DIRECTION"))
-        lbl.SetForegroundColour(_theme.color("text.body.color"))
+        lbl.SetForegroundColour(_theme.color("text.subheader.color"))
         lbl.SetFont(_theme.font("subheader"))
+
         sizer.Add(lbl, 0, wx.BOTTOM, 6)
         
         # V2: Fetch labels and icon refs from locale
@@ -353,8 +357,9 @@ class ControlsSidePanel(wx.Panel):
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
         lbl = wx.StaticText(panel, label=_locale.get("parameters.lighting.label", "LIGHTING"))
-        lbl.SetForegroundColour(_theme.color("text.body.color"))
+        lbl.SetForegroundColour(_theme.color("text.subheader.color"))
         lbl.SetFont(_theme.font("subheader"))
+
         sizer.Add(lbl, 0, wx.BOTTOM, 6)
         
         # V2: Fetch labels and icon refs from locale
@@ -400,8 +405,9 @@ class ControlsSidePanel(wx.Panel):
         f_col = wx.Panel(cols_panel)
         f_sizer = wx.BoxSizer(wx.VERTICAL)
         f_lbl = wx.StaticText(f_col, label=_locale.get("parameters.format.label", "FORMAT"))
-        f_lbl.SetForegroundColour(_theme.color("text.body.color"))
-        f_lbl.SetFont(_theme.font("subheader"))
+        lbl.SetForegroundColour(_theme.color("text.subheader.color"))
+        lbl.SetFont(_theme.font("subheader"))
+
         f_sizer.Add(f_lbl, 0, wx.BOTTOM, 6)
         self.format_choices = ["MP4 (H.264)", "GIF", "PNG Sequence"]
         self.format_ids = ["mp4", "gif", "png_sequence"]
@@ -416,8 +422,9 @@ class ControlsSidePanel(wx.Panel):
         r_col = wx.Panel(cols_panel)
         r_sizer = wx.BoxSizer(wx.VERTICAL)
         r_lbl = wx.StaticText(r_col, label=_locale.get("parameters.resolution.label", "RESOLUTION"))
-        r_lbl.SetForegroundColour(_theme.color("text.body.color"))
-        r_lbl.SetFont(_theme.font("subheader"))
+        lbl.SetForegroundColour(_theme.color("text.subheader.color"))
+        lbl.SetFont(_theme.font("subheader"))
+
         r_sizer.Add(r_lbl, 0, wx.BOTTOM, 6)
         self.res_choices = ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
         self.res_ids = ["1920x1080", "1280x720", "800x800"]
@@ -435,8 +442,9 @@ class ControlsSidePanel(wx.Panel):
         bg_col = wx.Panel(panel)
         bg_vsizer = wx.BoxSizer(wx.VERTICAL)
         bg_lbl = wx.StaticText(bg_col, label=_locale.get("parameters.bg_color.label", "BACKGROUND COLOR"))
-        bg_lbl.SetForegroundColour(_theme.color("text.body.color"))
+        bg_lbl.SetForegroundColour(_theme.color("text.subheader.color"))
         bg_lbl.SetFont(_theme.font("subheader"))
+
         bg_vsizer.Add(bg_lbl, 0, wx.BOTTOM, 6)
 
         self.bg_picker = CustomColorPicker(bg_col, current_color=self.settings.bg_color)

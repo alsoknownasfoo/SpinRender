@@ -78,6 +78,8 @@ class TextStyles:
     @property
     def body_strong(self) -> TextStyle: return self._get_style("body_strong")
     @property
+    def subheader(self) -> TextStyle: return self._get_style("subheader")
+    @property
     def label_sm(self) -> TextStyle: return self._get_style("label") # Maps to label role
     @property
     def label_xs(self) -> TextStyle: return self._get_style("metadata") # Maps to metadata role
