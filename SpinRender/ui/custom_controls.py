@@ -766,6 +766,7 @@ class SectionLabel(wx.Panel):
         # V2 Mapping
         text_color = _theme.color("components.main.leftpanel.headers.color")
         line_color = _theme.color("components.main.divider.bg")
+        line_size = _theme.size("components.main.divider.size") or 1
         
         gfx_font = gc.CreateFont(_theme.font("header"), text_color)
         gc.SetFont(gfx_font)
@@ -775,7 +776,7 @@ class SectionLabel(wx.Panel):
         line_x = tw + 8
         line_y = height / 2
         if width - line_x > 0:
-            gc.SetPen(wx.Pen(line_color, 1))
+            gc.SetPen(wx.Pen(line_color, line_size))
             gc.StrokeLine(line_x, line_y, width, line_y)
 
 
