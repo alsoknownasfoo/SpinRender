@@ -130,11 +130,11 @@ text:
   header:
     color: "@colors.gray-white"
     font:
-      typeface: "@typography.families.display"
+      typeface: "@typography.families.mono"
       size: "@typography.scale.md"
       weight: 600
   subheader:
-    color: "@colors.gray-text"
+    color: "@colors.gray-white"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
@@ -145,6 +145,16 @@ text:
       typeface: "@typography.families.mono"
       size: "@typography.scale.base"
       weight: 400
+  body_strong:
+    ref: "@text.body"
+    font:
+      weight: 600
+  numeric_value:
+    color: "@colors.secondary"
+    font:
+      typeface: "@typography.families.mono"
+      size: "@typography.scale.md"
+      weight: 600
   links:
     color: "@colors.primary"
     font:
@@ -347,31 +357,29 @@ components:
       frame:
         width: 90
         height: 64
-        bg: "@colors.transparent"
+        bg:
+          default: "@colors.transparent"
+          hover: "@colors.primary"
+          active: "@colors.primary"
+        border: "@borders.subtle"
         radius: "@radius.lg"
         padding:
           vertical: "@typography.spacing.sm"
         cursor: "hand"
       gap: 8
-      default:
-        bg: "@colors.gray-dark"
-        border: "@borders.subtle"
-        icon: "@text.icon_lg"
-        label: "@text.label"
-      selected:
-        bg: "@colors.gray-medium"
-        border: "@borders.focus"
-        icon:
-          ref: "@text.icon_lg"
-          color: "@colors.primary"
-        label:
-          ref: "@text.label"
-          color: "@colors.primary"
-    card1:
-      ref: "@components.preset_card.default"
-      selected:
-        bg: "@colors.primary"
-        border: "@borders.focus"
+      icon:
+        ref: "@text.icon_lg"
+        color:
+          default: "@colors.gray-white"
+          hover: "@colors.gray-dark"
+          active: "@colors.gray-dark"
+      label: 
+        ref: "@text.label"
+        color:
+          default: "@colors.gray-white"
+          hover: "@colors.gray-dark"
+          active: "@colors.gray-dark"
+    card1: "@components.preset_card.default"
     card2: "@components.preset_card.default"
     card3: "@components.preset_card.default"
     card4: "@components.preset_card.default"

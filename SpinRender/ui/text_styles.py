@@ -62,85 +62,56 @@ class TextStyles:
     def theme(self):
         return Theme.current()
 
-    @property
-    def body(self) -> TextStyle:
+    def _get_style(self, role: str) -> TextStyle:
+        """Helper to create TextStyle from theme role."""
+        font = self.theme.font(role)
+        color = self.theme.color(f"text.{role}.color")
         return TextStyle(
-            family=self.theme.font_family("mono"),
-            size=self.theme.font_size("base"),
-            weight=self.theme.font_weight("normal")
+            family=font.GetFaceName(),
+            size=font.GetPointSize(),
+            weight=font.GetWeight(),
+            color=color
         )
 
     @property
-    def body_strong(self) -> TextStyle:
-        return TextStyle(
-            family=self.theme.font_family("mono"),
-            size=self.theme.font_size("base"),
-            weight=self.theme.font_weight("semibold")
-        )
-
+    def body(self) -> TextStyle: return self._get_style("body")
     @property
-    def label_sm(self) -> TextStyle:
-        return TextStyle(
-            family=self.theme.font_family("mono"),
-            size=self.theme.font_size("sm"),
-            weight=self.theme.font_weight("semibold")
-        )
-
+    def body_strong(self) -> TextStyle: return self._get_style("body_strong")
     @property
-    def label_xs(self) -> TextStyle:
-        return TextStyle(
-            family=self.theme.font_family("mono"),
-            size=self.theme.font_size("xs"),
-            weight=self.theme.font_weight("bold")
-        )
-
+    def label_sm(self) -> TextStyle: return self._get_style("label") # Maps to label role
     @property
-    def numeric_value(self) -> TextStyle:
-        return TextStyle(
-            family=self.theme.font_family("mono"),
-            size=self.theme.font_size("md"),
-            weight=self.theme.font_weight("semibold")
-        )
-
+    def label_xs(self) -> TextStyle: return self._get_style("metadata") # Maps to metadata role
     @property
-    def numeric_unit(self) -> TextStyle:
-        return TextStyle(
-            family=self.theme.font_family("mono"),
-            size=self.theme.font_size("base"),
-            weight=self.theme.font_weight("normal")
-        )
-
+    def numeric_value(self) -> TextStyle: return self._get_style("numeric_value")
+    @property
+    def numeric_unit(self) -> TextStyle: return self._get_style("body")
+    
     @property
     def section_heading(self) -> TextStyle:
+        style = self._get_style("header")
         return TextStyle(
-            family=self.theme.font_family("display"),
-            size=self.theme.font_size("md"),
-            weight=self.theme.font_weight("semibold"),
+            family=style.family,
+            size=style.size,
+            weight=style.weight,
+            color=style.color,
             formatting="uppercase"
         )
 
     @property
     def panel_title(self) -> TextStyle:
+        style = self._get_style("title")
         return TextStyle(
-            family=self.theme.font_family("display"),
-            size=self.theme.font_size("xl"),
-            weight=self.theme.font_weight("bold"),
+            family=style.family,
+            size=style.size,
+            weight=style.weight,
+            color=style.color,
             formatting="uppercase"
         )
 
     @property
-    def icon(self) -> TextStyle:
-        return TextStyle(
-            family=self.theme.font_family("icon"),
-            size=self.theme.font_size("icon")
-        )
-
+    def icon(self) -> TextStyle: return self._get_style("icon")
     @property
-    def icon_lg(self) -> TextStyle:
-        return TextStyle(
-            family=self.theme.font_family("icon"),
-            size=self.theme.font_size("icon-lg")
-        )
+    def icon_lg(self) -> TextStyle: return self._get_style("icon_lg")
 
 # Singleton access
 TextStyles = TextStyles()
