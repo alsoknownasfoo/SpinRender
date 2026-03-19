@@ -447,6 +447,7 @@ components:
       frame:
         height: 36
         bg: "@colors.transparent"
+        border: "@borders.subtle" 
         radius: "@radius.md"
         padding:
           horizontal: "@typography.spacing.base"
@@ -471,6 +472,7 @@ components:
       ref: "@components.button.default"
       frame:
         bg: "@colors.transparent"
+        border: "@borders.subtle" 
         hover: "rgba(255,255,255,0.08)"
     options:
       ref: "@components.button.default"
@@ -492,6 +494,9 @@ components:
         color: "@colors.white"
     render:
       ref: "@components.button.ok"
+      frame:
+        bg: "@colors.transparent"
+        border: "@borders.strong"
 
   scrollbar:
     track:

@@ -484,11 +484,15 @@ class CustomButton(wx.Panel):
         text_colors = _theme.color_states(label_token)
         text_base = text_colors[0]
         
-        # Border defaults
-        border_token = f"{token}.frame.border.color"
-        border_base = _theme.color(border_token) if _theme.has_token(border_token) else None
+        # Border defaults (V2: Fetch full object to get color + size)
+        border_conf = _theme._resolve(f"{token}.frame.border")
+        if not isinstance(border_conf, dict):
+            border_conf = {}
+            
+        border_color = _theme.parse_color(border_conf.get("color")) if border_conf.get("color") else None
+        border_size = int(border_conf.get("size", 1))
 
-        bg, text_color, border_color = bg_base, text_base, border_base
+        bg, text_color = bg_base, text_base
 
         if self.bg_color_override:
             if self.pressed and self.bg_color_pressed: bg = self.bg_color_pressed
@@ -518,8 +522,10 @@ class CustomButton(wx.Panel):
 
         if not self.ghost or (self.hovered or self.pressed):
             gc.SetBrush(wx.Brush(final_bg))
-            if final_border: gc.SetPen(wx.Pen(final_border, 1))
-            else: gc.SetPen(wx.TRANSPARENT_PEN)
+            if final_border and border_size > 0: 
+                gc.SetPen(wx.Pen(final_border, border_size))
+            else: 
+                gc.SetPen(wx.TRANSPARENT_PEN)
             gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 6)
 
         # Resolve icon from theme glyphs (V2 logic)
