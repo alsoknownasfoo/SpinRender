@@ -123,6 +123,15 @@ class Theme:
         current = self._data
         for key in keys:
             if not isinstance(current, dict) or key not in current:
+                # Fallback to ref if key not found locally
+                if isinstance(current, dict) and "ref" in current:
+                    try:
+                        resolved = self._resolve(current["ref"])
+                        if isinstance(resolved, dict) and key in resolved:
+                            current = resolved[key]
+                            continue
+                    except:
+                        pass
                 return False
             current = current[key]
         return True
@@ -132,7 +141,8 @@ class Theme:
         Resolve a dot-path token, following 'ref' references.
         Supports both dict-style ref: {ref: "token"} and V2 string-style @token.
         Recursive: follows references until a terminal value is reached.
-        Prioritizes local overrides over referenced values during traversal.
+        Inheritance: If a sub-key is missing in a local override, attempts
+        to find it in the referenced base.
         """
         if not isinstance(path, str):
             return path
@@ -140,34 +150,37 @@ class Theme:
         if path.startswith("@"):
             path = path[1:]
 
+        # If it's a literal or doesn't look like a path, return as-is
         if '.' not in path and path not in self._data:
-            return path
+            if path.startswith("#") or path.startswith("rgba(") or path.isalpha():
+                return path
 
         node = self._data
         parts = path.split(".")
         
         for i, key in enumerate(parts):
             if not isinstance(node, dict):
-                logger.error(f"Theme: Cannot traverse into {type(node)} at '{key}' in '{path}'")
-                return "#FF00FF"
+                break
 
-            # 1. Try local key first (Override priority)
             if key in node:
+                # Found locally
                 node = node[key]
-            # 2. If not found locally, try following a reference if present
             elif "ref" in node:
-                resolved_base = self._resolve(node["ref"])
-                if isinstance(resolved_base, dict) and key in resolved_base:
-                    node = resolved_base[key]
-                else:
-                    logger.error(f"Theme: Undefined token: '{path}' (missing '{key}' in both local and ref)")
+                # Not found locally, but level has a reference.
+                base_ref = node["ref"]
+                remaining_path = ".".join(parts[i:])
+                
+                if base_ref == path or base_ref == "@" + path:
+                    logger.error(f"Theme: Circular reference detected at '{path}'")
                     return "#FF00FF"
+                
+                # Recursively resolve from base
+                return self._resolve(f"{base_ref}.{remaining_path}")
             else:
                 logger.error(f"Theme: Undefined token: '{path}' (missing '{key}')")
                 return "#FF00FF"
-            
-            # If the current node itself is a reference, resolve it for the NEXT iteration
-            # But only if it's NOT the last key (last key resolution is handled at end)
+
+            # Mid-path reference resolution
             if i < len(parts) - 1:
                 while isinstance(node, dict) and "ref" in node:
                     node = self._resolve(node["ref"])
@@ -292,7 +305,7 @@ class Theme:
             resolved = self._resolve(value)
             if isinstance(resolved, str) and not resolved.startswith("@"):
                 return self._parse_color(resolved)
-            return resolved # If _resolve returned a wx.Colour (unlikely but possible)
+            return resolved 
 
         # 1. Try wx.ColourDatabase for named colors
         named_color = wx.Colour(value)
@@ -384,29 +397,54 @@ class Theme:
         return token in palette
 
     def color_states(self, token: str, states: int = 3) -> list['wx.Colour']:
-        """Resolve a color token to a list of wx.Colour objects for [normal, hover, active] states."""
+        """Resolve a color token to a list of wx.Colour objects for [normal, hover, active] states.
+        
+        V2: Supports explicit 'hover' and 'pressed' sibling properties if token is a path
+        to a value in a dictionary (e.g. components.button.close.frame.bg).
+        """
+        # 1. Resolve the main token
         raw = self._resolve(token)
 
-        # Normalize to list and resolve each element
+        # 2. Case: Explicit list [normal, hover, active]
         if isinstance(raw, list):
             resolved_values = []
             for v in raw:
-                if isinstance(v, dict) and 'ref' in v:
-                    resolved_values.append(self._resolve(v['ref']))
-                elif isinstance(v, str):
-                    try:
-                        resolved_values.append(self._resolve(v))
-                    except KeyError:
-                        resolved_values.append(v)
-                else:
-                    resolved_values.append(v)
+                resolved_values.append(self._resolve(v) if isinstance(v, str) and v.startswith("@") else v)
             colors = [self._parse_color(rv) for rv in resolved_values]
+        
+        # 3. Case: Explicit dictionary with hover/pressed keys
+        elif isinstance(raw, dict) and ("hover" in raw or "pressed" in raw):
+            normal = raw.get("bg") or raw.get("color") or raw.get("value")
+            hover = raw.get("hover")
+            pressed = raw.get("pressed")
+            
+            colors = [self._parse_color(normal)]
+            if hover: colors.append(self._parse_color(hover))
+            if pressed: colors.append(self._parse_color(pressed))
+        
+        # 4. Case: Dot-path fallback for siblings (e.g. token='...frame.bg' -> look for '...frame.hover')
+        elif '.' in token:
+            parent_path = ".".join(token.split(".")[:-1])
+            leaf_key = token.split(".")[-1]
+            
+            try:
+                parent_node = self._resolve(parent_path)
+                if isinstance(parent_node, dict):
+                    # If looking for 'bg', also check for 'hover' and 'pressed' in the same dict
+                    colors = [self._parse_color(raw)]
+                    
+                    # Try to find stateful siblings
+                    for state_key in ["hover", "pressed", "active"]:
+                        if state_key in parent_node:
+                            colors.append(self._parse_color(parent_node[state_key]))
+                else:
+                    colors = [self._parse_color(raw)]
+            except Exception:
+                colors = [self._parse_color(raw)]
         else:
-            if isinstance(raw, dict) and 'ref' in raw:
-                raw = self._resolve(raw['ref'])
             colors = [self._parse_color(raw)]
 
-        # Pad with shifted colors
+        # 5. Pad with shifted colors if not enough states provided
         while len(colors) < states:
             base = colors[-1]
             if len(colors) == 1:
@@ -462,7 +500,7 @@ class Theme:
         if isinstance(size_spec, dict) and "ref" in size_spec:
             size = int(self._resolve(size_spec["ref"]))
         elif isinstance(size_spec, str) and size_spec.startswith("@"):
-            size = int(self._resolve(size_spec[1:]))
+            size = int(size_spec[1:])
         else:
             size = int(size_spec) if not isinstance(size_spec, (int, float)) else int(size_spec)
 
@@ -471,7 +509,7 @@ class Theme:
         if isinstance(weight_spec, dict) and "ref" in weight_spec:
             weight = int(self._resolve(weight_spec["ref"]))
         elif isinstance(weight_spec, str) and weight_spec.startswith("@"):
-            weight = int(self._resolve(weight_spec[1:]))
+            weight = int(weight_spec[1:])
         else:
             weight = int(weight_spec) if not isinstance(weight_spec, (int, float)) else int(weight_spec)
 
