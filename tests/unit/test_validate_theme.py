@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 # Add tools directory to path
-sys.path.insert(0, '/Users/foo/Code/SpinRender_claude/tools')
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
 
 import pytest
 
@@ -75,7 +75,7 @@ a = theme.color("colors.primary")
 b = theme.size("spacing.lg")
 
 # Pattern 2: _theme.token()
-c = _theme.font("fonts.body")
+c = _theme.font("body")
 
 # Pattern 3: Theme.current().token()
 d = Theme.current().color("palette.neutral-1")
@@ -84,7 +84,7 @@ d = Theme.current().color("palette.neutral-1")
         tokens = extract_tokens_from_ast(tree)
         assert 'colors.primary' in tokens
         assert 'spacing.lg' in tokens
-        assert 'fonts.body' in tokens
+        assert 'body' in tokens
         assert 'palette.neutral-1' in tokens
 
     def test_extract_tokens_different_types(self):
@@ -93,18 +93,18 @@ d = Theme.current().color("palette.neutral-1")
 theme.color("colors.bg.page")
 theme.color_states("colors.state.hover")
 theme.size("spacing.sm")
-theme.font_size("typography.scale.h1")
-theme.font("fonts.mono")
-theme.font_family("typography.presets.body")
+theme.font_size("text.body.font.size")
+theme.font("body")
+theme.glyph("render-action")
 '''
         tree = ast.parse(code)
         tokens = extract_tokens_from_ast(tree)
         assert 'colors.bg.page' in tokens
         assert 'colors.state.hover' in tokens
         assert 'spacing.sm' in tokens
-        assert 'typography.scale.h1' in tokens
-        assert 'fonts.mono' in tokens
-        assert 'typography.presets.body' in tokens
+        assert 'text.body.font.size' in tokens
+        assert 'body' in tokens
+        assert 'render-action' in tokens
 
     def test_extract_tokens_ignores_non_string_args(self):
         """Test that non-string arguments are ignored."""
@@ -139,9 +139,9 @@ some_object.theme.color("ignore.me")
             'palette.neutral-3',
             'palette.cyan',
             'spacing.md',
-            'typography.scale.h1',
+            'text.body.font.size',
             'components.button.bg',
-            'fonts.mono'
+            'glyphs.render-action'
         }
         categorized = _categorize_tokens(tokens)
         
@@ -151,15 +151,15 @@ some_object.theme.color("ignore.me")
         assert 'palette.neutral-3' in categorized['colors']
         assert 'palette.cyan' in categorized['colors']
         
-        # Sizes (spacing.* and typography.scale.*)
+        # Sizes (spacing.* and text.*.size)
         assert 'spacing.md' in categorized['sizes']
-        assert 'typography.scale.h1' in categorized['sizes']
+        assert 'text.body.font.size' in categorized['sizes']
         
         # Components
         assert 'components.button.bg' in categorized['components']
         
-        # Fonts (everything else used with font methods)
-        assert 'fonts.mono' in categorized['fonts']
+        # Glyphs
+        assert 'glyphs.render-action' in categorized['fonts']
         
         # All should be present
         assert categorized['all'] == tokens
@@ -233,9 +233,9 @@ colors:
                     'primary': {'ref': 'palette.neutral-14'}
                 }
             },
-            'typography': {
-                'scale': {
-                    'h1': {'size': 24}
+            'text': {
+                'body': {
+                    'font': {'size': 11}
                 }
             }
         }
@@ -245,7 +245,7 @@ colors:
             'colors.bg.page',
             'colors.bg.panel',
             'colors.text.primary',
-            'typography.scale.h1'
+            'text.body.font'
         }
         assert tokens == expected
 
@@ -271,17 +271,16 @@ colors:
         data = {
             'palette': {'red': '#FF0000'},
             'colors': {'bg': {'page': {'ref': 'palette.red'}}},
-            'typography': {'scale': {'body': 14}},
+            'text': {'body': {'font': {'size': 14}}},
             'spacing': {'sm': 8, 'md': 16},
             'borders': {'radius': {'md': 4}},
             'components': {'button': {'bg': {'ref': 'colors.bg.page'}}}
         }
         result = categorize_tokens(collect_tokens(data))
         
-        assert 'palette.neutral-1' not in result['palette']  # our test key is 'red'
         assert 'palette.red' in result['palette']
         assert 'colors.bg.page' in result['colors']
-        assert 'typography.scale.body' in result['typography']
+        assert 'text.body.font' in result['text']
         assert 'spacing.sm' in result['spacing']
         assert 'spacing.md' in result['spacing']
         assert 'borders.radius.md' in result['borders']
@@ -301,7 +300,7 @@ palette:
         assert 'palette' in result
         assert result['palette'] == {'palette.red'}
         assert result['colors'] == set()
-        assert result['typography'] == set()
+        assert result['text'] == set()
         assert result['spacing'] == set()
         assert result['borders'] == set()
         assert result['components'] == set()
@@ -319,8 +318,8 @@ palette:
         result = parse_yaml(str(yaml_file))
         
         # All categories should be empty
-        for cat in ['palette', 'colors', 'typography', 'spacing', 'borders', 'components', 'all']:
-            assert result[cat] == set()
+        for cat in ['palette', 'colors', 'text', 'glyphs', 'spacing', 'borders', 'components', 'all']:
+            assert result.get(cat, set()) == set()
 
 
 # ============================================================================
@@ -356,12 +355,12 @@ class TestComparator:
 
     def test_compare_tokens_with_missing(self):
         """Test when there are missing tokens."""
-        used = {'all': {'colors.bg.page', 'colors.bg.panel', 'colors.accent.missing'}}
+        used = {'all': {'colors.bg.page', 'colors.bg.panel', 'colors.missing'}}
         defined = {'all': {'colors.bg.page', 'colors.bg.panel', 'colors.primary'}}
         
         result = compare_tokens(used, defined)
         
-        assert 'colors.accent.missing' in result.missing
+        assert 'colors.missing' in result.missing
         assert abs(result.coverage - 66.67) < 0.1
 
     def test_coverage_calculation(self):
@@ -428,8 +427,8 @@ class TestComparator:
     def test_generate_report_text(self):
         """Test text report generation."""
         result = ValidationResult(
-            used={'colors.bg', 'colors.accent', 'spacing.md'},
-            defined={'colors.bg', 'colors.accent', 'colors.text', 'spacing.md', 'spacing.lg'},
+            used={'colors.bg', 'colors', 'spacing.md'},
+            defined={'colors.bg', 'colors', 'colors.text', 'spacing.md', 'spacing.lg'},
             missing=set(),
             unused={'colors.text', 'spacing.lg'},
             coverage=100.0,
@@ -522,7 +521,7 @@ class TestComparator:
         tokens = {
             'colors.bg.page',
             'colors.text.primary',
-            'typography.scale.h1',
+            'text.body.font',
             'spacing.md',
             'components.button.bg',
             'borders.radius.sm'
@@ -530,13 +529,13 @@ class TestComparator:
         categorized = _categorize_by_prefix(tokens)
         
         assert 'colors' in categorized
-        assert 'typography' in categorized
+        assert 'text' in categorized
         assert 'spacing' in categorized
         assert 'components' in categorized
         assert 'borders' in categorized
         
         assert 'colors.bg.page' in categorized['colors']
-        assert 'typography.scale.h1' in categorized['typography']
+        assert 'text.body.font' in categorized['text']
 
     def test_empty_sets(self):
         """Test comparison with empty sets."""
@@ -588,18 +587,10 @@ class TestFixer:
         placeholder = _generate_placeholder('palette.neutral-1')
         assert placeholder == "#XXXXXX"
 
-    def test_generate_placeholder_typography(self):
-        """Test placeholder for typography tokens."""
-        assert _generate_placeholder('typography.scale.h1') == 11
-        assert _generate_placeholder('typography.weights.bold') == 400
-        assert _generate_placeholder('typography.families.mono') == "mono"
+    def test_generate_placeholder_text(self):
+        """Test placeholder for text tokens."""
+        assert _generate_placeholder('text.body.font') == {'size': 11, 'typeface': 'JetBrains Mono', 'weight': 400}
         
-        preset = _generate_placeholder('typography.presets.body')
-        assert isinstance(preset, dict)
-        assert 'family' in preset
-        assert 'size' in preset
-        assert 'weight' in preset
-
     def test_generate_placeholder_spacing(self):
         """Test placeholder for spacing tokens."""
         assert _generate_placeholder('spacing.md') == 10
@@ -616,11 +607,6 @@ class TestFixer:
         placeholder = _generate_placeholder('components.button.bg')
         assert isinstance(placeholder, list)
         assert 'colors.bg.input' in placeholder
-        
-        # Font-related component
-        placeholder = _generate_placeholder('components.card.font')
-        assert isinstance(placeholder, dict)
-        assert 'ref' in placeholder
         
         # Radius-related component
         placeholder = _generate_placeholder('components.dialog.radius')
@@ -668,8 +654,6 @@ colors:
         yaml_file = tmp_path / "test.yaml"
         yaml_file.write_text(yaml_content)
         
-        yaml_data = parse_yaml(str(yaml_file))
-        # Manually construct a proper dict structure (parse_yaml returns categorized sets, not raw data)
         # Let's use yaml.safe_load directly
         import yaml
         with open(yaml_file, 'r') as f:

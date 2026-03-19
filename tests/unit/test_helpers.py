@@ -124,7 +124,7 @@ class TestCreateFrame:
         """Creates wx.Panel (FakePanel) with given parent."""
         helpers, _ = helpers_module
         parent = MagicMock()
-        frame = helpers.create_frame(parent, 'colors.bg.input')
+        frame = helpers.create_frame(parent, 'colors.bg.page')
         assert isinstance(frame, FakePanel)
         assert frame.parent is parent
 
@@ -132,9 +132,9 @@ class TestCreateFrame:
         """Background color set from theme token."""
         helpers, theme = helpers_module
         parent = MagicMock()
-        frame = helpers.create_frame(parent, 'colors.bg.surface')
+        frame = helpers.create_frame(parent, 'colors.bg.page')
         bg = frame.GetBackgroundColor()
-        expected = theme.color("colors.bg.surface")
+        expected = theme.color("colors.bg.page")
         assert bg.Red() == expected.Red() and bg.Green() == expected.Green() and bg.Blue() == expected.Blue()
 
     def test_token_validation_raises_for_unknown(self):
@@ -174,10 +174,10 @@ class TestCreateText:
         """Foreground color set from style.color when provided."""
         helpers, theme = helpers_module
         parent = MagicMock()
-        style = helpers.TextStyle(family="Test", size=11, weight=400, color=theme.color("colors.accent.cyan"))
+        style = helpers.TextStyle(family="Test", size=11, weight=400, color=theme.color("colors.cyan"))
         text = helpers.create_text(parent, "Label", style)
         fg = text.GetForegroundColor()
-        expected = theme.color("colors.accent.cyan")
+        expected = theme.color("colors.cyan")
         assert fg.Red() == expected.Red() and fg.Green() == expected.Green() and fg.Blue() == expected.Blue()
 
     def test_no_foreground_when_color_none(self, helpers_module):
@@ -253,7 +253,7 @@ class TestApplyDisabledState:
         widget = FakePanel(None)
         import SpinRender.core.theme as theme_mod
         theme = theme_mod.Theme.current()
-        original = theme.color("colors.accent.cyan")
+        original = theme.color("colors.cyan")
         widget.SetBackgroundColour(original)
 
         import SpinRender.ui.helpers as helpers
@@ -272,7 +272,7 @@ class TestApplyDisabledState:
         widget = FakePanel(None)
         import SpinRender.core.theme as theme_mod
         theme = theme_mod.Theme.current()
-        original = theme.color("colors.accent.cyan")
+        original = theme.color("colors.cyan")
         widget.SetBackgroundColour(original)
 
         import SpinRender.ui.helpers as helpers

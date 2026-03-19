@@ -20,7 +20,7 @@ class TestTextStyle:
 
     def test_textstyle_creation(self):
         """Test TextStyle can be created with all fields."""
-        color = _theme.color("colors.gray-white")  # V2: primary text color
+        color = _theme.color("text.body.color")  # V2: primary text color
         style = TextStyle(
             family="JetBrains Mono",
             size=11,
@@ -49,7 +49,7 @@ class TestTextStyle:
 
     def test_textstyle_is_frozen(self):
         """Test that TextStyle instances are immutable."""
-        color = _theme.color("colors.gray-white")  # V2: primary text color
+        color = _theme.color("text.body.color")  # V2: primary text color
         style = TextStyle(
             family="JetBrains Mono",
             size=11,
@@ -133,7 +133,7 @@ class TestTextStyle:
 
     def test_textstyle_full_workflow(self):
         """Test complete TextStyle workflow: format text, create font."""
-        color = _theme.color("colors.accent.cyan")
+        color = _theme.color("colors.cyan")
         style = TextStyle(
             family="Oswald",
             size=18,
@@ -213,10 +213,10 @@ class TestTextStyles:
         assert style.formatting == "uppercase"
 
     def test_icon_token(self):
-        """Test icon uses MDI font at 16px (V2 typography.scale.icon)."""
+        """Test icon uses MDI font at 16px (V2 text.icon.font)."""
         style = TextStyles.icon
         assert style.family == _theme.font_family("icon")
-        assert style.size == 16  # V2: typography.scale.icon
+        assert style.size == 16  # V2: text.icon.font.size
 
     def test_icon_lg_token(self):
         """Test icon-lg uses 20px size."""
