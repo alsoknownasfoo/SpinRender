@@ -133,7 +133,7 @@ def create_section_label(parent, text):
     panel = wx.Panel(parent)
     sizer = wx.BoxSizer(wx.HORIZONTAL)
     label = wx.StaticText(panel, label=text)
-    label.SetForegroundColour(_theme.color("colors.accent.primary"))
+    label.SetForegroundColour(_theme.color("colors.primary"))
     label.SetFont(TextStyle(family=_theme.font_family("display"), size=13, weight=600).create_font())
     sizer.Add(label, 0, wx.ALIGN_CENTER_VERTICAL)
     line = wx.Panel(panel, size=(60, 1))

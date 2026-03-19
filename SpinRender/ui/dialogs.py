@@ -87,7 +87,7 @@ class BaseStyledDialog(wx.Dialog):
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.header_title = wx.StaticText(header, label=title_text)
-        self.header_title.SetForegroundColour(_theme.color("colors.accent.secondary") if "SETUP" in title_text else _theme.color("colors.text.primary"))
+        self.header_title.SetForegroundColour(_theme.color("colors.secondary") if "SETUP" in title_text else _theme.color("colors.text.primary"))
         self.header_title.SetFont(TextStyle(family=_theme.font_family("mono"), size=13, weight=600).create_font())
         
         header_sizer.Add(self.header_title, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 16)
@@ -224,7 +224,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         link_sizer.Add(see_txt, 0, wx.ALIGN_CENTER_VERTICAL)
 
         link_txt = wx.StaticText(link_row, label=_locale.get("dialog.advanced.docs_link", "kicad-cli render options"))
-        link_txt.SetForegroundColour(_theme.color("colors.accent.primary")); link_txt.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=400).create_font())
+        link_txt.SetForegroundColour(_theme.color("colors.primary")); link_txt.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=400).create_font())
         link_txt.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         link_sizer.Add(link_txt, 0, wx.ALIGN_CENTER_VERTICAL)
         
@@ -262,7 +262,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
 
         from utils.logger import SpinLogger
         open_logs_txt = wx.StaticText(content, label=_locale.get("parameters.open_logs", "OPEN LOGS FOLDER"))
-        open_logs_txt.SetForegroundColour(_theme.color("colors.accent.primary"))
+        open_logs_txt.SetForegroundColour(_theme.color("colors.primary"))
         open_logs_txt.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font())
         open_logs_txt.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         open_logs_txt.Bind(wx.EVT_LEFT_DOWN, lambda e: SpinLogger.open_logs_folder())

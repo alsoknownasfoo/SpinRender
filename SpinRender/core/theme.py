@@ -25,7 +25,7 @@ class Theme:
     Usage:
         Theme.load("dark")           # Load theme by name, sets singleton
         Theme.current()              # Get loaded singleton
-        Theme.current().color("colors.accent.primary")  # → wx.Colour
+        Theme.current().color("colors.primary")  # → wx.Colour
         Theme.current().font("body")  # → wx.Font
         Theme.current().size("typography.scale.base")  # → int
     """
@@ -134,6 +134,10 @@ class Theme:
         If path is not a valid token but looks like a color name, returns it as-is.
         Returns pink (#FF00FF) if undefined.
         """
+        # V2: Strip the '@' prefix if this is a string-based reference
+        if path.startswith("@"):
+            path = path[1:]
+
         node = self._data
         is_token_path = '.' in path or path in node
 
@@ -339,7 +343,7 @@ class Theme:
         return wx.Colour(r, g, b, a)
 
     def color(self, token: str, state: int = 0) -> 'wx.Colour':
-        """Resolve a color token to a wx.Colour. e.g. 'colors.accent.primary'."""
+        """Resolve a color token to a wx.Colour. e.g. 'colors.primary'."""
         logger.debug(f"Theme usage: resolve color '{token}' (state={state})")
         states = self.color_states(token)
         if state >= len(states):
@@ -483,26 +487,18 @@ class Theme:
             faceName=family
         )
 
+    def frame(self, path: str) -> dict[str, Any]:
+        """Resolve a full frame object (bg, radius, border, etc.)."""
+        return self._resolve(f"components.{path}.frame")
+
+    def border(self, role: str = "default") -> dict[str, Any]:
+        """Resolve a semantic border role."""
+        return self._resolve(f"borders.{role}")
+
+    def text_style(self, role: str) -> dict[str, Any]:
+        """Resolve a global text style role (font + color)."""
+        return self._resolve(f"text.{role}")
+
     def glyph(self, name: str) -> str:
-        """Get a glyph Unicode string by name from the glyphs section.
-
-        Example:
-            theme.glyph("render-action") → "\U000F0A1C"
-
-        Returns:
-            Unicode string representing the glyph, or empty string if not found.
-        """
-        token = f"glyphs.{name}"
-        value = self._resolve(token)
-
-        # If resolution failed, _resolve returns pink hex; detect that
-        if isinstance(value, str) and value.startswith("#") and value.endswith("FF00FF"):
-            logger.warning(f"Theme: Glyph '{name}' not found")
-            return ""
-
-        # Return string value directly
-        if isinstance(value, str):
-            return value
-
-        logger.warning(f"Theme: Glyph '{name}' has unexpected type {type(value)}")
-        return ""
+        """Get a glyph Unicode string by name."""
+        return self._resolve(f"glyphs.{name}")
