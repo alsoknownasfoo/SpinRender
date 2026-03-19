@@ -228,9 +228,9 @@ class CustomToggleButton(wx.Panel):
     def _draw_side(self, gc, label, icon_name, x_offset, width, height, color):
         # Resolve icon from glyphs
         icon_char = ""
-        if icon_name:
-            stripped = icon_name.replace('mdi-', '')
-            icon_char = _theme.glyph(stripped) or icon_name
+        if icon_name and str(icon_name).lower() != "none":
+            stripped = str(icon_name).replace('mdi-', '')
+            icon_char = _theme.glyph(stripped) or str(icon_name)
 
         tw, th = 0, 0
         if label:
@@ -524,9 +524,9 @@ class CustomButton(wx.Panel):
 
         # Resolve icon from theme glyphs (V2 logic)
         icon_char = ""
-        if self.icon:
-            stripped = self.icon.replace('mdi-', '')
-            icon_char = _theme.glyph(stripped) or self.icon
+        if self.icon and str(self.icon).lower() != "none":
+            stripped = str(self.icon).replace('mdi-', '')
+            icon_char = _theme.glyph(stripped) or str(self.icon)
 
         tw, th = 0, 0
         if self.label and len(self.label) > 0:
@@ -605,8 +605,10 @@ class PresetCard(wx.Panel):
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 8)
 
         # Resolve icon
-        stripped = self.icon_name.replace('mdi-', '')
-        icon_char = _theme.glyph(stripped) or self.icon_name
+        icon_char = ""
+        if self.icon_name and str(self.icon_name).lower() != "none":
+            stripped = str(self.icon_name).replace('mdi-', '')
+            icon_char = _theme.glyph(stripped) or str(self.icon_name)
         
         final_text = _theme.disabled(txt_color) if not enabled else txt_color
         

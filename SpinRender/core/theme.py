@@ -516,15 +516,23 @@ class Theme:
             theme.glyph("glyphs.render-action") → "\U000F0A1C"
 
         Returns:
-            Unicode string representing the glyph, or empty string if not found.
+            Unicode string representing the glyph, or empty string if not found or "None".
         """
+        if not name or name.lower() == "none":
+            return ""
+
         # Strip 'glyphs.' prefix if provided (allows direct use of locale icon_ref)
         token_name = name.replace("glyphs.", "")
         token = f"glyphs.{token_name}"
         value = self._resolve(token)
 
+        # Handle 'None' as a value in YAML
+        if isinstance(value, str) and value.lower() == "none":
+            return ""
+
         # If resolution failed, _resolve returns pink hex; detect that
         if isinstance(value, str) and (value == "#FF00FF" or value == "#FF00FFFF"):
+            # Only warn if it's not a known null-ish value
             logger.warning(f"Theme: Glyph '{token_name}' not found")
             return ""
 
