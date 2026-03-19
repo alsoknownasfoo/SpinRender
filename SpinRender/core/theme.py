@@ -132,53 +132,53 @@ class Theme:
         Resolve a dot-path token, following 'ref' references.
         Supports both dict-style ref: {ref: "token"} and V2 string-style @token.
         Recursive: follows references until a terminal value is reached.
+        Prioritizes local overrides over referenced values during traversal.
         """
-        # Base Case: Not a string or doesn't look like a token path
         if not isinstance(path, str):
             return path
 
-        # V2: Strip the '@' prefix if this is a string-based reference
         if path.startswith("@"):
             path = path[1:]
 
-        # If it doesn't look like a token path (no dots and not in root keys),
-        # return as-is (could be a hex color, etc.)
         if '.' not in path and path not in self._data:
             return path
 
         node = self._data
         parts = path.split(".")
         
-        # Traverse the dictionary tree
         for i, key in enumerate(parts):
             if not isinstance(node, dict):
                 logger.error(f"Theme: Cannot traverse into {type(node)} at '{key}' in '{path}'")
                 return "#FF00FF"
 
-            if key not in node:
-                # If key not found, could be a key containing a dot (rare in this schema but possible)
-                # Check if the remaining parts match a single key
-                remaining = ".".join(parts[i:])
-                if remaining in node:
-                    node = node[remaining]
-                    break
+            # 1. Try local key first (Override priority)
+            if key in node:
+                node = node[key]
+            # 2. If not found locally, try following a reference if present
+            elif "ref" in node:
+                resolved_base = self._resolve(node["ref"])
+                if isinstance(resolved_base, dict) and key in resolved_base:
+                    node = resolved_base[key]
                 else:
-                    logger.error(f"Theme: Undefined token: '{path}' (missing '{key}')")
+                    logger.error(f"Theme: Undefined token: '{path}' (missing '{key}' in both local and ref)")
                     return "#FF00FF"
+            else:
+                logger.error(f"Theme: Undefined token: '{path}' (missing '{key}')")
+                return "#FF00FF"
             
-            node = node[key]
-            
-            # If we hit a reference during traversal, resolve it and continue
-            if isinstance(node, dict) and "ref" in node:
-                node = self._resolve(node["ref"])
-            elif isinstance(node, str) and node.startswith("@"):
-                node = self._resolve(node)
+            # If the current node itself is a reference, resolve it for the NEXT iteration
+            # But only if it's NOT the last key (last key resolution is handled at end)
+            if i < len(parts) - 1:
+                while isinstance(node, dict) and "ref" in node:
+                    node = self._resolve(node["ref"])
+                while isinstance(node, str) and node.startswith("@"):
+                    node = self._resolve(node)
 
-        # Final Leaf Resolution: follow ref if present
-        if isinstance(node, dict) and "ref" in node:
-            return self._resolve(node["ref"])
+        # Final Leaf Resolution
+        while isinstance(node, dict) and "ref" in node:
+            node = self._resolve(node["ref"])
         if isinstance(node, str) and node.startswith("@"):
-            return self._resolve(node)
+            node = self._resolve(node)
 
         return node
 

@@ -298,7 +298,7 @@ class DropdownPopup(wx.PopupTransientWindow):
         self.item_height = 32
         
         # V2 Mapping
-        menu_bg = _theme.color("components.dropdown.default.popup.bg")
+        menu_bg = _theme.color("components.dropdown.default.menu.frame.bg")
         self.SetBackgroundColour(menu_bg)
         
         self.Bind(wx.EVT_PAINT, self.on_paint)
@@ -314,7 +314,7 @@ class DropdownPopup(wx.PopupTransientWindow):
         width, height = self.GetSize()
         
         # V2 Mappings
-        bg_color = _theme.color("components.dropdown.default.popup.bg")
+        bg_color = _theme.color("components.dropdown.default.menu.frame.bg")
         border_color = _theme.color("borders.subtle.color")
         accent_color = _theme.color("colors.primary")
         text_primary = _theme.color("text.body.color")
@@ -383,7 +383,7 @@ class CustomDropdown(wx.Panel):
         gc.SetBrush(wx.Brush(_theme.disabled(base_bg_color) if not enabled else base_bg_color))
 
         # Border
-        bc = _theme.color("components.dropdown.default.border-focus") if (self.hovered or self.is_open) else _theme.color("components.dropdown.default.border")
+        bc = _theme.color("components.dropdown.default.open.border.color") if (self.hovered or self.is_open) else _theme.color("borders.subtle.color")
         gc.SetPen(wx.Pen(_theme.disabled(bc) if not enabled else bc, 1))
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
 
@@ -472,10 +472,11 @@ class CustomButton(wx.Panel):
         else:
             token = "components.button.cancel"
 
-        # Resolve colors
+        # Resolve stateful colors from hierarchical token
         bg_colors = _theme.color_states(f"{token}.frame.bg")
         bg_base = bg_colors[0]
         
+        # Label colors
         label_token = f"{token}.label.color"
         if not _theme.has_token(label_token):
             label_token = "text.button.color"
@@ -483,6 +484,7 @@ class CustomButton(wx.Panel):
         text_colors = _theme.color_states(label_token)
         text_base = text_colors[0]
         
+        # Border defaults
         border_token = f"{token}.frame.border.color"
         border_base = _theme.color(border_token) if _theme.has_token(border_token) else None
 
@@ -592,7 +594,7 @@ class PresetCard(wx.Panel):
         
         # V2 Mapping
         role = "selected" if self.selected else "default"
-        token = f"components.preset_card.{role}"
+        token = f"components.preset_card.default.{role}"
         
         bg = _theme.color(f"{token}.bg")
         border = _theme.color(f"{token}.border.color")
@@ -690,7 +692,7 @@ class NumericDisplay(wx.Panel):
 
         # V2 Mappings
         bg = _theme.color("components.input.default.frame.bg")
-        border = _theme.color("components.input.default.frame.border.color")
+        border = _theme.color("borders.subtle.color")
         accent = _theme.color("colors.secondary")
         secondary = _theme.color("colors.gray-text")
 
@@ -744,7 +746,7 @@ class NumericInput(wx.Panel):
         bg = _theme.color("components.input.default.frame.bg")
         gc.SetBrush(wx.Brush(_theme.disabled(bg) if not enabled else bg))
 
-        bc = _theme.color("borders.focus.color") if self.editing else _theme.color("components.input.default.frame.border.color")
+        bc = _theme.color("borders.focus.color") if self.editing else _theme.color("borders.subtle.color")
         gc.SetPen(wx.Pen(_theme.disabled(bc) if not enabled else bc, 1))
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 6)
 
@@ -871,7 +873,7 @@ class CustomTextInput(wx.Panel):
         # V2 Mappings
         bg = _theme.color("components.input.default.frame.bg")
         gc.SetBrush(wx.Brush(_theme.disabled(bg) if not enabled else bg))
-        bc = _theme.color("borders.focus.color") if self.HasFocus() else _theme.color("components.input.default.frame.border.color")
+        bc = _theme.color("borders.focus.color") if self.HasFocus() else _theme.color("borders.subtle.color")
         gc.SetPen(wx.Pen(_theme.disabled(bc) if not enabled else bc, 1))
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 6)
 
