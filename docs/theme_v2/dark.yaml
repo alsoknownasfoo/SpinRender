@@ -1,0 +1,241 @@
+# SpinRender Theme V2 — Dark (Default)
+# Note: STYLING ONLY. All text/icon content is in locale_en.yaml.
+
+# ─────────────────────────────────────────────────────────────────
+# 1. SCALES (Design Tokens)
+# ─────────────────────────────────────────────────────────────────
+palette:
+  gray-black:  "#0D0D0D"
+  gray-dark:   "#121212"
+  gray-border: "#1F1F1F"
+  gray-medium: "#323232"
+  gray-light:  "#646464"
+  gray-text:   "#777777"
+  gray-white:  "#E0E0E0"
+  white:       "#FFFFFF"
+  black:       "#000000"
+  transparent: "rgba(0,0,0,0)"
+
+  cyan:        "#00BCD4"
+  yellow:      "#FFD600"
+  green:       "#4CAF50"
+  orange:      "#FF6B35"
+  red:         "#FF3B30"
+  purple:      "#AA6BFF"
+  pink:        "#F240FF"
+
+theme:
+  primary:     { ref: "palette.cyan" }
+  secondary:   { ref: "palette.yellow" }
+  tertiary:    { ref: "palette.purple" }
+  quaternary:  { ref: "palette.pink" }
+  ok:          { ref: "palette.green" }
+  warning:     { ref: "palette.orange" }
+  error:       { ref: "palette.red" }
+
+glyphs:
+  # App Actions
+  render-action: "\U000F0A1C" # mdi-video-vintage
+  exit-action:   "\U000F0206" # mdi-exit-to-app
+  settings:      "\U000F0493" # mdi-cog
+  save:          "\U000F012C" # mdi-check
+  folder:        "\U000F024B" # mdi-folder
+  close:         "\U000F0156" # mdi-close
+  # Status
+  status-ok:     "\U000F05E0" # mdi-check-circle
+  status-error:  "\U000F0156" # mdi-close
+  # Axis
+  axis-x:        "\U000F0D4C" # mdi-axis-x-arrow
+  axis-y:        "\U000F0D51" # mdi-axis-y-arrow
+  axis-y-rot:    "\U000F0D54" # mdi-axis-y-rotate-counterclockwise
+  axis-z-rot:    "\U000F0D58" # mdi-axis-z-rotate-counterclockwise
+  # Presets
+  preset-hero:   "\U000F0465" # mdi-rotate-cw
+  preset-spin:   "\U000F1999" # mdi-rotate-360
+  preset-flip:   "\U000F0D98" # mdi-rotate-orbit
+  preset-custom: "\U000F166B" # mdi-star-settings-outline
+  # Controls
+  chevron-down:  "\U000F0140"
+  chevron-up:    "\U000F0143"
+
+spacing:
+  none: 0
+  xs:   4
+  sm:   6
+  md:   10
+  lg:   16
+  xl:   24
+
+radius:
+  none: 0
+  sm:   4
+  md:   6
+  lg:   8
+  full: 9999
+
+# ─────────────────────────────────────────────────────────────────
+# 2. TYPOGRAPHY
+# ─────────────────────────────────────────────────────────────────
+typography:
+  families:
+    mono:    "JetBrains Mono"
+    display: "Oswald"
+    icon:    "Material Design Icons"
+    inter:   "Inter"
+
+  presets:
+    panel_title:
+      typeface: { ref: "typography.families.display" }
+      size: 18
+      weight: 700
+    section_heading:
+      typeface: { ref: "typography.families.display" }
+      size: 13
+      weight: 600
+    body:
+      typeface: { ref: "typography.families.mono" }
+      size: 11
+      weight: 400
+    body_strong:
+      typeface: { ref: "typography.families.mono" }
+      size: 11
+      weight: 600
+    label_sm:
+      typeface: { ref: "typography.families.mono" }
+      size: 9
+      weight: 600
+    label_xs:
+      typeface: { ref: "typography.families.mono" }
+      size: 8
+      weight: 700
+
+# ─────────────────────────────────────────────────────────────────
+# 3. VIEWPORT
+# ─────────────────────────────────────────────────────────────────
+viewport:
+  bg: { default: "palette.gray-black" }
+  grid: { default: "palette.gray-medium" }
+  axes:
+    x: { default: "palette.red" }
+    y: { default: "palette.green" }
+    z: { default: "palette.cyan" }
+
+# ─────────────────────────────────────────────────────────────────
+# 4. COMPONENTS
+# ─────────────────────────────────────────────────────────────────
+components:
+  
+  # Main Layout
+  main:
+    frame:
+      bg: { default: "palette.gray-dark" }
+    header:
+      frame:
+        height: 90
+        bg: { default: "palette.gray-black" }
+        padding: { horizontal: "spacing.lg" }
+      title:
+        font: { ref: "typography.presets.panel_title" }
+        color: { default: "palette.gray-white" }
+      subtitle:
+        font: { ref: "typography.presets.label_xs" }
+        color: { default: "theme.primary" }
+    leftpanel:
+      frame:
+        width: 450
+        bg: { default: "palette.gray-dark" }
+        border:
+          size: 1
+          color: { default: "palette.gray-border" }
+    rightpanel:
+      frame:
+        bg: { default: "palette.gray-black" }
+
+  # Buttons
+  button:
+    default:
+      frame:
+        height: 36
+        radius: { ref: "radius.md" }
+        padding: { horizontal: "spacing.md" }
+        content_alignment: "center"
+        cursor: "hand"
+      label:
+        font: { ref: "typography.presets.body_strong" }
+      gap: { ref: "spacing.md" }
+
+    primary:
+      ref: "components.button.default"
+      frame:
+        bg:
+          default: "theme.primary"
+          hover:   "rgba(255,255,255,0.16)"
+          active:  "rgba(255,255,255,0.27)"
+      label:
+        color: { default: "palette.gray-black" }
+
+    secondary:
+      ref: "components.button.default"
+      frame:
+        bg: { default: "palette.gray-black" }
+        border:
+          size: 1
+          color: { default: "palette.gray-border" }
+      label:
+        color: { default: "palette.gray-white" }
+
+    ghost:
+      ref: "components.button.default"
+      frame:
+        bg:
+          default: "palette.transparent"
+          hover:   "rgba(255,255,255,0.08)"
+      label:
+        color: { default: "palette.gray-white" }
+
+    danger:
+      ref: "components.button.default"
+      frame:
+        bg:
+          default: "theme.error"
+          hover:   "palette.red"
+      label:
+        color: { default: "palette.white" }
+
+    close: { ref: "components.button.ghost" }
+
+  # Preset Cards
+  preset_card:
+    frame:
+      width: 90
+      height: 64
+      radius: { ref: "radius.lg" }
+      padding: { vertical: "spacing.sm" }
+      cursor: "hand"
+    gap: 8
+    default:
+      bg:     { default: "palette.gray-dark" }
+      border: { size: 1, color: { default: "palette.gray-border" } }
+      label:  { font: { ref: "typography.presets.label_sm" }, color: { default: "palette.gray-text" } }
+      icon:   { size: 20, color: { default: "palette.gray-text" } }
+    selected:
+      bg:     { default: "palette.gray-medium" }
+      border: { size: 1, color: { default: "theme.primary" } }
+      label:  { font: { ref: "typography.presets.label_sm" }, color: { default: "theme.primary" } }
+      icon:   { size: 20, color: { default: "theme.primary" } }
+
+  # Status Bar
+  status:
+    frame:
+      height: 25
+      bg: { default: "palette.gray-black" }
+      padding: { horizontal: "spacing.md" }
+    label:
+      font: { ref: "typography.presets.label_xs" }
+    default:
+      label: { color: { default: "theme.ok" } }
+    error:
+      label: { color: { default: "theme.error" } }
+    progress:
+      bg: { default: "theme.primary" }
+      label: { color: { default: "palette.gray-black" } }
