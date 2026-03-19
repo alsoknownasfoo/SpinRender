@@ -141,7 +141,7 @@ class Theme:
         Resolve a dot-path token, following 'ref' references.
         Supports both dict-style ref: {ref: "token"} and V2 string-style @token.
         Recursive: follows references until a terminal value is reached.
-        Inheritance: If a sub-key is missing in a local override, attempts
+        Deep Inheritance: If a sub-key is missing in a local override, attempts
         to find it in the referenced base.
         """
         if not isinstance(path, str):
@@ -150,7 +150,7 @@ class Theme:
         if path.startswith("@"):
             path = path[1:]
 
-        # If it's a literal or doesn't look like a path, return as-is
+        # If it's a simple hex/rgba or literal, return as-is
         if '.' not in path and path not in self._data:
             if path.startswith("#") or path.startswith("rgba(") or path.isalpha():
                 return path
@@ -160,34 +160,37 @@ class Theme:
         
         for i, key in enumerate(parts):
             if not isinstance(node, dict):
-                break
+                logger.error(f"Theme: Cannot traverse into {type(node)} at '{key}' in '{path}' (node: {node})")
+                return "#FF00FF"
 
             if key in node:
-                # Found locally
+                # 1. Found locally - enter it
                 node = node[key]
             elif "ref" in node:
-                # Not found locally, but level has a reference.
+                # 2. Not found locally, but this LEVEL has a reference base.
+                # Use the base to resolve the rest of the path.
                 base_ref = node["ref"]
                 remaining_path = ".".join(parts[i:])
                 
-                if base_ref == path or base_ref == "@" + path:
-                    logger.error(f"Theme: Circular reference detected at '{path}'")
-                    return "#FF00FF"
-                
-                # Recursively resolve from base
+                # Recursively resolve from the base reference
                 return self._resolve(f"{base_ref}.{remaining_path}")
             else:
+                # 3. Not found locally and no reference here to fall back to.
                 logger.error(f"Theme: Undefined token: '{path}' (missing '{key}')")
+                # DEBUG: Log keys in current node to help diagnose
+                logger.error(f"Theme: Available keys in current node: {list(node.keys())}")
                 return "#FF00FF"
 
-            # Mid-path reference resolution
+            # If we are NOT at the leaf, and the current node is a reference,
+            # we MUST resolve it now so we can traverse into it in the next loop.
             if i < len(parts) - 1:
                 while isinstance(node, dict) and "ref" in node:
+                    # Resolve ref, but we don't return! We continue traversal.
                     node = self._resolve(node["ref"])
                 while isinstance(node, str) and node.startswith("@"):
                     node = self._resolve(node)
 
-        # Final Leaf Resolution
+        # Final Leaf Resolution: follow ref if present
         while isinstance(node, dict) and "ref" in node:
             node = self._resolve(node["ref"])
         if isinstance(node, str) and node.startswith("@"):

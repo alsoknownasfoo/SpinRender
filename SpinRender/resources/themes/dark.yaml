@@ -446,6 +446,7 @@ components:
     default:
       frame:
         height: 36
+        bg: "@colors.transparent"
         radius: "@radius.md"
         padding:
           horizontal: "@typography.spacing.base"
