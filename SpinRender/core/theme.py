@@ -344,12 +344,24 @@ class Theme:
 
     # --- OTHER HELPERS ---
 
-    def font_family(self, name: str) -> str: return self._resolve(f"typography.families.{name}")
-    def font_size(self, name: str) -> int: return int(self._resolve(f"typography.scale.{name}"))
-    def font_weight(self, name: str) -> int: return int(self._resolve(f"typography.weights.{name}"))
+    def font_family(self, name: str) -> str:
+        res = self._resolve(f"typography.families.{name}")
+        return res if res != "#FF00FF" else "Arial"
+
+    def font_size(self, name: str) -> int:
+        res = self._resolve(f"typography.scale.{name}")
+        try: return int(res)
+        except: return 11
+
+    def font_weight(self, name: str) -> int:
+        res = self._resolve(f"typography.weights.{name}")
+        try: return int(res)
+        except: return 400
+
     def size(self, token: str) -> int: 
         val = self._resolve(token)
-        return int(val) if not isinstance(val, str) or not val.startswith("#") else 0
+        try: return int(val)
+        except: return 0
     
     def glyph(self, name: str) -> str:
         if not name or name.lower() == "none": return ""
@@ -363,16 +375,43 @@ class Theme:
         return [self._parse_color(v) for v in raw] if isinstance(raw, list) else []
 
     def font(self, preset: str) -> 'wx.Font':
+        """Resolve a font preset. Returns a bold 'Webdings' font if resolution fails."""
         import wx
+        # 1. Resolve spec (V2 first, then V1)
         spec = self._resolve(f"text.{preset}.font")
-        if not isinstance(spec, dict): spec = self._resolve(f"typography.presets.{preset}")
-        if not isinstance(spec, dict): return wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
-        family = self._resolve(spec.get("typeface") or spec.get("family", "wx.FONTFAMILY_DEFAULT"))
-        size = int(self._resolve(spec.get("size", 11)))
-        weight = int(self._resolve(spec.get("weight", 400)))
-        w_map = {100:wx.FONTWEIGHT_THIN, 200:wx.FONTWEIGHT_LIGHT, 300:wx.FONTWEIGHT_LIGHT, 400:wx.FONTWEIGHT_NORMAL, 
-                 500:wx.FONTWEIGHT_NORMAL, 600:wx.FONTWEIGHT_SEMIBOLD, 700:wx.FONTWEIGHT_BOLD, 800:wx.FONTWEIGHT_BOLD, 900:wx.FONTWEIGHT_BOLD}
-        return wx.Font(size, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, w_map.get(weight, wx.FONTWEIGHT_NORMAL), faceName=family)
+        if not isinstance(spec, dict):
+            spec = self._resolve(f"typography.presets.{preset}")
+        
+        # 2. If resolution failed, return "Pink" equivalent for fonts: Webdings Symbols
+        if not isinstance(spec, dict):
+            logger.error(f"Theme: Font preset '{preset}' not found. Returning symbol fallback.")
+            return wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName="Webdings")
+
+        # 3. Resolve components
+        family_raw = spec.get("typeface") or spec.get("family")
+        family = self._resolve(family_raw) if family_raw else "#FF00FF"
+        
+        size_raw = spec.get("size")
+        size_val = self._resolve(size_raw) if size_raw else "#FF00FF"
+        
+        weight_raw = spec.get("weight")
+        weight_val = self._resolve(weight_raw) if weight_raw else "#FF00FF"
+
+        # 4. Handle internal component resolution failure
+        if "#FF00FF" in (family, size_val, weight_val):
+            logger.error(f"Theme: Font preset '{preset}' has missing components. Returning symbol fallback.")
+            return wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName="Webdings")
+
+        try:
+            size = int(size_val)
+            weight = int(weight_val)
+            w_map = {100:wx.FONTWEIGHT_THIN, 200:wx.FONTWEIGHT_LIGHT, 300:wx.FONTWEIGHT_LIGHT, 400:wx.FONTWEIGHT_NORMAL, 
+                     500:wx.FONTWEIGHT_NORMAL, 600:wx.FONTWEIGHT_SEMIBOLD, 700:wx.FONTWEIGHT_BOLD, 800:wx.FONTWEIGHT_BOLD, 900:wx.FONTWEIGHT_BOLD}
+            
+            return wx.Font(size, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, w_map.get(weight, wx.FONTWEIGHT_NORMAL), faceName=family)
+        except Exception as e:
+            logger.error(f"Theme: Failed to create font for '{preset}': {e}")
+            return wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName="Webdings")
 
     def frame(self, path: str) -> dict[str, Any]: return self._resolve(f"components.{path}.frame")
     def border(self, role: str = "default") -> dict[str, Any]: return self._resolve(f"borders.{role}")
