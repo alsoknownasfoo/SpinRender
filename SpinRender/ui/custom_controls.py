@@ -1028,7 +1028,7 @@ class ProjectFolderChip(wx.Panel):
     Small orange chip for "PROJECT FOLDER" prefix
     """
     def __init__(self, parent):
-        font = _theme.font("xs")
+        font = _theme.font("metadata")
         temp_dc = wx.ScreenDC(); temp_dc.SetFont(font)
         tw, th = temp_dc.GetTextExtent("PROJECT FOLDER")
         super().__init__(parent, size=(tw + 12, 18))
@@ -1042,7 +1042,7 @@ class ProjectFolderChip(wx.Panel):
         gc.SetBrush(wx.Brush(_theme.color("components.badge.frame.bg")))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRoundedRectangle(0, 0, w, h, 4)
-        gc.SetFont(gc.CreateFont(_theme.font("xs"), _theme.color("components.badge.label.color")))
+        gc.SetFont(gc.CreateFont(_theme.font("metadata"), _theme.color("components.badge.label.color")))
         tw, th = gc.GetTextExtent("PROJECT FOLDER")
         gc.DrawText("PROJECT FOLDER", (w - tw) / 2, (h - th) / 2)
 
@@ -1141,7 +1141,7 @@ class CustomColorPicker(wx.Panel):
         gc.DrawRoundedRectangle(x, y, 28, 28, 4)
         
         text_muted = _theme.color("colors.gray-text")
-        gfx_font = gc.CreateFont(_theme.font("xs"), _theme.disabled(text_muted) if not enabled else text_muted)
+        gfx_font = gc.CreateFont(_theme.font("metadata"), _theme.disabled(text_muted) if not enabled else text_muted)
         gc.SetFont(gfx_font); tw, th = gc.GetTextExtent(lbl); gc.DrawText(lbl, x + (28 - tw) / 2, y + 32)
 
     def on_mouse_move(self, event):

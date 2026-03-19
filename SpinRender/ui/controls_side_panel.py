@@ -104,7 +104,7 @@ class ControlsSidePanel(wx.Panel):
 
         self.header_subtitle = wx.StaticText(header, label=_locale.get("component.main.header.subtitle", "0.9 alpha"))
         self.header_subtitle.SetForegroundColour(_theme.color("text.subtitle.color"))
-        self.header_subtitle.SetFont(_theme.font("xs"))
+        self.header_subtitle.SetFont(_theme.font("metadata"))
         title_sizer.Add(self.header_subtitle, 0)
         sizer.Add(title_sizer, 0, wx.ALIGN_CENTER_VERTICAL)
 
@@ -136,7 +136,7 @@ class ControlsSidePanel(wx.Panel):
             
         if hasattr(self, 'header_subtitle'):
             self.header_subtitle.SetForegroundColour(_theme.color("text.subtitle.color"))
-            self.header_subtitle.SetFont(_theme.font("xs"))
+            self.header_subtitle.SetFont(_theme.font("metadata"))
             
         # Dividers
         for attr in ['div1', 'div2', 'div3', 'div4']:
@@ -248,7 +248,7 @@ class ControlsSidePanel(wx.Panel):
 
         desc = wx.StaticText(panel, label=_locale.get("parameters.rotation_desc", "BOARD: ORIENT ON SPINDLE | SPIN: ORIENT THE SPINDLE ITSELF"))
         desc.SetForegroundColour(_theme.color("text.metadata.color"))
-        desc.SetFont(_theme.font("xs"))
+        desc.SetFont(_theme.font("metadata"))
         sizer.Add(desc, 0)
         panel.SetSizerAndFit(sizer)
         return panel
@@ -269,7 +269,7 @@ class ControlsSidePanel(wx.Panel):
         resolved_label = _locale.get(locale_key, label_text) if locale_key else label_text
         lbl = wx.StaticText(label_part, label=f"{resolved_label}:")
         lbl.SetForegroundColour(col)
-        lbl.SetFont(_theme.font("xs"))
+        lbl.SetFont(_theme.font("label"))
         lp_sizer.Add(lbl, 0, wx.ALIGN_CENTER_VERTICAL)
         label_part.SetSizer(lp_sizer)
         sizer.Add(label_part, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
@@ -310,11 +310,11 @@ class ControlsSidePanel(wx.Panel):
         msizer = wx.BoxSizer(wx.HORIZONTAL)
         desc = wx.StaticText(mrow, label=_locale.get("parameters.period.desc", "SPEED OF 360° SPIN"))
         desc.SetForegroundColour(_theme.color("text.metadata.color"))
-        desc.SetFont(_theme.font("xs"))
+        desc.SetFont(_theme.font("metadata"))
         msizer.Add(desc, 1)
         self.frame_count = wx.StaticText(mrow, label=f"{int(p_val * 30)} f")
         self.frame_count.SetForegroundColour(_theme.color("text.subheader.color"))
-        self.frame_count.SetFont(_theme.font("xs"))
+        self.frame_count.SetFont(_theme.font("metadata"))
         msizer.Add(self.frame_count, 0)
         mrow.SetSizerAndFit(msizer)
         sizer.Add(mrow, 0, wx.EXPAND)
@@ -378,7 +378,7 @@ class ControlsSidePanel(wx.Panel):
 
         hint = wx.StaticText(panel, label=_locale.get("parameters.lighting_hint", "SELECT WORKSPACE TO USE KICAD 3D VIEWER SETTINGS"))
         hint.SetForegroundColour(_theme.color("text.metadata.color"))
-        hint.SetFont(_theme.font("xs"))
+        hint.SetFont(_theme.font("metadata"))
         sizer.Add(hint, 0, wx.TOP, 4)
 
         panel.SetSizerAndFit(sizer)

@@ -173,7 +173,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         
         auto_desc = wx.StaticText(auto_row, label=_locale.get("output.auto_desc", "Automatically save to time-stamped directories."))
         auto_desc.SetForegroundColour(_theme.color("colors.gray-light"))
-        auto_desc.SetFont(_theme.font("xs"))
+        auto_desc.SetFont(_theme.font("metadata"))
         auto_sizer.Add(auto_desc, 1, wx.ALIGN_CENTER_VERTICAL)
         
         from .custom_controls import CustomToggleButton
@@ -223,11 +223,11 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         link_sizer.Add(info_icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         
         see_txt = wx.StaticText(link_row, label=_locale.get("dialog.advanced.see", "See "))
-        see_txt.SetForegroundColour(_theme.color("colors.gray-light")); see_txt.SetFont(_theme.font("xs"))
+        see_txt.SetForegroundColour(_theme.color("colors.gray-light")); see_txt.SetFont(_theme.font("metadata"))
         link_sizer.Add(see_txt, 0, wx.ALIGN_CENTER_VERTICAL)
 
         link_txt = wx.StaticText(link_row, label=_locale.get("dialog.advanced.docs_link", "kicad-cli render options"))
-        link_txt.SetForegroundColour(_theme.color("colors.primary")); link_txt.SetFont(_theme.font("xs"))
+        link_txt.SetForegroundColour(_theme.color("colors.primary")); link_txt.SetFont(_theme.font("metadata"))
         link_txt.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         link_sizer.Add(link_txt, 0, wx.ALIGN_CENTER_VERTICAL)
         
@@ -260,7 +260,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         
         log_info = wx.StaticText(content, label=_locale.get("parameters.log_info", "Logs are kept for 30 days. Useful for troubleshooting render failures."))
         log_info.SetForegroundColour(_theme.color("colors.gray-light"))
-        log_info.SetFont(_theme.font("xs"))
+        log_info.SetFont(_theme.font("metadata"))
         content_sizer.Add(log_info, 0, wx.EXPAND | wx.BOTTOM, 8)
 
         from SpinRender.utils.logger import SpinLogger
