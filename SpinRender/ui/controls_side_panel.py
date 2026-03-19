@@ -116,7 +116,7 @@ class ControlsSidePanel(wx.Panel):
         border_color, border_color_hover, border_color_pressed = _theme.color_states("components.button.close.border")
 
         self.header_close_btn = CustomButton(
-            header, label="", icon='mdi-close', primary=False, ghost=True,
+            header, label="", icon=_locale.get("component.button.close.icon_ref", "close"), primary=False, ghost=True,
             icon_color=icon_color,
             icon_color_hover=icon_color_hover,
             icon_color_pressed=icon_color_pressed,
