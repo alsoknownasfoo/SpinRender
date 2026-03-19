@@ -207,6 +207,7 @@ glyphs:
   trash:         "\U000F0A7A"
   info:          "\U000F02FD"
   alert:         "\U000F0CF0"
+  plus:          "\U000F0130"
   
   # Controls
   cw:            "\U000F0453"
@@ -379,6 +380,7 @@ components:
       frame:
         height: 32
         radius: "@radius.md"
+        bg: "@colors.transparent"
         border: "@borders.subtle"
       gap: "@typography.spacing.sm"
       default:
