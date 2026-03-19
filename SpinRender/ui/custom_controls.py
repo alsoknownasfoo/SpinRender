@@ -1000,7 +1000,8 @@ class CustomColorPicker(wx.Panel):
         for i in range(len(self.PRESETS)): rects[f'preset_{i}'] = wx.Rect(x, 10, 28, 28); x += 38
         rects['divider'], x = x, x + 10
         rects['custom'], x = wx.Rect(x, 10, 28, 28), x + 42
-        rects['hex'] = wx.Rect(x, (h - 28) // 2, 100, 28)
+        # Top-align to match swatches (y=10)
+        rects['hex'] = wx.Rect(x, 10, 100, 28)
         return rects
 
     def on_paint(self, event):
