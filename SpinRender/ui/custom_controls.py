@@ -1334,7 +1334,159 @@ class CustomColorPicker(wx.Panel):
     def on_leave(self, event): self.hover_idx = -1; self.Refresh(); self.Update()
 
 
+class CustomListItem(wx.Panel):
+    """
+    A single interactive item in a CustomListView.
+    Drives styling from components.list.{id}.item.
+    """
+    def __init__(self, parent, label="", icon=None, data=None, id="default"):
+        super().__init__(parent)
+        self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
+        self.label = str(label)
+        self.icon_ref = icon
+        self.data = data
+        self.style_id = id
+        self.hovered = False
+        self.confirm_mode = False
+        
+        # Resolve DNA
+        self.token = f"components.list.{self.style_id}"
+        if not _theme.has_token(self.token): self.token = "components.list.default"
+        
+        self.height = _theme._resolve(f"{self.token}.frame.height") or 40
+        self.SetMinSize((-1, self.height))
+        
+        self.Bind(wx.EVT_PAINT, self.on_paint)
+        bind_mouse_events(self, hover_handler=self.on_enter, leave_handler=self.on_leave, click_handler=self.on_click)
+
+    def on_enter(self, event): self.hovered = True; self.Refresh(); self.Update()
+    def on_leave(self, event): self.hovered = False; self.Refresh(); self.Update()
+    
+    def on_click(self, event):
+        # Determine if click was on action area or main body
+        w, h = self.GetSize()
+        x = event.GetX()
+        
+        action_width = 80 # Approx width of action area
+        if x > w - action_width:
+            self.handle_action_click(x - (w - action_width))
+        else:
+            self._fire_event(wx.EVT_LIST_ITEM_SELECTED)
+
+    def handle_action_click(self, local_x):
+        if self.confirm_mode:
+            if local_x < 40: # Cancel
+                self.confirm_mode = False
+            else: # Confirm
+                self._fire_event(wx.EVT_LIST_ITEM_DELETED)
+        else:
+            self.confirm_mode = True
+        self.Refresh(); self.Update()
+
+    def _fire_event(self, evt_type):
+        evt = wx.PyCommandEvent(evt_type.typeId, self.GetId())
+        evt.SetClientData(self.data)
+        self.GetEventHandler().ProcessEvent(evt)
+
+    def on_paint(self, event):
+        dc = wx.AutoBufferedPaintDC(self)
+        gc = wx.GraphicsContext.Create(dc)
+        if not gc: return
+
+        w, h = self.GetSize()
+        enabled = self.IsEnabled()
+        
+        # 1. Background
+        bg = _theme.color(f"{self.token}.frame.bg", self.hovered, False, enabled)
+        gc.SetBrush(wx.Brush(bg))
+        gc.SetPen(wx.TRANSPARENT_PEN)
+        gc.DrawRectangle(0, 0, w, h)
+
+        # 2. Icon & Label
+        tc = _theme.color(f"{self.token}.label.color", self.hovered, False, enabled)
+        gc.SetFont(gc.CreateFont(_theme.font("body"), tc))
+        
+        text_x = 12
+        if self.icon_ref:
+            icon_char = _theme.glyph(self.icon_ref)
+            gc.SetFont(gc.CreateFont(_theme.font("icon"), tc))
+            itw, ith = gc.GetTextExtent(icon_char)
+            gc.DrawText(icon_char, 12, (h - ith) / 2)
+            text_x = 36
+            gc.SetFont(gc.CreateFont(_theme.font("body"), tc))
+
+        gc.DrawText(self.label, text_x, (h - gc.GetTextExtent(self.label)[1]) / 2)
+
+        # 3. Actions
+        if self.hovered or self.confirm_mode:
+            self.draw_actions(gc, w, h)
+
+    def draw_actions(self, gc, w, h):
+        # Action data from theme
+        actions_token = f"{self.token}.actions"
+        if not _theme.has_token(actions_token): return
+        
+        if self.confirm_mode:
+            # Draw Cancel and Confirm
+            c_icon = _theme.glyph(_theme._resolve(f"{actions_token}.cancel.icon"))
+            c_color = _theme.color(f"{actions_token}.cancel.color")
+            s_icon = _theme.glyph(_theme._resolve(f"{actions_token}.confirm.icon"))
+            s_color = _theme.color(f"{actions_token}.confirm.color")
+            
+            gc.SetFont(gc.CreateFont(_theme.font("icon"), c_color))
+            gc.DrawText(c_icon, w - 70, (h - 16) / 2)
+            
+            gc.SetFont(gc.CreateFont(_theme.font("icon"), s_color))
+            gc.DrawText(s_icon, w - 30, (h - 16) / 2)
+        else:
+            # Draw Delete
+            d_icon = _theme.glyph(_theme._resolve(f"{actions_token}.delete.icon"))
+            d_color = _theme.color(f"{actions_token}.delete.color")
+            gc.SetFont(gc.CreateFont(_theme.font("icon"), d_color))
+            gc.DrawText(d_icon, w - 30, (h - 16) / 2)
+
+
+class CustomListView(scrolled.ScrolledPanel):
+    """
+    HUD-style list container that manages CustomListItem instances.
+    """
+    def __init__(self, parent, size=(-1, -1), id="default"):
+        super().__init__(parent, size=size)
+        self.style_id = id
+        self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
+        self.SetupScrolling(scroll_x=False, scroll_y=True)
+        
+        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(self.main_sizer)
+        
+        self.Bind(wx.EVT_PAINT, self.on_paint)
+
+    def on_paint(self, event):
+        dc = wx.PaintDC(self)
+        # Just clear background with theme color
+        bg = _theme.color("colors.gray-dark")
+        dc.SetBackground(wx.Brush(bg))
+        dc.Clear()
+
+    def AddItem(self, label, icon=None, data=None):
+        item = CustomListItem(self, label=label, icon=icon, data=data, id=self.style_id)
+        self.main_sizer.Add(item, 0, wx.EXPAND | wx.BOTTOM, 4)
+        self.Layout()
+        self.SetupScrolling(scroll_x=False, scroll_y=True)
+        return item
+
+    def ClearItems(self):
+        self.main_sizer.Clear(True)
+        self.Layout()
+
+
+# Define custom event types for list interaction
+wx.EVT_LIST_ITEM_SELECTED = wx.PyEventBinder(wx.NewEventType(), 1)
+wx.EVT_LIST_ITEM_DELETED = wx.PyEventBinder(wx.NewEventType(), 1)
+
+
 class SVGLogoPanel(wx.Panel):
+
     """Panel that renders the SpinRender SVG logo."""
     def __init__(self, parent, size=(58, 58)):
         super().__init__(parent, size=size)
