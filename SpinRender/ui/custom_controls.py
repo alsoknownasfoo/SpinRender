@@ -328,7 +328,7 @@ class DropdownPopup(wx.PopupTransientWindow):
         width, height = self.GetSize()
         bg_color = _theme.color("components.dropdown.popup.bg")
         border_color = _theme.color("components.dropdown.border")
-        accent_color = _theme.color("colors.accent.primary")
+        accent_color = _theme.color("colors.primary")
         text_primary = _theme.color("components.dropdown.text")
 
         gc.SetBrush(wx.Brush(bg_color))
@@ -406,7 +406,7 @@ class CustomDropdown(wx.Panel):
 
         # Chevron
         icon_char = CustomToggleButton.ICONS.get('mdi-chevron-up' if self.is_open else 'mdi-chevron-down')
-        icon_color = _theme.color("colors.accent.primary") if self.is_open else _theme.color("colors.text.secondary")
+        icon_color = _theme.color("colors.primary") if self.is_open else _theme.color("colors.text.secondary")
         icon_gfx_font = gc.CreateFont(TextStyles.icon.create_font(), _theme.disabled(icon_color) if not enabled else icon_color)
         gc.SetFont(icon_gfx_font)
         iw, ih = gc.GetTextExtent(icon_char)
@@ -758,7 +758,7 @@ class NumericInput(wx.Panel):
         if self.editing:
             v_str, v_color = self.edit_text, _theme.color("components.numeric_input.text")
         else:
-            v_str, v_color = (f"{self.value:.2f}" if isinstance(self.value, float) else str(self.value)), _theme.color("colors.accent.secondary")
+            v_str, v_color = (f"{self.value:.2f}" if isinstance(self.value, float) else str(self.value)), _theme.color("colors.secondary")
 
         v_gfx_font = gc.CreateFont(TextStyles.numeric_value.create_font(), _theme.disabled(v_color) if not enabled else v_color)
         gc.SetFont(v_gfx_font)
@@ -1025,7 +1025,7 @@ class CustomColorPicker(wx.Panel):
     def _draw_swatch(self, gc, x, y, ch, lbl, sel, hov, enabled):
         sc = wx.Colour(ch); gc.SetBrush(wx.Brush(_theme.disabled(sc) if not enabled else sc))
         stc = _theme.color("components.color_picker.swatch-border")
-        if sel: stc, thk = _theme.color("colors.accent.primary"), 2
+        if sel: stc, thk = _theme.color("colors.primary"), 2
         elif hov: stc, thk = _theme.HOVER_HIGHLIGHT, 1
         else: thk = 1
         gc.SetPen(wx.Pen(_theme.disabled(stc) if not enabled else stc, thk))
