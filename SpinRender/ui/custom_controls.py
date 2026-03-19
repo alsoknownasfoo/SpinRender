@@ -104,31 +104,37 @@ class CustomSlider(wx.Panel):
         width, height = self.GetSize()
         enabled = self.IsEnabled()
 
-        # Component constants
-        track_h = _theme.size("components.slider.track.height")
+        # V2 Mappings
+        slider_conf = _theme._resolve("components.slider.default") or {}
+        track_conf = slider_conf.get("track", {})
+        track_h = track_conf.get("frame", {}).get("height", 4)
         track_y = (height - track_h) / 2
-        thumb_w, thumb_h = 7, 18
+        
+        nub_conf = slider_conf.get("nub", {})
+        thumb_w = nub_conf.get("width", 7)
+        thumb_h = nub_conf.get("height", 18)
         thumb_y = (height - thumb_h) / 2
 
         # Fetch colors dynamically from component section
-        base_track_color = _theme.color("components.slider.track.color")
-        base_fill_color = self.color_override or _theme.color("components.slider.fill.color")
+        base_track_color = _theme.parse_color(track_conf.get("color", "#1F1F1F"))
+        base_fill_color = self.color_override or _theme.color("colors.primary")
         
         # Apply disabled state to colors
         track_color = _theme.disabled(base_track_color) if not enabled else base_track_color
         fill_color = _theme.disabled(base_fill_color) if not enabled else base_fill_color
-        thumb_color = fill_color
+        thumb_color = _theme.parse_color(nub_conf.get("color", "#00BCD4"))
+        if not enabled: thumb_color = _theme.disabled(thumb_color)
 
         gc.SetBrush(wx.Brush(track_color))
         gc.SetPen(wx.TRANSPARENT_PEN)
-        gc.DrawRoundedRectangle(0, track_y, width, track_h, 4)
+        gc.DrawRoundedRectangle(0, track_y, width, track_h, 2)
 
         ratio = (self.value - self.min_val) / (self.max_val - self.min_val)
         fill_width = ratio * width
 
         if fill_width > 0:
             gc.SetBrush(wx.Brush(fill_color))
-            gc.DrawRoundedRectangle(0, track_y, fill_width, track_h, 4)
+            gc.DrawRoundedRectangle(0, track_y, fill_width, track_h, 2)
 
         thumb_x = fill_width - thumb_w / 2
         thumb_x = max(0, min(thumb_x, width - thumb_w))
@@ -178,31 +184,6 @@ class CustomToggleButton(wx.Panel):
     Multi-state toggle matching Component/Toggle from Pencil
     Supports 2 or more states.
     """
-    ICONS = {
-        'mdi-reload': '\U000F0453',
-        'mdi-restore': '\U000F099B',
-        'mdi-check-circle': '\U000F05E0',
-        'mdi-close-circle': '\U000F05E8',
-        'mdi-weather-sunny': '\U000F0599',
-        'mdi-lightning-bolt': '\U000F140B',
-        'mdi-image-filter-drama-outline': '\U000F1BFF',
-        'mdi-circle-off-outline': '\U000F10D3',
-        'mdi-star-settings-outline': '\U000F166B',
-        'mdi-chevron-down': '\U000F0140',
-        'mdi-chevron-up': '\U000F0143',
-        'mdi-video': '\U000F0592',
-        'mdi-file-gif-box': '\U000F0D7E',
-        'mdi-image-multiple': '\U000F02F0',
-        'mdi-television-hd': '\U000F0704',
-        'mdi-television': '\U000F0502',
-        'mdi-monitor': '\U000F0379',
-        'mdi-trash-can-outline': '\U000F0A7A',
-        'mdi-axis-x-arrow': '\U000F0D4C',
-        'mdi-axis-y-arrow': '\U000F0D51',
-        'mdi-alert-octagram': '\U000F0767',
-        'mdi-application-edit': '\U000F00AE'
-    }
-
     def __init__(self, parent, options=None, size=(120, 32), active_color=None):
         super().__init__(parent, size=size)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
@@ -222,37 +203,41 @@ class CustomToggleButton(wx.Panel):
         state_width = width / num_options
         enabled = self.IsEnabled()
 
-        # Fetch colors dynamically from component section
-        base_bg_color = _theme.color("components.toggle.bg")
-        base_border_color = _theme.color("components.toggle.border")
+        # Fetch colors dynamically from component section (V2)
+        base_bg_color = _theme.color("components.toggle.default.default.frame.bg")
+        base_border_color = _theme.color("borders.subtle.color")
         
         bg_color = _theme.disabled(base_bg_color) if not enabled else base_bg_color
         border_color = _theme.disabled(base_border_color) if not enabled else base_border_color
         gc.SetBrush(wx.Brush(bg_color))
         gc.SetPen(wx.Pen(border_color, 1))
-        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
+        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 6)
 
         # Draw Active Indicator
-        base_active_bg = self.active_bg_override or _theme.color("components.toggle.active.bg")
+        base_active_bg = self.active_bg_override or _theme.color("colors.primary")
         active_color = _theme.disabled(base_active_bg) if not enabled else base_active_bg
         gc.SetBrush(wx.Brush(active_color))
         gc.SetPen(wx.TRANSPARENT_PEN)
         active_x = self.selection * state_width
-        gc.DrawRoundedRectangle(active_x + 1, 1, state_width - 2, height - 2, 4)
+        gc.DrawRoundedRectangle(active_x + 1, 1, state_width - 2, height - 2, 6)
 
         # Draw each state
         for i, opt in enumerate(self.options):
             is_active = (i == self.selection)
-            token = "components.toggle.active.text" if is_active else "components.toggle.option.text"
-            base_color = _theme.color(token)
-            color = _theme.disabled(base_color) if not enabled else base_color
+            text_color = _theme.color("colors.gray-black") if is_active else _theme.color("colors.gray-text")
+            color = _theme.disabled(text_color) if not enabled else text_color
             self._draw_side(gc, opt.get('label'), opt.get('icon'), i * state_width, state_width, height, color)
 
     def _draw_side(self, gc, label, icon_name, x_offset, width, height, color):
-        icon_char = self.ICONS.get(icon_name, icon_name) if icon_name else None
+        # Resolve icon from glyphs
+        icon_char = ""
+        if icon_name:
+            stripped = icon_name.replace('mdi-', '')
+            icon_char = _theme.glyph(stripped) or icon_name
+
         tw, th = 0, 0
         if label:
-            font_obj = TextStyles.body_strong.create_font()
+            font_obj = TextStyles.label_sm.create_font()
             gc.SetFont(gc.CreateFont(font_obj, color))
             tw, th = gc.GetTextExtent(label)
             
@@ -273,7 +258,7 @@ class CustomToggleButton(wx.Panel):
             gc.DrawText(icon_char, start_x, (height - ih) / 2)
             
         if label:
-            font_obj = TextStyles.body_strong.create_font()
+            font_obj = TextStyles.label_sm.create_font()
             gc.SetFont(gc.CreateFont(font_obj, color))
             gc.DrawText(label, start_x + iw + gap, (height - th) / 2)
 
@@ -314,7 +299,11 @@ class DropdownPopup(wx.PopupTransientWindow):
         super().__init__(parent, wx.BORDER_NONE)
         self.choices, self.selection, self.callback, self.hover_index = choices, current_selection, callback, -1
         self.item_height = 32
-        self.SetBackgroundColour(_theme.color("components.dropdown.popup.bg"))
+        
+        # V2 Mapping
+        menu_bg = _theme.color("components.component.dropdown.default.menu.frame.bg")
+        self.SetBackgroundColour(menu_bg)
+        
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_MOTION, self.on_mouse_move)
         self.Bind(wx.EVT_LEFT_DOWN, self.on_click)
@@ -326,10 +315,12 @@ class DropdownPopup(wx.PopupTransientWindow):
         if not gc: return
 
         width, height = self.GetSize()
-        bg_color = _theme.color("components.dropdown.popup.bg")
-        border_color = _theme.color("components.dropdown.border")
+        
+        # V2 Mappings
+        bg_color = _theme.color("components.component.dropdown.default.menu.frame.bg")
+        border_color = _theme.color("borders.subtle.color")
         accent_color = _theme.color("colors.primary")
-        text_primary = _theme.color("components.dropdown.text")
+        text_primary = _theme.color("text.body.color")
 
         gc.SetBrush(wx.Brush(bg_color))
         gc.SetPen(wx.Pen(border_color, 1))
@@ -344,9 +335,11 @@ class DropdownPopup(wx.PopupTransientWindow):
                 gc.SetBrush(wx.Brush(accent_color))
                 gc.SetPen(wx.TRANSPARENT_PEN)
                 gc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, 2)
-                gc.SetFont(gc.CreateFont(TextStyles.body_strong.create_font(), _theme.color("colors.bg.input")))
+                # Use inverted text color
+                font_color = _theme.color("colors.gray-black")
+                gc.SetFont(gc.CreateFont(TextStyles.body_strong.create_font(), font_color))
             elif is_hovered:
-                gc.SetBrush(wx.Brush(_theme.color("components.dropdown.popup.hover")))
+                gc.SetBrush(wx.Brush(_theme.color("colors.gray-medium")))
                 gc.SetPen(wx.TRANSPARENT_PEN)
                 gc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, 2)
                 gc.SetFont(gc.CreateFont(TextStyles.body.create_font(), text_primary))
@@ -388,25 +381,25 @@ class CustomDropdown(wx.Panel):
         width, height = self.GetSize()
         enabled = self.IsEnabled()
 
-        # Background
-        base_bg_color = _theme.color("components.dropdown.bg")
+        # V2 Mappings
+        base_bg_color = _theme.color("components.component.dropdown.default.frame.bg")
         gc.SetBrush(wx.Brush(_theme.disabled(base_bg_color) if not enabled else base_bg_color))
 
         # Border
-        bc = _theme.color("components.dropdown.border-focus") if (self.hovered or self.is_open) else _theme.color("components.dropdown.border")
+        bc = _theme.color("components.component.dropdown.default.open.border.color") if (self.hovered or self.is_open) else _theme.color("borders.subtle.color")
         gc.SetPen(wx.Pen(_theme.disabled(bc) if not enabled else bc, 1))
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
 
         # Label
         label = self.choices[self.selection] if self.choices else "SELECT OPTION"
-        text_color = _theme.color("components.dropdown.text")
+        text_color = _theme.color("text.body.color")
         gc.SetFont(gc.CreateFont(TextStyles.body_strong.create_font(), _theme.disabled(text_color) if not enabled else text_color))
         tw, th = gc.GetTextExtent(label)
         gc.DrawText(label, 12, (height - th) / 2)
 
         # Chevron
-        icon_char = CustomToggleButton.ICONS.get('mdi-chevron-up' if self.is_open else 'mdi-chevron-down')
-        icon_color = _theme.color("colors.primary") if self.is_open else _theme.color("colors.text.secondary")
+        icon_char = _theme.glyph("chevron-up" if self.is_open else "chevron-down")
+        icon_color = _theme.color("colors.primary") if self.is_open else _theme.color("colors.gray-text")
         icon_gfx_font = gc.CreateFont(TextStyles.icon.create_font(), _theme.disabled(icon_color) if not enabled else icon_color)
         gc.SetFont(icon_gfx_font)
         iw, ih = gc.GetTextExtent(icon_char)
@@ -451,14 +444,6 @@ class CustomButton(wx.Panel):
     """
     Custom action button matching Component/ActionButton and SecondaryButton
     """
-    ICONS = {
-        'play': '▶', 'eye': '👁', 'save': '💾', 'settings': '⚙', 'check': '✓', 'alert': '⚠', 'download': '⬇', 'folder': '📁', 'close': '✕',
-        'mdi-download': '\U000F01DA', 'mdi-close': '\U000F0156', 'mdi-cog': '\U000F0493', 'mdi-play': '\U000F040D', 'mdi-stop': '\U000F04DB',
-        'mdi-video-vintage': '\U000F0A1C', 'mdi-folder': '\U000F024B', 'mdi-check': '\U000F012C', 'mdi-alert': '\U000F0026',
-        'mdi-information-outline': '\U000F02FD', 'mdi-trash-can-outline': '\U000F0A7A', 'mdi-alert-octagram': '\U000F0767',
-        'mdi-exit-to-app': '\U000F0206', 'mdi-palette': '\U000F03E8'
-    }
-
     def __init__(self, parent, label="BUTTON", icon=None, icon_font_family=None, primary=True, ghost=False, danger=False, icon_color=None, icon_color_hover=None, icon_color_pressed=None, bg_color=None, bg_color_hover=None, bg_color_pressed=None, size=(-1, 36)):
         super().__init__(parent, size=size)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
@@ -482,22 +467,29 @@ class CustomButton(wx.Panel):
         width, height = self.GetSize()
         enabled = self.IsEnabled()
 
-        # Determine base colors
+        # V2 Mapping Logic
         if self.primary:
-            token = "components.button.danger" if self.danger else "components.button.primary"
+            token = "components.component.button.exit" if self.danger else "components.component.button.ok"
         elif self.ghost:
-            token = "components.button.ghost"
+            token = "components.component.button.close"
         else:
-            token = "components.button.secondary"
+            token = "components.component.button.cancel"
 
-        colors = _theme.color_states(f"{token}.bg")
-        bg_base = colors[0]
-        text_colors = _theme.color_states(f"{token}.text")
+        # Resolve stateful colors from hierarchical token
+        bg_colors = _theme.color_states(f"{token}.frame.bg")
+        bg_base = bg_colors[0]
+        
+        # Label colors
+        label_token = f"{token}.label.color"
+        if not _theme.has_token(label_token):
+            label_token = "text.button.color"
+            
+        text_colors = _theme.color_states(label_token)
         text_base = text_colors[0]
         
         # Border defaults
-        border_base = None
-        if not self.primary and not self.ghost: border_base = _theme.color("components.button.secondary.border")
+        border_token = f"{token}.frame.border.color"
+        border_base = _theme.color(border_token) if _theme.has_token(border_token) else None
 
         bg, text_color, border_color = bg_base, text_base, border_base
 
@@ -506,14 +498,11 @@ class CustomButton(wx.Panel):
             elif self.hovered and self.bg_color_hover: bg = self.bg_color_hover
             else: bg = self.bg_color_override
         else:
-            # Automatic state handling from token arrays
-            states = _theme.color_states(f"{token}.bg")
-            if self.pressed and len(states) > 2: bg = states[2]
-            elif self.hovered and len(states) > 1: bg = states[1]
+            if self.pressed and len(bg_colors) > 2: bg = bg_colors[2]
+            elif self.hovered and len(bg_colors) > 1: bg = bg_colors[1]
             
-            tstates = _theme.color_states(f"{token}.text")
-            if self.pressed and len(tstates) > 2: text_color = tstates[2]
-            elif self.hovered and len(tstates) > 1: text_color = tstates[1]
+            if self.pressed and len(text_colors) > 2: text_color = text_colors[2]
+            elif self.hovered and len(text_colors) > 1: text_color = text_colors[1]
 
         if self.border_color_override:
             if self.pressed and self.border_color_pressed: border_color = self.border_color_pressed
@@ -534,9 +523,14 @@ class CustomButton(wx.Panel):
             gc.SetBrush(wx.Brush(final_bg))
             if final_border: gc.SetPen(wx.Pen(final_border, 1))
             else: gc.SetPen(wx.TRANSPARENT_PEN)
-            gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
+            gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 6)
 
-        icon_char = self.ICONS.get(self.icon, self.icon) if self.icon else None
+        # Resolve icon from theme glyphs (V2 logic)
+        icon_char = ""
+        if self.icon:
+            stripped = self.icon.replace('mdi-', '')
+            icon_char = _theme.glyph(stripped) or self.icon
+
         tw, th = 0, 0
         if self.label and len(self.label) > 0:
             font_obj = TextStyles.body_strong.create_font()
@@ -586,13 +580,6 @@ class PresetCard(wx.Panel):
     """
     Preset card matching Component/PresetCard
     """
-    ICONS = {
-        'rotate-cw': '↻', 'rotate-ccw': '↺', 'arrow-down': '↓', 'arrow-up': '↑', 'circle': '○', 'star': '⭐',
-        'mdi-rotate-cw': '\U000F0465', 'mdi-arrow-down': '\U000F0045', 'mdi-arrow-up': '\U000F005D', 'mdi-circle': '\U000F012F',
-        'mdi-star-settings-outline': '\U000F166B', 'mdi-rotate-360': '\U000F1999', 'mdi-rotate-orbit': '\U000F0D98',
-        'mdi-horizontal-rotate-counterclockwise': '\U000F10F4'
-    }
-
     def __init__(self, parent, label="PRESET", icon_name="rotate-cw", size=(90, 64)):
         super().__init__(parent, size=size)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
@@ -607,17 +594,23 @@ class PresetCard(wx.Panel):
 
         width, height = self.GetSize()
         enabled = self.IsEnabled()
-        state = 1 if self.selected else 0
+        
+        # V2 Mapping
+        role = "selected" if self.selected else "default"
+        conf = _theme._resolve(f"components.component.preset_card.default.{role}") or {}
 
-        bg = _theme.color("components.preset_card.bg", state)
-        border = _theme.color("components.preset_card.border", state)
-        txt_color = _theme.color("components.preset_card.text", state)
+        bg = _theme.parse_color(conf.get("bg", "#121212"))
+        border = _theme.color("borders.subtle.color")
+        txt_color = _theme.color("text.label.color")
 
         gc.SetBrush(wx.Brush(_theme.disabled(bg) if not enabled else bg))
         gc.SetPen(wx.Pen(_theme.disabled(border) if not enabled else border, 1))
-        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
+        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 8)
 
-        icon_char = self.ICONS.get(self.icon_name, self.icon_name)
+        # Resolve icon
+        stripped = self.icon_name.replace('mdi-', '')
+        icon_char = _theme.glyph(stripped) or self.icon_name
+        
         final_text = _theme.disabled(txt_color) if not enabled else txt_color
         
         icon_gfx_font = gc.CreateFont(TextStyles.icon_lg.create_font(), final_text)
@@ -665,7 +658,10 @@ class SectionLabel(wx.Panel):
         if not gc: return
 
         width, height = self.GetSize()
-        text_color, line_color = _theme.color("components.section_label.text"), _theme.color("components.section_label.line")
+        
+        # V2 Mapping
+        text_color = _theme.color("colors.primary")
+        line_color = _theme.color("components.main.divider.bg")
         
         gfx_font = gc.CreateFont(TextStyles.section_heading.create_font(), text_color)
         gc.SetFont(gfx_font)
@@ -697,14 +693,15 @@ class NumericDisplay(wx.Panel):
         width, height = self.GetSize()
         enabled = self.IsEnabled()
 
-        bg = _theme.color("components.numeric_display.bg")
-        border = _theme.color("components.numeric_display.border")
-        accent = _theme.color("components.numeric_display.text-value")
-        secondary = _theme.color("components.numeric_display.text-unit")
+        # V2 Mappings
+        bg = _theme.color("components.component.input.default.frame.bg")
+        border = _theme.color("borders.subtle.color")
+        accent = _theme.color("colors.secondary")
+        secondary = _theme.color("colors.gray-text")
 
         gc.SetBrush(wx.Brush(_theme.disabled(bg) if not enabled else bg))
         gc.SetPen(wx.Pen(_theme.disabled(border) if not enabled else border, 1))
-        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
+        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 6)
 
         v_str = f"{self.value:.2f}" if isinstance(self.value, float) else str(self.value)
         v_gfx_font = gc.CreateFont(TextStyles.numeric_value.create_font(), _theme.disabled(accent) if not enabled else accent)
@@ -748,15 +745,16 @@ class NumericInput(wx.Panel):
         width, height = self.GetSize()
         enabled = self.IsEnabled()
 
-        bg = _theme.color("components.numeric_input.bg")
+        # V2 Mappings
+        bg = _theme.color("components.component.input.default.frame.bg")
         gc.SetBrush(wx.Brush(_theme.disabled(bg) if not enabled else bg))
 
-        bc = _theme.color("components.numeric_input.border-focus") if self.editing else _theme.color("components.numeric_input.border")
+        bc = _theme.color("borders.focus.color") if self.editing else _theme.color("borders.subtle.color")
         gc.SetPen(wx.Pen(_theme.disabled(bc) if not enabled else bc, 1))
-        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
+        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 6)
 
         if self.editing:
-            v_str, v_color = self.edit_text, _theme.color("components.numeric_input.text")
+            v_str, v_color = self.edit_text, _theme.color("colors.gray-white")
         else:
             v_str, v_color = (f"{self.value:.2f}" if isinstance(self.value, float) else str(self.value)), _theme.color("colors.secondary")
 
@@ -764,7 +762,7 @@ class NumericInput(wx.Panel):
         gc.SetFont(v_gfx_font)
         vw, vh = gc.GetTextExtent(v_str)
 
-        unit_color = _theme.color("colors.text.secondary")
+        unit_color = _theme.color("colors.gray-text")
         u_gfx_font = gc.CreateFont(TextStyles.body.create_font(), _theme.disabled(unit_color) if not enabled else unit_color)
         gc.SetFont(u_gfx_font)
         uw, uh = gc.GetTextExtent(self.unit)
@@ -776,9 +774,9 @@ class NumericInput(wx.Panel):
 
         if self.editing:
             cx = start_x + vw + 2
-            cy1, edit_color = (height - vh) / 2, _theme.color("components.numeric_input.text")
+            edit_color = _theme.color("colors.gray-white")
             gc.SetPen(wx.Pen(_theme.disabled(edit_color) if not enabled else edit_color, 1))
-            gc.StrokeLine(cx, cy1, cx, cy1 + vh)
+            gc.StrokeLine(cx, (height - vh) / 2, cx, (height + vh) / 2)
 
     def on_click(self, event):
         if self.IsEnabled() and not self.editing:
@@ -875,16 +873,17 @@ class CustomTextInput(wx.Panel):
         width, height = self.GetSize()
         enabled = self.IsEnabled()
 
-        bg = _theme.color("components.text_input.bg")
+        # V2 Mappings
+        bg = _theme.color("components.component.input.default.frame.bg")
         gc.SetBrush(wx.Brush(_theme.disabled(bg) if not enabled else bg))
-        bc = _theme.color("components.text_input.border-focus") if self.HasFocus() else _theme.color("components.text_input.border")
+        bc = _theme.color("borders.focus.color") if self.HasFocus() else _theme.color("borders.subtle.color")
         gc.SetPen(wx.Pen(_theme.disabled(bc) if not enabled else bc, 1))
-        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
+        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 6)
 
         if self.is_placeholder_active and not self.HasFocus():
-            display_text, text_color = self.placeholder, _theme.color("components.text_input.placeholder")
+            display_text, text_color = self.placeholder, _theme.color("colors.gray-text")
         else:
-            display_text, text_color = self.value, _theme.color("components.text_input.text")
+            display_text, text_color = self.value, _theme.color("colors.gray-white")
 
         gfx_font = gc.CreateFont(TextStyles.body.create_font(), _theme.disabled(text_color) if not enabled else text_color)
         gc.SetFont(gfx_font)
@@ -937,10 +936,10 @@ class ProjectFolderChip(wx.Panel):
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
         w, h = self.GetSize()
-        gc.SetBrush(wx.Brush(_theme.color("components.badge.bg")))
+        gc.SetBrush(wx.Brush(_theme.color("components.component.badge.frame.bg")))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRoundedRectangle(0, 0, w, h, 4)
-        gc.SetFont(gc.CreateFont(TextStyles.label_xs.create_font(), _theme.color("components.badge.text")))
+        gc.SetFont(gc.CreateFont(TextStyles.label_xs.create_font(), _theme.color("components.component.badge.label.color")))
         tw, th = gc.GetTextExtent("PROJECT FOLDER")
         gc.DrawText("PROJECT FOLDER", (w - tw) / 2, (h - th) / 2)
 
@@ -1008,29 +1007,38 @@ class CustomColorPicker(wx.Panel):
         dc = wx.AutoBufferedPaintDC(self); gc = wx.GraphicsContext.Create(dc)
         if not gc: return
         w, h = self.GetSize(); enabled, rects = self.IsEnabled(), self._get_rects()
-        bg = _theme.color("components.color_picker.bg")
+        
+        # V2 Mappings
+        bg = _theme.color("components.component.colorpicker.default.bg")
         gc.SetBrush(wx.Brush(_theme.disabled(bg) if not enabled else bg))
         gc.SetPen(wx.TRANSPARENT_PEN); gc.DrawRoundedRectangle(0, 0, w, h, 4)
         for i, (hv, lbl) in enumerate(self.PRESETS):
             r = rects[f'preset_{i}']; self._draw_swatch(gc, r.x, r.y, hv, lbl, i == self.selection, i == self.hover_idx, enabled)
-        border = _theme.color("components.color_picker.border")
+        
+        border = _theme.color("borders.subtle.color")
         gc.SetPen(wx.Pen(_theme.disabled(border) if not enabled else border, 1))
         dx = rects['divider']; gc.StrokeLine(dx, 10, dx, h - 10)
         rc = rects['custom']; self._draw_swatch(gc, rc.x, rc.y, self.current_color, "CUSTOM", self.selection == -1, self.hover_idx == 4, enabled)
-        rh = rects['hex']; hbg = _theme.color("components.text_input.bg")
+        
+        rh = rects['hex']; hbg = _theme.color("components.component.input.default.frame.bg")
         gc.SetBrush(wx.Brush(_theme.disabled(hbg) if not enabled else hbg))
         gc.SetPen(wx.Pen(_theme.disabled(border) if not enabled else border, 1))
         gc.DrawRoundedRectangle(rh.x, rh.y, rh.width, rh.height, 4)
 
     def _draw_swatch(self, gc, x, y, ch, lbl, sel, hov, enabled):
         sc = wx.Colour(ch); gc.SetBrush(wx.Brush(_theme.disabled(sc) if not enabled else sc))
-        stc = _theme.color("components.color_picker.swatch-border")
+        
+        # Swatch border role
+        stc = _theme.color("borders.subtle.color")
         if sel: stc, thk = _theme.color("colors.primary"), 2
-        elif hov: stc, thk = _theme.HOVER_HIGHLIGHT, 1
+        elif hov: stc, thk = _theme.color("colors.gray-medium"), 1
         else: thk = 1
+        
         gc.SetPen(wx.Pen(_theme.disabled(stc) if not enabled else stc, thk))
         gc.DrawRoundedRectangle(x, y, 28, 28, 4)
-        gfx_font = gc.CreateFont(TextStyles.label_xs.create_font(), _theme.disabled(_theme.color("colors.text.muted")) if not enabled else _theme.color("colors.text.muted"))
+        
+        text_muted = _theme.color("colors.gray-text")
+        gfx_font = gc.CreateFont(TextStyles.label_xs.create_font(), _theme.disabled(text_muted) if not enabled else text_muted)
         gc.SetFont(gfx_font); tw, th = gc.GetTextExtent(lbl); gc.DrawText(lbl, x + (28 - tw) / 2, y + 32)
 
     def on_mouse_move(self, event):
@@ -1085,13 +1093,16 @@ class PathInputControl(wx.Panel):
         dc = wx.AutoBufferedPaintDC(self); gc = wx.GraphicsContext.Create(dc)
         if not gc: return
         w, h = self.GetSize(); enabled = self.IsEnabled()
-        bg = _theme.color("components.path_input.bg")
+        
+        # V2 Mapping (Use input.default)
+        bg = _theme.color("components.component.input.default.frame.bg")
         gc.SetBrush(wx.Brush(_theme.disabled(bg) if not enabled else bg))
-        brd = _theme.color("components.path_input.border")
+        brd = _theme.color("borders.subtle.color")
         gc.SetPen(wx.Pen(_theme.disabled(brd) if not enabled else brd, 1))
-        gc.DrawRoundedRectangle(1, 1, w - 2, h - 2, 4)
-        tc = _theme.color("components.path_input.text"); ic = _theme.color("components.path_input.icon")
-        gf_i = gc.CreateFont(TextStyles.icon.create_font(), _theme.disabled(ic) if not enabled else ic)
+        gc.DrawRoundedRectangle(1, 1, w - 2, h - 2, 6)
+        
+        tc = _theme.color("colors.gray-white")
+        gf_i = gc.CreateFont(TextStyles.icon.create_font(), _theme.disabled(tc) if not enabled else tc)
         gc.SetFont(gf_i); itw, ih = gc.GetTextExtent('\U000F024B'); gc.DrawText('\U000F024B', 12, (h - ih) / 2)
         gf_t = gc.CreateFont(TextStyles.body.create_font(), _theme.disabled(tc) if not enabled else tc)
         gc.SetFont(gf_t); tx = 36 + (self.chip.GetSize().x + 6 if self.show_chip else 0)
