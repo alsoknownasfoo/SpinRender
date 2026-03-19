@@ -432,9 +432,9 @@ class SpinRenderPanel(wx.Panel):
             return
 
         # Prepare UI for rendering
+        self.render_btn.SetStyle("exit", update_content=False)
         self.render_btn.SetLabel(_locale.get("component.button.stop.label", "STOP"))
-        self.render_btn.SetIcon(_theme.glyph("stop"))
-        self.render_btn.SetDanger(True)
+        self.render_btn.SetIcon(_locale.get("component.button.stop.icon_ref", "stop"))
 
         # Disable all controls during render
         self.enable_left_panel_controls(False)
@@ -527,9 +527,7 @@ class SpinRenderPanel(wx.Panel):
     def on_render_finished(self, result, error=None):
         if not self: return
         # RenderController handles engine cleanup; just update UI
-        self.render_btn.SetLabel(_locale.get("component.button.render.label", "RENDER"))
-        self.render_btn.SetIcon(_theme.glyph("render-action"))
-        self.render_btn.SetDanger(False)
+        self.render_btn.SetStyle("render")
         
         # Re-enable all controls
         self.enable_left_panel_controls(True)

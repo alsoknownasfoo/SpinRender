@@ -5,6 +5,7 @@ This module provides the Theme singleton that loads color, font, and spacing
 tokens from YAML configuration. YAML loading is strictly required.
 """
 import logging
+import re
 from pathlib import Path
 from typing import Any
 
@@ -26,8 +27,6 @@ class Theme:
         Theme.load("dark")           # Load theme by name, sets singleton
         Theme.current()              # Get loaded singleton
         Theme.current().color("colors.primary")  # → wx.Colour
-        Theme.current().font("body")  # → wx.Font
-        Theme.current().size("typography.scale.base")  # → int
     """
     _instance: "Theme | None" = None
     _data: dict[str, Any] = {}
@@ -40,7 +39,6 @@ class Theme:
     @classmethod
     def load(cls, name: str = "dark", force: bool = False) -> "Theme":
         """Load theme from YAML file. Sets singleton instance."""
-        # Use resolve() to follow symlinks and get the absolute path
         path = (Path(__file__).parent.parent / "resources" / "themes" / f"{name}.yaml").resolve()
         
         if not path.exists():
@@ -48,33 +46,20 @@ class Theme:
             logger.error(error_msg)
             raise FileNotFoundError(error_msg)
 
-        # Check mtime to auto-detect disk changes
         mtime = path.stat().st_mtime
         is_stale = mtime > cls._loaded_mtime or name != cls._loaded_name
         
-        # Idempotent: if already loaded and not forcing/stale, return existing instance
         if cls._instance is not None and not force and not is_stale:
             return cls._instance
 
-        logger.info(f"Theme: {'Reloading' if (force or is_stale) else 'Initializing'} '{name}' theme loading.")
-
         if not _yaml_available:
-            error_msg = "PyYAML is not available. Theme system requires PyYAML."
-            logger.error(error_msg)
-            raise ImportError(error_msg)
+            raise ImportError("PyYAML is not available. Theme system requires PyYAML.")
 
         try:
             with open(path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
             
-            # Print full loaded theme data at INFO level
-            debug_data = yaml.dump(data, sort_keys=False, default_flow_style=False)
-            logger.info(f"Theme Data (Loaded from {path.name}):\n{debug_data}")
-
             if cls._instance:
-                # CRITICAL: Update the existing instance's data dictionary in-place.
-                # This ensures all modules that hold a reference to this instance 
-                # (via _theme = Theme.current()) see the new data immediately.
                 cls._instance._data = data
             else:
                 cls._instance = cls(data)
@@ -91,496 +76,292 @@ class Theme:
 
     @classmethod
     def reload(cls) -> "Theme":
-        """Force a reload of the current theme from disk."""
-        # Use the name of the currently loaded theme, or default to dark
-        name = cls._loaded_name if cls._loaded_name else "dark"
-        instance = cls.load(name=name, force=True)
-        
-        if _yaml_available:
-            try:
-                # Print the full data as YAML for easy debugging
-                debug_data = yaml.dump(instance._data, sort_keys=False, default_flow_style=False)
-                logger.info(f"Theme Data (Reloaded):\n{debug_data}")
-            except Exception as e:
-                logger.info(f"Theme Data (Reloaded - Raw): {instance._data}")
-                logger.error(f"Failed to dump theme debug data: {e}")
-        else:
-            logger.info(f"Theme Data (Reloaded - Raw): {instance._data}")
-            
-        return instance
-
+        return cls.load(name=cls._loaded_name if cls._loaded_name else "dark", force=True)
 
     @classmethod
     def current(cls) -> "Theme":
-        """Get the current theme singleton, loading default if not set."""
         if cls._instance is None:
             cls.load()
         return cls._instance
 
     def has_token(self, path: str) -> bool:
-        """Check if a token path exists in the theme data."""
-        keys = path.split('.')
-        current = self._data
-        for key in keys:
-            if not isinstance(current, dict) or key not in current:
-                # Fallback to ref if key not found locally
-                if isinstance(current, dict) and "ref" in current:
-                    try:
-                        resolved = self._resolve(current["ref"])
-                        if isinstance(resolved, dict) and key in resolved:
-                            current = resolved[key]
-                            continue
-                    except:
-                        pass
-                return False
-            current = current[key]
-        return True
+        """Check if a token path exists, following refs and merging inheritance."""
+        try:
+            res = self._resolve(path)
+            return res is not None and res != "#FF00FF"
+        except:
+            return False
 
-    def _resolve(self, path: str) -> Any:
+    def _get_raw(self, path: str) -> Any:
+        """Internal direct lookup in data dict without ref following."""
+        curr = self._data
+        for k in path.split('.'):
+            if isinstance(curr, dict) and k in curr:
+                curr = curr[k]
+            else:
+                return None
+        return curr
+
+    def _resolve(self, path: str, visited: set = None) -> Any:
         """
-        Resolve a dot-path token, following 'ref' references.
-        Supports both dict-style ref: {ref: "token"} and V2 string-style @token.
-        Recursive: follows references until a terminal value is reached.
-        Deep Inheritance: If a sub-key is missing in a local override, attempts
-        to find it in the referenced base.
+        Resolve a dot-path token with robust Parent-Ref Recursive Lookup.
+        
+        Strategy:
+        1. Check direct path. If found, follow any leaf-level pointers.
+        2. If not found, probe parents for a 'ref' and continue lookup from base.
         """
-        if not isinstance(path, str):
-            return path
+        if visited is None: visited = set()
+        if path in visited: raise RecursionError(f"Circular reference detected at '{path}'")
+        visited.add(path)
 
-        if path.startswith("@"):
-            path = path[1:]
-
-        # If it's a simple hex/rgba or literal, return as-is
+        if not isinstance(path, str): return path
+        if path.startswith("@"): path = path[1:]
+        
+        # Fast path for literals
         if '.' not in path and path not in self._data:
             if path.startswith("#") or path.startswith("rgba(") or path.isalpha():
                 return path
 
-        node = self._data
-        parts = path.split(".")
+        # 1. Direct Lookup
+        curr = self._get_raw(path)
+        if curr is not None and curr != "#FF00FF":
+            # Follow terminal ref
+            while (isinstance(curr, dict) and "ref" in curr) or (isinstance(curr, str) and curr.startswith("@")):
+                ref_target = curr["ref"] if isinstance(curr, dict) else curr
+                curr = self._resolve(ref_target, visited)
+            return curr
+
+        # 2. Inherited Lookup
+        keys = path.split('.')
+        for i in range(len(keys) - 1, 0, -1):
+            parent_path = ".".join(keys[:i])
+            parent = self._get_raw(parent_path)
+            if isinstance(parent, dict) and "ref" in parent:
+                # Redirect to the base component
+                base_ref = parent["ref"]
+                remaining = ".".join(keys[i:])
+                return self._resolve(f"{base_ref}.{remaining}", visited)
+
+        return "#FF00FF"
+
+    # --- COLOR ENGINE ---
+
+    def color(self, token: str, hovered: bool = False, pressed: bool = False, enabled: bool = True) -> 'wx.Colour':
+        """Resolve a color token to a wx.Colour, considering component state.
         
-        for i, key in enumerate(parts):
-            if not isinstance(node, dict):
-                logger.error(f"Theme: Cannot traverse into {type(node)} at '{key}' in '{path}' (node: {node})")
-                return "#FF00FF"
+        Priority: Disabled > Pressed > Hovered > Normal.
+        """
+        import wx
+        states = self.color_states(token)
+        
+        final_color = states[0]
+        state_name = "normal"
 
-            if key in node:
-                # 1. Found locally - enter it
-                node = node[key]
-            elif "ref" in node:
-                # 2. Not found locally, but this LEVEL has a reference base.
-                # Use the base to resolve the rest of the path.
-                base_ref = node["ref"]
-                remaining_path = ".".join(parts[i:])
-                
-                # Recursively resolve from the base reference
-                return self._resolve(f"{base_ref}.{remaining_path}")
-            else:
-                # 3. Not found locally and no reference here to fall back to.
-                logger.error(f"Theme: Undefined token: '{path}' (missing '{key}')")
-                # DEBUG: Log keys in current node to help diagnose
-                logger.error(f"Theme: Available keys in current node: {list(node.keys())}")
-                return "#FF00FF"
+        if not enabled:
+            final_color = states[3] if len(states) > 3 else self.disabled(states[0])
+            state_name = "disabled"
+        elif pressed:
+            final_color = states[2] if len(states) > 2 else states[0]
+            state_name = "pressed"
+        elif hovered:
+            final_color = states[1] if len(states) > 1 else states[0]
+            state_name = "hovered"
+            
+        try:
+            hex_val = final_color.GetAsString(wx.C2S_HTML_SYNTAX)
+            logger.debug(f"Theme: color('{token}') -> state '{state_name}' -> {hex_val}")
+        except:
+            pass
+            
+        return final_color
 
-            # If we are NOT at the leaf, and the current node is a reference,
-            # we MUST resolve it now so we can traverse into it in the next loop.
-            if i < len(parts) - 1:
-                while (isinstance(node, dict) and "ref" in node) or (isinstance(node, str) and str(node).startswith("@")):
-                    if isinstance(node, dict):
-                        node = self._resolve(node["ref"])
-                    else:
-                        node = self._resolve(node)
+    def color_states(self, token: str, states: int = 4) -> list['wx.Colour']:
+        """Resolve a color token to [normal, hover, active, disabled] states."""
+        import wx
+        raw = self._resolve(token)
+        
+        if raw is None or raw == "#FF00FF":
+            logger.error(f"Theme: Color token '{token}' not found.")
+            pink = self._parse_color("#FF00FF")
+            return [pink] * states
 
-        # Final Leaf Resolution: follow ref if present
-        while (isinstance(node, dict) and "ref" in node) or (isinstance(node, str) and str(node).startswith("@")):
-            if isinstance(node, dict):
-                node = self._resolve(node["ref"])
-            else:
-                node = self._resolve(node)
+        # Extract defined states
+        colors, source = self._extract_defined_states(raw, token)
+        
+        # Fill missing states
+        final_colors, gen_count = self._fill_missing_states(colors)
+        
+        try:
+            hex_list = [c.GetAsString(wx.C2S_HTML_SYNTAX) for c in final_colors[:states]]
+            logger.debug(f"Theme: color_states('{token}') -> src={source} gen={gen_count} -> {hex_list}")
+        except:
+            pass
 
-        return node
+        return final_colors[:states]
+
+    def _extract_defined_states(self, raw: Any, token: str) -> tuple[list['wx.Colour'], str]:
+        if isinstance(raw, list):
+            return [self._parse_color(v) for v in raw], "list"
+        
+        if isinstance(raw, dict):
+            colors = []
+            for k in ["default", "bg", "color", "value", "hover", "active", "pressed", "disabled"]:
+                val = raw.get(k)
+                if val: colors.append(self._parse_color(val))
+            if colors: return colors, "dict"
+
+        colors = [self._parse_color(raw)]
+        if "." in token and token.startswith("components."):
+            base_path = ".".join(token.split(".")[:-1])
+            found_sibling = False
+            for s in ["hover", "active", "pressed", "disabled"]:
+                sibling_path = f"{base_path}.{s}"
+                if self.has_token(sibling_path):
+                    sibling = self._resolve(sibling_path)
+                    if sibling and not isinstance(sibling, dict) and sibling != "#FF00FF":
+                        colors.append(self._parse_color(sibling))
+                        found_sibling = True
+            return colors, ("siblings" if found_sibling else "direct")
+            
+        return colors, "direct"
+
+    def _fill_missing_states(self, colors: list['wx.Colour']) -> tuple[list['wx.Colour'], int]:
+        if not colors:
+            pink = self._parse_color("#FF00FF")
+            return [pink] * 4, 0
+            
+        base = colors[0]
+        gen_count = 0
+        if len(colors) < 2:
+            colors.append(self._apply_auto_shift(base, "hover")); gen_count += 1
+        if len(colors) < 3:
+            # Rule: Shift from base for active state
+            colors.append(self._apply_auto_shift(base, "active")); gen_count += 1
+        if len(colors) < 4:
+            colors.append(self._apply_auto_shift(base, "disabled")); gen_count += 1
+            
+        return colors, gen_count
+
+    def _apply_auto_shift(self, base_color: 'wx.Colour', state: str) -> 'wx.Colour':
+        import wx
+        delta_raw = self._resolve(f"colors.auto_states.{state}")
+        
+        if not isinstance(delta_raw, str) or delta_raw == "#FF00FF":
+            if state == "hover": return self._shift_color(base_color, 10)
+            if state == "active": return self._shift_color(base_color, -10)
+            return self.disabled(base_color)
+
+        try:
+            parts = [float(p) for p in re.findall(r"[-?\d.]+", delta_raw)]
+            if state == "disabled" and len(parts) >= 4:
+                alpha = int(parts[3] * 255) if parts[3] <= 1.0 else int(parts[3])
+                return wx.Colour(base_color.Red(), base_color.Green(), base_color.Blue(), alpha)
+
+            r = max(0, min(255, int(base_color.Red() + (parts[0] if len(parts) > 0 else 0))))
+            g = max(0, min(255, int(base_color.Green() + (parts[1] if len(parts) > 1 else 0))))
+            b = max(0, min(255, int(base_color.Blue() + (parts[2] if len(parts) > 2 else 0))))
+            a = int(parts[3] * 255) if len(parts) >= 4 else base_color.Alpha()
+            return wx.Colour(r, g, b, a)
+        except:
+            return base_color
 
     def disabled(self, color) -> 'wx.Colour':
-        """Return a copy of color with disabled opacity (alpha=128)."""
         import wx
         if isinstance(color, wx.Colour):
             return wx.Colour(color.Red(), color.Green(), color.Blue(), 128)
-        raise ValueError(f"Expected wx.Colour, got {type(color)}")
+        return self._parse_color("#FF00FF")
 
-    def font_family(self, name: str) -> str:
-        """Get font family by name: 'mono', 'display', 'icon', 'inter'."""
-        return self._resolve(f"typography.families.{name}")
-
-    def font_size(self, name: str) -> int:
-        """Get font size by name: 'xs', 'sm', 'base', 'md', 'lg', 'xl', 'icon', 'icon-lg'."""
-        value = self._resolve(f"typography.scale.{name}")
-        return int(value)
-
-    def font_weight(self, name: str) -> int:
-        """Get font weight by name: 'normal' (400), 'semibold' (600), 'bold' (700)."""
-        value = self._resolve(f"typography.weights.{name}")
-        return int(value)
-
-    def get_palette_color(self, name: str) -> 'wx.Colour':
-        """Get a raw palette color by name (e.g., 'cyan', 'yellow', 'neutral-3')."""
-        return self.color(f"palette.{name}")
-
-    # Special colors via properties for cleaner access
-    @property
-    def BLACK(self) -> 'wx.Colour':
-        """Solid black."""
-        return self.color("palette.black-solid")
-
-    @property
-    def TRANSPARENT(self) -> 'wx.Colour':
-        """Fully transparent."""
-        return self.color("palette.transparent")
-
-    @property
-    def HOVER_HIGHLIGHT(self) -> 'wx.Colour':
-        """Hover highlight color (used for scrollbars etc)."""
-        return self.color("colors.bg.hover")
-
-    @property
-    def SCROLLBAR_GREY(self) -> 'wx.Colour':
-        """Scrollbar track color."""
-        return self.get_palette_color("neutral-10")
-
-    @property
-    def GREY_100(self) -> 'wx.Colour':
-        """Secondary text subtler color."""
-        # Use neutral-18 which exists in dark.yaml
-        return self.get_palette_color("neutral-18")
-
-    @property
-    def DANGER_DARK(self) -> 'wx.Colour':
-        """Danger state (pressed)."""
-        return self.color("palette.danger-dark")
-
-    @property
-    def DANGER_HOVER(self) -> 'wx.Colour':
-        """Danger state (hover)."""
-        return self.color("palette.danger-hover")
-
-    @property
-    def DANGER_MEDIUM(self) -> 'wx.Colour':
-        """Danger state (default)."""
-        return self.color("palette.danger-medium")
-
-    @property
-    def WHITE(self) -> 'wx.Colour':
-        """Solid white."""
-        return self.color("palette.neutral-15")
-
-    @property
-    def WHITE_ALPHA_20(self) -> 'wx.Colour':
-        """White with 20% opacity."""
-        return self.parse_color("rgba(255,255,255,0.08)")
-
-    @property
-    def WHITE_ALPHA_30(self) -> 'wx.Colour':
-        """White with 30% opacity."""
-        return self.parse_color("rgba(255,255,255,0.16)")
-
-    @property
-    def WHITE_ALPHA_40(self) -> 'wx.Colour':
-        """White with 40% opacity."""
-        return self.parse_color("rgba(255,255,255,0.27)")
-
-    @property
-    def WHITE_ALPHA_68(self) -> 'wx.Colour':
-        """White with 68% opacity."""
-        return self.parse_color("rgba(255,255,255,0.68)")
-
-    @property
-    def BG_MODAL(self) -> 'wx.Colour':
-        """Modal background (same as BG_PAGE)."""
-        return self.color("colors.bg.page")
-
-    def _parse_color(self, value: str):
-        """Parse color string to wx.Colour. Supports hex, rgba, and @references."""
+    def _parse_color(self, value: str) -> 'wx.Colour':
+        """Parse color string to wx.Colour. Raises ValueError for invalid format."""
         import wx
-        import re
+        
+        # 0. wx.Colour Passthrough (Critical for tests)
+        if isinstance(value, wx.Colour):
+            return value
 
-        if not isinstance(value, str):
+        if not isinstance(value, str): 
             raise ValueError(f"Theme: Invalid color value type: {type(value)}")
-
-        # V2: Resolve string-based references before parsing
+        
+        # 1. Handle @references
         if value.startswith("@"):
             resolved = self._resolve(value)
-            if isinstance(resolved, str) and not resolved.startswith("@"):
-                return self._parse_color(resolved)
-            return resolved 
-
-        # 1. Try wx.ColourDatabase for named colors
-        named_color = wx.Colour(value)
-        if named_color.IsOk():
-            return named_color
+            if resolved == "#FF00FF": return wx.Colour(255, 0, 255)
+            return self._parse_color(resolved)
 
         # 2. Parse rgba(r, g, b, a)
         if value.startswith("rgba("):
-            parts = re.findall(r"[\d.]+", value)
-            if len(parts) != 4:
-                raise ValueError(f"Theme: Invalid rgba format: {value}")
-            try:
-                r, g, b = int(parts[0]), int(parts[1]), int(parts[2])
-                a = max(0, min(255, int(round(float(parts[3]) * 255))))
-                return wx.Colour(r, g, b, a)
-            except (ValueError, IndexError):
-                raise ValueError(f"Theme: Invalid rgba format: {value}")
+            parts = [float(p) for p in re.findall(r"[\d.]+", value)]
+            if len(parts) == 4:
+                return wx.Colour(int(parts[0]), int(parts[1]), int(parts[2]), int(round(parts[3] * 255)))
+            raise ValueError(f"Theme: Invalid rgba format: {value}")
 
-        # 3. Parse hex #RRGGBB or RRGGBB or #RRGGBBAA
+        # 3. Parse hex
         clean = value.lstrip("#")
         try:
             if len(clean) == 6:
-                r = int(clean[0:2], 16)
-                g = int(clean[2:4], 16)
-                b = int(clean[4:6], 16)
-                return wx.Colour(r, g, b)
-            elif len(clean) == 8:
-                r = int(clean[0:2], 16)
-                g = int(clean[2:4], 16)
-                b = int(clean[4:6], 16)
-                a = int(clean[6:8], 16)
-                return wx.Colour(r, g, b, a)
-        except ValueError:
-            pass
+                return wx.Colour(int(clean[0:2], 16), int(clean[2:4], 16), int(clean[4:6], 16))
+            if len(clean) == 8:
+                return wx.Colour(int(clean[0:2], 16), int(clean[2:4], 16), int(clean[4:6], 16), int(clean[6:8], 16))
+        except: pass
 
-        # 4. Final attempt at direct wx.Colour constructor
+        # 4. Try direct construction (named colors)
         try:
-            direct = wx.Colour(value)
-            if direct.IsOk():
-                return direct
-        except Exception:
-            pass
+            c = wx.Colour(value)
+            if c.IsOk(): return c
+        except: pass
 
         raise ValueError(f"Theme: Invalid color format or unknown color name: '{value}'")
 
-    def parse_color(self, value: str):
-        """Public wrapper for _parse_color."""
-        return self._parse_color(value)
-
     def _shift_color(self, color: 'wx.Colour', delta: int) -> 'wx.Colour':
-        """Shift RGB channels by delta (±10), clamped 0-255, preserving alpha."""
         import wx
-        r = max(0, min(255, color.Red() + delta))
-        g = max(0, min(255, color.Green() + delta))
-        b = max(0, min(255, color.Blue() + delta))
-        a = color.Alpha()
-        return wx.Colour(r, g, b, a)
-
-    def color(self, token: str, state: int = 0) -> 'wx.Colour':
-        """Resolve a color token to a wx.Colour. e.g. 'colors.primary'."""
-        logger.debug(f"Theme usage: resolve color '{token}' (state={state})")
-        states = self.color_states(token)
-        if state >= len(states):
-            logger.warning(f"Theme: Requested state {state} for token '{token}' exceeds available states ({len(states)}).")
-            return states[0]
-        return states[state]
-
-    def get_preset_colors(self) -> list['wx.Colour']:
-        """Get list of preset colors from the theme."""
-        raw_presets = self._resolve("colors.preset")
-        if isinstance(raw_presets, list):
-            colors = []
-            for item in raw_presets:
-                if isinstance(item, dict) and 'ref' in item:
-                    color_str = self._resolve(item['ref'])
-                elif isinstance(item, str):
-                    color_str = self._resolve(item) if not item.startswith('#') and not item.startswith('rgba(') else item
-                else:
-                    color_str = item
-                colors.append(self._parse_color(color_str))
-            return colors
-        
-        logger.error("Theme: 'colors.preset' not found or invalid in theme data.")
-        raise KeyError("colors.preset missing")
-
-    def has_palette_color(self, token: str) -> bool:
-        """Check if a palette color token exists."""
-        palette = self._data.get("palette", {})
-        return token in palette
-
-    def color_states(self, token: str, states: int = 3) -> list['wx.Colour']:
-        """Resolve a color token to a list of wx.Colour objects for [normal, hover, active] states.
-        
-        V2: Supports explicit 'hover' and 'pressed' sibling properties if token is a path
-        to a value in a dictionary (e.g. components.button.close.frame.bg).
-        """
-        # 1. Resolve the main token
-        raw = self._resolve(token)
-
-        # 2. Case: Explicit list [normal, hover, active]
-        if isinstance(raw, list):
-            resolved_values = []
-            for v in raw:
-                resolved_values.append(self._resolve(v) if isinstance(v, str) and v.startswith("@") else v)
-            colors = [self._parse_color(rv) for rv in resolved_values]
-        
-        # 3. Case: Explicit dictionary with hover/pressed keys
-        elif isinstance(raw, dict) and ("hover" in raw or "pressed" in raw):
-            normal = raw.get("bg") or raw.get("color") or raw.get("value")
-            hover = raw.get("hover")
-            pressed = raw.get("pressed")
-            
-            colors = [self._parse_color(normal)]
-            if hover: colors.append(self._parse_color(hover))
-            if pressed: colors.append(self._parse_color(pressed))
-        
-        # 4. Case: Dot-path fallback for siblings (e.g. token='...frame.bg' -> look for '...frame.hover')
-        elif '.' in token:
-            parent_path = ".".join(token.split(".")[:-1])
-            leaf_key = token.split(".")[-1]
-            
-            try:
-                parent_node = self._resolve(parent_path)
-                if isinstance(parent_node, dict):
-                    # If looking for 'bg', also check for 'hover' and 'pressed' in the same dict
-                    colors = [self._parse_color(raw)]
-                    
-                    # Try to find stateful siblings
-                    for state_key in ["hover", "pressed", "active"]:
-                        if state_key in parent_node:
-                            colors.append(self._parse_color(parent_node[state_key]))
-                else:
-                    colors = [self._parse_color(raw)]
-            except Exception:
-                colors = [self._parse_color(raw)]
-        else:
-            colors = [self._parse_color(raw)]
-
-        # 5. Pad with shifted colors if not enough states provided
-        while len(colors) < states:
-            base = colors[-1]
-            if len(colors) == 1:
-                colors.append(self._shift_color(base, 10))  # hover
-                colors.append(self._shift_color(base, -10)) # active
-            elif len(colors) == 2:
-                colors.append(self._shift_color(colors[1], -10))
-            else:
-                colors.append(base)
-
-        return colors[:states]
-
-    def size(self, token: str) -> int:
-        """Resolve a spacing/size token to an int. e.g. 'spacing.lg'."""
-        logger.debug(f"Theme usage: resolve size '{token}'")
-        value = self._resolve(token)
-        return int(value)
-
-    def font(self, preset: str) -> 'wx.Font':
-        """Resolve a font preset to a wx.Font.
-
-        Supports V1 (typography.presets.{preset}) and V2 (text.{preset}.font) formats.
-        """
-        logger.debug(f"Theme usage: resolve font preset '{preset}'")
-        import wx
-
-        # Try V2 format first: text.{preset}.font
-        v2_path = f"text.{preset}.font"
-        spec = self._resolve(v2_path)
-
-        # If resolution failed (pink hex), try V1 format
-        if isinstance(spec, str) and spec.startswith("#"):
-            logger.debug(f"V2 font path '{v2_path}' not found, trying V1 format")
-            spec = self._resolve(f"typography.presets.{preset}")
-
-        if isinstance(spec, str) and spec.startswith("#"):
-             # Failed resolution returned pink hex
-             logger.error(f"Theme: Cannot create font for invalid preset '{preset}'")
-             # Fallback to system font if resolution failed
-             return wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
-
-        # Resolve family (V2 uses 'typeface', V1 uses 'family')
-        family_spec = spec.get("typeface") or spec.get("family", "wx.FONTFAMILY_DEFAULT")
-        if isinstance(family_spec, dict) and "ref" in family_spec:
-            family = self._resolve(family_spec["ref"])
-        elif isinstance(family_spec, str) and family_spec.startswith("@"):
-            family = self._resolve(family_spec[1:])  # strip '@'
-        else:
-            family = family_spec
-
-        # Resolve size
-        size_spec = spec.get("size", 11)
-        if isinstance(size_spec, dict) and "ref" in size_spec:
-            size = int(self._resolve(size_spec["ref"]))
-        elif isinstance(size_spec, str) and size_spec.startswith("@"):
-            size = int(size_spec[1:])
-        else:
-            size = int(size_spec) if not isinstance(size_spec, (int, float)) else int(size_spec)
-
-        # Resolve weight
-        weight_spec = spec.get("weight", 400)
-        if isinstance(weight_spec, dict) and "ref" in weight_spec:
-            weight = int(self._resolve(weight_spec["ref"]))
-        elif isinstance(weight_spec, str) and weight_spec.startswith("@"):
-            weight = int(weight_spec[1:])
-        else:
-            weight = int(weight_spec) if not isinstance(weight_spec, (int, float)) else int(weight_spec)
-
-        weight_map = {
-            100: wx.FONTWEIGHT_THIN,
-            200: wx.FONTWEIGHT_LIGHT,
-            300: wx.FONTWEIGHT_LIGHT,
-            400: wx.FONTWEIGHT_NORMAL,
-            500: wx.FONTWEIGHT_NORMAL,
-            600: wx.FONTWEIGHT_SEMIBOLD,
-            700: wx.FONTWEIGHT_BOLD,
-            800: wx.FONTWEIGHT_BOLD,
-            900: wx.FONTWEIGHT_BOLD,
-        }
-        wx_weight = weight_map.get(weight, wx.FONTWEIGHT_NORMAL)
-
-        return wx.Font(
-            size,
-            wx.FONTFAMILY_DEFAULT,
-            wx.FONTSTYLE_NORMAL,
-            wx_weight,
-            faceName=family
+        return wx.Colour(
+            max(0, min(255, color.Red() + delta)),
+            max(0, min(255, color.Green() + delta)),
+            max(0, min(255, color.Blue() + delta)),
+            color.Alpha()
         )
 
-    def frame(self, path: str) -> dict[str, Any]:
-        """Resolve a full frame object (bg, radius, border, etc.)."""
-        return self._resolve(f"components.{path}.frame")
+    # --- PROPERTY ACCESSORS (Aliases to common literal tokens) ---
 
-    def border(self, role: str = "default") -> dict[str, Any]:
-        """Resolve a semantic border role."""
-        return self._resolve(f"borders.{role}")
+    @property
+    def BLACK(self) -> 'wx.Colour': return self._parse_color("black")
+    @property
+    def WHITE(self) -> 'wx.Colour': return self._parse_color("white")
+    @property
+    def TRANSPARENT(self) -> 'wx.Colour': return self._parse_color("rgba(0,0,0,0)")
 
-    def text_style(self, role: str) -> dict[str, Any]:
-        """Resolve a global text style role (font + color)."""
-        return self._resolve(f"text.{role}")
+    # --- OTHER HELPERS ---
 
+    def font_family(self, name: str) -> str: return self._resolve(f"typography.families.{name}")
+    def font_size(self, name: str) -> int: return int(self._resolve(f"typography.scale.{name}"))
+    def font_weight(self, name: str) -> int: return int(self._resolve(f"typography.weights.{name}"))
+    def size(self, token: str) -> int: 
+        val = self._resolve(token)
+        return int(val) if not isinstance(val, str) or not val.startswith("#") else 0
+    
     def glyph(self, name: str) -> str:
-        """Get a glyph Unicode string by name from the glyphs section.
+        if not name or name.lower() == "none": return ""
+        token = f"glyphs.{name.replace('glyphs.', '')}"
+        val = self._resolve(token)
+        return str(val) if isinstance(val, str) and not val.startswith("#") else ""
 
-        Example:
-            theme.glyph("render-action") → "\U000F0A1C"
-            theme.glyph("glyphs.render-action") → "\U000F0A1C"
+    def get_palette_color(self, name: str) -> 'wx.Colour': return self.color(f"colors.{name}")
+    def get_preset_colors(self) -> list['wx.Colour']:
+        raw = self._resolve("colors.preset")
+        return [self._parse_color(v) for v in raw] if isinstance(raw, list) else []
 
-        Returns:
-            Unicode string representing the glyph, or empty string if not found or "None".
-        """
-        if not name or name.lower() == "none":
-            return ""
+    def font(self, preset: str) -> 'wx.Font':
+        import wx
+        spec = self._resolve(f"text.{preset}.font")
+        if not isinstance(spec, dict): spec = self._resolve(f"typography.presets.{preset}")
+        if not isinstance(spec, dict): return wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        family = self._resolve(spec.get("typeface") or spec.get("family", "wx.FONTFAMILY_DEFAULT"))
+        size = int(self._resolve(spec.get("size", 11)))
+        weight = int(self._resolve(spec.get("weight", 400)))
+        w_map = {100:wx.FONTWEIGHT_THIN, 200:wx.FONTWEIGHT_LIGHT, 300:wx.FONTWEIGHT_LIGHT, 400:wx.FONTWEIGHT_NORMAL, 
+                 500:wx.FONTWEIGHT_NORMAL, 600:wx.FONTWEIGHT_SEMIBOLD, 700:wx.FONTWEIGHT_BOLD, 800:wx.FONTWEIGHT_BOLD, 900:wx.FONTWEIGHT_BOLD}
+        return wx.Font(size, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, w_map.get(weight, wx.FONTWEIGHT_NORMAL), faceName=family)
 
-        # Strip 'glyphs.' prefix if provided (allows direct use of locale icon_ref)
-        token_name = name.replace("glyphs.", "")
-        token = f"glyphs.{token_name}"
-        value = self._resolve(token)
-
-        # Handle 'None' as a value in YAML
-        if isinstance(value, str) and value.lower() == "none":
-            return ""
-
-        # If resolution failed, _resolve returns pink hex; detect that
-        if isinstance(value, str) and (value == "#FF00FF" or value == "#FF00FFFF"):
-            # Only warn if it's not a known null-ish value
-            logger.warning(f"Theme: Glyph '{token_name}' not found")
-            return ""
-
-        # Return string value directly
-        if isinstance(value, str):
-            return value
-
-        logger.warning(f"Theme: Glyph '{token_name}' has unexpected type {type(value)}")
-        return ""
+    def frame(self, path: str) -> dict[str, Any]: return self._resolve(f"components.{path}.frame")
+    def border(self, role: str = "default") -> dict[str, Any]: return self._resolve(f"borders.{role}")
+    def text_style(self, role: str) -> dict[str, Any]: return self._resolve(f"text.{role}")

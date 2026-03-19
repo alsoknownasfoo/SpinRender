@@ -110,24 +110,8 @@ class ControlsSidePanel(wx.Panel):
 
         sizer.AddStretchSpacer()
         
-        # Close button - use locale for icon_ref
-        icon_color, icon_color_hover, icon_color_pressed = _theme.color_states("components.button.close.text")
-        bg_color, bg_color_hover, bg_color_pressed = _theme.color_states("components.button.close.bg")
-        border_color, border_color_hover, border_color_pressed = _theme.color_states("components.button.close.border")
-
-        self.header_close_btn = CustomButton(
-            header, label="", icon=_locale.get("component.button.close.icon_ref", "close"), primary=False, ghost=True,
-            icon_color=icon_color,
-            icon_color_hover=icon_color_hover,
-            icon_color_pressed=icon_color_pressed,
-            bg_color=bg_color,
-            bg_color_hover=bg_color_hover,
-            bg_color_pressed=bg_color_pressed,
-            size=(36, 36)
-        )
-        self.header_close_btn.border_color_override = border_color
-        self.header_close_btn.border_color_hover = border_color_hover
-        self.header_close_btn.border_color_pressed = border_color_pressed
+        # Close button - use id syntax for auto-derivation
+        self.header_close_btn = CustomButton(header, id="close", label="", ghost=True, size=(36, 36))
         
         self.header_close_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_close)
         sizer.Add(self.header_close_btn, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 16)
@@ -158,23 +142,6 @@ class ControlsSidePanel(wx.Panel):
         for attr in ['div1', 'div2', 'div3', 'div4']:
             if hasattr(self, attr):
                 getattr(self, attr).SetBackgroundColour(_theme.color("components.main.divider.bg"))
-                
-        # Close Button states update
-        if hasattr(self, 'header_close_btn'):
-            icon_c, icon_h, icon_p = _theme.color_states("components.button.close.text")
-            bg_c, bg_h, bg_p = _theme.color_states("components.button.close.bg")
-            brd_c, brd_h, brd_p = _theme.color_states("components.button.close.border")
-            
-            btn = self.header_close_btn
-            btn.icon_color_override = icon_c
-            btn.icon_color_hover = icon_h
-            btn.icon_color_pressed = icon_p
-            btn.bg_color_override = bg_c
-            btn.bg_color_hover = bg_h
-            btn.bg_color_pressed = bg_p
-            btn.border_color_override = brd_c
-            btn.border_color_hover = brd_h
-            btn.border_color_pressed = brd_p
 
         # Refresh all components recursively to trigger their internal on_paint lookups
         def refresh_recursive(window):
@@ -239,14 +206,8 @@ class ControlsSidePanel(wx.Panel):
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
         header_sizer.Add(create_section_label(header, _locale.get("sections.parameters", "PARAMETERS")), 1, wx.ALIGN_CENTER_VERTICAL)
         
-        # Save Preset Button - V2 Locale lookup
-        save_btn = CustomButton(
-            header, 
-            label=_locale.get("component.button.save_preset.label", "+ PRESET"),
-            icon=_locale.get("component.button.save_preset.icon_ref", "plus"),
-            primary=False, 
-            size=(120, 28)
-        )
+        # Save Preset Button - simplified id syntax
+        save_btn = CustomButton(header, id="save_preset", size=(120, 28))
         save_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_save_preset)
         header_sizer.Add(save_btn, 0, wx.ALIGN_CENTER_VERTICAL)
         header.SetSizerAndFit(header_sizer)
@@ -508,27 +469,16 @@ class ControlsSidePanel(wx.Panel):
         asizer = wx.BoxSizer(wx.HORIZONTAL)
         
         # V2: Fetch labels and icon references from locale for export row
-        self.adv_btn = CustomButton(
-            arow, label="", 
-            icon=_locale.get("component.button.options.icon_ref", "glyphs.settings"), 
-            primary=False, size=(36, 36)
-        )
+        self.adv_btn = CustomButton(arow, id="options", size=(36, 36))
         self.adv_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_advanced_options)
         asizer.Add(self.adv_btn, 0, wx.RIGHT, 8)
-        
-        self.can_btn = CustomButton(
-            arow, label=_locale.get("component.button.exit.label", "EXIT"), 
-            icon=_locale.get("component.button.exit.icon_ref", "glyphs.exit-action"), 
-            primary=False, danger=True, size=(110, 36)
-        )
+
+        self.can_btn = CustomButton(arow, id="close", size=(110, 36))
         self.can_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_cancel)
         asizer.Add(self.can_btn, 0, wx.RIGHT, 8)
-        
-        self.render_btn = CustomButton(
-            arow, label=_locale.get("component.button.render.label", "RENDER"), 
-            icon=_locale.get("component.button.render.icon_ref", "glyphs.render-action"), 
-            primary=True, size=(150, 36)
-        )
+
+        self.render_btn = CustomButton(arow, id="render")
+
         self.render_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_render)
         asizer.Add(self.render_btn, 1, wx.EXPAND)
         

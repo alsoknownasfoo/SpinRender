@@ -6,10 +6,12 @@ import wx
 import math
 from pathlib import Path
 from SpinRender.core.theme import Theme
+from SpinRender.core.locale import Locale
 from .text_styles import TextStyle, TextStyles
 from .helpers import bind_mouse_events
 
 _theme = Theme.current()
+_locale = Locale.current()
 
 
 # Tracking state
@@ -441,9 +443,31 @@ class CustomButton(wx.Panel):
     """
     Custom action button matching Component/ActionButton and SecondaryButton
     """
-    def __init__(self, parent, label="BUTTON", icon=None, icon_font_family=None, primary=True, ghost=False, danger=False, icon_color=None, icon_color_hover=None, icon_color_pressed=None, bg_color=None, bg_color_hover=None, bg_color_pressed=None, size=(-1, 36)):
-        super().__init__(parent, size=size)
+    def __init__(self, parent, label=None, icon=None, icon_font_family=None, primary=True, ghost=False, danger=False, icon_color=None, icon_color_hover=None, icon_color_pressed=None, bg_color=None, bg_color_hover=None, bg_color_pressed=None, size=(-1, 36), id=wx.ID_ANY):
+        # Extract style_id if passed as string (e.g. id="render")
+        if isinstance(id, str):
+            self.style_id = id
+            real_id = wx.ID_ANY
+        else:
+            self.style_id = None
+            real_id = id
+
+        super().__init__(parent, id=real_id, size=size)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
+
+        # Auto-derive from style_id if provided
+        if self.style_id:
+            if label is None:
+                label = _locale.get(f"component.button.{self.style_id}.label", self.style_id.upper())
+            if icon is None:
+                icon_ref = _locale.get(f"component.button.{self.style_id}.icon_ref")
+                if icon_ref:
+                    # Store icon_ref; on_paint resolves it to glyph via theme
+                    icon = icon_ref
+
+        # Fallbacks for manual usage
+        if label is None: label = "BUTTON"
+
         self.label, self.icon, self.icon_font_family, self.primary, self.ghost, self.danger = str(label), icon, icon_font_family, primary, ghost, danger
         self.icon_color_override, self.icon_color_hover, self.icon_color_pressed = icon_color, icon_color_hover, icon_color_pressed
         self.bg_color_override, self.bg_color_hover, self.bg_color_pressed = bg_color, bg_color_hover, bg_color_pressed
@@ -465,67 +489,59 @@ class CustomButton(wx.Panel):
         enabled = self.IsEnabled()
 
         # V2 Mapping Logic
-        if self.primary:
-            token = "components.button.exit" if self.danger else "components.button.ok"
-        elif self.ghost:
-            token = "components.button.close"
+        if hasattr(self, 'style_id') and self.style_id:
+            token = f"components.button.{self.style_id}"
+            if not _theme.has_token(token):
+                token = "components.button.default"
         else:
-            token = "components.button.cancel"
+            if self.primary:
+                token = "components.button.exit" if self.danger else "components.button.ok"
+            elif self.ghost:
+                token = "components.button.close"
+            else:
+                token = "components.button.cancel"
 
         # Resolve stateful colors from hierarchical token
-        bg_colors = _theme.color_states(f"{token}.frame.bg")
-        bg_base = bg_colors[0]
+        bg = _theme.color(f"{token}.frame.bg", self.hovered, self.pressed, enabled)
         
         # Label colors
         label_token = f"{token}.label.color"
         if not _theme.has_token(label_token):
             label_token = "text.button.color"
-            
-        text_colors = _theme.color_states(label_token)
-        text_base = text_colors[0]
+        text_color = _theme.color(label_token, self.hovered, self.pressed, enabled)
         
-        # Border defaults (V2: Fetch full object to get color + size)
-        border_conf = _theme._resolve(f"{token}.frame.border")
-        if not isinstance(border_conf, dict):
-            border_conf = {}
-            
-        border_color = _theme.parse_color(border_conf.get("color")) if border_conf.get("color") else None
-        border_size = int(border_conf.get("size", 1))
+        # Border defaults
+        border_token = f"{token}.frame.border.color"
+        border_color = _theme.color(border_token, self.hovered, self.pressed, enabled) if _theme.has_token(border_token) else None
 
-        bg, text_color = bg_base, text_base
-
+        # Overrides (if any)
         if self.bg_color_override:
-            if self.pressed and self.bg_color_pressed: bg = self.bg_color_pressed
+            if not enabled: bg = _theme.disabled(self.bg_color_override)
+            elif self.pressed and self.bg_color_pressed: bg = self.bg_color_pressed
             elif self.hovered and self.bg_color_hover: bg = self.bg_color_hover
             else: bg = self.bg_color_override
-        else:
-            if self.pressed and len(bg_colors) > 2: bg = bg_colors[2]
-            elif self.hovered and len(bg_colors) > 1: bg = bg_colors[1]
-            
-            if self.pressed and len(text_colors) > 2: text_color = text_colors[2]
-            elif self.hovered and len(text_colors) > 1: text_color = text_colors[1]
 
         if self.border_color_override:
-            if self.pressed and self.border_color_pressed: border_color = self.border_color_pressed
+            if not enabled: border_color = _theme.disabled(self.border_color_override)
+            elif self.pressed and self.border_color_pressed: border_color = self.border_color_pressed
             elif self.hovered and self.border_color_hover: border_color = self.border_color_hover
             else: border_color = self.border_color_override
 
-        final_bg = _theme.disabled(bg) if not enabled else bg
-        final_text = _theme.disabled(text_color) if not enabled else text_color
-        final_border = _theme.disabled(border_color) if (not enabled and border_color) else border_color
+        final_bg = bg
+        final_text = text_color
+        final_border = border_color
 
         final_icon_color = final_text
         if self.icon_color_override:
-            if self.pressed and self.icon_color_pressed: final_icon_color = self.icon_color_pressed if enabled else _theme.disabled(self.icon_color_pressed)
-            elif self.hovered and self.icon_color_hover: final_icon_color = self.icon_color_hover if enabled else _theme.disabled(self.icon_color_hover)
-            else: final_icon_color = self.icon_color_override if enabled else _theme.disabled(self.icon_color_override)
+            if not enabled: final_icon_color = _theme.disabled(self.icon_color_override)
+            elif self.pressed and self.icon_color_pressed: final_icon_color = self.icon_color_pressed
+            elif self.hovered and self.icon_color_hover: final_icon_color = self.icon_color_hover
+            else: final_icon_color = self.icon_color_override
 
         if not self.ghost or (self.hovered or self.pressed):
             gc.SetBrush(wx.Brush(final_bg))
-            if final_border and border_size > 0: 
-                gc.SetPen(wx.Pen(final_border, border_size))
-            else: 
-                gc.SetPen(wx.TRANSPARENT_PEN)
+            if final_border: gc.SetPen(wx.Pen(final_border, 1))
+            else: gc.SetPen(wx.TRANSPARENT_PEN)
             gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 6)
 
         # Resolve icon from theme glyphs (V2 logic)
@@ -573,6 +589,17 @@ class CustomButton(wx.Panel):
     def on_leave(self, event): self.hovered = False; self.pressed = False; self.Refresh(); self.Update()
     def SetLabel(self, label): self.label = str(label); self.Refresh(); self.Update()
     def SetIcon(self, icon): self.icon = icon; self.Refresh(); self.Update()
+    def SetStyle(self, style_id, update_content=True):
+        """Update style_id and optionally refresh label/icon from locale."""
+        self.style_id = style_id
+        if update_content and style_id:
+            label = _locale.get(f"component.button.{style_id}.label")
+            if label is not None:
+                self.label = str(label)
+            icon_ref = _locale.get(f"component.button.{style_id}.icon_ref")
+            if icon_ref:
+                self.icon = icon_ref
+        self.Refresh(); self.Update()
     def SetPrimary(self, primary): self.primary = primary; self.Refresh(); self.Update()
     def SetDanger(self, danger): self.danger = danger; self.Refresh(); self.Update()
     def AcceptsFocus(self): return False

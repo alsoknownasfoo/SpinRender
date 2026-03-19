@@ -63,6 +63,12 @@ class ColorMock:
         except TypeError:
             return False
 
+    def GetAsString(self, style=None):
+        """Return hex representation for logging (mocking wx.C2S_HTML_SYNTAX)."""
+        if self._a < 255:
+            return "#%02X%02X%02X%02X" % (self._r, self._g, self._b, self._a)
+        return "#%02X%02X%02X" % (self._r, self._g, self._b)
+
     def __repr__(self):
         return f"ColorMock({self._r}, {self._g}, {self._b}, {self._a})"
 

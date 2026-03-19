@@ -5,6 +5,12 @@
 # 1. COLORS (Global Design Tokens & Semantic Roles)
 # ─────────────────────────────────────────────────────────────────
 colors:
+  # Auto State Shifts (for undefined states, e.g. hover/active on buttons)
+  auto_states:
+    hover: rgb(10, 10, 10) # Lighten by 10 for hover
+    active: rgb(-10, -10, -10) # Darken by 10 for active
+    disabled: rgb(0, 0, 0, 0.5) # 50% opacity for disabled
+
   # Base Palette (Primes)
   gray-black:  "#0D0D0D"
   gray-dark:   "#121212"
@@ -319,7 +325,11 @@ components:
         label:
           ref: "@text.label"
           color: "@colors.primary"
-    card1: "@components.preset_card.default"
+    card1:
+      ref: "@components.preset_card.default"
+      selected:
+        bg: "@colors.primary"
+        border: "@borders.focus"
     card2: "@components.preset_card.default"
     card3: "@components.preset_card.default"
     card4: "@components.preset_card.default"
@@ -465,6 +475,7 @@ components:
       ref: "@components.button.default"
       frame:
         bg: "@colors.primary"
+        border: "@borders.subtle"
       label:
         ref: "@text.button"
         color: "@colors.gray-black"
@@ -472,8 +483,7 @@ components:
       ref: "@components.button.default"
       frame:
         bg: "@colors.transparent"
-        border: "@borders.subtle" 
-        hover: "rgba(255,255,255,0.08)"
+        border: "@borders.subtle"
     options:
       ref: "@components.button.default"
       frame:
@@ -494,9 +504,6 @@ components:
         color: "@colors.white"
     render:
       ref: "@components.button.ok"
-      frame:
-        bg: "@colors.transparent"
-        border: "@borders.strong"
 
   scrollbar:
     track:
