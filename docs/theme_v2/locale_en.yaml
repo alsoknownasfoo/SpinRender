@@ -12,6 +12,17 @@ locale:
       logo_id: "res/logo.svg"
 
     # ─────────────────────────────────────────────────────────────
+    # DIALOG TITLES
+    # ─────────────────────────────────────────────────────────────
+    dialog:
+      advanced:
+        title: "ADVANCED OPTIONS"
+      save_preset:
+        title: "SAVE PRESET"
+      recall_preset:
+        title: "SELECT CUSTOM PRESET"
+
+    # ─────────────────────────────────────────────────────────────
     # PRESET CARDS
     # ─────────────────────────────────────────────────────────────
     component.preset_card:
@@ -40,6 +51,13 @@ locale:
     # PARAMETERS (SLIDERS & INPUTS)
     # ─────────────────────────────────────────────────────────────
     parameters:
+      rotation_heading: "ROTATION SETTINGS"
+      rotation_desc: "BOARD: ORIENT ON SPINDLE | SPIN: ORIENT THE SPINDLE ITSELF"
+      lighting_hint: "SELECT WORKSPACE TO USE KICAD 3D VIEWER SETTINGS"
+      system_logging: "SYSTEM LOGGING"
+      log_info: "Logs are kept for 30 days. Useful for troubleshooting render failures."
+      open_logs: "OPEN LOGS FOLDER"
+      
       board_tilt:
         label: "BOARD TILT"
         icon_ref: "glyphs.axis-x"
@@ -63,20 +81,21 @@ locale:
       direction:
         label: "DIRECTION"
         options:
-          cw:  { label: "CW",  icon_ref: "glyphs.preset-hero" }
-          ccw: { label: "CCW", icon_ref: "glyphs.preset-hero" } # Uses CW icon flipped in logic
+          cw:  { label: "CW",  icon_ref: "glyphs.cw" }
+          ccw: { label: "CCW", icon_ref: "glyphs.ccw" }
       lighting:
         label: "LIGHTING"
         options:
-          studio:    "STUDIO"
-          dramatic:  "DRAMATIC"
-          soft:      "SOFT"
-          workspace: "WORKSPACE"
+          studio:    { label: "STUDIO",    icon_ref: "glyphs.sun" }
+          dramatic:  { label: "DRAMATIC",  icon_ref: "glyphs.bolt" }
+          soft:      { label: "SOFT",      icon_ref: "glyphs.cloud" }
+          workspace: { label: "WORKSPACE", icon_ref: "glyphs.edit" }
 
     # ─────────────────────────────────────────────────────────────
     # OUTPUT SETTINGS
     # ─────────────────────────────────────────────────────────────
     output:
+      auto_desc: "Automatically save to time-stamped directories."
       format:
         label: "FORMAT"
         options: ["MP4 (H.264)", "GIF", "PNG Sequence"]
@@ -93,7 +112,22 @@ locale:
       render:
         label: "RENDER"
         icon_ref: "glyphs.render-action"
+      stop:
+        label: "STOP"
+        icon_ref: "glyphs.stop"
       cancel:
+        label: "CANCEL"
+        icon_ref: "glyphs.close"
+      ok:
+        label: "OK"
+        icon_ref: "glyphs.save"
+      save:
+        label: "SAVE"
+        icon_ref: "glyphs.save"
+      overwrite:
+        label: "OVERWRITE"
+        icon_ref: "glyphs.alert"
+      close:
         label: "CLOSE"
         icon_ref: "glyphs.exit-action"
       options:
@@ -107,6 +141,9 @@ locale:
       exit:
         label: "EXIT"
         icon_ref: "glyphs.exit-action"
+      trash:
+        label: ""
+        icon_ref: "glyphs.trash"
 
     # ─────────────────────────────────────────────────────────────
     # STATUS MESSAGES
@@ -115,4 +152,7 @@ locale:
       ready: "READY"
       rendering: "RENDERING FRAME {current}/{total}"
       complete: "RENDER COMPLETE"
+      stopped: "RENDER STOPPED"
+      stopping: "STOPPING RENDER..."
       error: "ERROR: {message}"
+      no_presets: "No saved presets found."
