@@ -312,7 +312,7 @@ _FALLBACK_DARK_THEME = {
             "accent": ["colors.primary"]
         },
         "badge": {
-            "bg": ["colors.accent.warning"],
+            "bg": ["colors.warning"],
             "text": ["colors.text.on-accent"]
         }
     }
@@ -323,8 +323,8 @@ class ThemeValidatorError(Exception):
     pass
 
 
-# Top-level categories we care about
-CATEGORIES = ['palette', 'colors', 'typography', 'spacing', 'borders', 'components']
+# Top-level categories we care about (V2 Mastering Schema)
+CATEGORIES = ['palette', 'colors', 'glyphs', 'text', 'spacing', 'borders', 'components']
 
 
 def collect_tokens(data: dict, prefix: str = '') -> Set[str]:
@@ -342,7 +342,10 @@ def collect_tokens(data: dict, prefix: str = '') -> Set[str]:
         return tokens
 
     # Keys that indicate a dict is a leaf value (not a container)
-    LEAF_VALUE_KEYS = {'ref', 'family', 'size', 'weight', 'fallback', 'transform', 'value'}
+    LEAF_VALUE_KEYS = {
+        'ref', 'family', 'size', 'weight', 'fallback', 'transform', 'value',
+        'typeface', 'font', 'color', 'bg', 'radius', 'width', 'height'
+    }
 
     for key, value in data.items():
         current_path = f"{prefix}.{key}" if prefix else key
