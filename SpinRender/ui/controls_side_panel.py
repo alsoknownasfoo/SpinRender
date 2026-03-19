@@ -99,12 +99,12 @@ class ControlsSidePanel(wx.Panel):
         title_sizer = wx.BoxSizer(wx.VERTICAL)
         self.header_title = wx.StaticText(header, label=_locale.get("component.main.header.title", "SPINRENDER"))
         self.header_title.SetForegroundColour(_theme.color("text.body.color"))
-        self.header_title.SetFont(TextStyles.panel_title.create_font())
+        self.header_title.SetFont(_theme.font("header"))
         title_sizer.Add(self.header_title, 0)
 
         self.header_subtitle = wx.StaticText(header, label=_locale.get("component.main.header.subtitle", "0.9 alpha"))
         self.header_subtitle.SetForegroundColour(_theme.color("text.subtitle.color"))
-        self.header_subtitle.SetFont(TextStyles.label_xs.create_font())
+        self.header_subtitle.SetFont(_theme.font("xs"))
         title_sizer.Add(self.header_subtitle, 0)
         sizer.Add(title_sizer, 0, wx.ALIGN_CENTER_VERTICAL)
 
@@ -132,11 +132,11 @@ class ControlsSidePanel(wx.Panel):
             
         if hasattr(self, 'header_title'):
             self.header_title.SetForegroundColour(_theme.color("text.body.color"))
-            self.header_title.SetFont(TextStyles.panel_title.create_font())
+            self.header_title.SetFont(_theme.font("header"))
             
         if hasattr(self, 'header_subtitle'):
             self.header_subtitle.SetForegroundColour(_theme.color("text.subtitle.color"))
-            self.header_subtitle.SetFont(TextStyles.label_xs.create_font())
+            self.header_subtitle.SetFont(_theme.font("xs"))
             
         # Dividers
         for attr in ['div1', 'div2', 'div3', 'div4']:
@@ -162,32 +162,17 @@ class ControlsSidePanel(wx.Panel):
         preset_row = wx.Panel(panel)
         preset_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
-        # V2: Fetch both labels and icon references from locale
-        presets_data = [
-            ("hero", 
-             _locale.get("component.preset_card.card1.label", "HERO"), 
-             _locale.get("component.preset_card.card1.icon_ref", "preset-hero")),
-            ("spin", 
-             _locale.get("component.preset_card.card2.label", "SPIN"), 
-             _locale.get("component.preset_card.card2.icon_ref", "preset-spin")),
-            ("flip", 
-             _locale.get("component.preset_card.card3.label", "FLIP"), 
-             _locale.get("component.preset_card.card3.icon_ref", "preset-flip")),
-            ("custom", 
-             _locale.get("component.preset_card.card4.label", "SELECT CUSTOM..."), 
-             _locale.get("component.preset_card.card4.icon_ref", "preset-custom"))
-        ]
-        
+        preset_ids = ["hero", "spin", "flip", "custom"]
         self.preset_buttons = {}
-        for i, (pid, lbl, ico_ref) in enumerate(presets_data):
-            # PresetCard handles glyph lookup internally via _theme.glyph(ico_ref)
-            btn = PresetCard(preset_row, label=lbl, icon_name=ico_ref, size=(90, 64))
+        for i, pid in enumerate(preset_ids):
+            # PresetCard handles label/icon lookup internally via ID-driven mapping
+            btn = PresetCard(preset_row, id=f"card{i+1}", size=(90, 64))
             btn.Bind(wx.EVT_BUTTON, lambda e, p=pid: self.main_panel.on_preset_change(p))
             if self.settings.preset == pid:
                 btn.SetSelected(True)
             self.preset_buttons[pid] = btn
             flags = wx.EXPAND
-            if i < len(presets_data) - 1:
+            if i < len(preset_ids) - 1:
                 flags |= wx.RIGHT
             preset_sizer.Add(btn, 1, flags, 8)
 
@@ -227,7 +212,7 @@ class ControlsSidePanel(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         label = wx.StaticText(panel, label=_locale.get("parameters.rotation_heading", "ROTATION SETTINGS"))
         label.SetForegroundColour(_theme.color("text.body.color"))
-        label.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=600).create_font())
+        label.SetFont(_theme.font("subheader"))
         sizer.Add(label, 0, wx.BOTTOM, 6)
 
         cols = [_theme.color("colors.red"), _theme.color("colors.orange"), _theme.color("colors.cyan"), _theme.color("colors.purple")]
@@ -236,39 +221,39 @@ class ControlsSidePanel(wx.Panel):
         row1 = self.create_axis_control(
             panel, "BOARD TILT", self.settings.board_tilt, cols[0], 
             _locale.get("parameters.board_tilt.icon_ref", "axis-x"),
-            -90, 90, locale_key="parameters.board_tilt.label"
+            -90, 90, locale_key="parameters.board_tilt.label", id="primary"
         )
         sizer.Add(row1, 0, wx.EXPAND | wx.BOTTOM, 4)
         
         row2 = self.create_axis_control(
             panel, "BOARD ROLL", self.settings.board_roll, cols[1], 
             _locale.get("parameters.board_roll.icon_ref", "axis-y"),
-            -180, 180, locale_key="parameters.board_roll.label"
+            -180, 180, locale_key="parameters.board_roll.label", id="secondary"
         )
         sizer.Add(row2, 0, wx.EXPAND | wx.BOTTOM, 4)
         
         row3 = self.create_axis_control(
             panel, "SPIN TILT", self.settings.spin_tilt, cols[2], 
             _locale.get("parameters.spin_tilt.icon_ref", "axis-y-rot"),
-            -90, 90, locale_key="parameters.spin_tilt.label"
+            -90, 90, locale_key="parameters.spin_tilt.label", id="tertiary"
         )
         sizer.Add(row3, 0, wx.EXPAND | wx.BOTTOM, 4)
         
         row4 = self.create_axis_control(
             panel, "SPIN HEADING", self.settings.spin_heading, cols[3], 
             _locale.get("parameters.spin_heading.icon_ref", "axis-z-rot"),
-            -180, 180, locale_key="parameters.spin_heading.label"
+            -180, 180, locale_key="parameters.spin_heading.label", id="quaternary"
         )
         sizer.Add(row4, 0, wx.EXPAND | wx.BOTTOM, 4)
 
         desc = wx.StaticText(panel, label=_locale.get("parameters.rotation_desc", "BOARD: ORIENT ON SPINDLE | SPIN: ORIENT THE SPINDLE ITSELF"))
         desc.SetForegroundColour(_theme.color("text.metadata.color"))
-        desc.SetFont(TextStyles.label_xs.create_font())
+        desc.SetFont(_theme.font("xs"))
         sizer.Add(desc, 0)
         panel.SetSizerAndFit(sizer)
         return panel
 
-    def create_axis_control(self, parent, label_text, def_val, col, icon_name, min_val, max_val, locale_key=None):
+    def create_axis_control(self, parent, label_text, def_val, col, icon_name, min_val, max_val, locale_key=None, id="default"):
         """Create a labeled slider + numeric input row."""
         row = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -279,17 +264,17 @@ class ControlsSidePanel(wx.Panel):
         if icon_char:
             icon_lbl = wx.StaticText(label_part, label=icon_char)
             icon_lbl.SetForegroundColour(col)
-            icon_lbl.SetFont(TextStyles.icon.create_font())
+            icon_lbl.SetFont(_theme.font("icon"))
             lp_sizer.Add(icon_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         resolved_label = _locale.get(locale_key, label_text) if locale_key else label_text
         lbl = wx.StaticText(label_part, label=f"{resolved_label}:")
         lbl.SetForegroundColour(col)
-        lbl.SetFont(TextStyles.label_xs.create_font())
+        lbl.SetFont(_theme.font("xs"))
         lp_sizer.Add(lbl, 0, wx.ALIGN_CENTER_VERTICAL)
         label_part.SetSizer(lp_sizer)
         sizer.Add(label_part, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
 
-        slider = CustomSlider(row, value=def_val, min_val=min_val, max_val=max_val, size=(-1, 18), color=col)
+        slider = CustomSlider(row, value=def_val, min_val=min_val, max_val=max_val, size=(-1, 18), color=col, id=id)
         sizer.Add(slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
 
         inp = create_numeric_input(row, f"{def_val:.2f}", "°", editable=True, min_val=min_val, max_val=max_val)
@@ -307,13 +292,13 @@ class ControlsSidePanel(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         lbl = wx.StaticText(panel, label=_locale.get("parameters.period.label", "ROTATION PERIOD"))
         lbl.SetForegroundColour(_theme.color("text.body.color"))
-        lbl.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=600).create_font())
+        lbl.SetFont(_theme.font("subheader"))
         sizer.Add(lbl, 0, wx.BOTTOM, 6)
 
         crow = wx.Panel(panel)
         csizer = wx.BoxSizer(wx.HORIZONTAL)
         p_val = self.settings.period
-        self.period_slider = CustomSlider(crow, value=p_val, min_val=0.1, max_val=30, size=(-1, 18))
+        self.period_slider = CustomSlider(crow, value=p_val, min_val=0.1, max_val=30, size=(-1, 18), id="primary")
         csizer.Add(self.period_slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
         unit = _locale.get("parameters.period.unit", "sec")
         self.period_input = create_numeric_input(crow, f"{p_val:.1f}", unit, editable=True, min_val=0.1, max_val=30)
@@ -325,11 +310,11 @@ class ControlsSidePanel(wx.Panel):
         msizer = wx.BoxSizer(wx.HORIZONTAL)
         desc = wx.StaticText(mrow, label=_locale.get("parameters.period.desc", "SPEED OF 360° SPIN"))
         desc.SetForegroundColour(_theme.color("text.metadata.color"))
-        desc.SetFont(TextStyles.label_xs.create_font())
+        desc.SetFont(_theme.font("xs"))
         msizer.Add(desc, 1)
         self.frame_count = wx.StaticText(mrow, label=f"{int(p_val * 30)} f")
         self.frame_count.SetForegroundColour(_theme.color("text.subheader.color"))
-        self.frame_count.SetFont(TextStyles.label_xs.create_font())
+        self.frame_count.SetFont(_theme.font("xs"))
         msizer.Add(self.frame_count, 0)
         mrow.SetSizerAndFit(msizer)
         sizer.Add(mrow, 0, wx.EXPAND)
@@ -342,7 +327,7 @@ class ControlsSidePanel(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         lbl = wx.StaticText(panel, label=_locale.get("parameters.direction.label", "DIRECTION"))
         lbl.SetForegroundColour(_theme.color("text.body.color"))
-        lbl.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=600).create_font())
+        lbl.SetFont(_theme.font("subheader"))
         sizer.Add(lbl, 0, wx.BOTTOM, 6)
         
         # V2: Fetch labels and icon refs from locale
@@ -353,7 +338,7 @@ class ControlsSidePanel(wx.Panel):
              'icon': _locale.get("parameters.direction.options.cw.icon_ref", "glyphs.cw")}
         ]
         
-        self.dir_toggle = CustomToggleButton(panel, options=dir_options, size=(210, 32))
+        self.dir_toggle = CustomToggleButton(panel, options=dir_options, size=(210, 32), id="direction")
         initial_idx = 1 if self.settings.direction == 'cw' else 0
         self.dir_toggle.SetSelection(initial_idx)
         sizer.Add(self.dir_toggle, 0)
@@ -366,7 +351,7 @@ class ControlsSidePanel(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         lbl = wx.StaticText(panel, label=_locale.get("parameters.lighting.label", "LIGHTING"))
         lbl.SetForegroundColour(_theme.color("text.body.color"))
-        lbl.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=600).create_font())
+        lbl.SetFont(_theme.font("subheader"))
         sizer.Add(lbl, 0, wx.BOTTOM, 6)
         
         # V2: Fetch labels and icon refs from locale
@@ -385,7 +370,7 @@ class ControlsSidePanel(wx.Panel):
              'icon': _locale.get("parameters.lighting.options.workspace.icon_ref", "glyphs.edit")}
         ]
         
-        self.light_toggle = CustomToggleButton(panel, options=self.light_options, size=(320, 32), active_color=_theme.color("colors.secondary"))
+        self.light_toggle = CustomToggleButton(panel, options=self.light_options, size=(320, 32), id="lighting")
         current_light = self.settings.lighting
         initial_idx = next((i for i, opt in enumerate(self.light_options) if opt['id'] == current_light), 0)
         self.light_toggle.SetSelection(initial_idx)
@@ -393,7 +378,7 @@ class ControlsSidePanel(wx.Panel):
 
         hint = wx.StaticText(panel, label=_locale.get("parameters.lighting_hint", "SELECT WORKSPACE TO USE KICAD 3D VIEWER SETTINGS"))
         hint.SetForegroundColour(_theme.color("text.metadata.color"))
-        hint.SetFont(TextStyle(family=_theme.font_family("mono"), size=7, weight=400).create_font())
+        hint.SetFont(_theme.font("xs"))
         sizer.Add(hint, 0, wx.TOP, 4)
 
         panel.SetSizerAndFit(sizer)
@@ -413,11 +398,11 @@ class ControlsSidePanel(wx.Panel):
         f_sizer = wx.BoxSizer(wx.VERTICAL)
         f_lbl = wx.StaticText(f_col, label=_locale.get("parameters.format.label", "FORMAT"))
         f_lbl.SetForegroundColour(_theme.color("text.body.color"))
-        f_lbl.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=600).create_font())
+        f_lbl.SetFont(_theme.font("subheader"))
         f_sizer.Add(f_lbl, 0, wx.BOTTOM, 6)
         self.format_choices = ["MP4 (H.264)", "GIF", "PNG Sequence"]
         self.format_ids = ["mp4", "gif", "png_sequence"]
-        self.format_choice = CustomDropdown(f_col, choices=self.format_choices, size=(-1, 32))
+        self.format_choice = CustomDropdown(f_col, choices=self.format_choices, size=(-1, 32), id="format")
         curr_fmt = self.settings.format
         fmt_idx = self.format_ids.index(curr_fmt) if curr_fmt in self.format_ids else 0
         self.format_choice.SetSelection(fmt_idx)
@@ -429,11 +414,11 @@ class ControlsSidePanel(wx.Panel):
         r_sizer = wx.BoxSizer(wx.VERTICAL)
         r_lbl = wx.StaticText(r_col, label=_locale.get("parameters.resolution.label", "RESOLUTION"))
         r_lbl.SetForegroundColour(_theme.color("text.body.color"))
-        r_lbl.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=600).create_font())
+        r_lbl.SetFont(_theme.font("subheader"))
         r_sizer.Add(r_lbl, 0, wx.BOTTOM, 6)
         self.res_choices = ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
         self.res_ids = ["1920x1080", "1280x720", "800x800"]
-        self.res_choice = CustomDropdown(r_col, choices=self.res_choices, size=(-1, 32))
+        self.res_choice = CustomDropdown(r_col, choices=self.res_choices, size=(-1, 32), id="resolution")
         curr_res = self.settings.resolution
         res_idx = self.res_ids.index(curr_res) if curr_res in self.res_ids else 0
         self.res_choice.SetSelection(res_idx)
@@ -448,7 +433,7 @@ class ControlsSidePanel(wx.Panel):
         bg_vsizer = wx.BoxSizer(wx.VERTICAL)
         bg_lbl = wx.StaticText(bg_col, label=_locale.get("parameters.bg_color.label", "BACKGROUND COLOR"))
         bg_lbl.SetForegroundColour(_theme.color("text.body.color"))
-        bg_lbl.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=600).create_font())
+        bg_lbl.SetFont(_theme.font("subheader"))
         bg_vsizer.Add(bg_lbl, 0, wx.BOTTOM, 6)
 
         self.bg_picker = CustomColorPicker(bg_col, current_color=self.settings.bg_color)

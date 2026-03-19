@@ -6,7 +6,10 @@ import wx
 import os
 import webbrowser
 import threading
-from .custom_controls import CustomButton, CustomTextInput
+from .custom_controls import (
+    CustomButton, CustomInput, CustomListView, 
+    EVT_LIST_ITEM_SELECTED, EVT_LIST_ITEM_DELETED
+)
 from .text_styles import TextStyle, TextStyles
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
@@ -49,7 +52,7 @@ class BaseStyledDialog(wx.Dialog):
         
         # Layout container for the actual content (offset by shadow)
         self.main_container = wx.Panel(self, pos=(self.SHADOW_SIZE, self.SHADOW_SIZE), size=size)
-        self.main_container.SetBackgroundColour(_theme.color("colors.bg.page"))
+        self.main_container.SetBackgroundColour(_theme.color("colors.gray-dark"))
         
         self.Bind(wx.EVT_CHAR_HOOK, self.on_char_hook)
         self.Bind(wx.EVT_PAINT, self.on_paint_window)
@@ -71,7 +74,7 @@ class BaseStyledDialog(wx.Dialog):
             gc.DrawRoundedRectangle(i, i, w - 2*i, h - 2*i, 12)
             
         # 2. Draw actual modal background (no border)
-        gc.SetBrush(wx.Brush(_theme.color("colors.bg.page")))
+        gc.SetBrush(wx.Brush(_theme.color("colors.gray-dark")))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRoundedRectangle(s, s, self.logical_size[0], self.logical_size[1], 4)
 
@@ -83,12 +86,12 @@ class BaseStyledDialog(wx.Dialog):
 
     def create_header(self, title_text):
         header = wx.Panel(self.main_container, size=(-1, 48))
-        header.SetBackgroundColour(_theme.color("colors.bg.page"))
+        header.SetBackgroundColour(_theme.color("colors.gray-dark"))
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.header_title = wx.StaticText(header, label=title_text)
-        self.header_title.SetForegroundColour(_theme.color("colors.secondary") if "SETUP" in title_text else _theme.color("colors.text.primary"))
-        self.header_title.SetFont(TextStyle(family=_theme.font_family("mono"), size=13, weight=600).create_font())
+        self.header_title.SetForegroundColour(_theme.color("colors.secondary") if "SETUP" in title_text else _theme.color("colors.primary"))
+        self.header_title.SetFont(_theme.font("header"))
         
         header_sizer.Add(self.header_title, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 16)
         
@@ -154,7 +157,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
 
         # Border separator
         line = wx.Panel(self.main_container, size=(-1, 1))
-        line.SetBackgroundColour(_theme.color("colors.border.default"))
+        line.SetBackgroundColour(_theme.color("borders.default.color"))
         main_sizer.Add(line, 0, wx.EXPAND)
 
         # Content
@@ -169,12 +172,12 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         auto_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         auto_desc = wx.StaticText(auto_row, label=_locale.get("output.auto_desc", "Automatically save to time-stamped directories."))
-        auto_desc.SetForegroundColour(_theme.color("colors.text.muted"))
-        auto_desc.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=400).create_font())
+        auto_desc.SetForegroundColour(_theme.color("colors.gray-light"))
+        auto_desc.SetFont(_theme.font("xs"))
         auto_sizer.Add(auto_desc, 1, wx.ALIGN_CENTER_VERTICAL)
         
         from .custom_controls import CustomToggleButton
-        self.auto_toggle = CustomToggleButton(auto_row, size=(100, 28))
+        self.auto_toggle = CustomToggleButton(auto_row, id="direction", size=(100, 28)) # Reuse toggle style
         self.auto_toggle.SetValue(self.settings.output_auto)
         self.auto_toggle.Bind(wx.EVT_TOGGLEBUTTON, self.on_auto_toggle)
         auto_sizer.Add(self.auto_toggle, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -186,8 +189,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         path_input_row = wx.Panel(content)
         path_input_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
-        from .custom_controls import PathInputControl
-        self.path_display = PathInputControl(path_input_row, size=(-1, 36))
+        self.path_display = CustomInput(path_input_row, size=(-1, 36), id="path")
         path_input_sizer.Add(self.path_display, 1, wx.RIGHT, 8)
         
         self.browse_btn = CustomButton(path_input_row, id="browse", size=(110, 36))
@@ -200,12 +202,13 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         # 2. PARAMETER OVERRIDES section
         content_sizer.Add(self.create_section_label(content, "PARAMETER OVERRIDES"), 0, wx.EXPAND | wx.BOTTOM, 12)
         
-        self.override_input = CustomTextInput(
+        self.override_input = CustomInput(
             content,
             value=getattr(self.settings, 'cli_overrides', ''),
             placeholder=self.PLACEHOLDER_TEXT,
             multiline=True,
-            size=(-1, 80)
+            size=(-1, 80),
+            id="default"
         )
         content_sizer.Add(self.override_input, 0, wx.EXPAND | wx.BOTTOM, 8)
         
@@ -214,17 +217,17 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         link_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         info_icon = wx.StaticText(link_row, label=_theme.glyph("info"))
-        info_icon.SetForegroundColour(_theme.color("colors.text.muted"))
-        info_icon.SetFont(TextStyles.icon.create_font())
+        info_icon.SetForegroundColour(_theme.color("colors.gray-light"))
+        info_icon.SetFont(_theme.font("icon"))
         info_icon.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         link_sizer.Add(info_icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         
         see_txt = wx.StaticText(link_row, label=_locale.get("dialog.advanced.see", "See "))
-        see_txt.SetForegroundColour(_theme.color("colors.text.muted")); see_txt.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=400).create_font())
+        see_txt.SetForegroundColour(_theme.color("colors.gray-light")); see_txt.SetFont(_theme.font("xs"))
         link_sizer.Add(see_txt, 0, wx.ALIGN_CENTER_VERTICAL)
 
         link_txt = wx.StaticText(link_row, label=_locale.get("dialog.advanced.docs_link", "kicad-cli render options"))
-        link_txt.SetForegroundColour(_theme.color("colors.primary")); link_txt.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=400).create_font())
+        link_txt.SetForegroundColour(_theme.color("colors.primary")); link_txt.SetFont(_theme.font("xs"))
         link_txt.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         link_sizer.Add(link_txt, 0, wx.ALIGN_CENTER_VERTICAL)
         
@@ -246,7 +249,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
             {'id': 'simple', 'label': 'SIMPLE'},
             {'id': 'verbose', 'label': 'VERBOSE'}
         ]
-        self.log_toggle = CustomToggleButton(log_row, options=self.log_opts, size=(240, 28))
+        self.log_toggle = CustomToggleButton(log_row, options=self.log_opts, size=(240, 28), id="direction")
         curr_lvl = getattr(self.settings, 'logging_level', 'simple')
         lvl_idx = next((i for i, o in enumerate(self.log_opts) if o['id'] == curr_lvl), 1)
         self.log_toggle.SetSelection(lvl_idx)
@@ -256,14 +259,14 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         content_sizer.Add(log_row, 0, wx.EXPAND | wx.BOTTOM, 12)
         
         log_info = wx.StaticText(content, label=_locale.get("parameters.log_info", "Logs are kept for 30 days. Useful for troubleshooting render failures."))
-        log_info.SetForegroundColour(_theme.color("colors.text.muted"))
-        log_info.SetFont(TextStyle(family=_theme.font_family("mono"), size=8, weight=400).create_font())
+        log_info.SetForegroundColour(_theme.color("colors.gray-light"))
+        log_info.SetFont(_theme.font("xs"))
         content_sizer.Add(log_info, 0, wx.EXPAND | wx.BOTTOM, 8)
 
-        from utils.logger import SpinLogger
+        from SpinRender.utils.logger import SpinLogger
         open_logs_txt = wx.StaticText(content, label=_locale.get("parameters.open_logs", "OPEN LOGS FOLDER"))
         open_logs_txt.SetForegroundColour(_theme.color("colors.primary"))
-        open_logs_txt.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font())
+        open_logs_txt.SetFont(_theme.font("label"))
         open_logs_txt.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         open_logs_txt.Bind(wx.EVT_LEFT_DOWN, lambda e: SpinLogger.open_logs_folder())
         content_sizer.Add(open_logs_txt, 0, wx.BOTTOM, 12)
@@ -293,8 +296,8 @@ class AdvancedOptionsDialog(BaseStyledDialog):
 
     def create_section_label(self, parent, text):
         lbl = wx.StaticText(parent, label=text)
-        lbl.SetForegroundColour(_theme.color("colors.text.primary"))
-        lbl.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=600).create_font())
+        lbl.SetForegroundColour(_theme.color("text.body.color"))
+        lbl.SetFont(_theme.font("subheader"))
         return lbl
 
     def update_path_display(self):
@@ -357,23 +360,23 @@ class SavePresetDialog(BaseStyledDialog):
         self.Centre()
 
     def build_ui(self):
-        from core.presets import PresetManager
+        from SpinRender.core.presets import PresetManager
         self.manager = PresetManager(self.board_path)
         self.existing_names = [n.upper() for s, n in self.manager.list_presets()]
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(self.create_header("SAVE PRESET"), 0, wx.EXPAND)
-        line = wx.Panel(self.main_container, size=(-1, 1)); line.SetBackgroundColour(_theme.color("colors.border.default"))
+        line = wx.Panel(self.main_container, size=(-1, 1)); line.SetBackgroundColour(_theme.color("borders.default.color"))
         main_sizer.Add(line, 0, wx.EXPAND)
 
         content = wx.Panel(self.main_container)
         content_sizer = wx.BoxSizer(wx.VERTICAL)
         label = wx.StaticText(content, label=_locale.get("dialog.save_preset.field_name", "PRESET NAME"))
-        label.SetForegroundColour(_theme.color("colors.text.secondary"))
-        label.SetFont(TextStyle(family=_theme.font_family("mono"), size=10, weight=700).create_font())
+        label.SetForegroundColour(_theme.color("text.subheader.color"))
+        label.SetFont(_theme.font("subheader"))
         content_sizer.Add(label, 0, wx.LEFT | wx.TOP, 24)
 
-        self.name_input = CustomTextInput(content, size=(-1, 36))
+        self.name_input = CustomInput(content, size=(-1, 36), id="default")
         self.name_input.Bind(wx.EVT_TEXT_ENTER, self.on_save)
         self.name_input.Bind(wx.EVT_TEXT, self.on_text_change)
         content_sizer.Add(self.name_input, 0, wx.EXPAND | wx.ALL, 24)
@@ -424,60 +427,43 @@ class RecallPresetDialog(BaseStyledDialog):
         self.Centre()
 
     def build_ui(self):
-        from core.presets import PresetManager
+        from SpinRender.core.presets import PresetManager
         self.manager = PresetManager(self.board_path); presets = self.manager.list_presets()
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         header = self.create_header("SELECT CUSTOM PRESET")
         main_sizer.Add(header, 0, wx.EXPAND)
-        line = wx.Panel(self.main_container, size=(-1, 1)); line.SetBackgroundColour(_theme.color("colors.border.default"))
+        line = wx.Panel(self.main_container, size=(-1, 1)); line.SetBackgroundColour(_theme.color("borders.default.color"))
         main_sizer.Add(line, 0, wx.EXPAND)
 
-        import wx.lib.scrolledpanel as scrolled
-        list_panel = scrolled.ScrolledPanel(self.main_container)
-        list_panel.SetBackgroundColour(_theme.color("colors.bg.page")); list_panel.SetupScrolling(scroll_x=False, scroll_y=True)
-        list_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.list_view = CustomListView(self.main_container, id="custompresets")
+        self.list_view.Bind(EVT_LIST_ITEM_SELECTED, self.on_list_select)
+        self.list_view.Bind(EVT_LIST_ITEM_DELETED, self.on_list_delete)
+        
         if not presets:
-            empty_text = wx.StaticText(list_panel, label=_locale.get("component.status.no_presets", "No saved presets found.")); empty_text.SetForegroundColour(_theme.color("colors.text.muted"))
-            empty_text.SetFont(TextStyle(family=_theme.font_family("mono"), size=11, weight=400, formatting="italic").create_font()); list_sizer.Add(empty_text, 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 40)
+            # Fallback for empty state
+            empty_item = self.list_view.AddItem(_locale.get("component.status.no_presets", "No saved presets found."))
+            empty_item.Enable(False)
         else:
             for scope, name in presets:
-                item = self.create_preset_item(list_panel, scope, name)
-                list_sizer.Add(item, 0, wx.EXPAND | wx.BOTTOM, 8)
-        list_panel.SetSizer(list_sizer); main_sizer.Add(list_panel, 1, wx.EXPAND | wx.ALL, 16)
+                self.list_view.AddItem(name.upper(), data={"name": name, "scope": scope})
+                
+        main_sizer.Add(self.list_view, 1, wx.EXPAND | wx.ALL, 16)
         self.main_container.SetSizer(main_sizer)
 
-    def create_preset_item(self, parent, scope, name):
-        panel = wx.Panel(parent, size=(-1, 40)); panel.SetBackgroundColour(_theme.color("colors.bg.surface")); panel.SetCursor(wx.Cursor(wx.CURSOR_HAND))
-        sizer = wx.BoxSizer(wx.HORIZONTAL); label = wx.StaticText(panel, label=name.upper()); label.SetForegroundColour(_theme.color("colors.text.primary"))
-        label.SetFont(TextStyles.body.create_font()); sizer.Add(label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)
-        action_area = wx.Panel(panel); action_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        
-        # V2: Fetch icons from locale references
-        trash_ico_ref = _locale.get("component.button.trash.icon_ref", "trash")
-        close_ico_ref = _locale.get("component.button.close.icon_ref", "close")
-        save_ico_ref = _locale.get("component.button.save.icon_ref", "save")
-        
-        trash_btn = wx.StaticText(action_area, label=_theme.glyph(trash_ico_ref)); trash_btn.SetForegroundColour(_theme.color("colors.accent.warning"))
-        trash_btn.SetFont(TextStyles.icon.create_font()); trash_btn.SetCursor(wx.Cursor(wx.CURSOR_HAND)); action_sizer.Add(trash_btn, 0, wx.ALIGN_CENTER_VERTICAL)
-        cancel_icon = wx.StaticText(action_area, label=_theme.glyph(close_ico_ref)); cancel_icon.SetForegroundColour(_theme.color("colors.accent.warning"))
-        cancel_icon.SetFont(TextStyles.icon.create_font()); cancel_icon.Hide(); confirm_icon = wx.StaticText(action_area, label=_theme.glyph(save_ico_ref))
-        confirm_icon.SetForegroundColour(_theme.color("colors.accent.success")); confirm_icon.SetFont(TextStyles.icon.create_font()); confirm_icon.Hide()
-        action_area.SetSizer(action_sizer); sizer.Add(action_area, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 12); panel.SetSizer(sizer)
-        def show_confirm(e):
-            trash_btn.Hide(); action_sizer.Clear(); action_sizer.Add(cancel_icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 16)
-            action_sizer.Add(confirm_icon, 0, wx.ALIGN_CENTER_VERTICAL); cancel_icon.Show(); confirm_icon.Show(); action_area.Layout(); panel.Layout()
-        def hide_confirm(e):
-            cancel_icon.Hide(); confirm_icon.Hide(); action_sizer.Clear(); action_sizer.Add(trash_btn, 0, wx.ALIGN_CENTER_VERTICAL)
-            trash_btn.Show(); action_area.Layout(); panel.Layout()
-        panel.Bind(wx.EVT_LEFT_DOWN, lambda e: self.on_select(name, scope)); label.Bind(wx.EVT_LEFT_DOWN, lambda e: self.on_select(name, scope))
-        trash_btn.Bind(wx.EVT_LEFT_DOWN, show_confirm); cancel_icon.Bind(wx.EVT_LEFT_DOWN, hide_confirm)
-        confirm_icon.Bind(wx.EVT_LEFT_DOWN, lambda e: self.perform_delete(name, scope)); return panel
-
-    def perform_delete(self, name, scope):
-        if self.manager.delete_preset(name, is_global=(scope=='global')): self.EndModal(ID_RESET)
-    def on_select(self, name, scope):
+    def on_list_select(self, event):
+        data = event.GetClientData()
+        name, scope = data["name"], data["scope"]
         self.selected_preset = self.manager.load_preset(name, is_global=(scope=='global'))
-        if self.selected_preset: self.selected_name = name; self.EndModal(wx.ID_OK)
+        if self.selected_preset:
+            self.selected_name = name
+            self.EndModal(wx.ID_OK)
+
+    def on_list_delete(self, event):
+        data = event.GetClientData()
+        name, scope = data["name"], data["scope"]
+        if self.manager.delete_preset(name, is_global=(scope=='global')):
+            self.EndModal(ID_RESET)
+
     def on_cancel(self, event): self.EndModal(wx.ID_CANCEL)
     def GetSelectedSettings(self): return self.selected_preset
     def GetSelectedName(self): return self.selected_name

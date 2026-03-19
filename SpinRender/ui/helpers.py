@@ -133,24 +133,17 @@ def apply_disabled_state(widget: wx.Window, is_enabled: bool) -> None:
 
 def create_section_label(parent, text):
     """Create a section label with divider line."""
-    panel = wx.Panel(parent)
-    sizer = wx.BoxSizer(wx.HORIZONTAL)
-    label = wx.StaticText(panel, label=text)
-    label.SetForegroundColour(_theme.color("colors.primary"))
-    label.SetFont(TextStyle(family=_theme.font_family("display"), size=13, weight=600).create_font())
-    sizer.Add(label, 0, wx.ALIGN_CENTER_VERTICAL)
-    line = wx.Panel(panel, size=(60, 1))
-    line.SetBackgroundColour(_theme.color("borders.default.color"))
-    sizer.Add(line, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 8)
-    panel.SetSizerAndFit(sizer)
-    return panel
+    from .custom_controls import SectionLabel
+    return SectionLabel(parent, label=text)
 
 
 def create_numeric_input(parent, value, unit, editable=True, min_val=None, max_val=None):
-    """Create a numeric input or display widget."""
-    from .custom_controls import NumericInput, NumericDisplay
+    """Create a numeric input or display widget using consolidated CustomInput."""
+    from .custom_controls import CustomInput
     v = float(value) if isinstance(value, str) else value
-    if editable:
-        return NumericInput(parent, value=v, unit=unit, min_val=min_val, max_val=max_val, size=(100, 32))
-    else:
-        return NumericDisplay(parent, value=v, unit=unit, size=(100, 32))
+    
+    # Side panel numeric inputs use the "slider" style ID
+    inp = CustomInput(parent, value=v, unit=unit, min_val=min_val, max_val=max_val, id="slider")
+    if not editable:
+        inp.Enable(False)
+    return inp

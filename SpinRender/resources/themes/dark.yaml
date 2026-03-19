@@ -288,6 +288,45 @@ components:
       info_active: "@text.metadata_active"
     status: "@components.status"
 
+  dialogs:
+    default:
+      frame:
+        bg: "@colors.gray-dark"
+        border: "@borders.default" # Outer frame border
+        radius: "@radius.md"
+        shadow: "0px 4px 12px rgba(0,0,0,0.6)"
+      header:
+        bg: "@colors.gray-black"
+        border: "@borders.default" # The line separating header from content
+        title: "@text.header"
+      body:
+        bg: "@colors.gray-dark"
+        text: "@text.body"
+      controls:
+        bg: "@colors.gray-dark"
+        border: None # no border for controls area
+        gap: "@typography.spacing.base"
+        button1:
+          ref: "@components.button.ok"
+        button2:
+          ref: "@components.button.cancel"
+    options:
+      ref: "@components.dialogs.default"
+      frame:
+        width: 400
+    presets:
+      ref: "@components.dialogs.default"
+      frame:
+        width: 500
+      controls: None # No buttons so render a close 'x' in header instead
+    addpreset:
+      ref: "@components.dialogs.default"
+      frame:
+        width: 400
+      controls:
+        button1: # Override button1 but button2 is still inherited
+          ref: "@components.button.save"
+
   badge:
     frame:
       height: 18
@@ -336,6 +375,9 @@ components:
 
   input:
     default:
+      type: "text"
+      editable: true
+      case: "none"
       frame:
         height: 32
         bg: "@colors.gray-black"
@@ -345,7 +387,6 @@ components:
         default: "@colors.gray-white"
         active:  "@colors.primary"
         disabled: "@colors.gray-text"
-      border: "@borders.subtle"
       selection: "rgba(0, 188, 212, 0.3)"
       font: "@text.body.font"
       error:
@@ -355,10 +396,26 @@ components:
           color: "@colors.error"
     path:
       ref: "@components.input.default"
+      type: "rich"
+      icon: "glyphs.folder"
       frame:
         height: 36
-    parameters:
+    slider:
       ref: "@components.input.default"
+      type: "numeric"
+      unit: "°"
+      step: 0.1
+      frame:
+        height: 32
+    parameter:
+      ref: "@components.input.default"
+      type: "numeric"
+      frame:
+        height: 28
+    hex:
+      ref: "@components.input.default"
+      case: "upper"
+      prefix: "#"
       frame:
         height: 28
 
@@ -535,3 +592,21 @@ components:
       label:
         ref: "@text.subheader"
         color: "@colors.error"
+
+  list:
+    default:
+      frame:
+        height: 40
+        bg: "@colors.transparent"
+        hover: "@colors.gray-medium"
+        cursor: "hand"
+      label: "@text.body"
+    custompresets:
+      ref: "@components.list.default"
+      frame:
+        bg: "@colors.gray-medium"
+        hover: "@colors.gray-light"
+      actions:
+        delete:  { icon: "glyphs.trash", color: "@colors.warning" }
+        confirm: { icon: "glyphs.save",  color: "@colors.ok"      }
+        cancel:  { icon: "glyphs.close", color: "@colors.warning" }
