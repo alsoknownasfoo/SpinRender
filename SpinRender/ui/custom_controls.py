@@ -105,25 +105,22 @@ class CustomSlider(wx.Panel):
         enabled = self.IsEnabled()
 
         # V2 Mappings
-        slider_conf = _theme._resolve("components.slider.default") or {}
-        track_conf = slider_conf.get("track", {})
-        track_h = track_conf.get("frame", {}).get("height", 4)
+        track_h = _theme._resolve("components.slider.default.track.frame.height") or 4
         track_y = (height - track_h) / 2
         
-        nub_conf = slider_conf.get("nub", {})
-        thumb_w = nub_conf.get("width", 7)
-        thumb_h = nub_conf.get("height", 18)
+        thumb_w = _theme._resolve("components.slider.default.nub.width") or 7
+        thumb_h = _theme._resolve("components.slider.default.nub.height") or 18
         thumb_y = (height - thumb_h) / 2
 
         # Fetch colors dynamically from component section
-        base_track_color = _theme.parse_color(track_conf.get("color", "#1F1F1F"))
-        base_fill_color = self.color_override or _theme.color("colors.primary")
+        track_color = _theme.color("components.slider.default.track.color")
+        fill_color = self.color_override or _theme.color("colors.primary")
+        thumb_color = _theme.color("components.slider.default.nub.color")
         
-        # Apply disabled state to colors
-        track_color = _theme.disabled(base_track_color) if not enabled else base_track_color
-        fill_color = _theme.disabled(base_fill_color) if not enabled else base_fill_color
-        thumb_color = _theme.parse_color(nub_conf.get("color", "#00BCD4"))
-        if not enabled: thumb_color = _theme.disabled(thumb_color)
+        if not enabled:
+            track_color = _theme.disabled(track_color)
+            fill_color = _theme.disabled(fill_color)
+            thumb_color = _theme.disabled(thumb_color)
 
         gc.SetBrush(wx.Brush(track_color))
         gc.SetPen(wx.TRANSPARENT_PEN)
@@ -204,8 +201,8 @@ class CustomToggleButton(wx.Panel):
         enabled = self.IsEnabled()
 
         # Fetch colors dynamically from component section (V2)
-        base_bg_color = _theme.color("components.toggle.default.default.frame.bg")
-        base_border_color = _theme.color("borders.subtle.color")
+        base_bg_color = _theme.color("components.toggle.default.frame.bg")
+        base_border_color = _theme.color("components.toggle.default.frame.border.color")
         
         bg_color = _theme.disabled(base_bg_color) if not enabled else base_bg_color
         border_color = _theme.disabled(base_border_color) if not enabled else base_border_color
@@ -301,7 +298,7 @@ class DropdownPopup(wx.PopupTransientWindow):
         self.item_height = 32
         
         # V2 Mapping
-        menu_bg = _theme.color("components.component.dropdown.default.menu.frame.bg")
+        menu_bg = _theme.color("components.dropdown.default.popup.bg")
         self.SetBackgroundColour(menu_bg)
         
         self.Bind(wx.EVT_PAINT, self.on_paint)
@@ -317,7 +314,7 @@ class DropdownPopup(wx.PopupTransientWindow):
         width, height = self.GetSize()
         
         # V2 Mappings
-        bg_color = _theme.color("components.component.dropdown.default.menu.frame.bg")
+        bg_color = _theme.color("components.dropdown.default.popup.bg")
         border_color = _theme.color("borders.subtle.color")
         accent_color = _theme.color("colors.primary")
         text_primary = _theme.color("text.body.color")
@@ -382,11 +379,11 @@ class CustomDropdown(wx.Panel):
         enabled = self.IsEnabled()
 
         # V2 Mappings
-        base_bg_color = _theme.color("components.component.dropdown.default.frame.bg")
+        base_bg_color = _theme.color("components.dropdown.default.frame.bg")
         gc.SetBrush(wx.Brush(_theme.disabled(base_bg_color) if not enabled else base_bg_color))
 
         # Border
-        bc = _theme.color("components.component.dropdown.default.open.border.color") if (self.hovered or self.is_open) else _theme.color("borders.subtle.color")
+        bc = _theme.color("components.dropdown.default.border-focus") if (self.hovered or self.is_open) else _theme.color("components.dropdown.default.border")
         gc.SetPen(wx.Pen(_theme.disabled(bc) if not enabled else bc, 1))
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
 
@@ -469,17 +466,16 @@ class CustomButton(wx.Panel):
 
         # V2 Mapping Logic
         if self.primary:
-            token = "components.component.button.exit" if self.danger else "components.component.button.ok"
+            token = "components.button.exit" if self.danger else "components.button.ok"
         elif self.ghost:
-            token = "components.component.button.close"
+            token = "components.button.close"
         else:
-            token = "components.component.button.cancel"
+            token = "components.button.cancel"
 
-        # Resolve stateful colors from hierarchical token
+        # Resolve colors
         bg_colors = _theme.color_states(f"{token}.frame.bg")
         bg_base = bg_colors[0]
         
-        # Label colors
         label_token = f"{token}.label.color"
         if not _theme.has_token(label_token):
             label_token = "text.button.color"
@@ -487,7 +483,6 @@ class CustomButton(wx.Panel):
         text_colors = _theme.color_states(label_token)
         text_base = text_colors[0]
         
-        # Border defaults
         border_token = f"{token}.frame.border.color"
         border_base = _theme.color(border_token) if _theme.has_token(border_token) else None
 
@@ -580,7 +575,7 @@ class PresetCard(wx.Panel):
     """
     Preset card matching Component/PresetCard
     """
-    def __init__(self, parent, label="PRESET", icon_name="rotate-cw", size=(90, 64)):
+    def __init__(self, parent, label="PRESET", icon_name="preset-hero", size=(90, 64)):
         super().__init__(parent, size=size)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.label, self.icon_name, self.selected = label, icon_name, False
@@ -597,11 +592,11 @@ class PresetCard(wx.Panel):
         
         # V2 Mapping
         role = "selected" if self.selected else "default"
-        conf = _theme._resolve(f"components.component.preset_card.default.{role}") or {}
-
-        bg = _theme.parse_color(conf.get("bg", "#121212"))
-        border = _theme.color("borders.subtle.color")
-        txt_color = _theme.color("text.label.color")
+        token = f"components.preset_card.{role}"
+        
+        bg = _theme.color(f"{token}.bg")
+        border = _theme.color(f"{token}.border.color")
+        txt_color = _theme.color(f"{token}.label.color")
 
         gc.SetBrush(wx.Brush(_theme.disabled(bg) if not enabled else bg))
         gc.SetPen(wx.Pen(_theme.disabled(border) if not enabled else border, 1))
@@ -694,8 +689,8 @@ class NumericDisplay(wx.Panel):
         enabled = self.IsEnabled()
 
         # V2 Mappings
-        bg = _theme.color("components.component.input.default.frame.bg")
-        border = _theme.color("borders.subtle.color")
+        bg = _theme.color("components.input.default.frame.bg")
+        border = _theme.color("components.input.default.frame.border.color")
         accent = _theme.color("colors.secondary")
         secondary = _theme.color("colors.gray-text")
 
@@ -746,10 +741,10 @@ class NumericInput(wx.Panel):
         enabled = self.IsEnabled()
 
         # V2 Mappings
-        bg = _theme.color("components.component.input.default.frame.bg")
+        bg = _theme.color("components.input.default.frame.bg")
         gc.SetBrush(wx.Brush(_theme.disabled(bg) if not enabled else bg))
 
-        bc = _theme.color("borders.focus.color") if self.editing else _theme.color("borders.subtle.color")
+        bc = _theme.color("borders.focus.color") if self.editing else _theme.color("components.input.default.frame.border.color")
         gc.SetPen(wx.Pen(_theme.disabled(bc) if not enabled else bc, 1))
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 6)
 
@@ -874,9 +869,9 @@ class CustomTextInput(wx.Panel):
         enabled = self.IsEnabled()
 
         # V2 Mappings
-        bg = _theme.color("components.component.input.default.frame.bg")
+        bg = _theme.color("components.input.default.frame.bg")
         gc.SetBrush(wx.Brush(_theme.disabled(bg) if not enabled else bg))
-        bc = _theme.color("borders.focus.color") if self.HasFocus() else _theme.color("borders.subtle.color")
+        bc = _theme.color("borders.focus.color") if self.HasFocus() else _theme.color("components.input.default.frame.border.color")
         gc.SetPen(wx.Pen(_theme.disabled(bc) if not enabled else bc, 1))
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 6)
 
@@ -936,10 +931,10 @@ class ProjectFolderChip(wx.Panel):
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
         w, h = self.GetSize()
-        gc.SetBrush(wx.Brush(_theme.color("components.component.badge.frame.bg")))
+        gc.SetBrush(wx.Brush(_theme.color("components.badge.frame.bg")))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRoundedRectangle(0, 0, w, h, 4)
-        gc.SetFont(gc.CreateFont(TextStyles.label_xs.create_font(), _theme.color("components.component.badge.label.color")))
+        gc.SetFont(gc.CreateFont(TextStyles.label_xs.create_font(), _theme.color("components.badge.label.color")))
         tw, th = gc.GetTextExtent("PROJECT FOLDER")
         gc.DrawText("PROJECT FOLDER", (w - tw) / 2, (h - th) / 2)
 
@@ -1009,7 +1004,7 @@ class CustomColorPicker(wx.Panel):
         w, h = self.GetSize(); enabled, rects = self.IsEnabled(), self._get_rects()
         
         # V2 Mappings
-        bg = _theme.color("components.component.colorpicker.default.bg")
+        bg = _theme.color("components.colorpicker.default.bg")
         gc.SetBrush(wx.Brush(_theme.disabled(bg) if not enabled else bg))
         gc.SetPen(wx.TRANSPARENT_PEN); gc.DrawRoundedRectangle(0, 0, w, h, 4)
         for i, (hv, lbl) in enumerate(self.PRESETS):
@@ -1020,7 +1015,7 @@ class CustomColorPicker(wx.Panel):
         dx = rects['divider']; gc.StrokeLine(dx, 10, dx, h - 10)
         rc = rects['custom']; self._draw_swatch(gc, rc.x, rc.y, self.current_color, "CUSTOM", self.selection == -1, self.hover_idx == 4, enabled)
         
-        rh = rects['hex']; hbg = _theme.color("components.component.input.default.frame.bg")
+        rh = rects['hex']; hbg = _theme.color("components.input.default.frame.bg")
         gc.SetBrush(wx.Brush(_theme.disabled(hbg) if not enabled else hbg))
         gc.SetPen(wx.Pen(_theme.disabled(border) if not enabled else border, 1))
         gc.DrawRoundedRectangle(rh.x, rh.y, rh.width, rh.height, 4)
@@ -1095,9 +1090,9 @@ class PathInputControl(wx.Panel):
         w, h = self.GetSize(); enabled = self.IsEnabled()
         
         # V2 Mapping (Use input.default)
-        bg = _theme.color("components.component.input.default.frame.bg")
+        bg = _theme.color("components.input.default.frame.bg")
         gc.SetBrush(wx.Brush(_theme.disabled(bg) if not enabled else bg))
-        brd = _theme.color("borders.subtle.color")
+        brd = _theme.color("components.input.default.frame.border.color")
         gc.SetPen(wx.Pen(_theme.disabled(brd) if not enabled else brd, 1))
         gc.DrawRoundedRectangle(1, 1, w - 2, h - 2, 6)
         

@@ -131,48 +131,54 @@ class Theme:
         """
         Resolve a dot-path token, following 'ref' references.
         Supports both dict-style ref: {ref: "token"} and V2 string-style @token.
-        If path is not a valid token but looks like a color name, returns it as-is.
-        Returns pink (#FF00FF) if undefined.
+        Recursive: follows references until a terminal value is reached.
         """
+        # Base Case: Not a string or doesn't look like a token path
+        if not isinstance(path, str):
+            return path
+
         # V2: Strip the '@' prefix if this is a string-based reference
         if path.startswith("@"):
             path = path[1:]
 
+        # If it doesn't look like a token path (no dots and not in root keys),
+        # return as-is (could be a hex color, etc.)
+        if '.' not in path and path not in self._data:
+            return path
+
         node = self._data
-        is_token_path = '.' in path or path in node
-
-        if not is_token_path:
-            # Not a token path (no dots, not in root).
-            # Could be a direct color name (e.g. "red") or hex.
-            if path.startswith("#") or path.startswith("rgba(") or len(path) == 6:
-                return path
-            # If it's a simple word, let _parse_color try wx.ColourDatabase
-            if path.isalpha():
-                return path
-
-        for key in path.split("."):
-            # If we encounter a ref during traversal, resolve it and continue from there
-            while isinstance(node, dict) and "ref" in node:
-                node = self._resolve(node["ref"])
-
-            if isinstance(node, dict):
-                if key not in node:
-                    logger.error(f"Theme: Undefined token: '{path}' (missing '{key}')")
-                    return "#FF00FF"  # Magenta/pink for visibility
-                node = node[key]
-            else:
+        parts = path.split(".")
+        
+        # Traverse the dictionary tree
+        for i, key in enumerate(parts):
+            if not isinstance(node, dict):
                 logger.error(f"Theme: Cannot traverse into {type(node)} at '{key}' in '{path}'")
                 return "#FF00FF"
 
-        # At leaf: follow ref if present as dict or as @string (V2)
-        while isinstance(node, dict) and "ref" in node:
-            node = self._resolve(node["ref"])
+            if key not in node:
+                # If key not found, could be a key containing a dot (rare in this schema but possible)
+                # Check if the remaining parts match a single key
+                remaining = ".".join(parts[i:])
+                if remaining in node:
+                    node = node[remaining]
+                    break
+                else:
+                    logger.error(f"Theme: Undefined token: '{path}' (missing '{key}')")
+                    return "#FF00FF"
+            
+            node = node[key]
+            
+            # If we hit a reference during traversal, resolve it and continue
+            if isinstance(node, dict) and "ref" in node:
+                node = self._resolve(node["ref"])
+            elif isinstance(node, str) and node.startswith("@"):
+                node = self._resolve(node)
 
-        # V2: If leaf is a string like "@colors.cyan", resolve it
+        # Final Leaf Resolution: follow ref if present
+        if isinstance(node, dict) and "ref" in node:
+            return self._resolve(node["ref"])
         if isinstance(node, str) and node.startswith("@"):
-            target = node[1:]  # strip '@'
-            # Recursively resolve the target token
-            node = self._resolve(target)
+            return self._resolve(node)
 
         return node
 
@@ -274,18 +280,21 @@ class Theme:
         return self.color("colors.bg.page")
 
     def _parse_color(self, value: str):
-        """Parse color string to wx.Colour. Supports hex (#RRGGBB, RRGGBB, #RRGGBBAA), rgba(r,g,b,a), and basic color names."""
+        """Parse color string to wx.Colour. Supports hex, rgba, and @references."""
         import wx
         import re
-
-        # Check if it's already a wx.Colour-like object (duck typing for test mocking)
-        if hasattr(value, 'Red') and hasattr(value, 'Green') and hasattr(value, 'Blue'):
-            return value
 
         if not isinstance(value, str):
             raise ValueError(f"Theme: Invalid color value type: {type(value)}")
 
-        # 1. Try wx.ColourDatabase for named colors (e.g. 'red', 'blue', 'LIGHT GREY')
+        # V2: Resolve string-based references before parsing
+        if value.startswith("@"):
+            resolved = self._resolve(value)
+            if isinstance(resolved, str) and not resolved.startswith("@"):
+                return self._parse_color(resolved)
+            return resolved # If _resolve returned a wx.Colour (unlikely but possible)
+
+        # 1. Try wx.ColourDatabase for named colors
         named_color = wx.Colour(value)
         if named_color.IsOk():
             return named_color

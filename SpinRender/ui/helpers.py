@@ -10,20 +10,22 @@ from .text_styles import TextStyle
 
 # Valid theme token paths for validation (V2 Mastering Schema)
 VALID_BG_TOKENS = {
-    'colors.bg.page', 'colors.bg.panel', 'colors.bg.surface', 
-    'components.main.frame.bg', 'components.main.leftpanel.bg'
+    'components.main.frame.bg', 'components.main.leftpanel.bg', 
+    'components.main.header.bg', 'components.main.rightpanel.bg',
+    'colors.gray-dark', 'colors.gray-black'
 }
 VALID_BORDER_TOKENS = {
     'borders.default.color', 'borders.subtle.color', 'borders.focus.color',
     'components.main.divider.bg'
 }
 VALID_ACCENT_TOKENS = {
-    'colors.primary', 'colors.secondary', 'colors.success',
-    'colors.red', 'colors.orange', 'colors.cyan', 'colors.purple'
+    'colors.primary', 'colors.secondary', 'colors.tertiary',
+    'colors.ok', 'colors.warning', 'colors.error'
 }
 VALID_TEXT_TOKENS = {
     'text.body.color', 'text.subtitle.color', 'text.metadata.color',
-    'text.subheader.color', 'text.button.color', 'text.label.color'
+    'text.subheader.color', 'text.button.color', 'text.label.color',
+    'text.title.color'
 }
 ALL_VALID_TOKENS = (
     VALID_BG_TOKENS | VALID_BORDER_TOKENS | VALID_ACCENT_TOKENS | VALID_TEXT_TOKENS
