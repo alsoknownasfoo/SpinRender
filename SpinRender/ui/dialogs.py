@@ -468,11 +468,11 @@ class RecallPresetDialog(BaseStyledDialog):
                 item = self.create_preset_item(list_panel, scope, name)
                 list_sizer.Add(item, 0, wx.EXPAND | wx.BOTTOM, 8)
         list_panel.SetSizer(list_sizer); main_sizer.Add(list_panel, 1, wx.EXPAND | wx.ALL, 16)
-        self.main_container.SetSizer(main_sizer)colors
+        self.main_container.SetSizer(main_sizer)
 
-    def create_preset_item(self, parent, scope, name):colors
+    def create_preset_item(self, parent, scope, name):
         panel = wx.Panel(parent, size=(-1, 40)); panel.SetBackgroundColour(_theme.color("colors.bg.surface")); panel.SetCursor(wx.Cursor(wx.CURSOR_HAND))
-        sizer = wx.BoxSizer(wx.HORIZONTAL); label = wx.colorsnel, label=name.upper()); label.SetForegroundColour(_theme.color("colors.text.primary"))
+        sizer = wx.BoxSizer(wx.HORIZONTAL); label = wx.StaticText(panel, label=name.upper()); label.SetForegroundColour(_theme.color("colors.text.primary"))
         label.SetFont(TextStyles.body.create_font()); sizer.Add(label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)
         action_area = wx.Panel(panel); action_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
