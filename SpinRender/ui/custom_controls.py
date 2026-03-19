@@ -3,6 +3,8 @@ Custom UI Controls for SpinRender
 Implements designs from SpinRender.pen exactly
 """
 import wx
+import wx.lib.scrolledpanel as scrolled
+import wx.svg
 import math
 import re
 from pathlib import Path
