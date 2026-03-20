@@ -369,7 +369,7 @@ class DropdownPopup(wx.PopupTransientWindow):
         
         gc.SetBrush(wx.Brush(bg_color))
         gc.SetPen(wx.Pen(border_color, 1))
-        gc.DrawRoundedRectangle(0, 0, width, height, radius)
+        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, radius)
 
         # 2. Menu Items
         for i, choice in enumerate(self.choices):
