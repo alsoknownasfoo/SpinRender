@@ -235,40 +235,40 @@ class CustomToggleButton(wx.Panel):
         token = f"components.toggle.{self.style_id}" if self.style_id else "components.toggle.default"
         if not _theme.has_token(token): token = "components.toggle.default"
 
+        # 1. Main Frame
         is_any_hovered = self.hover_index != -1
         bg_color = _theme.color(f"{token}.frame.bg", is_any_hovered, False, enabled)
         border_color = _theme.color(f"{token}.frame.border.color", is_any_hovered, False, enabled)
         
+        radius = _theme.size(f"{token}.frame.radius") or 6
         gc.SetBrush(wx.Brush(bg_color))
         gc.SetPen(wx.Pen(border_color, 1))
-        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 6)
+        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, radius)
 
-        # Draw Active Indicator
-        active_token = f"{token}.selected.frame.bg"
-        active_bg = _theme.color(active_token, self.hover_index == self.selection, False, enabled) if _theme.has_token(active_token) else _theme.color("colors.primary", self.hover_index == self.selection, False, enabled)
-        
-        gc.SetBrush(wx.Brush(active_bg))
-        gc.SetPen(wx.TRANSPARENT_PEN)
-        active_x = self.selection * state_width
-        gc.DrawRoundedRectangle(active_x + 1, 1, state_width - 2, height - 2, 6)
-
-        # Draw each state
+        # 2. Draw each segment
         for i, opt in enumerate(self.options):
             is_active = (i == self.selection)
             is_hovered = (i == self.hover_index)
             
-            # Resolve text color from theme
-            if is_active:
-                text_token = f"{token}.selected.label.color"
-                if not _theme.has_token(text_token): text_token = "colors.gray-black"
-            else:
-                text_token = f"{token}.default.label.color"
-                if not _theme.has_token(text_token): text_token = "colors.gray-text"
-                
-            color = _theme.color(text_token, is_hovered, False, enabled)
-            self._draw_side(gc, opt.get('label'), opt.get('icon'), i * state_width, state_width, height, color)
+            x_offset = i * state_width
+            
+            # Resolve Segment Background
+            seg_bg = _theme.color(f"{token}.items.frame.bg", is_hovered, is_active, enabled)
+            if seg_bg.Alpha() > 0:
+                gc.SetBrush(wx.Brush(seg_bg))
+                gc.SetPen(wx.TRANSPARENT_PEN)
+                gc.DrawRoundedRectangle(x_offset + 1, 1, state_width - 2, height - 2, radius)
 
-    def _draw_side(self, gc, label, icon_name, x_offset, width, height, color):
+            # Resolve Content Colors
+            label_token = f"{token}.items.label"
+            icon_token = f"{token}.items.icon"
+            
+            l_color = _theme.color(f"{label_token}.color", is_hovered, is_active, enabled)
+            i_color = _theme.color(f"{icon_token}.color", is_hovered, is_active, enabled)
+            
+            self._draw_side(gc, opt.get('label'), opt.get('icon'), x_offset, state_width, height, l_color, i_color, label_token, icon_token)
+
+    def _draw_side(self, gc, label, icon_name, x_offset, width, height, l_color, i_color, label_token, icon_token):
         # Resolve icon from glyphs
         icon_char = ""
         if icon_name and str(icon_name).lower() != "none":
@@ -277,15 +277,15 @@ class CustomToggleButton(wx.Panel):
 
         tw, th = 0, 0
         if label:
-            font_obj = _theme.font("label")
-            gc.SetFont(gc.CreateFont(font_obj, color))
+            font_obj = _theme.font(label_token)
+            gc.SetFont(gc.CreateFont(font_obj, l_color))
             tw, th = gc.GetTextExtent(label)
             
         iw, ih = 0, 0
         icon_gfx_font = None
         if icon_char:
-            icon_font_obj = _theme.font("icon")
-            icon_gfx_font = gc.CreateFont(icon_font_obj, color)
+            icon_font_obj = _theme.font(icon_token)
+            icon_gfx_font = gc.CreateFont(icon_font_obj, i_color)
             gc.SetFont(icon_gfx_font)
             iw, ih = gc.GetTextExtent(icon_char)
             
@@ -298,8 +298,8 @@ class CustomToggleButton(wx.Panel):
             gc.DrawText(icon_char, start_x, (height - ih) / 2)
             
         if label:
-            font_obj = _theme.font("label")
-            gc.SetFont(gc.CreateFont(font_obj, color))
+            font_obj = _theme.font(label_token)
+            gc.SetFont(gc.CreateFont(font_obj, l_color))
             gc.DrawText(label, start_x + iw + gap, (height - th) / 2)
 
     def on_click(self, event):
