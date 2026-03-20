@@ -293,7 +293,7 @@ class ControlsSidePanel(wx.Panel):
         slider = CustomSlider(row, value=def_val, min_val=min_val, max_val=max_val, size=(-1, 18), id=id)
         sizer.Add(slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
 
-        inp = create_numeric_input(row, f"{def_val:.2f}", "°", editable=True, min_val=min_val, max_val=max_val, id="parameter")
+        inp = create_numeric_input(row, f"{def_val:.2f}", "°", editable=True, min_val=min_val, max_val=max_val, id="axis")
         sizer.Add(inp, 0, wx.ALIGN_CENTER_VERTICAL)
 
         attr_name = label_text.lower().replace(" ", "_")

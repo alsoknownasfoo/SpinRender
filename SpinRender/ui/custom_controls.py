@@ -954,11 +954,14 @@ class CustomInput(wx.Panel):
         tw, th = gc.GetTextExtent(full_display)
         
         # Determine horizontal alignment
-        is_numeric = self.type in ("numeric", "degrees")
-        if is_numeric:
+        alignment = _theme._resolve(f"{self.token}.alignment") or ("right" if self.type in ("numeric", "degrees") else "left")
+        
+        if alignment == "right":
             utw, uth = gc.GetTextExtent(self.unit)
             render_x = w - tw - 12 - (utw + 4 if self.unit else 0)
-        else:
+        elif alignment == "center":
+            render_x = (w - tw) / 2
+        else: # Default to left
             render_x = text_x
             if not self.multiline and render_x + tw > w - 12:
                 full_display = "..." + full_display[-25:]
@@ -979,7 +982,7 @@ class CustomInput(wx.Panel):
             gc.DrawText(full_display, render_x, 10)
         else:
             gc.DrawText(full_display, render_x, (h - th) / 2)
-            if is_numeric and self.unit:
+            if alignment == "right" and self.unit:
                 uc = _theme.color("colors.gray-text", self.hovered, False, enabled)
                 gc.SetFont(gc.CreateFont(font_obj, uc))
                 gc.DrawText(self.unit, render_x + tw + 4, (h - th) / 2)
