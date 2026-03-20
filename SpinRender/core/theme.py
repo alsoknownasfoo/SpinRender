@@ -372,17 +372,19 @@ class Theme:
         raw = self._resolve("colors.preset")
         return [self._parse_color(v) for v in raw] if isinstance(raw, list) else []
 
-    def font(self, preset: str) -> 'wx.Font':
+    def font(self, token: str) -> 'wx.Font':
         """Resolve a font preset. Returns a bold 'Webdings' font if resolution fails."""
         import wx
-        # 1. Resolve spec (V2 first, then V1)
-        spec = self._resolve(f"text.{preset}.font")
+        # 1. Resolve spec (Check for direct .font, then text.{token}.font, then legacy presets)
+        spec = self._resolve(f"{token}.font")
         if not isinstance(spec, dict):
-            spec = self._resolve(f"typography.presets.{preset}")
+            spec = self._resolve(f"text.{token}.font")
+        if not isinstance(spec, dict):
+            spec = self._resolve(f"typography.presets.{token}")
         
         # 2. If resolution failed, return "Pink" equivalent for fonts: Webdings Symbols
         if not isinstance(spec, dict):
-            logger.debug(f"Theme: Font preset '{preset}' not found in 'text.{preset}.font' or 'typography.presets.{preset}'. Returning symbol fallback.")
+            logger.debug(f"Theme: Font preset '{token}' not found. Returning symbol fallback.")
             return wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName="Webdings")
 
         # 3. Resolve components

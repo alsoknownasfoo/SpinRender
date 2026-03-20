@@ -58,13 +58,20 @@ class TextStyles:
     This ensures any new style added to the YAML theme is automatically available.
     """
     
-    # Legacy aliases to maintain backward compatibility during transition
+    # Map code style names to their definitive theme paths
     _ALIASES = {
-        "label_sm": "label",
-        "label_xs": "metadata",
-        "numeric_unit": "body",
-        "section_heading": "header",
-        "panel_title": "title"
+        "title": "components.main.header.title",
+        "version": "components.main.header.subtitle",
+        "header": "components.main.leftpanel.headers",
+        "subheader": "components.main.leftpanel.subheaders",
+        "metadata": "components.main.leftpanel.body",
+        
+        # Legacy/helper aliases
+        "label_sm": "components.main.leftpanel.headers",
+        "label_xs": "components.main.leftpanel.body",
+        "numeric_unit": "components.main.leftpanel.body",
+        "section_heading": "components.main.leftpanel.headers",
+        "panel_title": "components.main.header.title"
     }
 
     @property
@@ -74,10 +81,13 @@ class TextStyles:
     def _get_style(self, role: str) -> TextStyle:
         """Helper to create TextStyle from theme role."""
         font = self.theme.font(role)
-        color = self.theme.color(f"text.{role}.color")
+        color = self.theme.color(role) # Engine handles extracting .color from dict or sibling
         
         # Resolve extra metadata like formatting from the theme spec
         spec = self.theme.text_style(role)
+        if not isinstance(spec, dict) or spec == "#FF00FF":
+            spec = self.theme._resolve(role)
+            
         formatting = None
         if isinstance(spec, dict):
             formatting = spec.get("formatting")
