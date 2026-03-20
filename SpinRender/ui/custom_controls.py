@@ -929,47 +929,44 @@ class CustomInput(wx.Panel):
             if self.show_chip and self.chip:
                 text_x += self.chip.GetSize().x + 6
 
-        # 4. Draw Selection (if text selected)
+        # 4. Layout Calculation
+        full_display = f"{self.prefix}{display_text}"
+        # Add cursor if editing
+        if focused and not is_placeholder and not self.text_selected:
+            full_display += "|"
+            
+        gc.SetFont(gc.CreateFont(font_obj, tc))
+        tw, th = gc.GetTextExtent(full_display)
+        
+        # Determine horizontal alignment
+        if self.type == "numeric":
+            utw, uth = gc.GetTextExtent(self.unit)
+            render_x = w - tw - 8 - (utw + 4 if self.unit else 0)
+        else:
+            render_x = text_x
+            if not self.multiline and render_x + tw > w - 12:
+                full_display = "..." + full_display[-25:]
+                tw, th = gc.GetTextExtent(full_display)
+
+        # 5. Draw Selection (Behind text)
         if self.text_selected and display_text and not is_placeholder:
             sel_color = _theme.color(f"{self.token}.selection")
             if not isinstance(sel_color, wx.Colour) or sel_color == "#FF00FF":
                 sel_color = wx.Colour(0, 188, 212, 76) # Fallback to 30% primary
             
-            gc.SetFont(gc.CreateFont(font_obj, tc))
-            tw, th = gc.GetTextExtent(display_text)
             gc.SetBrush(wx.Brush(sel_color))
             gc.SetPen(wx.TRANSPARENT_PEN)
-            gc.DrawRectangle(text_x, (h - th) / 2, tw, th)
+            gc.DrawRectangle(render_x, (h - th) / 2, tw, th)
 
-        # 5. Draw Content
-        gc.SetFont(gc.CreateFont(font_obj, tc))
-        
-        # Add cursor if editing
-        if focused and not is_placeholder:
-            # Simple cursor simulation
-            if not self.text_selected: display_text += "|"
-
+        # 6. Draw Content
         if self.multiline:
-            gc.DrawText(display_text, text_x, 10)
+            gc.DrawText(full_display, render_x, 10)
         else:
-            # Handle Prefix/Suffix/Units
-            full_display = f"{self.prefix}{display_text}"
-            tw, th = gc.GetTextExtent(full_display)
-            
-            # Numeric right-align logic (V1 style)
-            if self.type == "numeric":
-                utw, uth = gc.GetTextExtent(self.unit)
-                start_x = w - tw - 8 - (utw + 4 if self.unit else 0)
-                gc.DrawText(full_display, start_x, (h - th) / 2)
-                if self.unit:
-                    uc = _theme.color("colors.gray-text", False, False, enabled)
-                    gc.SetFont(gc.CreateFont(font_obj, uc))
-                    gc.DrawText(self.unit, start_x + tw + 4, (h - th) / 2)
-            else:
-                # Path truncation
-                if text_x + tw > w - 12:
-                    full_display = "..." + full_display[-25:]
-                gc.DrawText(full_display, text_x, (h - th) / 2)
+            gc.DrawText(full_display, render_x, (h - th) / 2)
+            if self.type == "numeric" and self.unit:
+                uc = _theme.color("colors.gray-text", self.hovered, False, enabled)
+                gc.SetFont(gc.CreateFont(font_obj, uc))
+                gc.DrawText(self.unit, render_x + tw + 4, (h - th) / 2)
 
     def on_click(self, event):
         if self.IsEnabled(): self.SetFocus(); self.Refresh(); self.Update()
