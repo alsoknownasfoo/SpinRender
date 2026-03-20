@@ -824,6 +824,7 @@ class CustomInput(wx.Panel):
         
         # Interaction state
         self.value = str(value)
+        self.original_value = self.value
         self.placeholder = str(placeholder)
         self.editing = False
         self.text_selected = False
@@ -925,6 +926,7 @@ class CustomInput(wx.Panel):
     def on_focus_gained(self, event):
         if self.IsEnabled():
             self.editing = True
+            self.original_value = self.value
             self.text_selected = True
             self.Refresh(); self.Update()
         event.Skip()
@@ -946,6 +948,7 @@ class CustomInput(wx.Panel):
             else: self.confirm_value()
             return
         elif key == wx.WXK_ESCAPE:
+            self.value = self.original_value
             self.editing = False; self.Refresh(); self.Update(); return
         elif key == wx.WXK_TAB:
             self.confirm_value(); event.Skip(); return
@@ -990,6 +993,11 @@ class CustomInput(wx.Panel):
 
     def confirm_value(self):
         self.editing = False
+        
+        # If field was cleared, reset to original value
+        if not self.value.strip():
+            self.value = self.original_value
+            
         if self.type == "numeric":
             try:
                 v = float(self.value)
