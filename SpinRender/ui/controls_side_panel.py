@@ -218,9 +218,9 @@ class ControlsSidePanel(wx.Panel):
         header.SetSizerAndFit(header_sizer)
 
         sizer.Add(header, 0, wx.EXPAND | wx.BOTTOM, 10)
-        sizer.Add(self.create_rotation_controls(panel), 0, wx.EXPAND | wx.BOTTOM, 20)
-        sizer.Add(self.create_period_control(panel), 0, wx.EXPAND | wx.BOTTOM, 20)
-        sizer.Add(self.create_direction_control(panel), 0, wx.EXPAND | wx.BOTTOM, 20)
+        sizer.Add(self.create_rotation_controls(panel), 0, wx.EXPAND | wx.BOTTOM, 10)
+        sizer.Add(self.create_period_control(panel), 0, wx.EXPAND | wx.BOTTOM, 10)
+        sizer.Add(self.create_direction_control(panel), 0, wx.EXPAND | wx.BOTTOM, 10)
         sizer.Add(self.create_lighting_control(panel), 0, wx.EXPAND)
 
         panel.SetSizerAndFit(sizer)
@@ -313,7 +313,7 @@ class ControlsSidePanel(wx.Panel):
         crow = wx.Panel(panel)
         csizer = wx.BoxSizer(wx.HORIZONTAL)
         p_val = self.settings.period
-        self.period_slider = CustomSlider(crow, value=p_val, min_val=0.1, max_val=30, size=(-1, 18), id="primary")
+        self.period_slider = CustomSlider(crow, value=p_val, min_val=0.1, max_val=30, size=(-1, 18), id="default")
         csizer.Add(self.period_slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
         unit = _locale.get("parameters.period.unit", "sec")
         self.period_input = create_numeric_input(crow, f"{p_val:.1f}", unit, editable=True, min_val=0.1, max_val=30, id="parameter")
@@ -431,7 +431,7 @@ class ControlsSidePanel(wx.Panel):
         r_col.SetSizerAndFit(r_sizer)
         cols_sizer.Add(r_col, 1, wx.EXPAND)
         cols_panel.SetSizerAndFit(cols_sizer)
-        sizer.Add(cols_panel, 0, wx.EXPAND | wx.BOTTOM, 24)
+        sizer.Add(cols_panel, 0, wx.EXPAND | wx.BOTTOM, 12)
 
         # Row 2: Background Color
         bg_col = wx.Panel(panel)
