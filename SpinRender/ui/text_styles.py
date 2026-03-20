@@ -52,12 +52,21 @@ class TextStyle:
 # ---------------------------------------------------------------------------
 
 class TextStyles:
-    """Container for predefined semantic text styles.
+    """Container for semantic text styles.
 
-    These styles reference theme font families and are used throughout the UI.
-    Values are fetched dynamically from the Theme singleton to support hot-reloading.
+    Resolves styles dynamically from the Theme singleton via __getattr__.
+    This ensures any new style added to the YAML theme is automatically available.
     """
     
+    # Legacy aliases to maintain backward compatibility during transition
+    _ALIASES = {
+        "label_sm": "label",
+        "label_xs": "metadata",
+        "numeric_unit": "body",
+        "section_heading": "header",
+        "panel_title": "title"
+    }
+
     @property
     def theme(self):
         return Theme.current()
@@ -66,54 +75,29 @@ class TextStyles:
         """Helper to create TextStyle from theme role."""
         font = self.theme.font(role)
         color = self.theme.color(f"text.{role}.color")
+        
+        # Resolve extra metadata like formatting from the theme spec
+        spec = self.theme.text_style(role)
+        formatting = None
+        if isinstance(spec, dict):
+            formatting = spec.get("formatting")
+            
         return TextStyle(
             family=font.GetFaceName(),
             size=font.GetPointSize(),
             weight=font.GetWeight(),
-            color=color
+            color=color,
+            formatting=formatting
         )
 
-    @property
-    def body(self) -> TextStyle: return self._get_style("body")
-    @property
-    def body_strong(self) -> TextStyle: return self._get_style("body_strong")
-    @property
-    def subheader(self) -> TextStyle: return self._get_style("subheader")
-    @property
-    def label_sm(self) -> TextStyle: return self._get_style("label") # Maps to label role
-    @property
-    def label_xs(self) -> TextStyle: return self._get_style("metadata") # Maps to metadata role
-    @property
-    def numeric_value(self) -> TextStyle: return self._get_style("numeric_value")
-    @property
-    def numeric_unit(self) -> TextStyle: return self._get_style("body")
-    
-    @property
-    def section_heading(self) -> TextStyle:
-        style = self._get_style("header")
-        return TextStyle(
-            family=style.family,
-            size=style.size,
-            weight=style.weight,
-            color=style.color,
-            formatting="uppercase"
-        )
-
-    @property
-    def panel_title(self) -> TextStyle:
-        style = self._get_style("title")
-        return TextStyle(
-            family=style.family,
-            size=style.size,
-            weight=style.weight,
-            color=style.color,
-            formatting="uppercase"
-        )
-
-    @property
-    def icon(self) -> TextStyle: return self._get_style("icon")
-    @property
-    def icon_lg(self) -> TextStyle: return self._get_style("icon_lg")
+    def __getattr__(self, name: str) -> TextStyle:
+        """Dynamically resolve style properties."""
+        role = self._ALIASES.get(name, name)
+        try:
+            return self._get_style(role)
+        except Exception:
+            # Fallback to body if resolution fails completely
+            return self._get_style("body")
 
 # Singleton access
 TextStyles = TextStyles()

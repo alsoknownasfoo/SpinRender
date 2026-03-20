@@ -15,7 +15,7 @@ colors:
   gray-black:  "#0D0D0D"
   gray-dark:   "#121212"
   gray-border: "#1F1F1F"
-  gray-medium: "#323232"
+  gray-medium: "#444444"
   gray-light:  "#646464"
   gray-text:   "#777777"
   gray-white:  "#E0E0E0"
@@ -117,6 +117,7 @@ typography:
 text:
   title:
     color: "@colors.gray-white"
+    formatting: "uppercase"
     font:
       typeface: "@typography.families.display"
       size: "@typography.scale.lg"
@@ -128,13 +129,14 @@ text:
       size: "@typography.scale.sm"
       weight: 700
   header:
-    color: "@colors.gray-white"
+    color: "@colors.gray-medium"
+    formatting: "uppercase"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.md"
       weight: 600
   subheader:
-    color: "@colors.gray-white"
+    color: "@colors.gray-dark"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
