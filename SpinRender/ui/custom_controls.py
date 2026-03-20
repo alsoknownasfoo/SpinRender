@@ -895,13 +895,21 @@ class CustomInput(wx.Panel):
         # 1. Draw Frame
         bg = _theme.color(f"{self.token}.frame.bg", self.hovered, False, enabled)
         
-        # Border: Use focus tokens if focused, otherwise component tokens with hover support
+        # Border: Try component-specific active color first, then global focus, then component default/hover
+        bc_token = f"{self.token}.frame.border.color"
+        bs_token = f"{self.token}.frame.border.size"
+        
         if focused:
-            bc = _theme.color("borders.focus.color")
-            bs = _theme.size("borders.focus.size") or 1
+            # Check if theme has explicit active color for this component
+            if _theme.has_token(f"{bc_token}.active"):
+                bc = _theme.color(bc_token, self.hovered, True, enabled)
+                bs = _theme.size(bs_token) or 1
+            else:
+                bc = _theme.color("borders.focus.color")
+                bs = _theme.size("borders.focus.size") or 1
         else:
-            bc = _theme.color(f"{self.token}.frame.border.color", self.hovered, False, enabled)
-            bs = _theme.size(f"{self.token}.frame.border.size") or 1
+            bc = _theme.color(bc_token, self.hovered, False, enabled)
+            bs = _theme.size(bs_token) or 1
         
         gc.SetBrush(wx.Brush(bg))
         gc.SetPen(wx.Pen(bc, bs))
@@ -946,9 +954,10 @@ class CustomInput(wx.Panel):
         tw, th = gc.GetTextExtent(full_display)
         
         # Determine horizontal alignment
-        if self.type == "numeric":
+        is_numeric = self.type in ("numeric", "degrees")
+        if is_numeric:
             utw, uth = gc.GetTextExtent(self.unit)
-            render_x = w - tw - 8 - (utw + 4 if self.unit else 0)
+            render_x = w - tw - 12 - (utw + 4 if self.unit else 0)
         else:
             render_x = text_x
             if not self.multiline and render_x + tw > w - 12:
@@ -970,7 +979,7 @@ class CustomInput(wx.Panel):
             gc.DrawText(full_display, render_x, 10)
         else:
             gc.DrawText(full_display, render_x, (h - th) / 2)
-            if self.type == "numeric" and self.unit:
+            if is_numeric and self.unit:
                 uc = _theme.color("colors.gray-text", self.hovered, False, enabled)
                 gc.SetFont(gc.CreateFont(font_obj, uc))
                 gc.DrawText(self.unit, render_x + tw + 4, (h - th) / 2)
