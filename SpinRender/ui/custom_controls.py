@@ -898,18 +898,25 @@ class CustomInput(wx.Panel):
         
         gc.SetBrush(wx.Brush(bg))
         gc.SetPen(wx.Pen(bc, 1))
-        gc.DrawRoundedRectangle(1, 1, w - 2, h - 2, 6)
+        
+        radius = _theme.size(f"{self.token}.frame.radius") or 6
+        gc.DrawRoundedRectangle(1, 1, w - 2, h - 2, radius)
 
         # 2. Resolve Text to draw
         display_text = self.value
         is_placeholder = not self.value and self.placeholder
         
+        # Resolve styling from the component token itself
+        tc_token = f"{self.token}.color"
+        font_token = f"{self.token}" # Engine checks .font or text.{token}.font
+        
         if is_placeholder and not focused:
             display_text = self.placeholder
             tc = _theme.color("colors.gray-text", False, False, enabled)
+            font_obj = _theme.font(font_token)
         else:
-            tc_token = f"{self.token}.color.active" if focused else f"{self.token}.color.default"
-            tc = _theme.color(tc_token, False, False, enabled)
+            tc = _theme.color(tc_token, False, focused, enabled)
+            font_obj = _theme.font(font_token)
 
         # 3. Draw Icon (Rich type)
         text_x = 12
@@ -922,8 +929,20 @@ class CustomInput(wx.Panel):
             if self.show_chip and self.chip:
                 text_x += self.chip.GetSize().x + 6
 
-        # 4. Draw Content
-        gc.SetFont(gc.CreateFont(_theme.font("body"), tc))
+        # 4. Draw Selection (if text selected)
+        if self.text_selected and display_text and not is_placeholder:
+            sel_color = _theme.color(f"{self.token}.selection")
+            if not isinstance(sel_color, wx.Colour) or sel_color == "#FF00FF":
+                sel_color = wx.Colour(0, 188, 212, 76) # Fallback to 30% primary
+            
+            gc.SetFont(gc.CreateFont(font_obj, tc))
+            tw, th = gc.GetTextExtent(display_text)
+            gc.SetBrush(wx.Brush(sel_color))
+            gc.SetPen(wx.TRANSPARENT_PEN)
+            gc.DrawRectangle(text_x, (h - th) / 2, tw, th)
+
+        # 5. Draw Content
+        gc.SetFont(gc.CreateFont(font_obj, tc))
         
         # Add cursor if editing
         if focused and not is_placeholder:
@@ -944,7 +963,7 @@ class CustomInput(wx.Panel):
                 gc.DrawText(full_display, start_x, (h - th) / 2)
                 if self.unit:
                     uc = _theme.color("colors.gray-text", False, False, enabled)
-                    gc.SetFont(gc.CreateFont(_theme.font("body"), uc))
+                    gc.SetFont(gc.CreateFont(font_token, uc))
                     gc.DrawText(self.unit, start_x + tw + 4, (h - th) / 2)
             else:
                 # Path truncation
