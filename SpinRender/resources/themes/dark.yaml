@@ -7,8 +7,8 @@
 colors:
   # Auto State Shifts (for undefined states, e.g. hover/active on buttons)
   auto_states:
-    hover: rgb(10, 10, 10) # Lighten by 10 for hover
-    active: rgb(-10, -10, -10) # Darken by 10 for active
+    hover: rgb(60, 60, 60) # Lighten by 10 for hover
+    active: rgb(-60, -60, -60) # Darken by 10 for active
     disabled: rgb(0, 0, 0, 0.5) # 50% opacity for disabled
 
   # Base Palette (Primes)
@@ -31,6 +31,22 @@ colors:
   red:         "#FF3B30"
   purple:      "#AA6BFF"
   pink:        "#F240FF"
+
+  cyan-10:     "rgba(0, 188, 212, 0.1)"
+  yellow-10:   "rgba(255, 214, 0, 0.1)"
+  green-10:    "rgba(76, 175, 80, 0.1)"
+  orange-10:   "rgba(255, 107, 53, 0.1)"
+  red-10:      "rgba(255, 59, 48, 0.1)"
+  purple-10:   "rgba(170, 107, 255, 0.1)"
+  pink-10:     "rgba(242, 64, 255, 0.1)"
+
+  cyan-20:     "rgba(0, 188, 212, 0.2)"
+  yellow-20:   "rgba(255, 214, 0, 0.2)"
+  green-20:    "rgba(76, 175, 80, 0.2)"
+  orange-20:   "rgba(255, 107, 53, 0.2)"
+  red-20:      "rgba(255, 59, 48, 0.2)"
+  purple-20:   "rgba(170, 107, 255, 0.2)"
+  pink-20:     "rgba(242, 64, 255, 0.2)"
 
   # Semantic Roles (Theme)
   primary:     "@colors.cyan"
@@ -61,12 +77,18 @@ borders:
     medium: 2
 
   # Semantic Roles
+  none:
+    size: "@borders.width.none"
+    color: "@colors.transparent"
   default:
     size: "@borders.width.thin"
     color: "@colors.gray-border"
   subtle:
     size: "@borders.width.thin"
     color: "@colors.gray-border"
+  button:
+    size: "@borders.width.thin"
+    color: "@colors.gray-medium"
   focus:
     size: "@borders.width.thin"
     color: "@colors.primary"
@@ -155,7 +177,7 @@ text:
     color: "@colors.secondary"
     font:
       typeface: "@typography.families.mono"
-      size: "@typography.scale.md"
+      size: "@typography.scale.base"
       weight: 600
   links:
     color: "@colors.primary"
@@ -167,14 +189,8 @@ text:
     color: "@colors.white-68"
     font:
       typeface: "@typography.families.mono"
-      size: "@typography.scale.sm"
+      size: "@typography.scale.base"
       weight: 400
-  metadata_active:
-    color: "@colors.ok"
-    font:
-      typeface: "@typography.families.mono"
-      size: "@typography.scale.sm"
-      weight: 600
   label:
     color: "@colors.gray-text"
     font:
@@ -182,28 +198,28 @@ text:
       size: "@typography.scale.sm"
       weight: 600
   button:
-    color: "@colors.gray-white"
+    color: 
+      default: "@colors.gray-light"
+      hover: "@colors.primary"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.base"
       weight: 600
   nav:
-    color: "@colors.gray-medium"
+    color: 
+      default: "@colors.gray-light"
+      hover: "@colors.primary"
+      active: "@colors.primary"
     font:
       typeface: "@typography.families.mono"
-      size: "@typography.scale.sm"
+      size: "@typography.scale.base"
       weight: 700
-  nav_active:
-    color: "@colors.primary"
+  dropdown:
+    color: "@colors.gray-white"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
-  dropdown:
-    ref: "@text.body"
-    font:
       weight: 600
-  icon:
-
   icon:
     color: "@colors.gray-white"
     font:
@@ -275,12 +291,91 @@ viewport:
     z: "@colors.cyan"
 
 # ─────────────────────────────────────────────────────────────────
-# 8. COMPONENT DEFINITIONS
+# 8. LAYOUT (Application Layout Definitions)
 # ─────────────────────────────────────────────────────────────────
+layout:
+  # Main application layout (left panel, right panel, header, etc.)
+  main:
+    frame:
+      bg: "@colors.gray-black"
+      radius: "@radius.none"
+    header:
+      bg: "@colors.gray-black"
+      logo: "@colors.primary"
+      title: "@text.title"
+      subtitle: "@text.subtitle"
+    leftpanel:
+      bg: "@colors.gray-black"
+      width: 450
+      headers: "@text.header"
+      subheaders: "@text.subheader"
+      body: "@text.body"
+      border: "@borders.default"
+      scrollbar: "@components.scrollbar"
+    divider:
+      bg: "@colors.gray-border"
+      size: 1
+    rightpanel:
+      bg: "@colors.gray-black"
+      nav: "@text.nav"
+      nav_active: "@text.nav_active"
+      title: "@text.title"
+      info: "@text.metadata"
+      info_active: "@text.metadata_active"
+    status: "@components.status"
+
+  # Modal dialog layouts
+  dialogs:
+    default:
+      frame:
+        bg: "@colors.gray-dark"
+        border: "@borders.default"
+        radius: "@radius.md"
+        shadow:
+          size: 16
+          color: "@colors.black"
+      header:
+        bg: "@colors.gray-black"
+        border: "@borders.default"
+        height: 48
+        title: "@text.header"
+      body:
+        bg: "@colors.gray-dark"
+        padding:
+          all: "@typography.spacing.lg"
+        text: "@text.body"
+      controls:
+        bg: "@colors.gray-dark"
+        border: None
+        gap: "@typography.spacing.base"
+        button1:
+          ref: "@components.button.ok"
+        button2:
+          ref: "@components.button.cancel"
+    options:
+      ref: "@layout.dialogs.default"
+      frame:
+        width: 400
+    presets:
+      ref: "@layout.dialogs.default"
+      frame:
+        width: 500
+      controls: None
+    addpreset:
+      ref: "@layout.dialogs.default"
+      frame:
+        width: 400
+      controls:
+        button1:
+          ref: "@components.button.save"
+
+# ─────────────────────────────────────────────────────────────────
+# 9. COMPONENT DEFINITIONS (Atomic UI Components)
+# ─────────────────────────────────────────────────────────────────x
 components:
   main:
     frame:
-      bg: "@colors.gray-dark"
+      bg: "@colors.gray-black"
       radius: "@radius.none"
     header:
       bg: "@colors.gray-black"
@@ -299,12 +394,15 @@ components:
       bg: "@colors.gray-border"
       size: 1
     rightpanel:
-      bg: "@colors.gray-black"
-      nav: "@text.nav"
-      nav_active: "@text.nav_active"
-      title: "@text.title"
-      info: "@text.metadata"
-      info_active: "@text.metadata_active"
+      bg: "@colors.gray-black" # preview bg
+      nav:
+        ref: "@text.nav"
+        color:
+          default: "@colors.gray-light"
+          active: "@colors.primary"
+      info:  # top left metadata/info display
+        ref: "@text.metadata"
+        color: "@colors.gray-light"
     status: "@components.status"
 
   dialogs:
@@ -353,7 +451,8 @@ components:
       radius: "@radius.sm"
       padding:
         horizontal: "@typography.spacing.sm"
-    icon: "@text.icon"
+    icon: 
+      ref: "@text.icon"
     label:
       font: "@typography.scale.sm"
       color: "@colors.gray-dark"
@@ -366,9 +465,14 @@ components:
         height: 64
         bg:
           default: "@colors.transparent"
-          hover: "@colors.primary"
+          hover: "@colors.cyan-20"
           active: "@colors.primary"
-        border: "@borders.subtle"
+        border: 
+          size: "@borders.subtle.size"
+          color: 
+            default: "@borders.subtle.color"
+            hover: "@colors.transparent"
+            active: "@colors.transparent"
         radius: "@radius.lg"
         padding:
           vertical: "@typography.spacing.sm"
@@ -377,14 +481,14 @@ components:
       icon:
         ref: "@text.icon_lg"
         color:
-          default: "@colors.gray-white"
-          hover: "@colors.gray-dark"
+          default: "@colors.gray-light"
+          hover: "@colors.primary"
           active: "@colors.gray-dark"
       label: 
         ref: "@text.label"
         color:
-          default: "@colors.gray-white"
-          hover: "@colors.gray-dark"
+          default: "@colors.gray-light"
+          hover: "@colors.primary"
           active: "@colors.gray-dark"
     card1: "@components.preset_card.default"
     card2: "@components.preset_card.default"
@@ -393,20 +497,28 @@ components:
 
   input:
     default:
-      type: "text"
-      editable: true
-      case: "none"
-      frame:
-        height: 32
-        bg: "@colors.gray-black"
-        radius: "@radius.md"
-        border: "@borders.subtle"
-      color:
-        default: "@colors.gray-white"
+      type: "text" # type can be text, numeric, or rich (for file paths with browse button)
+      editable: true # readonly bool
+      case: "none" # for text inputs, can be none, upper, or lower
+      frame: 
+        height: 32 # height of field
+        bg: # bg of field
+          default: "@colors.transparent"
+          hover: "@colors.cyan-20"
+        radius: "@radius.md" # border radius of field
+        border: # border of field
+          size: 1 # border size
+          color: # border color
+            default: "@borders.subtle.color"
+            hover: "@colors.transparent"
+            active: "@colors.primary"
+      color: # text color
+        default: "@colors.gray-light"
+        hover: "@colors.primary"
         active:  "@colors.primary"
-        disabled: "@colors.gray-text"
-      selection: "rgba(0, 188, 212, 0.3)"
-      font: "@text.body.font"
+      font: "@text.numeric.font" # font
+      selection: "@colors.cyan-20" # highlight selection color
+      alignment: "right" # text alignment
       error:
         color: "@colors.error"
         border:
@@ -415,26 +527,33 @@ components:
     path:
       ref: "@components.input.default"
       type: "rich"
-      icon: "glyphs.folder"
+      icon: 
+        ref: "glyphs.folder"
       frame:
         height: 36
-    slider:
+    axis:
       ref: "@components.input.default"
       type: "numeric"
-      color: "@text.numeric.color"
-      font: "@text.numeric.font"
       unit: "°"
+      step: 0.1
+      frame:
+        height: 32
+    speed:
+      ref: "@components.input.default"
+      type: "numeric"
+      unit: "f"
       step: 0.1
       frame:
         height: 32
     parameter:
       ref: "@components.input.default"
-      type: "numeric"
+      type: "text"
       frame:
         height: 28
     hex:
       ref: "@components.input.default"
       case: "upper"
+      alignment: "left"
       prefix: "#"
       frame:
         height: 28
@@ -443,17 +562,21 @@ components:
     default:
       frame:
         height: 18
-      icon: "@text.icon"
-      label: "@text.label"
+      icon: 
+        ref: "@text.icon"
+      label: 
+        ref: "@text.label"
       track:
         frame:
-          height: 4
+          height: 8
           radius: "@radius.sm"
-        color: "@colors.gray-border"
+        color: 
+          default: "@colors.gray-border"
+          hover: "@colors.cyan-20"
         border: "@borders.width.none"
       nub:
-        width: 7
-        height: 18
+        width: 1
+        height: 14
         border: "@borders.width.none"
         color: "@colors.primary"
       input: "@components.input.parameters"
@@ -475,114 +598,141 @@ components:
       frame:
         height: 32
         radius: "@radius.md"
-        bg: "@colors.transparent"
-        border: "@borders.subtle"
+        bg: 
+          default: "@colors.transparent"
+          hover: "@colors.cyan-10"
+        border:
+          size: "@borders.subtle.size"
+          color: 
+            default: "@borders.subtle.color"
+            hover: "@colors.transparent"
       gap: "@typography.spacing.sm"
-      default:
+      items: # individual toggle items
         frame:
-          bg: "@colors.gray-black"
-        icon: "@text.icon"
-        label: "@text.label"
-      selected:
-        frame:
-          bg: "@colors.primary"
-        icon:
+          bg: 
+            default: "@colors.transparent"
+            hover: "@colors.transparent"
+            active: "@colors.primary"
+        icon: 
           ref: "@text.icon"
-          color: "@colors.gray-black"
-        label:
+          color: 
+            default: "@colors.gray-light"
+            hover: "@colors.primary"
+            active: "@colors.gray-dark" #selected
+        label: 
           ref: "@text.label"
-          color: "@colors.gray-black"
+          color: 
+            default: "@colors.gray-light"
+            hover: "@colors.primary"
+            active: "@colors.gray-black" # selected
     direction:
       ref: "@components.toggle.default"
-      default:
-        label:
-          color: 
-            default: "@colors.gray-light"
-            hover: "@colors.primary"
-        icon:
-          color:
-            default: "@colors.gray-light"
-            hover: "@colors.primary"
-      selected:
-        frame:
-          bg: "@colors.primary"
-    lighting: 
+    lighting:
       ref: "@components.toggle.default"
-      default:
+      items:
+        frame:
+          bg:
+            default: "@colors.transparent"
+            hover: "@colors.transparent"
+            active: "@colors.yellow"
         label:
-          color: 
+          color:
             default: "@colors.gray-light"
-            hover: "@colors.yellow"
+            hover: "@colors.cyan"
+            active: "@colors.gray-dark"
         icon:
           color:
             default: "@colors.gray-light"
-            hover: "@colors.yellow"
-      selected:
-        frame:
-          bg: "@colors.yellow"
+            hover: "@colors.cyan"
+            active: "@colors.gray-dark"
     logging: "@components.toggle.default"
 
   dropdown:
-    default:
-      label: "@text.dropdown"
+    default: # default styles for all dropdowns, individual dropdowns can override specific properties
       frame:
-        height: 32
-        bg: "@colors.transparent"
-        radius: "@radius.md"
-        border: "@borders.subtle"
-      icon: 
+        height: 32 # main module height
+        bg: 
+          default: "@colors.transparent" # main module bg
+          hover: "@colors.cyan-20"
+        radius: "@radius.md" # main module radius
+        border: 
+          size: "@borders.width.thin"
+          color: 
+            default: "@colors.gray-border"
+            hover: "@colors.transparent" 
+            active: "@colors.transparent" # main module while dropdown is open
+      label: # main module text font and color
+        font: "@text.dropdown.font"
+        color:
+          default: "@colors.gray-white"
+          hover: "@colors.primary"
+      icon: # main module chevron color
         ref: "@text.icon"
         color: 
           default: "@colors.gray-light"
           hover: "@colors.primary"
-      open:
-        border: "@borders.focus"
-        icon:
-          ref: "@text.icon"
-          color: "@colors.primary"
-      menu:
+      menu: # popout menu container
         frame:
-          bg: "@colors.gray-dark"
-          radius: "@radius.sm"
-          border: "@borders.subtle"
-        default:
-          label: 
-            font: "@text.body.font"
-            color: "@colors.gray-white"
-        selected:
-          bg: "@colors.primary"
+          bg: "@colors.gray-dark" # menu container bg
+          radius: "@radius.md" # menu container radius
+          border: "@borders.subtle" # menu container border
+        items: # menu item styles
+          bg:
+            default: "@colors.transparent" # menu item bg
+            hover: "@colors.cyan-20"
+            active: "@colors.primary" # selected state  
+          radius: "@radius.md" # menu items have no border
+          border: "@borders.none"
           label:
-            ref: "@text.body"
-            font:
-              weight: 600
-            color: "@colors.gray-black"
-    format: "@components.dropdown.default"
-    resolution: "@components.dropdown.default"
+            font: "@text.dropdown.font"
+            color:
+              default: "@colors.gray-white"
+              hover: "@colors.primary"
+              active: "@colors.gray-dark" # selected item text color
+    format: "@components.dropdown.default" # specific dropdown for output format selection
+    resolution: "@components.dropdown.default" # specific dropdown for output resolution selection
 
   colorpicker:
     default:
-      bg: "@colors.gray-dark"
+      bg: "@colors.transparent"
       border: "@borders.subtle"
       radius: "@radius.sm"
-      default:
-        border: "@borders.subtle"
-      selected:
-        border: "@borders.strong"
+      items:
+        innerborder:
+          size: 1
+          color: 
+            default: "@colors.gray-black"
+            hover: "@colors.primary"
+            active: "@colors.gray-black"
+        border: 
+          size: 2
+          color: 
+            default: "@borders.subtle.color"
+            hover: "@colors.red"
+            active: "@colors.primary"
       input: "@components.input.parameters"
 
   button:
     default:
       frame:
         height: 36
-        bg: "@colors.transparent"
-        border: "@borders.subtle"
+        bg: 
+          default: "@colors.transparent"
+          hover: "@colors.cyan-20"
+        border: 
+          size: "@borders.subtle.size"
+          color:
+            default: "@borders.subtle.color"
+            hover: "@colors.transparent"
         radius: "@radius.md"
         padding:
           horizontal: "@typography.spacing.base"
         content_alignment: "center"
         cursor: "hand"
-      icon: "@text.icon"
-      label: "@text.button"
+      icon: 
+        ref: "@text.icon"
+      label: 
+        ref: "@text.button"
       gap: "@typography.spacing.base"
     cancel:
       ref: "@components.button.default"
@@ -611,7 +761,7 @@ components:
           hover: "@colors.primary"
       label:
         color:
-          default: "@colors.gray-white"
+          default: "@colors.gray-light"
           hover: "@colors.gray-dark"
     browse:
       ref: "@components.button.default"
@@ -667,13 +817,14 @@ components:
         bg: "@colors.transparent"
         hover: "@colors.gray-medium"
         cursor: "hand"
-      label: "@text.body"
+      label: 
+        ref:"@text.body"
     custompresets:
       ref: "@components.list.default"
       frame:
         bg: "@colors.gray-medium"
         hover: "@colors.gray-light"
       actions:
-        delete:  { icon: "glyphs.trash", color: "@colors.warning" }
-        confirm: { icon: "glyphs.save",  color: "@colors.ok"      }
-        cancel:  { icon: "glyphs.close", color: "@colors.warning" }
+        delete:  { icon: { ref: "glyphs.trash" }, color: "@colors.warning" }
+        confirm: { icon: { ref: "glyphs.save" },  color: "@colors.ok"      }
+        cancel:  { icon: { ref: "glyphs.close" }, color: "@colors.warning" }
