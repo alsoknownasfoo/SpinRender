@@ -954,7 +954,7 @@ class CustomInput(wx.Panel):
         tw, th = gc.GetTextExtent(full_display)
         
         # Determine horizontal alignment
-        alignment = _theme._resolve(f"{self.token}.alignment") or ("right" if self.type in ("numeric", "degrees") else "left")
+        alignment = _theme._resolve(f"{self.token}.alignment") or ("right" if self.type == "numeric" else "left")
         
         if alignment == "right":
             utw, uth = gc.GetTextExtent(self.unit)
