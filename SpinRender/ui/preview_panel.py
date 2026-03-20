@@ -219,7 +219,9 @@ class PreviewPanel(wx.Panel):
         self.viewport.set_period(self.settings.period)
         self.viewport.set_direction(self.settings.direction)
         self.viewport.set_render_mode(getattr(self.settings, 'render_mode', 'both'))
-        self.viewport.set_background_color(getattr(self.settings, 'bg_color', '#000000'))
+        
+        # Defer background color until model is loaded
+        self.viewport.on_model_loaded = self._on_model_ready
 
         # Set aspect ratio from resolution
         try:
@@ -229,6 +231,12 @@ class PreviewPanel(wx.Panel):
             pass
 
         self.viewport.start_preview()
+
+    def _on_model_ready(self):
+        """Callback for when model finishes loading. Transition to saved color."""
+        bg_hex = getattr(self.settings, 'bg_color', '#000000')
+        self.viewport.set_background_color(bg_hex)
+        self.update_preview_overlay()
 
     # ------------------------------------------------------------------------
     # Public API for parent/orchestrator to call
