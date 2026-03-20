@@ -572,9 +572,6 @@ class CustomButton(wx.Panel):
         
         # Border defaults
         border_token = f"{token}.frame.border.color"
-        if not _theme.has_token(border_token):
-            border_token = f"{token}.frame.border"
-            
         border_color = _theme.color(border_token, self.hovered, self.pressed, enabled) if _theme.has_token(border_token) else None
 
         # Overrides (if any)
@@ -1204,9 +1201,10 @@ class CustomListView(scrolled.ScrolledPanel):
         self.Layout()
 
 
-# Define custom event types for list interaction
-wx.EVT_LIST_ITEM_SELECTED = wx.PyEventBinder(wx.NewEventType(), 1)
-wx.EVT_LIST_ITEM_DELETED = wx.PyEventBinder(wx.NewEventType(), 1)
+# Define custom event types
+EVT_LIST_ITEM_SELECTED = wx.PyEventBinder(wx.NewEventType(), 1)
+EVT_LIST_ITEM_DELETED = wx.PyEventBinder(wx.NewEventType(), 1)
+EVT_COLOURPICKER_CHANGED = wx.PyEventBinder(wx.NewEventType(), 1)
 
 
 class ProjectFolderChip(wx.Panel):
@@ -1282,7 +1280,7 @@ class CustomColorPicker(wx.Panel):
             h = h.upper()
             if h != self.current_color:
                 self.current_color = h; self._update_selection(); self.Refresh(); self.Update()
-                evt = wx.PyCommandEvent(wx.EVT_COLOURPICKER_CHANGED.typeId, self.GetId()); evt.SetString(h); self.GetEventHandler().ProcessEvent(evt)
+                evt = wx.PyCommandEvent(EVT_COLOURPICKER_CHANGED.typeId, self.GetId()); evt.SetString(h); self.GetEventHandler().ProcessEvent(evt)
         else: self.hex_input.SetValue(self.current_color)
 
     def _get_rects(self):
@@ -1290,7 +1288,8 @@ class CustomColorPicker(wx.Panel):
         rects, x = {}, 12
         for i in range(len(self.PRESETS)): rects[f'preset_{i}'] = wx.Rect(x, 10, 28, 28); x += 38
         rects['divider'], x = x, x + 10
-        rects['custom'], x = wx.Rect(x, 10, 28, 28), x + 42
+        # Expand custom hit area to include text below (28x40 total)
+        rects['custom'], x = wx.Rect(x, 10, 28, 40), x + 42
         # Top-align to match swatches (y=10)
         rects['hex'] = wx.Rect(x, 10, 100, 28)
         return rects
@@ -1310,6 +1309,7 @@ class CustomColorPicker(wx.Panel):
         border = _theme.color("borders.subtle.color")
         gc.SetPen(wx.Pen(_theme.disabled(border) if not enabled else border, 1))
         dx = rects['divider']; gc.StrokeLine(dx, 10, dx, h - 10)
+        # Only pass the 28x28 box for drawing, but use larger rect for hit detection
         rc = rects['custom']; self._draw_swatch(gc, rc.x, rc.y, self.current_color, "CUSTOM", self.selection == -1, self.hover_idx == 4, enabled)
         
         # Hex input frame is handled by CustomInput itself
@@ -1349,13 +1349,17 @@ class CustomColorPicker(wx.Panel):
             nc = self.PRESETS[ci][0]
             if nc != self.current_color:
                 self.current_color, self.selection = nc, ci; self.Refresh(); self.Update()
-                evt = wx.PyCommandEvent(wx.EVT_COLOURPICKER_CHANGED.typeId, self.GetId()); evt.SetString(nc); self.GetEventHandler().ProcessEvent(evt)
+                evt = wx.PyCommandEvent(EVT_COLOURPICKER_CHANGED.typeId, self.GetId()); evt.SetString(nc); self.GetEventHandler().ProcessEvent(evt)
         else:
-            data = wx.ColorData(); data.SetColor(wx.Colour(self.current_color)); dlg = wx.ColorDialog(self, data)
+            # Use ColourDialog and explicit parent
+            data = wx.ColourData()
+            data.SetColour(wx.Colour(self.current_color))
+            dlg = wx.ColourDialog(wx.GetTopLevelParent(self), data)
             if dlg.ShowModal() == wx.ID_OK:
-                no = dlg.GetColorData().GetColor(); nh = "#%02X%02X%02X" % (no.Red(), no.Green(), no.Blue())
+                no = dlg.GetColourData().GetColour()
+                nh = "#%02X%02X%02X" % (no.Red(), no.Green(), no.Blue())
                 self.current_color = nh; self._update_selection(); self.Refresh(); self.Update()
-                evt = wx.PyCommandEvent(wx.EVT_COLOURPICKER_CHANGED.typeId, self.GetId()); evt.SetString(nh); self.GetEventHandler().ProcessEvent(evt)
+                evt = wx.PyCommandEvent(EVT_COLOURPICKER_CHANGED.typeId, self.GetId()); evt.SetString(nh); self.GetEventHandler().ProcessEvent(evt)
             dlg.Destroy()
 
     def on_leave(self, event): self.hover_idx = -1; self.Refresh(); self.Update()

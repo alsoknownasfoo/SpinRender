@@ -20,6 +20,7 @@ from SpinRender.core.settings import RenderSettings
 from .preset_controller import PresetController
 from SpinRender.core.render_controller import RenderController
 from .controls_side_panel import ControlsSidePanel
+from .custom_controls import EVT_COLOURPICKER_CHANGED
 from .status_bar import StatusBar
 from .parameter_controller import ParameterController
 
@@ -259,7 +260,7 @@ class SpinRenderPanel(wx.Panel):
         self.controls_side_panel.res_choice.Bind(wx.EVT_CHOICE, pc.on_resolution_change)
         # Background color
         if self.controls_side_panel.bg_picker:
-            self.controls_side_panel.bg_picker.Bind(wx.EVT_COLOURPICKER_CHANGED, lambda e: pc.on_bg_color_change(e.GetString()))
+            self.controls_side_panel.bg_picker.Bind(EVT_COLOURPICKER_CHANGED, lambda e: pc.on_bg_color_change(e.GetString()))
 
     def create_preview_panel(self, parent):
         """Create the preview panel using the extracted PreviewPanel component."""
