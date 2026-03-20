@@ -894,10 +894,17 @@ class CustomInput(wx.Panel):
 
         # 1. Draw Frame
         bg = _theme.color(f"{self.token}.frame.bg", self.hovered, False, enabled)
-        bc = _theme.color("borders.focus.color") if focused else _theme.color(f"{self.token}.frame.border.color")
+        
+        # Border: Use focus tokens if focused, otherwise component tokens with hover support
+        if focused:
+            bc = _theme.color("borders.focus.color")
+            bs = _theme.size("borders.focus.size") or 1
+        else:
+            bc = _theme.color(f"{self.token}.frame.border.color", self.hovered, False, enabled)
+            bs = _theme.size(f"{self.token}.frame.border.size") or 1
         
         gc.SetBrush(wx.Brush(bg))
-        gc.SetPen(wx.Pen(bc, 1))
+        gc.SetPen(wx.Pen(bc, bs))
         
         radius = _theme.size(f"{self.token}.frame.radius") or 6
         gc.DrawRoundedRectangle(1, 1, w - 2, h - 2, radius)
