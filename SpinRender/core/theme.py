@@ -209,50 +209,62 @@ class Theme:
 
         return final_colors[:states]
 
-    def _extract_defined_states(self, raw: Any, token: str) -> tuple[list['wx.Colour'], str]:
+    def _extract_defined_states(self, raw: Any, token: str) -> tuple[list[Optional['wx.Colour']], str]:
+        res = [None, None, None, None] # [normal, hover, active, disabled]
+        
         if isinstance(raw, list):
-            return [self._parse_color(v) for v in raw], "list"
+            for i, v in enumerate(raw[:4]):
+                res[i] = self._parse_color(v)
+            return res, "list"
         
         if isinstance(raw, dict):
-            # 1. Probe for .color property (Component role)
+            # Resolve .color explicitly if it's a component dict
             if "color" in raw:
+                # If .color is itself a dict (stateful), recurse
                 if isinstance(raw["color"], (dict, list)):
                     return self._extract_defined_states(raw["color"], f"{token}.color")
-                return [self._parse_color(raw["color"])], "dict.color"
+                res[0] = self._parse_color(raw["color"])
+                return res, "dict.color"
                 
-            # 2. Probe for state keys (State role)
-            colors = []
-            for k in ["default", "bg", "value", "hover", "active", "pressed", "disabled"]:
-                if k in raw:
-                    val = raw[k]
-                    # If the state key points to another dict (e.g. border.default -> {size, color}), resolve it
-                    if isinstance(val, dict) and "color" in val:
-                        colors.append(self._parse_color(val["color"]))
-                    elif not isinstance(val, dict):
-                        colors.append(self._parse_color(val))
-            if colors: return colors, "dict"
+            # Direct property mapping
+            m = {"default": 0, "bg": 0, "value": 0, "hover": 1, "active": 2, "pressed": 2, "disabled": 3}
+            found = False
+            for k, idx in m.items():
+                val = raw.get(k)
+                if val:
+                    res[idx] = self._parse_color(val)
+                    found = True
+            if found: return res, "dict"
 
         # Fallback: Treat as direct color value
         try:
-            return [self._parse_color(raw)], "direct"
+            res[0] = self._parse_color(raw)
+            return res, "direct"
         except ValueError:
+            # If the raw value isn't a color string (e.g. it's a nested dict we missed), return Pink
             logger.error(f"Theme: Token '{token}' resolved to non-color value: {raw}")
-            return [self._parse_color("#FF00FF")], "error"
+            pink = self._parse_color("#FF00FF")
+            return [pink] * 4, "error"
 
-    def _fill_missing_states(self, colors: list['wx.Colour']) -> tuple[list['wx.Colour'], int]:
-        if not colors:
+    def _fill_missing_states(self, colors: list[Optional['wx.Colour']]) -> tuple[list['wx.Colour'], int]:
+        if not colors[0]:
             pink = self._parse_color("#FF00FF")
             return [pink] * 4, 0
             
         base = colors[0]
         gen_count = 0
-        if len(colors) < 2:
-            colors.append(self._apply_auto_shift(base, "hover")); gen_count += 1
-        if len(colors) < 3:
-            # Rule: Shift from base for active state
-            colors.append(self._apply_auto_shift(base, "active")); gen_count += 1
-        if len(colors) < 4:
-            colors.append(self._apply_auto_shift(base, "disabled")); gen_count += 1
+        # 1. Fill Hover (Index 1)
+        if not colors[1]:
+            colors[1] = self._apply_auto_shift(base, "hover")
+            gen_count += 1
+        # 2. Fill Active (Index 2)
+        if not colors[2]:
+            colors[2] = self._apply_auto_shift(base, "active")
+            gen_count += 1
+        # 3. Fill Disabled (Index 3)
+        if not colors[3]:
+            colors[3] = self._apply_auto_shift(base, "disabled")
+            gen_count += 1
             
         return colors, gen_count
 
