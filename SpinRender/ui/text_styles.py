@@ -68,6 +68,11 @@ class TextStyles:
         "icon": "icon",
         "label": "label",
         
+        # Right Panel styles
+        "info": "components.main.rightpanel.info",
+        "nav": "components.main.rightpanel.nav",
+        "nav_active": "components.main.rightpanel.nav_active",
+        
         # Legacy/helper aliases
         "label_sm": "components.main.leftpanel.headers",
         "label_xs": "components.main.leftpanel.body",

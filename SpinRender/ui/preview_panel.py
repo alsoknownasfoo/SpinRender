@@ -75,6 +75,9 @@ class PreviewPanel(wx.Panel):
 
         # Top-Left: Preset name OR parameters
         self.ov_top_left = wx.StaticText(top_meta, label="")
+        info_style = TextStyles.info
+        self.ov_top_left.SetForegroundColour(info_style.color)
+        self.ov_top_left.SetFont(info_style.create_font())
         top_sizer.Add(self.ov_top_left, 1, wx.ALIGN_CENTER_VERTICAL)
 
         # Top-Right: Render mode buttons container
@@ -111,11 +114,19 @@ class PreviewPanel(wx.Panel):
         bottom_meta = wx.Panel(self)
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
+        info_style = TextStyles.info
+        info_font = info_style.create_font()
+        info_color = info_style.color
+
         self.ov_bottom_left = wx.StaticText(bottom_meta, label="")
+        self.ov_bottom_left.SetForegroundColour(info_color)
+        self.ov_bottom_left.SetFont(info_font)
         bottom_sizer.Add(self.ov_bottom_left, 1, wx.ALIGN_CENTER_VERTICAL)
 
         # Resolution info moved from center to right
         self.ov_bottom_center = wx.StaticText(bottom_meta, label="")
+        self.ov_bottom_center.SetForegroundColour(info_color)
+        self.ov_bottom_center.SetFont(info_font)
         bottom_sizer.Add(self.ov_bottom_center, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
         self.ov_bottom_center.SetWindowStyle(wx.ALIGN_RIGHT)
 
@@ -132,10 +143,11 @@ class PreviewPanel(wx.Panel):
         """Re-apply theme to static overlay elements."""
         self.SetBackgroundColour(_theme.color("components.main.frame.bg"))
 
-        # 1. Top-Left Title
-        title_style = TextStyles.title
-        self.ov_top_left.SetForegroundColour(title_style.color)
-        self.ov_top_left.SetFont(title_style.create_font())
+        # 1. Top-Left Title (Preset/Params)
+        info_style = TextStyles.info
+        info_font = info_style.create_font()
+        self.ov_top_left.SetForegroundColour(info_style.color)
+        self.ov_top_left.SetFont(info_font)
 
         # 2. Navigation / Render Modes
         nav_style = TextStyles.nav
@@ -155,11 +167,9 @@ class PreviewPanel(wx.Panel):
         self.ov_top_right.SetFont(close_style.create_font())
 
         # 4. Bottom Labels (Metadata)
-        meta_style = TextStyles.metadata
-        meta_font = meta_style.create_font()
         for lbl in [self.ov_bottom_left, self.ov_bottom_center]:
-            lbl.SetForegroundColour(meta_style.color)
-            lbl.SetFont(meta_font)
+            lbl.SetForegroundColour(info_style.color)
+            lbl.SetFont(info_font)
 
         self.update_render_mode_ui(self.settings.render_mode)
         self.update_preview_overlay()
