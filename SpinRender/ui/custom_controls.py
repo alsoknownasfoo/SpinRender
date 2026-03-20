@@ -1392,7 +1392,7 @@ class CustomColorPicker(wx.Panel):
             gc.SetPen(wx.Pen(ibc, ibs))
             gc.SetBrush(wx.TRANSPARENT_BRUSH)
             # Inset by 1px to show inside outer border
-            gc.DrawRoundedRectangle(x + 1, y + 1, 26, 26, 3)
+            gc.DrawRoundedRectangle(x + 1, y + 1, 25, 25, 3)
 
         # 3. Outer Border
         stc = _theme.color(bc_token, hov, sel, enabled)
@@ -1423,7 +1423,7 @@ class CustomColorPicker(wx.Panel):
         if ci < 4:
             nc = self.PRESETS[ci][0]
             if nc != self.current_color:
-                self.current_color, self.selection = nc, ci; self.Refresh(); self.Update()
+                self.SetColor(nc)
                 evt = wx.PyCommandEvent(EVT_COLOURPICKER_CHANGED.typeId, self.GetId()); evt.SetString(nc); self.GetEventHandler().ProcessEvent(evt)
         else:
             # Use ColourDialog and explicit parent
@@ -1433,7 +1433,7 @@ class CustomColorPicker(wx.Panel):
             if dlg.ShowModal() == wx.ID_OK:
                 no = dlg.GetColourData().GetColour()
                 nh = "#%02X%02X%02X" % (no.Red(), no.Green(), no.Blue())
-                self.current_color = nh; self._update_selection(); self.Refresh(); self.Update()
+                self.SetColor(nh)
                 evt = wx.PyCommandEvent(EVT_COLOURPICKER_CHANGED.typeId, self.GetId()); evt.SetString(nh); self.GetEventHandler().ProcessEvent(evt)
             dlg.Destroy()
 
