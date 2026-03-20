@@ -214,24 +214,28 @@ class Theme:
             return [self._parse_color(v) for v in raw], "list"
         
         if isinstance(raw, dict):
-            # Resolve .color explicitly if it's a component dict
+            # 1. Probe for .color property (Component role)
             if "color" in raw:
-                # If .color is itself a dict (stateful), recurse
                 if isinstance(raw["color"], (dict, list)):
                     return self._extract_defined_states(raw["color"], f"{token}.color")
                 return [self._parse_color(raw["color"])], "dict.color"
                 
+            # 2. Probe for state keys (State role)
             colors = []
             for k in ["default", "bg", "value", "hover", "active", "pressed", "disabled"]:
-                val = raw.get(k)
-                if val: colors.append(self._parse_color(val))
+                if k in raw:
+                    val = raw[k]
+                    # If the state key points to another dict (e.g. border.default -> {size, color}), resolve it
+                    if isinstance(val, dict) and "color" in val:
+                        colors.append(self._parse_color(val["color"]))
+                    elif not isinstance(val, dict):
+                        colors.append(self._parse_color(val))
             if colors: return colors, "dict"
 
         # Fallback: Treat as direct color value
         try:
             return [self._parse_color(raw)], "direct"
         except ValueError:
-            # If the raw value isn't a color string (e.g. it's a nested dict we missed), return Pink
             logger.error(f"Theme: Token '{token}' resolved to non-color value: {raw}")
             return [self._parse_color("#FF00FF")], "error"
 

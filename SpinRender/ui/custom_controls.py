@@ -572,6 +572,9 @@ class CustomButton(wx.Panel):
         
         # Border defaults
         border_token = f"{token}.frame.border.color"
+        if not _theme.has_token(border_token):
+            border_token = f"{token}.frame.border"
+            
         border_color = _theme.color(border_token, self.hovered, self.pressed, enabled) if _theme.has_token(border_token) else None
 
         # Overrides (if any)
