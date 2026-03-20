@@ -211,8 +211,8 @@ class ControlsSidePanel(wx.Panel):
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
         label = wx.StaticText(panel, label=_locale.get("parameters.rotation_heading", "ROTATION SETTINGS"))
-        lbl.SetForegroundColour(_theme.color("text.subheader.color"))
-        lbl.SetFont(_theme.font("subheader"))
+        label.SetForegroundColour(_theme.color("text.subheader.color"))
+        label.SetFont(_theme.font("subheader"))
 
 
         sizer.Add(label, 0, wx.BOTTOM, 6)
@@ -405,8 +405,8 @@ class ControlsSidePanel(wx.Panel):
         f_col = wx.Panel(cols_panel)
         f_sizer = wx.BoxSizer(wx.VERTICAL)
         f_lbl = wx.StaticText(f_col, label=_locale.get("parameters.format.label", "FORMAT"))
-        lbl.SetForegroundColour(_theme.color("text.subheader.color"))
-        lbl.SetFont(_theme.font("subheader"))
+        f_lbl.SetForegroundColour(_theme.color("text.subheader.color"))
+        f_lbl.SetFont(_theme.font("subheader"))
 
         f_sizer.Add(f_lbl, 0, wx.BOTTOM, 6)
         self.format_choices = ["MP4 (H.264)", "GIF", "PNG Sequence"]
@@ -422,8 +422,8 @@ class ControlsSidePanel(wx.Panel):
         r_col = wx.Panel(cols_panel)
         r_sizer = wx.BoxSizer(wx.VERTICAL)
         r_lbl = wx.StaticText(r_col, label=_locale.get("parameters.resolution.label", "RESOLUTION"))
-        lbl.SetForegroundColour(_theme.color("text.subheader.color"))
-        lbl.SetFont(_theme.font("subheader"))
+        r_lbl.SetForegroundColour(_theme.color("text.subheader.color"))
+        r_lbl.SetFont(_theme.font("subheader"))
 
         r_sizer.Add(r_lbl, 0, wx.BOTTOM, 6)
         self.res_choices = ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
