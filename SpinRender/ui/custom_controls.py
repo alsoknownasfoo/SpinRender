@@ -1372,17 +1372,33 @@ class CustomColorPicker(wx.Panel):
         # Hex input frame is handled by CustomInput itself
 
     def _draw_swatch(self, gc, x, y, ch, lbl, sel, hov, enabled):
-        sc = wx.Colour(ch); gc.SetBrush(wx.Brush(_theme.disabled(sc) if not enabled else sc))
+        sc = wx.Colour(ch); 
         
         # Swatch border role
         token = "components.colorpicker.default"
         bc_token = f"{token}.items.border.color"
+        ibs_token = f"{token}.items.innerborder.size"
+        ibc_token = f"{token}.items.innerborder.color"
         
-        # Resolve stateful border color from theme
+        # 1. Background
+        gc.SetBrush(wx.Brush(_theme.disabled(sc) if not enabled else sc))
+        gc.SetPen(wx.TRANSPARENT_PEN)
+        gc.DrawRoundedRectangle(x, y, 28, 28, 4)
+        
+        # 2. Inner Border (Optional)
+        if _theme.has_token(ibc_token):
+            ibc = _theme.color(ibc_token, hov, sel, enabled)
+            ibs = _theme.size(ibs_token) or 1
+            gc.SetPen(wx.Pen(ibc, ibs))
+            gc.SetBrush(wx.TRANSPARENT_BRUSH)
+            # Inset by 1px to show inside outer border
+            gc.DrawRoundedRectangle(x + 1, y + 1, 26, 26, 3)
+
+        # 3. Outer Border
         stc = _theme.color(bc_token, hov, sel, enabled)
         thk = _theme.size(f"{token}.items.border.size") or 1
-        
         gc.SetPen(wx.Pen(stc, thk))
+        gc.SetBrush(wx.TRANSPARENT_BRUSH)
         gc.DrawRoundedRectangle(x, y, 28, 28, 4)
         
         text_muted = _theme.color("colors.gray-text")
