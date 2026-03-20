@@ -65,6 +65,8 @@ class TextStyles:
         "header": "components.main.leftpanel.headers",
         "subheader": "components.main.leftpanel.subheaders",
         "metadata": "components.main.leftpanel.body",
+        "icon": "icon",
+        "label": "label",
         
         # Legacy/helper aliases
         "label_sm": "components.main.leftpanel.headers",

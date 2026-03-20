@@ -190,6 +190,12 @@ class Theme:
         import wx
         raw = self._resolve(token)
         
+        # Fallback for style roles (e.g. "icon", "label") that aren't at root
+        if raw is None or raw == "#FF00FF":
+            style_raw = self._resolve(f"text.{token}")
+            if isinstance(style_raw, dict):
+                raw = style_raw
+
         if raw is None or raw == "#FF00FF":
             logger.error(f"Theme: Color token '{token}' not found.")
             pink = self._parse_color("#FF00FF")

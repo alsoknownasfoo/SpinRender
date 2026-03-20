@@ -285,7 +285,6 @@ class SpinRenderPanel(wx.Panel):
         self.enable_drag(self.preview.ov_top_left)
         self.enable_drag(self.preview.ov_bottom_left)
         self.enable_drag(self.preview.ov_bottom_center)
-        self.enable_drag(self.preview.ov_bottom_right)
 
         # Initial overlay update will be called by PreviewPanel constructor
         return self.preview
