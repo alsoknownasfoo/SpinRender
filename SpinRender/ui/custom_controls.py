@@ -362,44 +362,41 @@ class DropdownPopup(wx.PopupTransientWindow):
         token = f"components.dropdown.{self.style_id}" if self.style_id else "components.dropdown.default"
         if not _theme.has_token(token): token = "components.dropdown.default"
 
+        # 1. Menu Container
         bg_color = _theme.color(f"{token}.menu.frame.bg")
-        border_color = _theme.color(f"{token}.menu.frame.border.color") if _theme.has_token(f"{token}.menu.frame.border.color") else _theme.color("borders.subtle.color")
+        border_color = _theme.color(f"{token}.menu.frame.border.color")
+        radius = _theme.size(f"{token}.menu.frame.radius") or 4
         
         gc.SetBrush(wx.Brush(bg_color))
         gc.SetPen(wx.Pen(border_color, 1))
-        gc.DrawRoundedRectangle(0, 0, width, height, 4)
+        gc.DrawRoundedRectangle(0, 0, width, height, radius)
 
+        # 2. Menu Items
         for i, choice in enumerate(self.choices):
             rect = wx.Rect(4, 4 + (i * self.item_height), width - 8, self.item_height)
             is_selected = (i == self.selection)
             is_hovered = (i == self.hover_index)
             
-            # V2 Mapping for menu items
-            item_token = f"{token}.menu.default.label"
-            if not _theme.has_token(item_token): item_token = "text.body"
+            # Resolve Item Background
+            item_bg = _theme.color(f"{token}.menu.items.bg", is_hovered, is_selected, True)
+            if item_bg.Alpha() > 0:
+                gc.SetBrush(wx.Brush(item_bg))
+                gc.SetPen(wx.TRANSPARENT_PEN)
+                gc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, 2)
             
-            if is_selected:
-                accent_color = _theme.color(f"{token}.menu.selected.bg") if _theme.has_token(f"{token}.menu.selected.bg") else _theme.color("colors.primary")
-                gc.SetBrush(wx.Brush(accent_color))
-                gc.SetPen(wx.TRANSPARENT_PEN)
+            # Resolve Item Border (usually for hover)
+            item_bc = _theme.color(f"{token}.menu.items.border.color", is_hovered, is_selected, True)
+            if item_bc.Alpha() > 0:
+                gc.SetPen(wx.Pen(item_bc, 1))
+                gc.SetBrush(wx.TRANSPARENT_BRUSH)
                 gc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, 2)
-                
-                sel_token = f"{token}.menu.selected.label"
-                if not _theme.has_token(sel_token): sel_token = item_token
-                
-                text_color = _theme.color(sel_token, False, False, True)
-                gc.SetFont(gc.CreateFont(_theme.font(sel_token), text_color))
-            elif is_hovered:
-                gc.SetBrush(wx.Brush(_theme.color("colors.gray-medium")))
-                gc.SetPen(wx.TRANSPARENT_PEN)
-                gc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, 2)
-                
-                text_color = _theme.color(item_token, True, False, True)
-                gc.SetFont(gc.CreateFont(_theme.font(item_token), text_color))
-            else:
-                text_color = _theme.color(item_token, False, False, True)
-                gc.SetFont(gc.CreateFont(_theme.font(item_token), text_color))
-                
+            
+            # Resolve Item Label (Font & Color)
+            label_token = f"{token}.menu.items.label"
+            text_color = _theme.color(f"{label_token}.color", is_hovered, is_selected, True)
+            font_obj = _theme.font(label_token)
+            
+            gc.SetFont(gc.CreateFont(font_obj, text_color))
             tw, th = gc.GetTextExtent(choice)
             gc.DrawText(choice, rect.x + 8, rect.y + (rect.height - th) / 2)
 
@@ -449,28 +446,33 @@ class CustomDropdown(wx.Panel):
         base_bg_color = _theme.color(f"{token}.frame.bg", False, False, enabled)
         gc.SetBrush(wx.Brush(base_bg_color))
 
-        # Border
-        bc = _theme.color(f"{token}.open.border.color") if (self.hovered or self.is_open) else _theme.color(f"{token}.frame.border.color")
+        # 1. Resolve Frame Border (Hover/Open state)
+        bc_token = f"{token}.frame.border.color"
+        # If open or hovered, the engine can handle stateful lookup if provided in YAML, 
+        # or we pass the flags here.
+        bc = _theme.color(bc_token, self.hovered or self.is_open, False, enabled)
         gc.SetPen(wx.Pen(bc, 1))
-        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
+        
+        radius = _theme.size(f"{token}.frame.radius") or 4
+        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, radius)
 
-        # Label
+        # 2. Resolve Label (Font & Color)
         label = self.choices[self.selection] if self.choices else "SELECT OPTION"
         label_token = f"{token}.label"
-        if not _theme.has_token(label_token): label_token = "text.body"
         
-        text_color = _theme.color(label_token, False, False, enabled)
-        gc.SetFont(gc.CreateFont(_theme.font(label_token), text_color))
+        # Color resolution from label.color.default/hover
+        text_color = _theme.color(f"{label_token}.color", self.hovered or self.is_open, False, enabled)
+        
+        # Font resolution from label.font
+        font_obj = _theme.font(label_token)
+        gc.SetFont(gc.CreateFont(font_obj, text_color))
+        
         tw, th = gc.GetTextExtent(label)
         gc.DrawText(label, 12, (height - th) / 2)
 
-        # Chevron
+        # 3. Resolve Chevron Icon
         icon_char = _theme.glyph("chevron-up" if self.is_open else "chevron-down")
-        icon_token = f"{token}.open.icon.color" if self.is_open else f"{token}.icon.color"
-        if not _theme.has_token(icon_token):
-            icon_color = _theme.color("colors.primary") if self.is_open else _theme.color("colors.gray-text")
-        else:
-            icon_color = _theme.color(icon_token, False, False, enabled)
+        icon_color = _theme.color(f"{token}.icon.color", self.hovered or self.is_open, False, enabled)
             
         icon_gfx_font = gc.CreateFont(_theme.font("icon"), icon_color)
         gc.SetFont(icon_gfx_font)
