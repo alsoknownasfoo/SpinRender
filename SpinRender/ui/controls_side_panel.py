@@ -31,6 +31,10 @@ class ControlsSidePanel(wx.Panel):
         self.main_panel = parent.GetParent()  # SpinRenderPanel for event handlers
         self.settings = settings
         self.board_path = board_path
+        
+        # Track axis elements for hot-reloading
+        self.axis_icons = []
+        self.axis_labels = []
 
         # Build the UI
         controls_panel = self.create_controls_panel(self)
@@ -156,7 +160,22 @@ class ControlsSidePanel(wx.Panel):
                 lbl.SetForegroundColour(meta_style.color)
                 lbl.SetFont(meta_style.create_font())
 
-        # 4. Update Dividers
+        # 4. Update Axis Elements
+        icon_style = TextStyles.icon
+        label_style = TextStyles.label
+        for icon_lbl, axis_id in self.axis_icons:
+            axis_token = f"components.slider.{axis_id}.nub.color"
+            axis_col = _theme.color(axis_token) if _theme.has_token(axis_token) else _theme.color("colors.primary")
+            icon_lbl.SetForegroundColour(axis_col)
+            icon_lbl.SetFont(icon_style.create_font())
+            
+        for axis_lbl, axis_id in self.axis_labels:
+            axis_token = f"components.slider.{axis_id}.nub.color"
+            axis_col = _theme.color(axis_token) if _theme.has_token(axis_token) else _theme.color("colors.primary")
+            axis_lbl.SetForegroundColour(axis_col)
+            axis_lbl.SetFont(label_style.create_font())
+
+        # 5. Update Dividers
         for attr in ['div1', 'div2', 'div3', 'div4']:
             if hasattr(self, attr):
                 getattr(self, attr).SetBackgroundColour(_theme.color("components.main.divider.bg"))
@@ -283,11 +302,15 @@ class ControlsSidePanel(wx.Panel):
             icon_lbl.SetForegroundColour(axis_col)
             icon_lbl.SetFont(_theme.font("icon"))
             lp_sizer.Add(icon_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+            self.axis_icons.append((icon_lbl, id))
+
         resolved_label = _locale.get(locale_key, label_text) if locale_key else label_text
         lbl = wx.StaticText(label_part, label=f"{resolved_label}:")
         lbl.SetForegroundColour(axis_col)
         lbl.SetFont(_theme.font("label"))
         lp_sizer.Add(lbl, 0, wx.ALIGN_CENTER_VERTICAL)
+        self.axis_labels.append((lbl, id))
+
         label_part.SetSizer(lp_sizer)
         sizer.Add(label_part, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
 
