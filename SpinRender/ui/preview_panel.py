@@ -78,7 +78,7 @@ class PreviewPanel(wx.Panel):
         info_style = TextStyles.info
         self.ov_top_left.SetForegroundColour(info_style.color)
         self.ov_top_left.SetFont(info_style.create_font())
-        top_sizer.Add(self.ov_top_left, 1, wx.ALIGN_CENTER_VERTICAL)
+        top_sizer.Add(self.ov_top_left, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.TOP, 12)
 
         # Top-Right: Render mode buttons container
         self.render_mode_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -100,13 +100,13 @@ class PreviewPanel(wx.Panel):
                 self.render_mode_divs.append(div)
                 self.render_mode_sizer.Add(div, 0, wx.ALIGN_CENTER_VERTICAL)
 
-        top_sizer.Add(self.render_mode_sizer, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+        top_sizer.Add(self.render_mode_sizer, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.TOP, 12)
 
         # Close Preview button (hidden by default)
         self.ov_top_right = wx.StaticText(top_meta, label=_locale.get("component.button.close.label", "CLOSE PREVIEW"))
         self.ov_top_right.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         self.ov_top_right.Hide()
-        top_sizer.Add(self.ov_top_right, 0, wx.ALIGN_CENTER_VERTICAL)
+        top_sizer.Add(self.ov_top_right, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.TOP, 12)
 
         top_meta.SetSizer(top_sizer)
 
@@ -121,13 +121,13 @@ class PreviewPanel(wx.Panel):
         self.ov_bottom_left = wx.StaticText(bottom_meta, label="")
         self.ov_bottom_left.SetForegroundColour(info_color)
         self.ov_bottom_left.SetFont(info_font)
-        bottom_sizer.Add(self.ov_bottom_left, 1, wx.ALIGN_CENTER_VERTICAL)
+        bottom_sizer.Add(self.ov_bottom_left, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.BOTTOM, 12)
 
         # Resolution info moved from center to right
         self.ov_bottom_center = wx.StaticText(bottom_meta, label="")
         self.ov_bottom_center.SetForegroundColour(info_color)
         self.ov_bottom_center.SetFont(info_font)
-        bottom_sizer.Add(self.ov_bottom_center, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
+        bottom_sizer.Add(self.ov_bottom_center, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.RIGHT | wx.BOTTOM, 12)
         self.ov_bottom_center.SetWindowStyle(wx.ALIGN_RIGHT)
 
         bottom_meta.SetSizer(bottom_sizer)
@@ -179,14 +179,14 @@ class PreviewPanel(wx.Panel):
         """Set up the main sizer for PreviewPanel to manage all children."""
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        # Add top info overlay with 12px margins
-        main_sizer.Add(self._top_meta, 0, wx.EXPAND | wx.ALL, 12)
+        # Expand meta containers to full width (no sizer margin)
+        main_sizer.Add(self._top_meta, 0, wx.EXPAND)
 
         # Add viewport container with proportion=1 to fill remaining space
         main_sizer.Add(self._viewport_container, 1, wx.EXPAND)
 
-        # Add bottom info overlay with 12px margins
-        main_sizer.Add(self._bottom_meta, 0, wx.EXPAND | wx.ALL, 12)
+        # Expand meta containers to full width (no sizer margin)
+        main_sizer.Add(self._bottom_meta, 0, wx.EXPAND)
 
         self.SetSizer(main_sizer)
 
