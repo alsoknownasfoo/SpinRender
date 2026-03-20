@@ -912,10 +912,10 @@ class CustomInput(wx.Panel):
         
         if is_placeholder and not focused:
             display_text = self.placeholder
-            tc = _theme.color("colors.gray-text", False, False, enabled)
+            tc = _theme.color("colors.gray-text", self.hovered, False, enabled)
             font_obj = _theme.font(font_token)
         else:
-            tc = _theme.color(tc_token, False, focused, enabled)
+            tc = _theme.color(tc_token, self.hovered, focused, enabled)
             font_obj = _theme.font(font_token)
 
         # 3. Draw Icon (Rich type)
