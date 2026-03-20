@@ -316,7 +316,7 @@ class ControlsSidePanel(wx.Panel):
         self.period_slider = CustomSlider(crow, value=p_val, min_val=0.1, max_val=30, size=(-1, 18), id="default")
         csizer.Add(self.period_slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
         unit = _locale.get("parameters.period.unit", "sec")
-        self.period_input = create_numeric_input(crow, f"{p_val:.1f}", unit, editable=True, min_val=0.1, max_val=30, id="parameter")
+        self.period_input = create_numeric_input(crow, f"{p_val:.1f}", unit, editable=True, min_val=0.1, max_val=30, id="speed")
         csizer.Add(self.period_input, 0, wx.ALIGN_CENTER_VERTICAL)
         crow.SetSizerAndFit(csizer)
         sizer.Add(crow, 0, wx.EXPAND | wx.BOTTOM, 6)
