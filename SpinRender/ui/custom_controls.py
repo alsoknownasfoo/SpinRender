@@ -963,7 +963,7 @@ class CustomInput(wx.Panel):
                 gc.DrawText(full_display, start_x, (h - th) / 2)
                 if self.unit:
                     uc = _theme.color("colors.gray-text", False, False, enabled)
-                    gc.SetFont(gc.CreateFont(font_token, uc))
+                    gc.SetFont(gc.CreateFont(font_obj, uc))
                     gc.DrawText(self.unit, start_x + tw + 4, (h - th) / 2)
             else:
                 # Path truncation
