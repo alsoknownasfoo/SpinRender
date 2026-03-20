@@ -136,22 +136,22 @@ text:
       size: "@typography.scale.md"
       weight: 600
   subheader:
-    color: "@colors.gray-dark"
+    color: "@colors.primary"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
       weight: 600
   body:
-    color: "@colors.gray-white"
+    color: "@colors.gray-medium"
     font:
       typeface: "@typography.families.mono"
-      size: "@typography.scale.base"
+      size: "@typography.scale.sm"
       weight: 400
   body_strong:
     ref: "@text.body"
     font:
       weight: 600
-  numeric_value:
+  numeric:
     color: "@colors.secondary"
     font:
       typeface: "@typography.families.mono"
@@ -198,7 +198,12 @@ text:
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
-      weight: 700
+  dropdown:
+    ref: "@text.body"
+    font:
+      weight: 600
+  icon:
+
   icon:
     color: "@colors.gray-white"
     font:
@@ -416,6 +421,8 @@ components:
     slider:
       ref: "@components.input.default"
       type: "numeric"
+      color: "@text.numeric.color"
+      font: "@text.numeric.font"
       unit: "°"
       step: 0.1
       frame:
@@ -452,7 +459,7 @@ components:
       input: "@components.input.parameters"
     primary:
       ref: "@components.slider.default"
-      nub: { color: "@colors.red" }
+      nub: { color: "@colors.yellow" }
     secondary:
       ref: "@components.slider.default"
       nub: { color: "@colors.orange" }
@@ -485,18 +492,49 @@ components:
         label:
           ref: "@text.label"
           color: "@colors.gray-black"
-    direction: "@components.toggle.default"
-    lighting: "@components.toggle.default"
+    direction:
+      ref: "@components.toggle.default"
+      default:
+        label:
+          color: 
+            default: "@colors.gray-light"
+            hover: "@colors.primary"
+        icon:
+          color:
+            default: "@colors.gray-light"
+            hover: "@colors.primary"
+      selected:
+        frame:
+          bg: "@colors.primary"
+    lighting: 
+      ref: "@components.toggle.default"
+      default:
+        label:
+          color: 
+            default: "@colors.gray-light"
+            hover: "@colors.yellow"
+        icon:
+          color:
+            default: "@colors.gray-light"
+            hover: "@colors.yellow"
+      selected:
+        frame:
+          bg: "@colors.yellow"
     logging: "@components.toggle.default"
 
   dropdown:
     default:
+      label: "@text.dropdown"
       frame:
         height: 32
-        bg: "@colors.gray-black"
+        bg: "@colors.transparent"
         radius: "@radius.md"
         border: "@borders.subtle"
-      icon: "@text.icon"
+      icon: 
+        ref: "@text.icon"
+        color: 
+          default: "@colors.gray-light"
+          hover: "@colors.primary"
       open:
         border: "@borders.focus"
         icon:
@@ -508,7 +546,9 @@ components:
           radius: "@radius.sm"
           border: "@borders.subtle"
         default:
-          label: "@text.body"
+          label: 
+            font: "@text.body.font"
+            color: "@colors.gray-white"
         selected:
           bg: "@colors.primary"
           label:
@@ -535,7 +575,7 @@ components:
       frame:
         height: 36
         bg: "@colors.transparent"
-        border: "@borders.subtle" 
+        border: "@borders.subtle"
         radius: "@radius.md"
         padding:
           horizontal: "@typography.spacing.base"
@@ -548,25 +588,31 @@ components:
       ref: "@components.button.default"
       frame:
         bg: "@colors.gray-black"
-        border: "@borders.subtle"
     ok:
       ref: "@components.button.default"
       frame:
         bg: "@colors.primary"
-        border: "@borders.subtle"
       label:
         ref: "@text.button"
         color: "@colors.gray-black"
     close:
       ref: "@components.button.default"
       frame:
-        bg: "@colors.transparent"
-        border: "@borders.subtle"
+        bg:
+          default: "@colors.transparent"
+          hover: "@colors.red"
     options:
       ref: "@components.button.default"
       frame:
         padding:
           horizontal: 0
+        bg:
+          default: "@colors.transparent"
+          hover: "@colors.primary"
+      label:
+        color:
+          default: "@colors.gray-white"
+          hover: "@colors.gray-dark"
     browse:
       ref: "@components.button.default"
       frame:

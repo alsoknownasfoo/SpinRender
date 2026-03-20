@@ -374,21 +374,31 @@ class DropdownPopup(wx.PopupTransientWindow):
             is_selected = (i == self.selection)
             is_hovered = (i == self.hover_index)
             
+            # V2 Mapping for menu items
+            item_token = f"{token}.menu.default.label"
+            if not _theme.has_token(item_token): item_token = "text.body"
+            
             if is_selected:
                 accent_color = _theme.color(f"{token}.menu.selected.bg") if _theme.has_token(f"{token}.menu.selected.bg") else _theme.color("colors.primary")
                 gc.SetBrush(wx.Brush(accent_color))
                 gc.SetPen(wx.TRANSPARENT_PEN)
                 gc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, 2)
                 
-                text_color = _theme.color(f"{token}.menu.selected.label.color") if _theme.has_token(f"{token}.menu.selected.label.color") else _theme.color("colors.gray-black")
-                gc.SetFont(gc.CreateFont(_theme.font("body"), text_color))
+                sel_token = f"{token}.menu.selected.label"
+                if not _theme.has_token(sel_token): sel_token = item_token
+                
+                text_color = _theme.color(sel_token, False, False, True)
+                gc.SetFont(gc.CreateFont(_theme.font(sel_token), text_color))
             elif is_hovered:
                 gc.SetBrush(wx.Brush(_theme.color("colors.gray-medium")))
                 gc.SetPen(wx.TRANSPARENT_PEN)
                 gc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, 2)
-                gc.SetFont(gc.CreateFont(_theme.font("body"), _theme.color("text.body.color")))
+                
+                text_color = _theme.color(item_token, True, False, True)
+                gc.SetFont(gc.CreateFont(_theme.font(item_token), text_color))
             else:
-                gc.SetFont(gc.CreateFont(_theme.font("body"), _theme.color("text.body.color")))
+                text_color = _theme.color(item_token, False, False, True)
+                gc.SetFont(gc.CreateFont(_theme.font(item_token), text_color))
                 
             tw, th = gc.GetTextExtent(choice)
             gc.DrawText(choice, rect.x + 8, rect.y + (rect.height - th) / 2)
@@ -446,8 +456,11 @@ class CustomDropdown(wx.Panel):
 
         # Label
         label = self.choices[self.selection] if self.choices else "SELECT OPTION"
-        text_color = _theme.color("text.body.color", False, False, enabled)
-        gc.SetFont(gc.CreateFont(_theme.font("body"), text_color))
+        label_token = f"{token}.label"
+        if not _theme.has_token(label_token): label_token = "text.body"
+        
+        text_color = _theme.color(label_token, False, False, enabled)
+        gc.SetFont(gc.CreateFont(_theme.font(label_token), text_color))
         tw, th = gc.GetTextExtent(label)
         gc.DrawText(label, 12, (height - th) / 2)
 
