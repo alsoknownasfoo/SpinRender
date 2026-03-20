@@ -26,12 +26,22 @@ class BaseStyledDialog(wx.Dialog):
     """
     Base class for chromeless, styled dialogs with dragging support and drop shadow
     """
-    SHADOW_SIZE = 16
     # Colors sourced from theme module
 
     def __init__(self, parent, title, size):
+        # Get shadow size from theme
+        self.shadow_size = _theme._resolve("layout.dialogs.default.frame.shadow.size")
+        if self.shadow_size is None:
+            self.shadow_size = 16  # fallback
+        # Ensure it's an integer (coerce from string if needed)
+        if isinstance(self.shadow_size, str):
+            try:
+                self.shadow_size = int(self.shadow_size)
+            except (ValueError, TypeError):
+                self.shadow_size = 16
+
         # Expand size to account for shadow padding
-        actual_size = wx.Size(size[0] + self.SHADOW_SIZE * 2, size[1] + self.SHADOW_SIZE * 2)
+        actual_size = wx.Size(size[0] + self.shadow_size * 2, size[1] + self.shadow_size * 2)
         
         super().__init__(
             parent,
@@ -51,7 +61,7 @@ class BaseStyledDialog(wx.Dialog):
         self.drag_pos = None
         
         # Layout container for the actual content (offset by shadow)
-        self.main_container = wx.Panel(self, pos=(self.SHADOW_SIZE, self.SHADOW_SIZE), size=size)
+        self.main_container = wx.Panel(self, pos=(self.shadow_size, self.shadow_size), size=size)
         self.main_container.SetBackgroundColour(_theme.color("colors.gray-dark"))
         
         self.Bind(wx.EVT_CHAR_HOOK, self.on_char_hook)
@@ -61,9 +71,9 @@ class BaseStyledDialog(wx.Dialog):
         dc = wx.AutoBufferedPaintDC(self)
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
-        
+
         w, h = self.GetSize()
-        s = self.SHADOW_SIZE
+        s = self.shadow_size
         
         # 1. Draw Shadow (Fading black)
         for i in range(s):
@@ -85,7 +95,10 @@ class BaseStyledDialog(wx.Dialog):
             event.Skip()
 
     def create_header(self, title_text):
-        header = wx.Panel(self.main_container, size=(-1, 48))
+        header_height = _theme._resolve("layout.dialogs.default.header.height")
+        if header_height is None:
+            header_height = 48
+        header = wx.Panel(self.main_container, size=(-1, header_height))
         header.SetBackgroundColour(_theme.color("colors.gray-dark"))
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -142,7 +155,14 @@ class AdvancedOptionsDialog(BaseStyledDialog):
     # All colors use theme.*
 
     def __init__(self, parent, settings, board_path):
-        super().__init__(parent, "Advanced Options", (480, 560))
+        # Get dimensions from theme
+        dialog_width = _theme._resolve("layout.dialogs.options.frame.width")
+        dialog_height = _theme._resolve("layout.dialogs.options.frame.height")
+        if dialog_width is None:
+            dialog_width = 480
+        if dialog_height is None:
+            dialog_height = 560
+        super().__init__(parent, "Advanced Options", (dialog_width, dialog_height))
         self.settings = settings
         self.board_path = board_path
         self.board_dir = os.path.dirname(board_path)
@@ -208,7 +228,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
             placeholder=self.PLACEHOLDER_TEXT,
             multiline=True,
             size=(-1, 80),
-            id="default"
+            id="parameters"
         )
         content_sizer.Add(self.override_input, 0, wx.EXPAND | wx.BOTTOM, 8)
         
@@ -236,7 +256,8 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         link_txt.Bind(wx.EVT_LEFT_DOWN, lambda e: webbrowser.open(url))
         
         link_row.SetSizer(link_sizer)
-        content_sizer.Add(link_row, 0, wx.EXPAND | wx.BOTTOM, 24)
+        padding_lg = _theme._resolve("typography.spacing.lg") or 24
+        content_sizer.Add(link_row, 0, wx.EXPAND | wx.BOTTOM, padding_lg)
 
         # 3. LOGGING section
         content_sizer.Add(self.create_section_label(content, "SYSTEM LOGGING"), 0, wx.EXPAND | wx.BOTTOM, 12)
@@ -272,7 +293,8 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         content_sizer.Add(open_logs_txt, 0, wx.BOTTOM, 12)
 
         content.SetSizer(content_sizer)
-        main_sizer.Add(content, 1, wx.EXPAND | wx.ALL, 24)
+        padding_lg = _theme._resolve("typography.spacing.lg") or 24
+        main_sizer.Add(content, 1, wx.EXPAND | wx.ALL, padding_lg)
 
         # Footer
         footer = wx.Panel(self.main_container, size=(-1, 60))
@@ -305,7 +327,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         self.browse_btn.Enable(not auto)
         
         if auto:
-            self.path_display.SetPath("/Renders/[YYMMDD_HHMMSS]..", in_project=True)
+            self.path_display.SetPath("/Renders/[YYMMDD_HHMMSS]/..", in_project=True)
             self.path_display.Enable(False)
         else:
             self.path_display.Enable(True)
@@ -353,7 +375,14 @@ class SavePresetDialog(BaseStyledDialog):
     # All colors use theme module - no class-level color constants
 
     def __init__(self, parent, board_path):
-        super().__init__(parent, "Save Preset", (400, 260))
+        # Get dimensions from theme
+        dialog_width = _theme._resolve("layout.dialogs.addpreset.frame.width")
+        dialog_height = _theme._resolve("layout.dialogs.addpreset.frame.height")
+        if dialog_width is None:
+            dialog_width = 400
+        if dialog_height is None:
+            dialog_height = 260
+        super().__init__(parent, "Save Preset", (dialog_width, dialog_height))
         self.board_path = board_path
         self.preset_name = ""
         self.build_ui()
@@ -374,12 +403,14 @@ class SavePresetDialog(BaseStyledDialog):
         label = wx.StaticText(content, label=_locale.get("dialog.save_preset.field_name", "PRESET NAME"))
         label.SetForegroundColour(_theme.color("text.subheader.color"))
         label.SetFont(_theme.font("subheader"))
-        content_sizer.Add(label, 0, wx.LEFT | wx.TOP, 24)
+        padding_lg = _theme._resolve("typography.spacing.lg") or 24
+        content_sizer.Add(label, 0, wx.LEFT | wx.TOP, padding_lg)
 
         self.name_input = CustomInput(content, size=(-1, 36), id="default")
         self.name_input.Bind(wx.EVT_TEXT_ENTER, self.on_save)
         self.name_input.Bind(wx.EVT_TEXT, self.on_text_change)
-        content_sizer.Add(self.name_input, 0, wx.EXPAND | wx.ALL, 24)
+        padding_lg = _theme._resolve("typography.spacing.lg") or 24
+        content_sizer.Add(self.name_input, 0, wx.EXPAND | wx.ALL, padding_lg)
 
         content.SetSizer(content_sizer)
         main_sizer.Add(content, 1, wx.EXPAND)
@@ -420,7 +451,14 @@ class RecallPresetDialog(BaseStyledDialog):
     # All colors use theme module
 
     def __init__(self, parent, board_path):
-        super().__init__(parent, "SELECT CUSTOM PRESET", (400, 400))
+        # Get dimensions from theme
+        dialog_width = _theme._resolve("layout.dialogs.presets.frame.width")
+        dialog_height = _theme._resolve("layout.dialogs.presets.frame.height")
+        if dialog_width is None:
+            dialog_width = 400
+        if dialog_height is None:
+            dialog_height = 400
+        super().__init__(parent, "SELECT CUSTOM PRESET", (dialog_width, dialog_height))
         self.board_path = board_path
         self.selected_preset = self.selected_name = None
         self.build_ui()
@@ -447,7 +485,8 @@ class RecallPresetDialog(BaseStyledDialog):
             for scope, name in presets:
                 self.list_view.AddItem(name.upper(), data={"name": name, "scope": scope})
                 
-        main_sizer.Add(self.list_view, 1, wx.EXPAND | wx.ALL, 16)
+        padding_md = _theme._resolve("typography.spacing.md") or 16
+        main_sizer.Add(self.list_view, 1, wx.EXPAND | wx.ALL, padding_md)
         self.main_container.SetSizer(main_sizer)
 
     def on_list_select(self, event):

@@ -10,13 +10,13 @@ from .text_styles import TextStyle
 
 # Valid theme token paths for validation (V2 Mastering Schema)
 VALID_BG_TOKENS = {
-    'components.main.frame.bg', 'components.main.leftpanel.bg', 
-    'components.main.header.bg', 'components.main.rightpanel.bg',
+    'layout.main.frame.bg', 'layout.main.leftpanel.bg',
+    'layout.main.header.bg', 'layout.main.rightpanel.bg',
     'colors.gray-dark', 'colors.gray-black', 'colors.transparent'
 }
 VALID_BORDER_TOKENS = {
     'borders.default.color', 'borders.subtle.color', 'borders.focus.color',
-    'components.main.divider.bg'
+    'layout.main.divider.bg'
 }
 VALID_ACCENT_TOKENS = {
     'colors.primary', 'colors.secondary', 'colors.tertiary',

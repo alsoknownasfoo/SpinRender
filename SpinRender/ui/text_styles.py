@@ -60,25 +60,24 @@ class TextStyles:
     
     # Map code style names to their definitive theme paths
     _ALIASES = {
-        "title": "components.main.header.title",
-        "version": "components.main.header.subtitle",
-        "header": "components.main.leftpanel.headers",
-        "subheader": "components.main.leftpanel.subheaders",
-        "metadata": "components.main.leftpanel.body",
+        "title": "layout.main.header.title",
+        "version": "layout.main.header.subtitle",
+        "header": "layout.main.leftpanel.headers",
+        "subheader": "layout.main.leftpanel.subheaders",
+        "metadata": "layout.main.leftpanel.body",
         "icon": "icon",
         "label": "label",
-        
+
         # Right Panel styles
-        "info": "components.main.rightpanel.info",
-        "nav": "components.main.rightpanel.nav",
-        "nav_active": "components.main.rightpanel.nav_active",
-        
+        "info": "layout.main.rightpanel.info",
+        "shader": "layout.main.rightpanel.shader",
+
         # Legacy/helper aliases
-        "label_sm": "components.main.leftpanel.headers",
-        "label_xs": "components.main.leftpanel.body",
-        "numeric_unit": "components.main.leftpanel.body",
-        "section_heading": "components.main.leftpanel.headers",
-        "panel_title": "components.main.header.title"
+        "label_sm": "layout.main.leftpanel.headers",
+        "label_xs": "layout.main.leftpanel.body",
+        "numeric_unit": "layout.main.leftpanel.body",
+        "section_heading": "layout.main.leftpanel.headers",
+        "panel_title": "layout.main.header.title"
     }
 
     @property

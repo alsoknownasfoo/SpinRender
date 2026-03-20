@@ -148,9 +148,8 @@ class Theme:
                 return "#FF00FF"
 
         # 4. Final Leaf Follow (if result is a pointer)
-        while (isinstance(node, dict) and "ref" in node) or (isinstance(node, str) and node.startswith("@")):
-            ref_target = node["ref"] if isinstance(node, dict) else node
-            node = self._resolve(ref_target, visited.copy())
+        while isinstance(node, str) and node.startswith("@"):
+            node = self._resolve(node[1:], visited.copy())
 
         return node
 

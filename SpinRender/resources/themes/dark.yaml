@@ -186,7 +186,7 @@ text:
       size: "@typography.scale.base"
       weight: 600
   metadata:
-    color: "@colors.white-68"
+    color: "@colors.gray-medium"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.base"
@@ -207,7 +207,7 @@ text:
       weight: 600
   nav:
     color: 
-      default: "@colors.gray-light"
+      default: "@colors.gray-medium"
       hover: "@colors.primary"
       active: "@colors.primary"
     font:
@@ -317,17 +317,17 @@ layout:
       size: 1
     rightpanel:
       bg: "@colors.gray-black"
-      nav: "@text.nav"
-      nav_active: "@text.nav_active"
+      shader: "@text.nav"
       title: "@text.title"
       info: "@text.metadata"
-      info_active: "@text.metadata_active"
     status: "@components.status"
 
   # Modal dialog layouts
   dialogs:
     default:
       frame:
+        width: 600
+        height: 500
         bg: "@colors.gray-dark"
         border: "@borders.default"
         radius: "@radius.md"
@@ -354,17 +354,17 @@ layout:
           ref: "@components.button.cancel"
     options:
       ref: "@layout.dialogs.default"
-      frame:
-        width: 400
     presets:
       ref: "@layout.dialogs.default"
       frame:
         width: 500
+        height: 400
       controls: None
     addpreset:
       ref: "@layout.dialogs.default"
-      frame:
-        width: 400
+      frame: 
+        width: 450
+        height: 320
       controls:
         button1:
           ref: "@components.button.save"
@@ -373,77 +373,6 @@ layout:
 # 9. COMPONENT DEFINITIONS (Atomic UI Components)
 # ─────────────────────────────────────────────────────────────────x
 components:
-  main:
-    frame:
-      bg: "@colors.gray-black"
-      radius: "@radius.none"
-    header:
-      bg: "@colors.gray-black"
-      logo: "@colors.primary"
-      title: "@text.title"
-      subtitle: "@text.subtitle"
-    leftpanel:
-      bg: "@colors.gray-dark"
-      width: 450
-      headers: "@text.header"
-      subheaders: "@text.subheader"
-      body: "@text.body"
-      border: "@borders.default"
-      scrollbar: "@components.scrollbar"
-    divider:
-      bg: "@colors.gray-border"
-      size: 1
-    rightpanel:
-      bg: "@colors.gray-black" # preview bg
-      nav:
-        ref: "@text.nav"
-        color:
-          default: "@colors.gray-light"
-          active: "@colors.primary"
-      info:  # top left metadata/info display
-        ref: "@text.metadata"
-        color: "@colors.gray-light"
-    status: "@components.status"
-
-  dialogs:
-    default:
-      frame:
-        bg: "@colors.gray-dark"
-        border: "@borders.default" # Outer frame border
-        radius: "@radius.md"
-        shadow: "0px 4px 12px rgba(0,0,0,0.6)"
-      header:
-        bg: "@colors.gray-black"
-        border: "@borders.default" # The line separating header from content
-        title: "@text.header"
-      body:
-        bg: "@colors.gray-dark"
-        text: "@text.body"
-      controls:
-        bg: "@colors.gray-dark"
-        border: None # no border for controls area
-        gap: "@typography.spacing.base"
-        button1:
-          ref: "@components.button.ok"
-        button2:
-          ref: "@components.button.cancel"
-    options:
-      ref: "@components.dialogs.default"
-      frame:
-        width: 400
-    presets:
-      ref: "@components.dialogs.default"
-      frame:
-        width: 500
-      controls: None # No buttons so render a close 'x' in header instead
-    addpreset:
-      ref: "@components.dialogs.default"
-      frame:
-        width: 400
-      controls:
-        button1: # Override button1 but button2 is still inherited
-          ref: "@components.button.save"
-
   badge:
     frame:
       height: 18
@@ -527,10 +456,20 @@ components:
     path:
       ref: "@components.input.default"
       type: "rich"
+      alignment: "left"
       icon: 
-        ref: "glyphs.folder"
+        ref: "@glyphs.folder"
+        color: "@colors.gray-white"
       frame:
         height: 36
+        bg:
+          default: "@colors.transparent"
+          hover: "@colors.cyan-20"
+      color: 
+        default: "@colors.gray-medium"
+        hover: "@colors.primary"
+        active: "@colors.primary"
+
     axis:
       ref: "@components.input.default"
       type: "numeric"
@@ -545,11 +484,13 @@ components:
       step: 0.1
       frame:
         height: 32
-    parameter:
+    parameters:
       ref: "@components.input.default"
       type: "text"
+      alighnment: "left"
+      multiline: true
       frame:
-        height: 28
+        height: 84
     hex:
       ref: "@components.input.default"
       case: "upper"
@@ -579,7 +520,7 @@ components:
         height: 14
         border: "@borders.width.none"
         color: "@colors.primary"
-      input: "@components.input.parameters"
+      input: "@components.input.axis"
     primary:
       ref: "@components.slider.default"
       nub: { color: "@colors.yellow" }
@@ -710,7 +651,7 @@ components:
             default: "@borders.subtle.color"
             hover: "@colors.red"
             active: "@colors.primary"
-      input: "@components.input.parameters"
+      input: "@components.input.default"
 
   button:
     default:
@@ -736,8 +677,6 @@ components:
       gap: "@typography.spacing.base"
     cancel:
       ref: "@components.button.default"
-      frame:
-        bg: "@colors.gray-black"
     ok:
       ref: "@components.button.default"
       frame:

@@ -65,7 +65,7 @@ class ControlsSidePanel(wx.Panel):
     def create_controls_panel(self, parent):
         """Create the main scrolled controls container."""
         self.scrolled_panel = scrolled.ScrolledPanel(parent, size=(400, -1))
-        self.scrolled_panel.SetBackgroundColour(_theme.color("components.main.frame.bg"))
+        self.scrolled_panel.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
         self.scrolled_panel.SetupScrolling(scroll_x=False, scroll_y=True, rate_y=20)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -111,7 +111,7 @@ class ControlsSidePanel(wx.Panel):
     def create_header(self, parent):
         """Create the logo and title header."""
         header = wx.Panel(parent, size=(-1, 90))
-        header.SetBackgroundColour(_theme.color("components.main.leftpanel.bg"))
+        header.SetBackgroundColour(_theme.color("layout.main.leftpanel.bg"))
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         logo = SVGLogoPanel(header, size=(58, 58))
@@ -139,13 +139,13 @@ class ControlsSidePanel(wx.Panel):
 
     def reapply_theme(self):
         """Re-apply theme to static container elements and labels after hot-reload."""
-        self.SetBackgroundColour(_theme.color("components.main.frame.bg"))
+        self.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
         
         if hasattr(self, 'scrolled_panel'):
-            self.scrolled_panel.SetBackgroundColour(_theme.color("components.main.frame.bg"))
+            self.scrolled_panel.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
             
         if hasattr(self, 'header_panel'):
-            self.header_panel.SetBackgroundColour(_theme.color("components.main.header.bg"))
+            self.header_panel.SetBackgroundColour(_theme.color("layout.main.header.bg"))
             
         # 1. Update all tracked labels from map
         for style_name, elements in self._hotload_map.items():
@@ -161,7 +161,7 @@ class ControlsSidePanel(wx.Panel):
         # 2. Update Dividers
         for attr in ['div1', 'div2', 'div3', 'div4']:
             if hasattr(self, attr):
-                getattr(self, attr).SetBackgroundColour(_theme.color("components.main.divider.bg"))
+                getattr(self, attr).SetBackgroundColour(_theme.color("layout.main.divider.bg"))
 
         # Refresh all components recursively to trigger their internal on_paint lookups
         def refresh_recursive(window):

@@ -74,13 +74,13 @@ class TestV2ThemeTokenIntegration:
         """Controls should not define class-level wx.Colour constants."""
         from SpinRender.ui.custom_controls import (
             CustomSlider, CustomToggleButton, CustomDropdown,
-            CustomButton, PresetCard, SectionLabel, NumericDisplay,
+            CustomButton, PresetCard, SectionLabel,
             NumericInput, CustomTextInput, ProjectFolderChip,
             CustomColorPicker, PathInputControl
         )
         classes = [
             CustomSlider, CustomToggleButton, CustomDropdown,
-            CustomButton, PresetCard, SectionLabel, NumericDisplay,
+            CustomButton, PresetCard, SectionLabel,
             NumericInput, CustomTextInput, ProjectFolderChip,
             CustomColorPicker, PathInputControl
         ]

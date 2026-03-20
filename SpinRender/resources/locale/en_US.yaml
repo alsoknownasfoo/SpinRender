@@ -12,6 +12,15 @@ locale:
       logo_id: "res/logo.svg"
 
     # ─────────────────────────────────────────────────────────────
+    # VIEWPORT
+    # ─────────────────────────────────────────────────────────────
+    viewport:
+      mode:
+        wireframe: "WIREFRAME"
+        shaded: "SHADED"
+        both: "BOTH"
+
+    # ─────────────────────────────────────────────────────────────
     # DIALOG TITLES
     # ─────────────────────────────────────────────────────────────
     dialog:
@@ -36,7 +45,7 @@ locale:
         label: "FLIP"
         icon_ref: "glyphs.preset-flip"
       card4:
-        label: "SELECT CUSTOM..."
+        label: "SELECT CUSTOM"
         icon_ref: "glyphs.preset-custom"
 
     # ─────────────────────────────────────────────────────────────
@@ -135,7 +144,7 @@ locale:
         icon_ref: "glyphs.settings"
       save_preset:
         label: "+ PRESET"
-        icon_ref: "glyphs.plus"
+        icon_ref: None #"glyphs.plus"
       browse:
         label: "BROWSE"
         icon_ref: "glyphs.folder"

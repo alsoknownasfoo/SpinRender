@@ -48,7 +48,7 @@ class RoundedPanel(wx.Panel):
     def __init__(self, parent, radius=4, bg_color=None):
         super().__init__(parent)
         self.radius = radius
-        self.bg_color = bg_color or _get_color("components.main.frame.bg", BG_INPUT_FB)
+        self.bg_color = bg_color or _get_color("layout.main.frame.bg", BG_INPUT_FB)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_SIZE, self.on_size)

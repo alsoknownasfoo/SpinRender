@@ -14,7 +14,7 @@ class StatusBar(wx.Panel):
 
     def __init__(self, parent):
         super().__init__(parent, size=(-1, 25))
-        self.SetBackgroundColour(_theme.color("components.main.status.default.bg"))
+        self.SetBackgroundColour(_theme.color("layout.main.status.default.bg"))
         self.SetMinSize((-1, 25))
         self.SetMaxSize((-1, 25))
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
@@ -40,9 +40,9 @@ class StatusBar(wx.Panel):
         w, h = self.GetSize()
         
         # Dynamic theme lookups from component section (V2 tokens)
-        bg_color = _theme.color("components.main.status.default.bg")
-        success_color = _theme.color("components.main.status.default.label.color")
-        primary_color = _theme.color("components.main.status.progress.bg")
+        bg_color = _theme.color("layout.main.status.default.bg")
+        success_color = _theme.color("layout.main.status.default.label.color")
+        primary_color = _theme.color("layout.main.status.progress.bg")
         text_bg_color = bg_color
 
         # Background
@@ -92,12 +92,12 @@ class StatusBar(wx.Panel):
 
     def set_error(self, msg: str):
         """Set error state."""
-        error_color = _theme.color("components.main.status.error.label.color")
+        error_color = _theme.color("layout.main.status.error.label.color")
         self.set_status(msg, fg_color=error_color, progress=0.0, bar_color=error_color)
 
     def set_complete(self):
         """Set complete state."""
         from SpinRender.core.locale import Locale
         _locale = Locale.current()
-        done_color = _theme.color("components.main.status.complete.label.color")
+        done_color = _theme.color("layout.main.status.complete.label.color")
         self.set_status(_locale.get("component.status.complete", "RENDER COMPLETE"), fg_color=done_color, progress=1.0, bar_color=done_color)

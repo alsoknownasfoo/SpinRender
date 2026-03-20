@@ -76,7 +76,7 @@ class SpinRenderPanel(wx.Panel):
         from utils.logger import SpinLogger
         SpinLogger.setup(level=getattr(self.settings, 'logging_level', 'simple'))
             
-        self.SetBackgroundColour(_theme.color("components.main.frame.bg"))
+        self.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
         self.drag_start_pos = None
         self.frame_start_pos = None
         self.render_controller = RenderController()
@@ -88,7 +88,7 @@ class SpinRenderPanel(wx.Panel):
     def build_ui(self):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.top_container = wx.Panel(self)
-        self.top_container.SetBackgroundColour(_theme.color("components.main.frame.bg"))
+        self.top_container.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         # Left: Controls panel - instantiate ControlsSidePanel
@@ -144,10 +144,10 @@ class SpinRenderPanel(wx.Panel):
 
     def reapply_theme(self):
         """Orchestrate theme re-application across all sub-panels."""
-        self.SetBackgroundColour(_theme.color("components.main.frame.bg"))
+        self.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
         
         if hasattr(self, 'top_container'):
-            self.top_container.SetBackgroundColour(_theme.color("components.main.frame.bg"))
+            self.top_container.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
             
         if hasattr(self, 'center_divider'):
             self.center_divider.SetBackgroundColour(_theme.color("borders.default.color"))
@@ -164,7 +164,7 @@ class SpinRenderPanel(wx.Panel):
             
         # StatusBar handles its own dynamic lookups in _on_paint
         if hasattr(self, 'status_bar'):
-            self.status_bar.SetBackgroundColour(_theme.color("components.main.status.default.bg"))
+            self.status_bar.SetBackgroundColour(_theme.color("layout.main.status.default.bg"))
             self.status_bar.Refresh()
             self.status_bar.Update()
             
@@ -383,14 +383,9 @@ class SpinRenderPanel(wx.Panel):
         self.save_settings()
 
     def update_render_mode_ui(self, active_mode):
-        """Updates the colors of the mode toggle labels"""
-        if not hasattr(self.preview, 'render_mode_btns'): return
-        for mode_id, btn in self.preview.render_mode_btns.items():
-            if mode_id == active_mode:
-                btn.SetForegroundColour(_theme.color("colors.primary"))
-            else:
-                btn.SetForegroundColour(_theme.color("colors.gray-white"))
-            btn.Refresh()
+        """Updates the colors of the mode toggle labels - delegate to preview panel"""
+        if hasattr(self.preview, 'update_render_mode_ui'):
+            self.preview.update_render_mode_ui(active_mode)
         
 
     def on_advanced_options(self, event):
