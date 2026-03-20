@@ -263,7 +263,7 @@ class ControlsSidePanel(wx.Panel):
         sizer.Add(row4, 0, wx.EXPAND | wx.BOTTOM, 4)
 
         self.rot_desc = self._add_text(panel, _locale.get("parameters.rotation_desc", "BOARD: ORIENT ON SPINDLE | SPIN: ORIENT THE SPINDLE ITSELF"), "metadata")
-        sizer.Add(self.rot_desc, 0)
+        sizer.Add(self.rot_desc, 0, wx.TOP | wx.BOTTOM, 10)
         panel.SetSizerAndFit(sizer)
         return panel
 
@@ -324,9 +324,9 @@ class ControlsSidePanel(wx.Panel):
         mrow = wx.Panel(panel)
         msizer = wx.BoxSizer(wx.HORIZONTAL)
         self.period_desc = self._add_text(mrow, _locale.get("parameters.period.desc", "SPEED OF 360° SPIN"), "metadata")
-        msizer.Add(self.period_desc, 1)
+        msizer.Add(self.period_desc, 1, wx.TOP | wx.BOTTOM, 10)
         self.frame_count = self._add_text(mrow, f"{int(p_val * 30)} f", "metadata")
-        msizer.Add(self.frame_count, 0)
+        msizer.Add(self.frame_count, 0, wx.TOP | wx.BOTTOM, 10)
         mrow.SetSizerAndFit(msizer)
         sizer.Add(mrow, 0, wx.EXPAND)
         panel.SetSizerAndFit(sizer)
@@ -386,7 +386,7 @@ class ControlsSidePanel(wx.Panel):
         sizer.Add(self.light_toggle, 0, wx.EXPAND)
 
         self.light_hint = self._add_text(panel, _locale.get("parameters.lighting_hint", "SELECT WORKSPACE TO USE KICAD 3D VIEWER SETTINGS"), "metadata")
-        sizer.Add(self.light_hint, 0, wx.TOP, 4)
+        sizer.Add(self.light_hint, 0, wx.TOP | wx.BOTTOM, 10)
 
         panel.SetSizerAndFit(sizer)
         return panel
