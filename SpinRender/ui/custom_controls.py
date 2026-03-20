@@ -203,8 +203,23 @@ class CustomToggleButton(wx.Panel):
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.options = options or [{'label': 'OFF', 'icon': None}, {'label': 'ON', 'icon': None}]
         self.selection = 0
+        self.hover_index = -1
         self.Bind(wx.EVT_PAINT, self.on_paint)
-        bind_mouse_events(self, click_handler=self.on_click)
+        bind_mouse_events(self, click_handler=self.on_click, hover_handler=self.on_mouse_move, leave_handler=self.on_leave)
+        self.Bind(wx.EVT_MOTION, self.on_mouse_move)
+
+    def on_leave(self, event):
+        self.hover_index = -1
+        self.Refresh(); self.Update()
+
+    def on_mouse_move(self, event):
+        if not self.IsEnabled(): return
+        w = self.GetSize().width
+        num_options = len(self.options)
+        new_hover = int(event.GetX() // (w / num_options))
+        if new_hover != self.hover_index:
+            self.hover_index = new_hover
+            self.Refresh(); self.Update()
 
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
@@ -228,7 +243,7 @@ class CustomToggleButton(wx.Panel):
 
         # Draw Active Indicator
         active_token = f"{token}.selected.frame.bg"
-        active_bg = _theme.color(active_token, False, False, enabled) if _theme.has_token(active_token) else _theme.color("colors.primary", False, False, enabled)
+        active_bg = _theme.color(active_token, self.hover_index == self.selection, False, enabled) if _theme.has_token(active_token) else _theme.color("colors.primary", self.hover_index == self.selection, False, enabled)
         
         gc.SetBrush(wx.Brush(active_bg))
         gc.SetPen(wx.TRANSPARENT_PEN)
@@ -238,6 +253,7 @@ class CustomToggleButton(wx.Panel):
         # Draw each state
         for i, opt in enumerate(self.options):
             is_active = (i == self.selection)
+            is_hovered = (i == self.hover_index)
             
             # Resolve text color from theme
             if is_active:
@@ -247,7 +263,7 @@ class CustomToggleButton(wx.Panel):
                 text_token = f"{token}.default.label.color"
                 if not _theme.has_token(text_token): text_token = "colors.gray-text"
                 
-            color = _theme.color(text_token, False, False, enabled)
+            color = _theme.color(text_token, is_hovered, False, enabled)
             self._draw_side(gc, opt.get('label'), opt.get('icon'), i * state_width, state_width, height, color)
 
     def _draw_side(self, gc, label, icon_name, x_offset, width, height, color):
