@@ -7,7 +7,7 @@ tokens from YAML configuration. YAML loading is strictly required.
 import logging
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 # Try to import PyYAML
 _yaml_available = False
