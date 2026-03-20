@@ -93,7 +93,7 @@ class ControlsSidePanel(wx.Panel):
         sizer.Add(self.div3, 0, wx.EXPAND)
 
         output_settings = self.create_output_settings_section(self.scrolled_panel)
-        sizer.Add(output_settings, 1, wx.EXPAND | wx.ALL, padding)
+        sizer.Add(output_settings, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, padding)
 
         self.div4 = wx.Panel(self.scrolled_panel, size=(-1, 1))
         self.div4.SetBackgroundColour(_theme.color("borders.default.color"))
