@@ -124,6 +124,9 @@ class PreviewPanel(wx.Panel):
         # Store references for later use
         self._top_meta = top_meta
         self._bottom_meta = bottom_meta
+        
+        # Initial highlight update
+        self.update_render_mode_ui(getattr(self.settings, 'render_mode', 'both'))
 
     def reapply_theme(self):
         """Re-apply theme to static overlay elements."""
