@@ -385,14 +385,14 @@ class DropdownPopup(wx.PopupTransientWindow):
             if item_bg.Alpha() > 0:
                 gc.SetBrush(wx.Brush(item_bg))
                 gc.SetPen(wx.TRANSPARENT_PEN)
-                gc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, item_radius)
+                gc.DrawRoundedRectangle(rect.x + 1, rect.y + 1, rect.width - 2, rect.height - 2, item_radius)
             
             # Resolve Item Border (usually for hover)
             item_bc = _theme.color(f"{token}.menu.items.border.color", is_hovered, is_selected, True)
             if item_bc.Alpha() > 0:
                 gc.SetPen(wx.Pen(item_bc, 1))
                 gc.SetBrush(wx.TRANSPARENT_BRUSH)
-                gc.DrawRoundedRectangle(rect.x, rect.y, rect.width, rect.height, item_radius)
+                gc.DrawRoundedRectangle(rect.x + 1, rect.y + 1, rect.width - 2, rect.height - 2, item_radius)
             
             # Resolve Item Label (Font & Color)
             label_token = f"{token}.menu.items.label"
