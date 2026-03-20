@@ -976,9 +976,9 @@ class CustomInput(wx.Panel):
         if self.prefix and v.startswith(self.prefix): v = v[len(self.prefix):]
         self.proxy.ChangeValue(v); self.Refresh()
     def SetEditable(self, e): self.proxy.SetEditable(e); self.Enable(e); self.Refresh()
-    def SetPath(self, p, proj=False):
-        self.proxy.ChangeValue(p); self.show_chip = proj
-        if self.chip: self.chip.Show() if proj else self.chip.Hide()
+    def SetPath(self, p, in_project=False):
+        self.proxy.ChangeValue(p); self.show_chip = in_project
+        if self.chip: self.chip.Show() if in_project else self.chip.Hide()
         self.Refresh()
 
     def AcceptsFocus(self): return self.IsEnabled()
