@@ -1371,12 +1371,14 @@ class CustomColorPicker(wx.Panel):
         sc = wx.Colour(ch); gc.SetBrush(wx.Brush(_theme.disabled(sc) if not enabled else sc))
         
         # Swatch border role
-        stc = _theme.color("borders.subtle.color")
-        if sel: stc, thk = _theme.color("colors.primary"), 2
-        elif hov: stc, thk = _theme.color("colors.gray-medium"), 1
-        else: thk = 1
+        token = "components.colorpicker.default"
+        bc_token = f"{token}.items.border.color"
         
-        gc.SetPen(wx.Pen(_theme.disabled(stc) if not enabled else stc, thk))
+        # Resolve stateful border color from theme
+        stc = _theme.color(bc_token, hov, sel, enabled)
+        thk = _theme.size(f"{token}.items.border.size") or 1
+        
+        gc.SetPen(wx.Pen(stc, thk))
         gc.DrawRoundedRectangle(x, y, 28, 28, 4)
         
         text_muted = _theme.color("colors.gray-text")
