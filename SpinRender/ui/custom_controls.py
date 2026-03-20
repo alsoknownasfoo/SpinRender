@@ -1083,11 +1083,15 @@ class CustomInput(wx.Panel):
 
     def GetValue(self): return self.value.strip()
     def SetValue(self, val):
+        val_str = str(val)
+        if self.prefix and val_str.startswith(self.prefix):
+            val_str = val_str[len(self.prefix):]
+            
         if self.type == "numeric":
-            try: self.value = f"{float(val):.2f}"
-            except: self.value = str(val)
+            try: self.value = f"{float(val_str):.2f}"
+            except: self.value = val_str
         else:
-            self.value = str(val)
+            self.value = val_str
             if self.case == "upper": self.value = self.value.upper()
         self.Refresh(); self.Update()
 
