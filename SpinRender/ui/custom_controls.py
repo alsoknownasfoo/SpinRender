@@ -235,8 +235,10 @@ class CustomToggleButton(wx.Panel):
         token = f"components.toggle.{self.style_id}" if self.style_id else "components.toggle.default"
         if not _theme.has_token(token): token = "components.toggle.default"
 
-        bg_color = _theme.color(f"{token}.frame.bg", False, False, enabled)
-        border_color = _theme.color(f"{token}.frame.border.color", False, False, enabled)
+        is_any_hovered = self.hover_index != -1
+        bg_color = _theme.color(f"{token}.frame.bg", is_any_hovered, False, enabled)
+        border_color = _theme.color(f"{token}.frame.border.color", is_any_hovered, False, enabled)
+        
         gc.SetBrush(wx.Brush(bg_color))
         gc.SetPen(wx.Pen(border_color, 1))
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 6)
