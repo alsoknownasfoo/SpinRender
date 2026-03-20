@@ -205,6 +205,34 @@ When migrating other complex components (Sliders, Toggles, Inputs) to the V2 pat
 *   **Fixed Heights**: Most SpinRender controls have a fixed height (typically 18, 28, 32, or 36) defined in the theme. Use `self.SetMinSize` or `self.SetSize` in the constructor to enforce the design grid.
 *   **Width Flexibility**: Use `(-1, height)` for size hints to allow components to expand horizontally in sizers while maintaining vertical consistency.
 
+## Hot-Reloading Static Labels
+
+While custom components resolve themes in `on_paint`, standard `wx.StaticText` widgets require explicit updates during a hot-reload event. 
+
+### The `_add_text` Pattern
+To ensure all labels in a panel support hot-reloading without boilerplate, use a registration helper:
+
+```python
+def _add_text(self, parent, label, style_name, color_override=None, **kwargs):
+    txt = wx.StaticText(parent, label=label, **kwargs)
+    # Register label object and its style role for later refresh
+    self._hotload_map.setdefault(style_name, []).append((txt, color_override))
+    # Apply initial style
+    self._apply_style(txt, style_name, color_override)
+    return txt
+```
+
+### The Refresh Loop
+In the panel's `reapply_theme()` method, iterate through the map to pull the latest YAML values:
+
+```python
+for style_name, elements in self._hotload_map.items():
+    style = getattr(TextStyles, style_name)
+    for txt, color_override in elements:
+        txt.SetFont(style.create_font())
+        txt.SetForegroundColour(color_override or style.color)
+```
+
 ## Migration Pitfalls
 
 *   **Hardcoded Fallbacks**: Avoid `wx.Colour(30, 30, 30)`. If a color isn't in the theme, prompt user for direction.
