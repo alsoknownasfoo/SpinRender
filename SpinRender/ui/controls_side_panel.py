@@ -218,9 +218,9 @@ class ControlsSidePanel(wx.Panel):
         header.SetSizerAndFit(header_sizer)
 
         sizer.Add(header, 0, wx.EXPAND | wx.BOTTOM, 10)
-        sizer.Add(self.create_rotation_controls(panel), 0, wx.EXPAND | wx.BOTTOM, 10)
-        sizer.Add(self.create_period_control(panel), 0, wx.EXPAND | wx.BOTTOM, 10)
-        sizer.Add(self.create_direction_control(panel), 0, wx.EXPAND | wx.BOTTOM, 10)
+        sizer.Add(self.create_rotation_controls(panel), 0, wx.EXPAND | wx.BOTTOM, 20)
+        sizer.Add(self.create_period_control(panel), 0, wx.EXPAND | wx.BOTTOM, 20)
+        sizer.Add(self.create_direction_control(panel), 0, wx.EXPAND | wx.BOTTOM, 20)
         sizer.Add(self.create_lighting_control(panel), 0, wx.EXPAND)
 
         panel.SetSizerAndFit(sizer)
@@ -431,7 +431,7 @@ class ControlsSidePanel(wx.Panel):
         r_col.SetSizerAndFit(r_sizer)
         cols_sizer.Add(r_col, 1, wx.EXPAND)
         cols_panel.SetSizerAndFit(cols_sizer)
-        sizer.Add(cols_panel, 0, wx.EXPAND | wx.BOTTOM, 12)
+        sizer.Add(cols_panel, 0, wx.EXPAND | wx.BOTTOM, 24)
 
         # Row 2: Background Color
         bg_col = wx.Panel(panel)
