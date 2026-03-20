@@ -214,26 +214,26 @@ class Theme:
             return [self._parse_color(v) for v in raw], "list"
         
         if isinstance(raw, dict):
+            # Resolve .color explicitly if it's a component dict
+            if "color" in raw:
+                # If .color is itself a dict (stateful), recurse
+                if isinstance(raw["color"], (dict, list)):
+                    return self._extract_defined_states(raw["color"], f"{token}.color")
+                return [self._parse_color(raw["color"])], "dict.color"
+                
             colors = []
-            for k in ["default", "bg", "color", "value", "hover", "active", "pressed", "disabled"]:
+            for k in ["default", "bg", "value", "hover", "active", "pressed", "disabled"]:
                 val = raw.get(k)
                 if val: colors.append(self._parse_color(val))
             if colors: return colors, "dict"
 
-        colors = [self._parse_color(raw)]
-        if "." in token and token.startswith("components."):
-            base_path = ".".join(token.split(".")[:-1])
-            found_sibling = False
-            for s in ["hover", "active", "pressed", "disabled"]:
-                sibling_path = f"{base_path}.{s}"
-                if self.has_token(sibling_path):
-                    sibling = self._resolve(sibling_path)
-                    if sibling and not isinstance(sibling, dict) and sibling != "#FF00FF":
-                        colors.append(self._parse_color(sibling))
-                        found_sibling = True
-            return colors, ("siblings" if found_sibling else "direct")
-            
-        return colors, "direct"
+        # Fallback: Treat as direct color value
+        try:
+            return [self._parse_color(raw)], "direct"
+        except ValueError:
+            # If the raw value isn't a color string (e.g. it's a nested dict we missed), return Pink
+            logger.error(f"Theme: Token '{token}' resolved to non-color value: {raw}")
+            return [self._parse_color("#FF00FF")], "error"
 
     def _fill_missing_states(self, colors: list['wx.Colour']) -> tuple[list['wx.Colour'], int]:
         if not colors:
