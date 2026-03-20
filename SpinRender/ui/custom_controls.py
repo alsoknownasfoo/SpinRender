@@ -445,7 +445,7 @@ class CustomDropdown(wx.Panel):
         token = f"components.dropdown.{self.style_id}" if self.style_id else "components.dropdown.default"
         if not _theme.has_token(token): token = "components.dropdown.default"
 
-        base_bg_color = _theme.color(f"{token}.frame.bg", False, False, enabled)
+        base_bg_color = _theme.color(f"{token}.frame.bg", self.hovered or self.is_open, False, enabled)
         gc.SetBrush(wx.Brush(base_bg_color))
 
         # 1. Resolve Frame Border (Hover/Open state)
