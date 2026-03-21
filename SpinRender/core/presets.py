@@ -147,14 +147,16 @@ class PresetManager:
             for filename in os.listdir(self.project_presets_dir):
                 if filename.endswith('.json'):
                     preset_name = filename[:-5]  # Remove .json
-                    presets.append(('project', preset_name))
+                    if preset_name.lower() != "last_used":
+                        presets.append(('project', preset_name))
 
         # Global presets
         if include_global and os.path.exists(self.global_presets_dir):
             for filename in os.listdir(self.global_presets_dir):
                 if filename.endswith('.json'):
                     preset_name = filename[:-5]
-                    presets.append(('global', preset_name))
+                    if preset_name.lower() != "last_used":
+                        presets.append(('global', preset_name))
 
         return presets
 

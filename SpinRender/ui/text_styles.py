@@ -72,6 +72,8 @@ class TextStyles:
         "info": "layout.main.rightpanel.info",
         "shader": "layout.main.rightpanel.shader",
 
+        "status": "components.status.default.label",
+
         # Legacy/helper aliases
         "label_sm": "layout.main.leftpanel.headers",
         "label_xs": "layout.main.leftpanel.body",

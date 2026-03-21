@@ -1,4 +1,3 @@
-#!/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
 """
 PreviewPanel component extracted from SpinRenderPanel.
 
@@ -121,11 +120,17 @@ class PreviewPanel(wx.Panel):
         suffix.SetForegroundColour(nav_div_color)
         self.render_mode_sizer.Add(suffix, 0, wx.ALIGN_CENTER_VERTICAL)
 
-        top_sizer.Add(self.render_mode_sizer, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+        top_sizer.Add(self.render_mode_sizer, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 0)
 
         # Close Preview button (hidden by default)
-        self.ov_top_right = wx.StaticText(top_meta, label=_locale.get("component.button.close.label", "CLOSE PREVIEW"))
+        self.ov_top_right = wx.StaticText(top_meta, label=_locale.get("component.button.closepreview.label", "CLOSE PREVIEW"))
         self.ov_top_right.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        
+        # Apply closepreview button style
+        btn_role = "components.button.closepreview.label"
+        self.ov_top_right.SetForegroundColour(_theme.color(btn_role + ".color"))
+        self.ov_top_right.SetFont(_theme.font(btn_role))
+        
         self.ov_top_right.Hide()
         top_sizer.Add(self.ov_top_right, 0, wx.ALIGN_CENTER_VERTICAL)
 
@@ -183,9 +188,9 @@ class PreviewPanel(wx.Panel):
             div.SetForegroundColour(nav_color)
 
         # 3. Close Button
-        close_style = TextStyles.version # Or separate role if needed
-        self.ov_top_right.SetForegroundColour(_theme.color("colors.primary"))
-        self.ov_top_right.SetFont(close_style.create_font())
+        btn_role = "components.button.closepreview.label"
+        self.ov_top_right.SetForegroundColour(_theme.color(btn_role + ".color"))
+        self.ov_top_right.SetFont(_theme.font(btn_role))
 
         # 4. Bottom Labels (Metadata)
         for lbl in [self.ov_bottom_left, self.ov_bottom_center]:
@@ -294,10 +299,16 @@ class PreviewPanel(wx.Panel):
             self.ov_top_left.SetLabel("  ".join(params))
 
         # Top-Right: Close button visibility
-        if self.render_preview_active and not self.preview_manually_closed and not self.is_rendering:
-            self.ov_top_right.Show()
+        if self.render_preview_active and not self.preview_manually_closed:
+            # Hide render mode sizer if render preview is active (rendering or playback)
             if hasattr(self, 'render_mode_sizer'):
                 self.render_mode_sizer.ShowItems(False)
+            
+            # Only show Close button if NOT currently rendering (viewing playback)
+            if not self.is_rendering:
+                self.ov_top_right.Show()
+            else:
+                self.ov_top_right.Hide()
         else:
             self.ov_top_right.Hide()
             if hasattr(self, 'render_mode_sizer'):

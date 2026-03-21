@@ -2,12 +2,18 @@
 UI-specific dependency management.
 Provides DependencyChecker with UI integration (check_and_prompt, font installation).
 """
-import wx
 import os
 import subprocess
 import threading
 import time
 import logging
+import sys
+
+# Try to import wx, but don't crash if it's missing yet
+try:
+    import wx
+except ImportError:
+    wx = None
 
 from SpinRender.utils.check_dependencies import DependencyChecker as PureDependencyChecker
 from SpinRender.foundation.fonts import JETBRAINS_MONO, MDI_FONT_FAMILY, OSWALD
@@ -24,16 +30,26 @@ class DependencyChecker(PureDependencyChecker):
         Returns True if all deps are satisfied or user proceeds with installation.
         """
         logger.debug("DependencyChecker.check_and_prompt() starting")
-        # macOS font check
+
+        # 1. wxPython check (System level - required for any GUI)
+        if not self.check_python_package("wxPython"):
+            logger.warning("wxPython is missing. Prompting for system-level installation.")
+            if not self._prompt_and_poll_for_wxpython():
+                logger.error("User declined wxPython installation or polling failed.")
+                return False
+
+        # 2. System Assets check (Fonts - required for themed UI)
+        # Use native dialogs for consistency with wxPython check
         if self.system == 'darwin':
             logger.debug("Running macOS font check...")
-            if not self._ensure_macos_fonts():
+            if not self._ensure_macos_fonts_native():
                 logger.warning("macOS font check failed - user cancelled")
                 return False
             logger.debug("macOS font check passed")
-        else:
-            logger.debug(f"Skipping font check on platform: {self.system}")
 
+        # 3. Comprehensive dependency check (Commands and Python libs)
+        # Now that we have wx, we can safely proceed with wx-based UI
+        import wx
         logger.debug("Running check_all()...")
         dep_status = self.check_all()
         logger.debug(f"Dependency status: {dep_status}")
@@ -44,11 +60,11 @@ class DependencyChecker(PureDependencyChecker):
 
         logger.warning(f"Missing dependencies detected: {self.missing_deps}")
 
-        # Import bootstrap dialog to avoid early theme loading
-        logger.debug("Importing bootstrap DependencyCheckDialog...")
-        from .dependency_dialog import DependencyCheckDialog
+        # 4. Show Themed Dependency Dialog for remaining items
+        logger.debug("Importing bootstrap DependencyDialog...")
+        from .dependency_dialog import DependencyDialog
         logger.debug("Creating dialog...")
-        dialog = DependencyCheckDialog(None, dep_status, self)
+        dialog = DependencyDialog(None, dep_status, self)
         logger.debug("Showing modal dialog...")
         result = dialog.ShowModal()
         logger.debug(f"Dialog returned: {result}, missing_deps: {self.missing_deps}")
@@ -58,106 +74,105 @@ class DependencyChecker(PureDependencyChecker):
         logger.debug(f"check_and_prompt returning: {passed}")
         return passed
 
-    def _ensure_macos_fonts(self):
-        """On macOS, check for required fonts and offer to install if missing."""
-        logger.debug("_ensure_macos_fonts() starting")
-        # Helper to check if a font face is available
-        def is_font_available(face_name):
+    def _prompt_and_poll_for_wxpython(self):
+        """Show native prompt, launch terminal for install, and poll for package availability."""
+        msg = "SpinRender requires 'wxPython' to display its interface. Would you like to install it now in the KiCad Python environment?"
+        title = "wxPython Required"
+        
+        python_exe = self._get_python_executable()
+        install_cmd = f"{python_exe} -m pip install --user wxPython"
+        user_chose_install = self._show_native_confirm(title, msg)
+
+        if user_chose_install:
+            if self.system == 'darwin':
+                subprocess.Popen(['osascript', '-e', f'tell application "Terminal" to do script "{install_cmd}"'])
+            elif self.system == 'windows':
+                subprocess.Popen(['cmd', '/c', 'start', 'cmd', '/k', install_cmd])
+            else:
+                # Fallback for Linux
+                print(f"\n!!! {title} !!!\n{msg}")
+                subprocess.Popen(install_cmd.split())
+
+            logger.info("Polling for wxPython installation (Timeout: 5m)...")
+            start_time = time.time()
+            while time.time() - start_time < 300:
+                if self.check_python_package("wxPython"):
+                    logger.info("wxPython detected!")
+                    return True
+                time.sleep(2)
+            logger.error("Timed out waiting for wxPython installation.")
+            
+        return False
+
+    def _ensure_macos_fonts_native(self):
+        """Check for fonts and prompt using osascript for UX consistency."""
+        # Note: We can't use wx.FontEnumerator here if wx isn't fully ready or we want zero wx dependency
+        # but since this runs AFTER wxPython check, we could. However, for consistency, we'll keep it "native-ish".
+        
+        # Helper to check font files in standard locations
+        def is_font_installed(face_name):
+            # Simple check via fc-list if available or just assume we need them if we can't verify easily without wx
             try:
+                import wx
                 enumerator = wx.FontEnumerator()
                 enumerator.EnumerateFacenames()
-                available = face_name in enumerator.GetFacenames()
-                logger.debug(f"Font '{face_name}' available: {available}")
-                return available
-            except Exception as e:
-                logger.debug(f"Font check error for '{face_name}': {e}")
+                return face_name in enumerator.GetFacenames()
+            except:
                 return False
 
-        def get_missing_fonts():
-            missing = []
-            if not is_font_available(JETBRAINS_MONO):
-                missing.append("JetBrains Mono")
-            if not is_font_available(MDI_FONT_FAMILY):
-                missing.append("Material Design Icons")
-            if not is_font_available(OSWALD):
-                missing.append("Oswald")
-            return missing
+        missing = []
+        if not is_font_installed(JETBRAINS_MONO): missing.append("JetBrains Mono")
+        if not is_font_installed(MDI_FONT_FAMILY): missing.append("Material Design Icons")
+        if not is_font_installed(OSWALD): missing.append("Oswald")
+        
+        if not missing: return True
 
-        missing = get_missing_fonts()
-        if not missing:
-            logger.debug("All required fonts are present")
-            return True
-
-        logger.info(f"Missing fonts: {missing}")
-        # Prompt user to install
-        msg = (
-            f"SpinRender requires the following fonts for its interface:\n"
-            f"• {', '.join(missing)}\n\n"
-            "These fonts must be installed to continue. Would you like to install them now?\n"
-            "(macOS Font Book will open; please click 'Install Font' for each file)"
-        )
-
-        logger.debug("Showing font installation prompt...")
-        dlg = wx.MessageDialog(None, msg, "Fonts Required", wx.YES_NO | wx.ICON_INFORMATION)
-        dlg.SetYesNoLabels("Install", "Exit")
-        resp = dlg.ShowModal()
-        dlg.Destroy()
-        logger.debug(f"Font prompt response: {resp} (wx.ID_YES={wx.ID_YES})")
-
-        if resp == wx.ID_YES:
-            logger.info("User chose to install fonts")
-            # Locate fonts directory
+        msg = (f"SpinRender requires the following fonts for its interface:\\n• {', '.join(missing)}\\n\\n"
+               "Would you like to install them now? (Font files will open; please click 'Install' for each)")
+        
+        if self._show_native_confirm("Fonts Required", msg):
             plugin_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             fonts_dir = os.path.join(plugin_dir, "resources", "fonts")
-            logger.debug(f"Fonts directory: {fonts_dir}")
-
-            # Open only missing font files
             if os.path.exists(fonts_dir):
-                if "JetBrains Mono" in missing:
-                    font_path = os.path.join(fonts_dir, "JetBrainsMono-VariableFont_wght.ttf")
-                    logger.debug(f"Opening JetBrains Mono: {font_path}")
-                    subprocess.run(["open", font_path])
-                if "Material Design Icons" in missing:
-                    font_path = os.path.join(fonts_dir, "materialdesignicons-webfont.ttf")
-                    logger.debug(f"Opening MDI: {font_path}")
-                    subprocess.run(["open", font_path])
-                if "Oswald" in missing:
-                    font_path = os.path.join(fonts_dir, "Oswald-VariableFont_wght.ttf")
-                    logger.debug(f"Opening Oswald: {font_path}")
-                    subprocess.run(["open", font_path])
-            else:
-                logger.warning(f"Fonts directory not found: {fonts_dir}")
+                font_files = {
+                    "JetBrains Mono": "JetBrainsMono-VariableFont_wght.ttf",
+                    "Material Design Icons": "materialdesignicons-webfont.ttf",
+                    "Oswald": "Oswald-VariableFont_wght.ttf"
+                }
+                for name in missing:
+                    file_path = os.path.join(fonts_dir, font_files.get(name, ""))
+                    if os.path.exists(file_path):
+                        subprocess.run(["open", file_path])
+            
+            # Poll for installation
+            logger.info("Polling for font installation...")
+            start_time = time.time()
+            while time.time() - start_time < 300:
+                still_missing = []
+                if not is_font_installed(JETBRAINS_MONO): still_missing.append("JetBrains Mono")
+                if not is_font_installed(MDI_FONT_FAMILY): still_missing.append("Material Design Icons")
+                if not is_font_installed(OSWALD): still_missing.append("Oswald")
+                
+                if not still_missing:
+                    logger.info("All fonts detected!")
+                    return True
+                time.sleep(2)
+            
+        return False
 
-            # Wait in background for fonts to be installed
-            wait_dlg = wx.ProgressDialog(
-                "Installing Fonts",
-                "Waiting for font installation in Font Book...\nPlugin will continue automatically when finished.\n\nClick 'Cancel' to exit setup.",
-                parent=None,
-                style=wx.PD_APP_MODAL | wx.PD_CAN_ABORT | wx.PD_ELAPSED_TIME
-            )
-
-            ready = False
-            wait_iterations = 0
-            while not ready:
-                wait_iterations += 1
-                current_missing = get_missing_fonts()
-                logger.debug(f"Font check iteration {wait_iterations}: still missing: {current_missing}")
-                if not current_missing:
-                    ready = True
-                    break
-
-                keep_going, _ = wait_dlg.Update(50, "Waiting for font installation in Font Book...")
-                if not keep_going:
-                    logger.warning("User cancelled font installation wait")
-                    wait_dlg.Destroy()
-                    return False
-
-                wx.SafeYield()
-                time.sleep(1.0)
-
-            wait_dlg.Destroy()
-            logger.info("Font installation completed/verified")
-            return True
-        else:
-            logger.info("User declined font installation")
-            return False
+    def _show_native_confirm(self, title, msg):
+        """Show a native OS confirmation dialog (osascript/powershell)."""
+        if self.system == 'darwin':
+            script = f'display dialog "{msg}" with title "{title}" buttons {{"Exit", "Install"}} default button "Install"'
+            try:
+                result = subprocess.check_output(['osascript', '-e', script]).decode('utf-8').strip()
+                return "button returned:Install" in result
+            except: return False
+        elif self.system == 'windows':
+            script = '[void][System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms"); '
+            script += f'$res = [System.Windows.Forms.MessageBox]::Show("{msg}", "{title}", "YesNo", "Information"); if($res -eq "Yes") {{ echo "Install" }} else {{ echo "Exit" }}'
+            try:
+                result = subprocess.check_output(['powershell', '-Command', script]).decode('utf-8').strip()
+                return "Install" in result
+            except: return False
+        return False

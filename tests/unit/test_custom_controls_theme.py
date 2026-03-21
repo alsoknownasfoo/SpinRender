@@ -75,14 +75,14 @@ class TestV2ThemeTokenIntegration:
         from SpinRender.ui.custom_controls import (
             CustomSlider, CustomToggleButton, CustomDropdown,
             CustomButton, PresetCard, SectionLabel,
-            NumericInput, CustomTextInput, ProjectFolderChip,
-            CustomColorPicker, PathInputControl
+            CustomInput, ProjectFolderChip,
+            CustomColorPicker, CustomListItem, CustomListView
         )
         classes = [
             CustomSlider, CustomToggleButton, CustomDropdown,
             CustomButton, PresetCard, SectionLabel,
-            NumericInput, CustomTextInput, ProjectFolderChip,
-            CustomColorPicker, PathInputControl
+            CustomInput, ProjectFolderChip,
+            CustomColorPicker, CustomListItem, CustomListView
         ]
         for cls in classes:
             class_vars = cls.__dict__

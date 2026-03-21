@@ -290,46 +290,17 @@ class SpinRenderPanel(wx.Panel):
         return self.preview
 
 
-    def enable_left_panel_controls(self, enable=True):
-        """Recursively enable or disable controls in the left panel and manage preview-closing bindings"""
-        from ui.custom_controls import CustomSlider, CustomButton, CustomToggleButton, NumericInput, PresetCard, CustomDropdown, CustomTextInput
-        
-        def process_widget(widget):
-            # Skip the render button so we can still click STOP
-            if widget == self.render_btn:
-                return
-                
-            is_control = isinstance(widget, (CustomSlider, CustomButton, CustomToggleButton, NumericInput, PresetCard, CustomDropdown, CustomTextInput, wx.Choice))
-            
-            # Special case for Save Preset button which is a CustomButton
-            if isinstance(widget, CustomButton) and widget.GetLabel() == "+ SAVE PRESET":
-                is_control = True
+    def enable_parameter_controls(self, enable=True):
+        """Enable or disable parameter controls during render. Export controls (render/options/cancel) are unaffected."""
+        registry = self.controls_side_panel._registry
+        for ctrl in registry.controls(section='presets') + \
+                    registry.controls(section='parameters') + \
+                    registry.controls(section='output'):
+            ctrl.Enable(enable)
 
-            if is_control:
-                widget.Enable(enable)
-                
-                # Bind click interaction to close preview only if control is enabled
-                if enable:
-                    # Bind our specific handler
-                    widget.Bind(wx.EVT_LEFT_DOWN, self.on_left_panel_interaction)
-                else:
-                    # ONLY unbind our specific handler to avoid breaking internal control logic
-                    widget.Unbind(wx.EVT_LEFT_DOWN, handler=self.on_left_panel_interaction)
-            
-            for child in widget.GetChildren():
-                process_widget(child)
-        
-        process_widget(self.controls_side_panel)
-        
-        # Header close button should NEVER be disabled
-        if hasattr(self, 'header_close_btn'):
-            self.header_close_btn.Enable(True)
-        
-        # Force a refresh of all controls to update their visual state
+        if hasattr(self.controls_side_panel, 'reapply_theme'):
+            self.controls_side_panel.reapply_theme()
         self.controls_side_panel.Refresh()
-
-
-
 
 
     def on_left_panel_interaction(self, event):
@@ -432,7 +403,7 @@ class SpinRenderPanel(wx.Panel):
         self.render_btn.SetIcon(_locale.get("component.button.stop.icon_ref", "stop"))
 
         # Disable all controls during render
-        self.enable_left_panel_controls(False)
+        self.enable_parameter_controls(False)
 
         # Hide CANCEL and ADVANCED buttons, expand STOP button
         if hasattr(self, 'can_btn'):
@@ -461,13 +432,14 @@ class SpinRenderPanel(wx.Panel):
 
         # IMMEDIATELY ACTIVATE RENDER PREVIEW (hides wireframe)
         self.preview.render_preview_active = True
+        self.preview.is_rendering = True
         self.preview.render_preview_bitmap = None  # Clear old frame
         self.preview.preview_manually_closed = False
         self.preview.current_render_frame = 0
         self.preview.total_render_frames = 0
         self.preview.final_output_type = None
 
-        if hasattr(self, 'render_preview_panel'):
+        if hasattr(self.preview, 'render_preview_panel'):
             # Force size/pos sync before showing
             if hasattr(self.preview, 'viewport'):
                 v_size = self.preview.viewport.GetSize()
@@ -525,7 +497,8 @@ class SpinRenderPanel(wx.Panel):
         self.render_btn.SetStyle("render")
         
         # Re-enable all controls
-        self.enable_left_panel_controls(True)
+        self.enable_parameter_controls(True)
+        self.preview.is_rendering = False
         
         # Restore CANCEL and ADVANCED buttons
         if hasattr(self, 'can_btn'):

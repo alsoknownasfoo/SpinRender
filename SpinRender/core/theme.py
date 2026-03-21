@@ -167,8 +167,13 @@ class Theme:
         state_name = "normal"
 
         if not enabled:
-            final_color = states[3] if len(states) > 3 else self.disabled(states[0])
             state_name = "disabled"
+            if len(states) > 3 and states[3]:
+                final_color = states[3]
+            else:
+                # If no explicit disabled state, desaturate the state that would be active
+                base_for_disabled = states[2] if (pressed and len(states) > 2) else states[0]
+                final_color = self.disabled(base_for_disabled)
         elif pressed:
             final_color = states[2] if len(states) > 2 else states[0]
             state_name = "pressed"
@@ -286,12 +291,19 @@ class Theme:
             parts = [float(p) for p in re.findall(r"[-?\d.]+", delta_raw)]
             if state == "disabled" and len(parts) >= 4:
                 alpha = int(parts[3] * 255) if parts[3] <= 1.0 else int(parts[3])
-                return wx.Colour(base_color.Red(), base_color.Green(), base_color.Blue(), alpha)
+                # Desaturate using weighted luminance (0.299R + 0.587G + 0.114B)
+                gray = int(0.299 * base_color.Red() + 0.587 * base_color.Green() + 0.114 * base_color.Blue())
+                return wx.Colour(gray, gray, gray, alpha)
 
             r = max(0, min(255, int(base_color.Red() + (parts[0] if len(parts) > 0 else 0))))
             g = max(0, min(255, int(base_color.Green() + (parts[1] if len(parts) > 1 else 0))))
             b = max(0, min(255, int(base_color.Blue() + (parts[2] if len(parts) > 2 else 0))))
             a = int(parts[3] * 255) if len(parts) >= 4 else base_color.Alpha()
+            
+            if state == "disabled":
+                gray = int(0.299 * r + 0.587 * g + 0.114 * b)
+                return wx.Colour(gray, gray, gray, a)
+                
             return wx.Colour(r, g, b, a)
         except:
             return base_color
@@ -299,7 +311,10 @@ class Theme:
     def disabled(self, color) -> 'wx.Colour':
         import wx
         if isinstance(color, wx.Colour):
-            return wx.Colour(color.Red(), color.Green(), color.Blue(), 128)
+            # Desaturate using weighted luminance (0.299R + 0.587G + 0.114B)
+            gray = int(0.299 * color.Red() + 0.587 * color.Green() + 0.114 * color.Blue())
+            # Half alpha (128)
+            return wx.Colour(gray, gray, gray, 128)
         return self._parse_color("#FF00FF")
 
     def _parse_color(self, value: str) -> 'wx.Colour':
@@ -382,9 +397,16 @@ class Theme:
         try: return int(val)
         except: return 0
     
-    def glyph(self, name: str) -> str:
-        if not name or name.lower() == "none": return ""
-        token = f"glyphs.{name.replace('glyphs.', '')}"
+    def glyph(self, name: any) -> str:
+        if not name: return ""
+        
+        # Handle dictionary input (e.g. {ref: mdi-folder, color: ...})
+        if isinstance(name, dict):
+            name = name.get('ref') or name.get('icon') or ""
+            
+        if not isinstance(name, str) or name.lower() == "none": return ""
+        
+        token = f"glyphs.{name.replace('mdi-', '').replace('glyphs.', '')}"
         val = self._resolve(token)
         return str(val) if isinstance(val, str) and not val.startswith("#") else ""
 

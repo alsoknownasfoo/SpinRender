@@ -143,60 +143,60 @@ text:
     font:
       typeface: "@typography.families.display"
       size: "@typography.scale.lg"
-      weight: 700
+      weight: "@typography.weights.bold"
   subtitle:
     color: "@colors.primary"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
-      weight: 700
+      weight: "@typography.weights.bold"
   header:
     color: "@colors.gray-medium"
     formatting: "uppercase"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.md"
-      weight: 600
+      weight: "@typography.weights.semibold"
   subheader:
     color: "@colors.primary"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
-      weight: 600
+      weight: "@typography.weights.semibold"
   body:
     color: "@colors.gray-medium"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
-      weight: 400
+      weight: "@typography.weights.normal"
   body_strong:
     ref: "@text.body"
     font:
-      weight: 600
+      weight: "@typography.weights.semibold"
   numeric:
     color: "@colors.secondary"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.base"
-      weight: 600
+      weight: "@typography.weights.semibold"
   links:
     color: "@colors.primary"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.base"
-      weight: 600
+      weight: "@typography.weights.semibold"
   metadata:
     color: "@colors.gray-medium"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
-      weight: 400
+      weight: "@typography.weights.normal"
   label:
     color: "@colors.gray-text"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
-      weight: 600
+      weight: "@typography.weights.semibold"
   button:
     color: 
       default: "@colors.gray-light"
@@ -204,7 +204,7 @@ text:
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.base"
-      weight: 600
+      weight: "@typography.weights.semibold"
   nav:
     color: 
       default: "@colors.gray-medium"
@@ -213,25 +213,31 @@ text:
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
-      weight: 700
+      weight: "@typography.weights.bold"
   dropdown:
     color: "@colors.gray-white"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
-      weight: 600
+      weight: "@typography.weights.semibold"
+  status:
+    color: "@colors.primary"
+    font:
+      typeface: "@typography.families.mono"
+      size: "@typography.scale.sm"
+      weight: "@typography.weights.bold"
   icon:
     color: "@colors.gray-white"
     font:
       typeface: "@typography.families.icon"
       size: "@typography.scale.md"
-      weight: 400
+      weight: "@typography.weights.normal"
   icon_lg:
     color: "@colors.gray-white"
     font:
       typeface: "@typography.families.icon"
       size: "@typography.scale.lg"
-      weight: 400
+      weight: "@typography.weights.normal"
 
 # ─────────────────────────────────────────────────────────────────
 # 6. GLYPHS (Symbol Aliases)
@@ -739,22 +745,22 @@ components:
     default:
       bg: "@colors.gray-black"
       label:
-        ref: "@text.subheader"
+        ref: "@text.status"
         color: "@colors.gray-white"
     progress:
       bg: "@colors.primary"
       label:
-        ref: "@text.subheader"
+        ref: "@text.status"
         color: "@colors.gray-black"
     complete:
       bg: "@colors.gray-black"
       label:
-        ref: "@text.subheader"
+        ref: "@text.status"
         color: "@colors.ok"
     error:
       bg: "@colors.gray-black"
       label:
-        ref: "@text.subheader"
+        ref: "@text.status"
         color: "@colors.error"
 
   list:

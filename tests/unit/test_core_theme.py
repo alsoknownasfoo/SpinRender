@@ -91,9 +91,9 @@ class TestThemeTokenResolution:
 
     def test_resolve_circular_ref_would_infinite_loop(self):
         """_resolve should fail gracefully on circular ref (eventually max recursion).."""
-        # Inject circular reference into data
+        # Inject circular reference into data using string reference
         original_data = self.theme._data.copy()
-        self.theme._data["test"] = {"ref": "test"}  # circular
+        self.theme._data["test"] = "@test"  # circular reference via @ syntax
         with pytest.raises(RecursionError):
             self.theme._resolve("test")
         # Restore
@@ -190,13 +190,13 @@ class TestThemeColorAPI:
     def test_color_bg_tokens(self):
         """color() should resolve background tokens."""
         import wx
-        # V2: components.main.frame.bg -> @colors.gray-dark -> dark gray
-        bg_page = self.theme.color("components.main.frame.bg")
+        # V2: layout.main.frame.bg -> @colors.gray-black -> very low RGB
+        bg_page = self.theme.color("layout.main.frame.bg")
         assert isinstance(bg_page, wx.Colour)
-        # Dark theme: gray-dark is #121212, very low RGB
-        assert bg_page.Red() < 50
-        assert bg_page.Green() < 50
-        assert bg_page.Blue() < 50
+        # Dark theme: gray-black is #0D0D0D, very low RGB
+        assert bg_page.Red() < 15
+        assert bg_page.Green() < 15
+        assert bg_page.Blue() < 15
 
     def test_color_text_tokens(self):
         """color() should resolve text color tokens."""
@@ -259,10 +259,10 @@ class TestThemeFontAPI:
         assert hasattr(font, 'GetFaceName') and hasattr(font, 'GetPointSize') and hasattr(font, 'GetWeight')
 
     def test_font_body_properties(self):
-        """body font should be JetBrains Mono, 11px, normal (V2: from text.body.font)."""
+        """body font should be JetBrains Mono, 9px, normal (V2: from text.body.font)."""
         font = self.theme.font("body")
         assert font.GetFaceName() == "JetBrains Mono"
-        assert font.GetPointSize() == 11
+        assert font.GetPointSize() == 9  # YAML: typography.scale.sm
         # V2 text.body.font.weight = 400 maps to FONTWEIGHT_NORMAL
         assert font.GetWeight() == 400
 

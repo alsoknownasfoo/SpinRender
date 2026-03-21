@@ -95,7 +95,12 @@ class PresetController:
                 return
 
             while True:
-                dlg = RecallPresetDialog(self.parent, self.board_path)
+                # Pass currently selected custom name if active
+                curr_name = None
+                if 'custom' in self.preset_buttons and self.preset_buttons['custom'].IsSelected():
+                    curr_name = self.preset_buttons['custom'].label
+                
+                dlg = RecallPresetDialog(self.parent, self.board_path, current_name=curr_name)
                 result = dlg.ShowModal()
                 if result == wx.ID_OK:
                     pd = dlg.GetSelectedSettings()
@@ -109,18 +114,9 @@ class PresetController:
                         if top:
                             top.Raise()
                     return
-                elif result == ID_RESET:
-                    if 'custom' in self.preset_buttons:
-                        self.preset_buttons['custom'].SetLabel("SELECT CUSTOM..")
-                    self.check_preset_match(manual_change=True)
-                    top = self.parent.GetTopLevelParent()
-                    if top:
-                        top.Raise()
-                    dlg.Destroy()
-                    continue
                 else:
                     dlg.Destroy()
-                    self.check_preset_match()
+                    self.check_preset_match(manual_change=True)
                     top = self.parent.GetTopLevelParent()
                     if top:
                         top.Raise()
@@ -276,7 +272,7 @@ class PresetController:
                     self.preset_buttons['custom'].SetLabel("SELECT CUSTOM..")
 
         self.preview.update_preview_overlay()
-        self.save_settings()
+        # self.check_preset_match(manual_change=False)
 
     def save_settings(self):
         """Persist current settings to project-local config file."""
@@ -305,5 +301,10 @@ class PresetController:
                         if 'custom' in self.preset_buttons:
                             self.preset_buttons['custom'].SetLabel(name)
                         self.check_preset_match(manual_change=False)
+            
+            # Ensure main window regains focus after dismissal
+            top = self.parent.GetTopLevelParent()
+            if top:
+                top.Raise()
         finally:
             dlg.Destroy()

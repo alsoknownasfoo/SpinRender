@@ -305,7 +305,13 @@ class CustomToggleButton(wx.Panel):
             x_offset = i * state_width
             
             # Resolve Segment Background
-            seg_bg = _theme.color(f"{token}.items.frame.bg", is_hovered, is_active, enabled)
+            # When disabled, resolve the intended visual-state colour first (enabled=True),
+            # then desaturate — avoids the auto-generated disabled state being based on
+            # the transparent default rather than the coloured active state.
+            if not enabled:
+                seg_bg = _theme.disabled(_theme.color(f"{token}.items.frame.bg", False, is_active, True))
+            else:
+                seg_bg = _theme.color(f"{token}.items.frame.bg", is_hovered, is_active, enabled)
             if seg_bg.Alpha() > 0:
                 gc.SetBrush(wx.Brush(seg_bg))
                 gc.SetPen(wx.TRANSPARENT_PEN)
@@ -314,9 +320,13 @@ class CustomToggleButton(wx.Panel):
             # Resolve Content Colors
             label_token = f"{token}.items.label"
             icon_token = f"{token}.items.icon"
-            
-            l_color = _theme.color(f"{label_token}.color", is_hovered, is_active, enabled)
-            i_color = _theme.color(f"{icon_token}.color", is_hovered, is_active, enabled)
+
+            if not enabled:
+                l_color = _theme.disabled(_theme.color(f"{label_token}.color", False, is_active, True))
+                i_color = _theme.disabled(_theme.color(f"{icon_token}.color", False, is_active, True))
+            else:
+                l_color = _theme.color(f"{label_token}.color", is_hovered, is_active, enabled)
+                i_color = _theme.color(f"{icon_token}.color", is_hovered, is_active, enabled)
             
             self._draw_side(gc, opt.get('label'), opt.get('icon'), x_offset, state_width, height, l_color, i_color, label_token, icon_token)
 

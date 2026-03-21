@@ -94,7 +94,7 @@ class BaseStyledDialog(wx.Dialog):
         else:
             event.Skip()
 
-    def create_header(self, title_text):
+    def create_header(self, title_text, show_close=True):
         header_height = _theme._resolve("layout.dialogs.default.header.height")
         if header_height is None:
             header_height = 48
@@ -108,11 +108,12 @@ class BaseStyledDialog(wx.Dialog):
         
         header_sizer.Add(self.header_title, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 16)
         
-        # Add standard close button to all headers - V2 Locale lookup
+        # Add standard close button if requested
         header_sizer.AddStretchSpacer()
-        close_btn = CustomButton(header, id="close", label="", ghost=True, size=(32, 32))
-        close_btn.Bind(wx.EVT_BUTTON, self.on_cancel)
-        header_sizer.Add(close_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 12)
+        if show_close:
+            close_btn = CustomButton(header, id="close", label="", ghost=True, size=(32, 32))
+            close_btn.Bind(wx.EVT_BUTTON, self.on_cancel)
+            header_sizer.Add(close_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 12)
         
         header.SetSizer(header_sizer)
 
@@ -230,7 +231,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
             size=(-1, 80),
             id="parameters"
         )
-        content_sizer.Add(self.override_input, 0, wx.EXPAND | wx.BOTTOM, 8)
+        content_sizer.Add(self.override_input, 1, wx.EXPAND | wx.BOTTOM, 8)
         
         # Helper link simulation
         link_row = wx.Panel(content)
@@ -372,7 +373,7 @@ class SavePresetDialog(BaseStyledDialog):
     Save Preset dialog
     Follows Pencil design: Modal/SavePreset
     """
-    # All colors use theme module - no class-level color constants
+    PLACEHOLDER_COPY = "PRESET_NAME"
 
     def __init__(self, parent, board_path):
         # Get dimensions from theme
@@ -381,12 +382,19 @@ class SavePresetDialog(BaseStyledDialog):
         if dialog_width is None:
             dialog_width = 400
         if dialog_height is None:
-            dialog_height = 260
-        super().__init__(parent, "Save Preset", (dialog_width, dialog_height))
+            dialog_height = 200 # Reduced height since we removed label
+        super().__init__(parent, "SAVE PRESET", (dialog_width, dialog_height))
         self.board_path = board_path
         self.preset_name = ""
         self.build_ui()
         self.Centre()
+        
+        # Prefill and highlight placeholder
+        self.name_input.SetValue(self.PLACEHOLDER_COPY)
+        wx.CallAfter(self.name_input.text_ctrl.SetFocus)
+        wx.CallAfter(self.name_input.text_ctrl.SetSelection, 0, -1)
+        
+        self.on_text_change(None) # Initial state check
 
     def build_ui(self):
         from SpinRender.core.presets import PresetManager
@@ -394,21 +402,18 @@ class SavePresetDialog(BaseStyledDialog):
         self.existing_names = [n.upper() for s, n in self.manager.list_presets()]
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(self.create_header("SAVE PRESET"), 0, wx.EXPAND)
+        # Header without close button as requested
+        main_sizer.Add(self.create_header("SAVE PRESET", show_close=False), 0, wx.EXPAND)
         line = wx.Panel(self.main_container, size=(-1, 1)); line.SetBackgroundColour(_theme.color("borders.default.color"))
         main_sizer.Add(line, 0, wx.EXPAND)
 
         content = wx.Panel(self.main_container)
         content_sizer = wx.BoxSizer(wx.VERTICAL)
-        label = wx.StaticText(content, label=_locale.get("dialog.save_preset.field_name", "PRESET NAME"))
-        label.SetForegroundColour(_theme.color("text.subheader.color"))
-        label.SetFont(_theme.font("subheader"))
-        padding_lg = _theme._resolve("typography.spacing.lg") or 24
-        content_sizer.Add(label, 0, wx.LEFT | wx.TOP, padding_lg)
 
         self.name_input = CustomInput(content, size=(-1, 36), id="default")
         self.name_input.Bind(wx.EVT_TEXT_ENTER, self.on_save)
         self.name_input.Bind(wx.EVT_TEXT, self.on_text_change)
+        
         padding_lg = _theme._resolve("typography.spacing.lg") or 24
         content_sizer.Add(self.name_input, 0, wx.EXPAND | wx.ALL, padding_lg)
 
@@ -431,15 +436,27 @@ class SavePresetDialog(BaseStyledDialog):
         self.main_container.SetSizer(main_sizer)
 
     def on_cancel(self, event): self.EndModal(wx.ID_CANCEL)
-    def on_save(self, event): self.EndModal(wx.ID_OK)
+    def on_save(self, event): 
+        if self.save_btn.IsEnabled():
+            self.EndModal(wx.ID_OK)
+            
     def on_text_change(self, event):
-        val = self.name_input.GetValue().upper(); is_overwrite = val in self.existing_names
+        val = self.name_input.GetValue().strip()
+        is_empty = not val
+        is_placeholder = val.upper() == self.PLACEHOLDER_COPY
+        
+        # Enable save only if not empty and not placeholder
+        self.save_btn.Enable(not is_empty and not is_placeholder)
+        
+        val_upper = val.upper()
+        is_overwrite = val_upper in self.existing_names and not is_placeholder
         if is_overwrite:
             self.save_btn.SetStyle("exit", update_content=False)
             self.save_btn.SetLabel(_locale.get("component.button.overwrite.label", "OVERWRITE"))
             self.save_btn.SetIcon(_locale.get("component.button.overwrite.icon_ref", "alert"))
         else:
             self.save_btn.SetStyle("save")
+            
     def GetPresetName(self): return self.name_input.GetValue()
 
 
@@ -450,7 +467,7 @@ class RecallPresetDialog(BaseStyledDialog):
     """
     # All colors use theme module
 
-    def __init__(self, parent, board_path):
+    def __init__(self, parent, board_path, current_name=None):
         # Get dimensions from theme
         dialog_width = _theme._resolve("layout.dialogs.presets.frame.width")
         dialog_height = _theme._resolve("layout.dialogs.presets.frame.height")
@@ -460,6 +477,7 @@ class RecallPresetDialog(BaseStyledDialog):
             dialog_height = 400
         super().__init__(parent, "SELECT CUSTOM PRESET", (dialog_width, dialog_height))
         self.board_path = board_path
+        self.current_active_name = current_name
         self.selected_preset = self.selected_name = None
         self.build_ui()
         self.Centre()
@@ -501,7 +519,17 @@ class RecallPresetDialog(BaseStyledDialog):
         data = event.GetClientData()
         name, scope = data["name"], data["scope"]
         if self.manager.delete_preset(name, is_global=(scope=='global')):
-            self.EndModal(ID_RESET)
+            # Refresh list instead of closing dialog to prevent flash and ensure persistence
+            self.list_view.ClearItems()
+            presets = self.manager.list_presets()
+            if not presets:
+                empty_item = self.list_view.AddItem(_locale.get("component.status.no_presets", "No saved presets found."))
+                empty_item.Enable(False)
+            else:
+                for scope, name in presets:
+                    self.list_view.AddItem(name.upper(), data={"name": name, "scope": scope})
+            self.list_view.Layout()
+            self.list_view.SetupScrolling(scroll_x=False, scroll_y=True)
 
     def on_cancel(self, event): self.EndModal(wx.ID_CANCEL)
     def GetSelectedSettings(self): return self.selected_preset

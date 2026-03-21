@@ -130,6 +130,9 @@ locale:
       close:
         label: "CLOSE"
         icon_ref: "glyphs.close"
+      closepreview:
+        label: "CLOSE PREVIEW"
+        icon_ref: "glyphs.close"
       options:
         label: ""
         icon_ref: "glyphs.settings"

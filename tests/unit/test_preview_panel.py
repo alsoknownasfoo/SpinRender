@@ -3,7 +3,16 @@
 import pytest
 from unittest.mock import MagicMock, patch
 import os
+import sys
 import wx  # Import the mocked wx module from conftest
+
+# Mock OpenGL, numpy, and trimesh modules to avoid dependencies in tests
+sys.modules['OpenGL'] = MagicMock()
+sys.modules['OpenGL.GL'] = MagicMock()
+sys.modules['OpenGL.GLU'] = MagicMock()
+sys.modules['OpenGL.GLUT'] = MagicMock()
+sys.modules['numpy'] = MagicMock()
+sys.modules['trimesh'] = MagicMock()
 
 # Define test doubles for wx.StaticText and wx.Timer
 class FakeStaticText:

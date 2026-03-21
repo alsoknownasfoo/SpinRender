@@ -124,7 +124,7 @@ class TestCreateFrame:
         """Creates wx.Panel (FakePanel) with given parent."""
         helpers, _ = helpers_module
         parent = MagicMock()
-        frame = helpers.create_frame(parent, 'colors.bg.page')
+        frame = helpers.create_frame(parent, 'layout.main.frame.bg')
         assert isinstance(frame, FakePanel)
         assert frame.parent is parent
 
@@ -132,9 +132,9 @@ class TestCreateFrame:
         """Background color set from theme token."""
         helpers, theme = helpers_module
         parent = MagicMock()
-        frame = helpers.create_frame(parent, 'colors.bg.page')
+        frame = helpers.create_frame(parent, 'layout.main.frame.bg')
         bg = frame.GetBackgroundColor()
-        expected = theme.color("colors.bg.page")
+        expected = theme.color("layout.main.frame.bg")
         assert bg.Red() == expected.Red() and bg.Green() == expected.Green() and bg.Blue() == expected.Blue()
 
     def test_token_validation_raises_for_unknown(self):

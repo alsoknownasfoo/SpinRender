@@ -43,39 +43,34 @@ class StatusBar(wx.Panel):
         bg_color = _theme.color("layout.main.status.default.bg")
         success_color = _theme.color("layout.main.status.default.label.color")
         primary_color = _theme.color("layout.main.status.progress.bg")
-        text_bg_color = bg_color
 
         # Background
         gc.SetBrush(wx.Brush(bg_color))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRectangle(0, 0, w, h)
 
-        # Progress bar fill (from left)
+        # Progress bar fill (from left) — drawn before text, no clip
         bar_color = self._bar_color_override or primary_color
         fill_w = int(w * self._prog)
         if fill_w > 0:
             gc.SetBrush(wx.Brush(bar_color))
             gc.DrawRectangle(0, 0, fill_w, h)
-            gc.Clip(0, 0, fill_w, h)
 
-        # Text
+        # Layer 1: base text (unclipped) — readable against the unfilled background
         fg_color = self._fg_override or success_color
-        font_obj = TextStyles.label_xs.create_font()
-        
-        gfx_font = gc.CreateFont(font_obj, fg_color)
-        gc.SetFont(gfx_font)
-        
+        font_obj = TextStyles.status.create_font()
+        gc.SetFont(gc.CreateFont(font_obj, fg_color))
         tw, th = gc.GetTextExtent(self._msg)
         tx, ty = 10, (h - th) / 2
         gc.DrawText(self._msg, tx, ty)
 
+        # Layer 2: accent text clipped to fill region — readable against the fill colour
         if fill_w > 0:
-            gc.ResetClip()
-            # Draw text again in background color for the filled portion (inverted)
-            gfx_font_inv = gc.CreateFont(font_obj, text_bg_color)
-            gc.SetFont(gfx_font_inv)
-            gc.Clip(0, 0, fill_w, h) # Clip to filled portion for inverted text
+            accent_color = _theme.color("layout.main.status.progress.label.color")
+            gc.SetFont(gc.CreateFont(font_obj, accent_color))
+            gc.Clip(0, 0, fill_w, h)
             gc.DrawText(self._msg, tx, ty)
+            gc.ResetClip()
 
     def set_status(self, msg: str, fg_color=None, progress: float = 0.0, bar_color=None):
         """Update status bar display."""

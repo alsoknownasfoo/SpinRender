@@ -1,4 +1,3 @@
-#!/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
 """
 Validation utilities for the SpinRender theme system.
 
