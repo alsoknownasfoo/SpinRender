@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "version": 4
+  },
+  "render": {
+    "engine": 1,
+    "raytrace_backfloor": false,
+    "raytrace_post_processing": true,
+    "raytrace_anti_aliasing": true,
+    "raytrace_shadows": true,
+    "raytrace_reflections": true,
+    "raytrace_refractions": true,
+    "raytrace_procedural_textures": true,
+    "raytrace_nrsamples_shadows": 5,
+    "raytrace_nrsamples_reflections": 5,
+    "raytrace_nrsamples_refractions": 5,
+    "raytrace_recursivelevel_reflections": 3,
+    "raytrace_recursivelevel_refractions": 3,
+    "show_board_body": true,
+    "show_components": true,
+    "show_silkscreen_top": true,
+    "show_silkscreen_bottom": true,
+    "show_soldermask_top": true,
+    "show_soldermask_bottom": true,
+    "show_copper_top": true,
+    "show_copper_bottom": true,
+    "show_zones": true,
+    "show_axis": false,
+    "subtract_mask_from_silk": true,
+    "clip_silk_on_via_annulus": true
+  }
+}
