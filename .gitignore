@@ -27,6 +27,7 @@ SpinRender/logs/
 # Project-specific
 TODO.md
 .orchestration/
+openspec/
 
 # Theme validator generated files
 tests/theme_token_inventory.json
