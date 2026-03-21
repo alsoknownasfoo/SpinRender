@@ -47,10 +47,10 @@ UI_ICONS = {
 
 def get_glyph(name: str) -> str:
     """
-    Get a glyph by name. 
-    Prioritizes V2 Theme resolution, falls back to legacy UI_ICONS/STATUS_ICONS.
+    Get a glyph by name.
+    Prioritizes Theme resolution, falls back to legacy UI_ICONS/STATUS_ICONS.
     """
-    # 1. Try V2 Theme
+    # 1. Try theme
     try:
         t = Theme.current()
         # Clean 'mdi-' if present for theme lookup

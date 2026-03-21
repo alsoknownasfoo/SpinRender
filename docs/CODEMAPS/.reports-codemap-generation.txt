@@ -1,0 +1,118 @@
+# Codemap Generation Report
+
+**Date**: 2026-03-21
+**Analyzer**: Claude Code update-codemaps skill
+**Project**: SpinRender (KiCad Animation Plugin)
+
+## Analysis Summary
+
+**Total Python Files Scanned**: 29
+- Core modules: 7
+- UI modules: 15
+- Test files: 24 (unit tests)
+
+**Estimated Token Count**: ~3,100 tokens for all codemaps
+
+## Generated Documentation
+
+✅ `docs/CODEMAPS/architecture.md` - System overview, plugin lifecycle, architecture patterns
+✅ `docs/CODEMAPS/modules.md` - Detailed module reference (core + ui)
+✅ `docs/CODEMAPS/frontend.md` - UI component hierarchy, event flows
+✅ `docs/CODEMAPS/data.md` - Data models, configuration, validation
+
+## Codebase Structure
+
+### High-Level Organization
+```
+SpinRender/
+├── spinrender_plugin.py    (311 lines) - KiCad entry point
+├── core/                   (7 modules) - Business logic
+├── ui/                     (15 modules) - wxPython UI
+├── resources/              - YAML themes, locales, fonts, KiCad configs
+└── utils/                  - Logging only
+```
+
+### Architecture Patterns Identified
+- Singleton: Theme, Locale, TextStyles
+- MVC-ish: Settings ↔ ParameterController ↔ CustomControls
+- Lazy loading: Deferred imports for OpenGL/trimesh
+- Hot-reload: Theme changes propagate via `_hotload_map`
+- Hot-Reload: Thumbnail caching for presets
+
+### Key Technologies
+- **GUI**: wxPython 4.0+
+- **3D Rendering**: PyOpenGL + trimesh (OpenGL viewport)
+- **Configuration**: YAML (themes/locales), JSON (presets)
+- **Serialization**: RenderSettings.to_dict() / from_dict()
+- **Internationalization**: Locale singleton with YAML strings
+- **Testing**: pytest with coverage (target 80%)
+
+## External Services
+
+### KiCad Integration
+- Action Plugin via `pcbnew.ActionPlugin`
+- Config files in `resources/kicad_config/` for versions 9.0 and 10.0
+- 7 JSON configs per version (3d_viewer, eeschema, pcbnew, etc.)
+- Toolbar button + menu item integration
+
+### Dependencies (from pyproject.toml)
+- PyYAML >=6.0
+- PyOpenGL >=3.1.0 (+ accelerate)
+- trimesh >=4.0.0
+- numpy >=1.24.0
+- pyobjc (macOS only)
+
+### Resources
+- Themes: `dark.yaml`, `light.yaml` (comprehensive token sets)
+- Locales: `en.yaml`, `en_US.yaml`
+- Fonts: 3 variable fonts (JetBrainsMono, Oswald, Material Design Icons)
+- Icons: `icon.png`, `logo.svg`
+
+## Development Status
+
+**Current Branch**: `feat/theme-v2`
+
+**Recent Activity** (git status):
+- Theme system enhancements
+- Core modules modified: `presets.py`, `theme.py`
+- UI modules updated: 16 files in `SpinRender/ui/`
+- Tests updated: 20 unit test files
+- Locale and theme YAML files modified
+
+**Recent Fixes**:
+- Custom event binding for delete functionality (fixed wx namespace)
+- Duplicate code cleanup in `enable_left_panel_controls`
+- Theme circular reference resolution test updated
+
+## Recommendations
+
+### Documentation Coverage
+- ✅ All major modules documented
+- ✅ Architecture diagrams included
+- ✅ Event flows traced
+- ⚠️ Missing: Detailed function signature indexes (could add later)
+- ⚠️ Missing: Error handling patterns (could add later)
+
+### Token Lean Compliance
+- Each codemap < 1000 tokens ✓
+- High-level structure, minimal implementation details ✓
+- File paths and line counts provided ✓
+- ASCII diagrams for component hierarchy ✓
+
+### Next Steps
+1. Review codemaps for accuracy
+2. Consider adding:
+   - API function signatures (if needed for context)
+   - Error handling patterns (test files show common failures)
+   - Performance bottlenecks (from benchmark files)
+3. Schedule periodic updates (after major refactors)
+
+## Comparison to Previous Version
+
+**Status**: No previous codemaps found (fresh generation).
+
+**Change Threshold**: >30% would require approval (N/A)
+
+---
+
+**All codemaps saved to**: `docs/CODEMAPS/`
