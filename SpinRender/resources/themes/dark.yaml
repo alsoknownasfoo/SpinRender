@@ -1,4 +1,4 @@
-# SpinRender Theme V2 — Dark (Default)
+# SpinRender Theme — Dark (Default)
 # Note: STYLING ONLY. All text/icon content is in locale_en.yaml.
 
 # ─────────────────────────────────────────────────────────────────
@@ -189,7 +189,7 @@ text:
     color: "@colors.gray-medium"
     font:
       typeface: "@typography.families.mono"
-      size: "@typography.scale.base"
+      size: "@typography.scale.sm"
       weight: 400
   label:
     color: "@colors.gray-text"
@@ -212,7 +212,7 @@ text:
       active: "@colors.primary"
     font:
       typeface: "@typography.families.mono"
-      size: "@typography.scale.base"
+      size: "@typography.scale.sm"
       weight: 700
   dropdown:
     color: "@colors.gray-white"
@@ -354,17 +354,20 @@ layout:
           ref: "@components.button.cancel"
     options:
       ref: "@layout.dialogs.default"
+      frame:
+        width: 600
+        height: 560
     presets:
       ref: "@layout.dialogs.default"
       frame:
-        width: 500
-        height: 400
+        width: 300
+        height: 250
       controls: None
     addpreset:
       ref: "@layout.dialogs.default"
       frame: 
-        width: 450
-        height: 320
+        width: 300
+        height: 200
       controls:
         button1:
           ref: "@components.button.save"
@@ -447,7 +450,7 @@ components:
         active:  "@colors.primary"
       font: "@text.numeric.font" # font
       selection: "@colors.cyan-20" # highlight selection color
-      alignment: "right" # text alignment
+      alignment: "center" # text alignment
       error:
         color: "@colors.error"
         border:
@@ -466,13 +469,13 @@ components:
           default: "@colors.transparent"
           hover: "@colors.cyan-20"
       color: 
-        default: "@colors.gray-medium"
+        default: "@colors.gray-white"
         hover: "@colors.primary"
         active: "@colors.primary"
-
     axis:
       ref: "@components.input.default"
       type: "numeric"
+      alignment: "right"
       unit: "°"
       step: 0.1
       frame:
@@ -480,6 +483,7 @@ components:
     speed:
       ref: "@components.input.default"
       type: "numeric"
+      alignment: "right" 
       unit: "f"
       step: 0.1
       frame:
@@ -487,17 +491,17 @@ components:
     parameters:
       ref: "@components.input.default"
       type: "text"
-      alighnment: "left"
+      alignment: "left"
       multiline: true
       frame:
         height: 84
     hex:
       ref: "@components.input.default"
       case: "upper"
-      alignment: "left"
+      alignment: "center"
       prefix: "#"
       frame:
-        height: 28
+        height: 32
 
   slider:
     default:
@@ -690,6 +694,11 @@ components:
         bg:
           default: "@colors.transparent"
           hover: "@colors.red"
+    closepreview:
+      ref: "@components.button.default"
+      label:
+        font: "@text.metadata.font"
+        color: "@colors.cyan"
     options:
       ref: "@components.button.default"
       frame:
@@ -704,9 +713,6 @@ components:
           hover: "@colors.gray-dark"
     browse:
       ref: "@components.button.default"
-      frame:
-        bg: "@colors.gray-black"
-        border: "@borders.subtle"
     exit:
       ref: "@components.button.default"
       frame:
@@ -716,6 +722,8 @@ components:
         ref: "@text.button"
         color: "@colors.white"
     render:
+      ref: "@components.button.ok"
+    save:
       ref: "@components.button.ok"
 
   scrollbar:
@@ -732,7 +740,7 @@ components:
       bg: "@colors.gray-black"
       label:
         ref: "@text.subheader"
-        color: "@colors.ok"
+        color: "@colors.gray-white"
     progress:
       bg: "@colors.primary"
       label:
@@ -753,17 +761,30 @@ components:
     default:
       frame:
         height: 40
-        bg: "@colors.transparent"
-        hover: "@colors.gray-medium"
+        bg:
+          default: "@colors.transparent"
+          hover: "@colors.cyan-20"
+        radius: "@radius.sm"
+        border:
+          size: 1
+          color:
+            default: "@colors.gray-border"
+            hover: "@colors.transparent"
+            active: "@colors.primary"
         cursor: "hand"
-      label: 
-        ref:"@text.body"
-    custompresets:
-      ref: "@components.list.default"
-      frame:
-        bg: "@colors.gray-medium"
-        hover: "@colors.gray-light"
+      label:
+        color: 
+          default: "@colors.gray-white"
+          hover: "@colors.primary"
+      border: 
+        size: "@borders.subtle.size"
+        color: 
+          default: "@borders.subtle.color"
+          hover: "@colors.transparent"
+          active: "@colors.transparent"
       actions:
         delete:  { icon: { ref: "glyphs.trash" }, color: "@colors.warning" }
         confirm: { icon: { ref: "glyphs.save" },  color: "@colors.ok"      }
         cancel:  { icon: { ref: "glyphs.close" }, color: "@colors.warning" }
+    custompresets:
+      ref: "@components.list.default"

@@ -13,6 +13,7 @@ from .custom_controls import (
     PresetCard, CustomDropdown, CustomColorPicker
 )
 from .text_styles import TextStyle, TextStyles
+from .registry import ControlRegistry
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
 _theme = Theme.current()
@@ -35,6 +36,10 @@ class ControlsSidePanel(wx.Panel):
         # Track elements for hot-reloading: { style_name: [wx.StaticText, ...] }
         self._hotload_map = {}
 
+        # Registry of all UI controls, populated automatically via self-registration.
+        # Query with _registry.filter(section='parameters') etc.
+        self._registry = ControlRegistry()
+
         # Build the UI
         controls_panel = self.create_controls_panel(self)
 
@@ -43,6 +48,16 @@ class ControlsSidePanel(wx.Panel):
         sizer.Add(controls_panel, 1, wx.EXPAND)
         self.SetSizer(sizer)
         sizer.Fit(self)
+
+    def _reg(self, ctrl, section=None):
+        """Register a parameter control and return it unchanged."""
+        self._registry.append({
+            'control': ctrl,
+            'type':    type(ctrl).__name__,
+            'id':      getattr(ctrl, '_id', None),
+            'section': section,
+        })
+        return ctrl
 
     def _add_text(self, parent, label, style_name, color_override=None, **kwargs):
         """Helper to create a StaticText and register it for hot-reloading."""
@@ -56,7 +71,12 @@ class ControlsSidePanel(wx.Panel):
         # Initial application
         style = getattr(TextStyles, style_name)
         txt.SetFont(style.create_font())
-        txt.SetForegroundColour(color_override if color_override else style.color)
+        
+        color = color_override if color_override else style.color
+        if not txt.IsEnabled():
+            color = _theme.disabled(color)
+        txt.SetForegroundColour(color)
+        
         if style.formatting == "uppercase":
             txt.SetLabel(txt.GetLabel().upper())
             
@@ -154,7 +174,10 @@ class ControlsSidePanel(wx.Panel):
             for txt, color_override in elements:
                 if not txt: continue
                 txt.SetFont(font)
-                txt.SetForegroundColour(color_override if color_override else style.color)
+                color = color_override if color_override else style.color
+                if not txt.IsEnabled():
+                    color = _theme.disabled(color)
+                txt.SetForegroundColour(color)
                 if style.formatting == "uppercase":
                     txt.SetLabel(txt.GetLabel().upper())
 
@@ -186,7 +209,7 @@ class ControlsSidePanel(wx.Panel):
         self.preset_buttons = {}
         for i, pid in enumerate(preset_ids):
             # PresetCard handles label/icon lookup internally via ID-driven mapping
-            btn = PresetCard(preset_row, id=f"card{i+1}", size=(90, 64))
+            btn = PresetCard(preset_row, id=f"card{i+1}", size=(90, 64), section='presets')
             btn.Bind(wx.EVT_BUTTON, lambda e, p=pid: self.main_panel.on_preset_change(p))
             if self.settings.preset == pid:
                 btn.SetSelected(True)
@@ -212,9 +235,9 @@ class ControlsSidePanel(wx.Panel):
         header_sizer.Add(create_section_label(header, _locale.get("sections.parameters", "PARAMETERS"), id="parameters"), 1, wx.ALIGN_CENTER_VERTICAL)
         
         # Save Preset Button - simplified id syntax
-        save_btn = CustomButton(header, id="save_preset", size=(120, 28))
-        save_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_save_preset)
-        header_sizer.Add(save_btn, 0, wx.ALIGN_CENTER_VERTICAL)
+        self.save_btn = CustomButton(header, id="save_preset", size=(120, 28), section='parameters')
+        self.save_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_save_preset)
+        header_sizer.Add(self.save_btn, 0, wx.ALIGN_CENTER_VERTICAL)
         header.SetSizerAndFit(header_sizer)
 
         sizer.Add(header, 0, wx.EXPAND | wx.BOTTOM, 10)
@@ -233,7 +256,7 @@ class ControlsSidePanel(wx.Panel):
         self.rot_heading = self._add_text(panel, _locale.get("parameters.rotation_heading", "ROTATION SETTINGS"), "subheader")
         sizer.Add(self.rot_heading, 0, wx.BOTTOM, 6)
 
-        # V2: Fetch icon_ref from locale for each axis. Colors are now ID-driven.
+        # Fetch icon_ref from locale for each axis. Colors are ID-driven.
         row1 = self.create_axis_control(
             panel, "BOARD TILT", self.settings.board_tilt, 
             _locale.get("parameters.board_tilt.icon_ref", "axis-x"),
@@ -282,18 +305,20 @@ class ControlsSidePanel(wx.Panel):
 
         if icon_char:
             icon_lbl = self._add_text(label_part, icon_char, "icon", color_override=axis_col)
+            self._registry.add(icon_lbl, section='parameters')
             lp_sizer.Add(icon_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
 
         resolved_label = _locale.get(locale_key, label_text) if locale_key else label_text
         lbl = self._add_text(label_part, f"{resolved_label}:", "label", color_override=axis_col)
+        self._registry.add(lbl, section='parameters')
         lp_sizer.Add(lbl, 0, wx.ALIGN_CENTER_VERTICAL)
         label_part.SetSizer(lp_sizer)
         sizer.Add(label_part, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
 
-        slider = CustomSlider(row, value=def_val, min_val=min_val, max_val=max_val, size=(-1, 18), id=id)
+        slider = CustomSlider(row, value=def_val, min_val=min_val, max_val=max_val, size=(-1, 18), id=id, section='parameters')
         sizer.Add(slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
 
-        inp = create_numeric_input(row, f"{def_val:.2f}", "°", editable=True, min_val=min_val, max_val=max_val, id="axis")
+        inp = create_numeric_input(row, f"{def_val:.2f}", "°", editable=True, min_val=min_val, max_val=max_val, id="axis", section='parameters')
         sizer.Add(inp, 0, wx.ALIGN_CENTER_VERTICAL)
 
         attr_name = label_text.lower().replace(" ", "_")
@@ -313,10 +338,10 @@ class ControlsSidePanel(wx.Panel):
         crow = wx.Panel(panel)
         csizer = wx.BoxSizer(wx.HORIZONTAL)
         p_val = self.settings.period
-        self.period_slider = CustomSlider(crow, value=p_val, min_val=0.1, max_val=30, size=(-1, 18), id="default")
+        self.period_slider = CustomSlider(crow, value=p_val, min_val=0.1, max_val=30, size=(-1, 18), id="default", section='parameters')
         csizer.Add(self.period_slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
         unit = _locale.get("parameters.period.unit", "sec")
-        self.period_input = create_numeric_input(crow, f"{p_val:.1f}", unit, editable=True, min_val=0.1, max_val=30, id="speed")
+        self.period_input = create_numeric_input(crow, f"{p_val:.1f}", unit, editable=True, min_val=0.1, max_val=30, id="speed", section='parameters')
         csizer.Add(self.period_input, 0, wx.ALIGN_CENTER_VERTICAL)
         crow.SetSizerAndFit(csizer)
         sizer.Add(crow, 0, wx.EXPAND | wx.BOTTOM, 6)
@@ -340,7 +365,7 @@ class ControlsSidePanel(wx.Panel):
         sizer.Add(self.dir_heading, 0, wx.BOTTOM, 6)
 
         
-        # V2: Fetch labels and icon refs from locale
+        # Fetch labels and icon refs from locale
         dir_options = [
             {'label': _locale.get("parameters.direction.options.ccw.label", "CCW"), 
              'icon': _locale.get("parameters.direction.options.ccw.icon_ref", "glyphs.ccw")},
@@ -348,7 +373,7 @@ class ControlsSidePanel(wx.Panel):
              'icon': _locale.get("parameters.direction.options.cw.icon_ref", "glyphs.cw")}
         ]
         
-        self.dir_toggle = CustomToggleButton(panel, options=dir_options, size=(210, 32), id="direction")
+        self.dir_toggle = CustomToggleButton(panel, options=dir_options, size=(210, 32), id="direction", section='parameters')
         initial_idx = 1 if self.settings.direction == 'cw' else 0
         self.dir_toggle.SetSelection(initial_idx)
         sizer.Add(self.dir_toggle, 0)
@@ -363,7 +388,7 @@ class ControlsSidePanel(wx.Panel):
         sizer.Add(self.light_heading, 0, wx.BOTTOM, 6)
 
         
-        # V2: Fetch labels and icon refs from locale
+        # Fetch labels and icon refs from locale
         self.light_options = [
             {'id': 'studio', 
              'label': _locale.get("parameters.lighting.options.studio.label", "STUDIO"), 
@@ -379,7 +404,7 @@ class ControlsSidePanel(wx.Panel):
              'icon': _locale.get("parameters.lighting.options.workspace.icon_ref", "glyphs.edit")}
         ]
         
-        self.light_toggle = CustomToggleButton(panel, options=self.light_options, size=(320, 32), id="lighting")
+        self.light_toggle = CustomToggleButton(panel, options=self.light_options, size=(320, 32), id="lighting", section='parameters')
         current_light = self.settings.lighting
         initial_idx = next((i for i, opt in enumerate(self.light_options) if opt['id'] == current_light), 0)
         self.light_toggle.SetSelection(initial_idx)
@@ -408,7 +433,7 @@ class ControlsSidePanel(wx.Panel):
 
         self.format_choices = ["MP4 (H.264)", "GIF", "PNG Sequence"]
         self.format_ids = ["mp4", "gif", "png_sequence"]
-        self.format_choice = CustomDropdown(f_col, choices=self.format_choices, size=(-1, 32), id="format")
+        self.format_choice = CustomDropdown(f_col, choices=self.format_choices, size=(-1, 32), id="format", section='output')
         curr_fmt = self.settings.format
         fmt_idx = self.format_ids.index(curr_fmt) if curr_fmt in self.format_ids else 0
         self.format_choice.SetSelection(fmt_idx)
@@ -423,7 +448,7 @@ class ControlsSidePanel(wx.Panel):
 
         self.res_choices = ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
         self.res_ids = ["1920x1080", "1280x720", "800x800"]
-        self.res_choice = CustomDropdown(r_col, choices=self.res_choices, size=(-1, 32), id="resolution")
+        self.res_choice = CustomDropdown(r_col, choices=self.res_choices, size=(-1, 32), id="resolution", section='output')
         curr_res = self.settings.resolution
         res_idx = self.res_ids.index(curr_res) if curr_res in self.res_ids else 0
         self.res_choice.SetSelection(res_idx)
@@ -439,7 +464,7 @@ class ControlsSidePanel(wx.Panel):
         self.bg_heading = self._add_text(bg_col, _locale.get("parameters.bg_color.label", "BACKGROUND COLOR"), "subheader")
         bg_vsizer.Add(self.bg_heading, 0, wx.BOTTOM, 6)
 
-        self.bg_picker = CustomColorPicker(bg_col, current_color=self.settings.bg_color)
+        self.bg_picker = CustomColorPicker(bg_col, current_color=self.settings.bg_color, section='output')
         bg_vsizer.Add(self.bg_picker, 0, wx.EXPAND)
 
         bg_col.SetSizer(bg_vsizer)
@@ -456,16 +481,16 @@ class ControlsSidePanel(wx.Panel):
         arow = wx.Panel(panel)
         asizer = wx.BoxSizer(wx.HORIZONTAL)
         
-        # V2: Fetch labels and icon references from locale for export row
-        self.adv_btn = CustomButton(arow, id="options", size=(36, 36))
+        # Fetch labels and icon references from locale for export row
+        self.adv_btn = CustomButton(arow, id="options", size=(36, 36), section='export')
         self.adv_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_advanced_options)
         asizer.Add(self.adv_btn, 0, wx.RIGHT, 8)
 
-        self.can_btn = CustomButton(arow, id="close", size=(110, 36))
+        self.can_btn = CustomButton(arow, id="close", size=(110, 36), section='export')
         self.can_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_cancel)
         asizer.Add(self.can_btn, 0, wx.RIGHT, 8)
 
-        self.render_btn = CustomButton(arow, id="render")
+        self.render_btn = CustomButton(arow, id="render", section='export')
 
         self.render_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_render)
         asizer.Add(self.render_btn, 1, wx.EXPAND)

@@ -39,7 +39,7 @@ class StatusBar(wx.Panel):
 
         w, h = self.GetSize()
         
-        # Dynamic theme lookups from component section (V2 tokens)
+        # Dynamic theme lookups from component section
         bg_color = _theme.color("layout.main.status.default.bg")
         success_color = _theme.color("layout.main.status.default.label.color")
         primary_color = _theme.color("layout.main.status.progress.bg")

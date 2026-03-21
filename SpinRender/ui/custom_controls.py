@@ -58,11 +58,48 @@ def _get_paint_color(color, enabled=True):
     return _theme.disabled(color) if not enabled else color
 
 
+def disable_mac_focus_ring(window):
+    """
+    Suppresses the OS-level blue focus ring on macOS native controls.
+    Targets both the NSView and its NSCell (if it exists) for maximum suppression.
+    Requires pyobjc (pyobjc-core and pyobjc-framework-Cocoa).
+    """
+    if wx.Platform != '__WXMAC__':
+        return
+    
+    handle = window.GetHandle()
+    if not handle:
+        return
+
+    try:
+        import objc
+        # Convert the raw pointer handle to an objc object
+        v = objc.objc_object(c_void_p=handle)
+        
+        # NSFocusRingTypeNone = 1
+        # Set on view
+        if hasattr(v, 'setFocusRingType_'):
+            v.setFocusRingType_(1)
+        
+        # Set on cell if it's an NSControl (like NSTextField)
+        if hasattr(v, 'cell'):
+            try:
+                c = v.cell()
+                if c and hasattr(c, 'setFocusRingType_'):
+                    c.setFocusRingType_(1)
+            except Exception:
+                pass
+    except ImportError:
+        logger.error("pyobjc (pyobjc-core, pyobjc-framework-Cocoa) is required for macOS focus ring suppression but is not installed.")
+    except Exception as e:
+        logger.debug(f"Failed to disable macOS focus ring: {e}")
+
+
 class CustomSlider(wx.Panel):
     """
     Custom slider matching Component/Slider from Pencil design
     """
-    def __init__(self, parent, value=50, min_val=0, max_val=100, size=(240, 18), id=wx.ID_ANY):
+    def __init__(self, parent, value=50, min_val=0, max_val=100, size=(240, 18), id=wx.ID_ANY, section=None):
         if isinstance(id, str):
             self.style_id = id
             real_id = wx.ID_ANY
@@ -78,6 +115,13 @@ class CustomSlider(wx.Panel):
         self.max_val = max_val
         self.dragging = False
         self._hovered = False
+
+        _p = self.GetParent()
+        while _p is not None:
+            if hasattr(_p, '_registry'):
+                _p._registry.add(self, section=section)
+                break
+            _p = _p.GetParent()
 
         # Standard mouse bindings for hover/click interactions
         bind_mouse_events(
@@ -116,7 +160,7 @@ class CustomSlider(wx.Panel):
         width, height = self.GetSize()
         enabled = self.IsEnabled()
 
-        # V2 Mappings
+        # Theme token mappings
         token = f"components.slider.{self.style_id}" if self.style_id else "components.slider.default"
         if not _theme.has_token(token): token = "components.slider.default"
 
@@ -191,7 +235,7 @@ class CustomToggleButton(wx.Panel):
     Multi-state toggle matching Component/Toggle from Pencil
     Supports 2 or more states.
     """
-    def __init__(self, parent, options=None, size=(120, 32), id=wx.ID_ANY):
+    def __init__(self, parent, options=None, size=(120, 32), id=wx.ID_ANY, section=None):
         if isinstance(id, str):
             self.style_id = id
             real_id = wx.ID_ANY
@@ -204,6 +248,14 @@ class CustomToggleButton(wx.Panel):
         self.options = options or [{'label': 'OFF', 'icon': None}, {'label': 'ON', 'icon': None}]
         self.selection = 0
         self.hover_index = -1
+
+        _p = self.GetParent()
+        while _p is not None:
+            if hasattr(_p, '_registry'):
+                _p._registry.add(self, section=section)
+                break
+            _p = _p.GetParent()
+
         self.Bind(wx.EVT_PAINT, self.on_paint)
         bind_mouse_events(self, click_handler=self.on_click, hover_handler=self.on_mouse_move, leave_handler=self.on_leave)
         self.Bind(wx.EVT_MOTION, self.on_mouse_move)
@@ -231,7 +283,7 @@ class CustomToggleButton(wx.Panel):
         state_width = width / num_options
         enabled = self.IsEnabled()
 
-        # Fetch colors dynamically from component section (V2)
+        # Fetch colors dynamically from component section
         token = f"components.toggle.{self.style_id}" if self.style_id else "components.toggle.default"
         if not _theme.has_token(token): token = "components.toggle.default"
 
@@ -341,7 +393,7 @@ class DropdownPopup(wx.PopupTransientWindow):
         self.style_id = style_id
         self.item_height = 32
         
-        # V2 Mapping
+        # Theme token mapping
         token = f"components.dropdown.{style_id}" if style_id else "components.dropdown.default"
         if not _theme.has_token(token): token = "components.dropdown.default"
         
@@ -360,7 +412,7 @@ class DropdownPopup(wx.PopupTransientWindow):
 
         width, height = self.GetSize()
         
-        # V2 Mappings
+        # Theme token mappings
         token = f"components.dropdown.{self.style_id}" if self.style_id else "components.dropdown.default"
         if not _theme.has_token(token): token = "components.dropdown.default"
 
@@ -420,7 +472,7 @@ class CustomDropdown(wx.Panel):
     """
     Custom dropdown matching Component/Dropdown from Pencil
     """
-    def __init__(self, parent, choices=None, size=(160, 32), id=wx.ID_ANY):
+    def __init__(self, parent, choices=None, size=(160, 32), id=wx.ID_ANY, section=None):
         if isinstance(id, str):
             self.style_id = id
             real_id = wx.ID_ANY
@@ -431,6 +483,14 @@ class CustomDropdown(wx.Panel):
         super().__init__(parent, id=real_id, size=size)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.choices, self.selection, self.hovered, self.is_open = choices or [], 0, False, False
+
+        _p = self.GetParent()
+        while _p is not None:
+            if hasattr(_p, '_registry'):
+                _p._registry.add(self, section=section)
+                break
+            _p = _p.GetParent()
+
         self.Bind(wx.EVT_PAINT, self.on_paint)
         bind_mouse_events(self, hover_handler=self.on_enter, leave_handler=self.on_leave, click_handler=self.on_click)
 
@@ -442,7 +502,7 @@ class CustomDropdown(wx.Panel):
         width, height = self.GetSize()
         enabled = self.IsEnabled()
 
-        # V2 Mappings
+        # Theme token mappings
         token = f"components.dropdown.{self.style_id}" if self.style_id else "components.dropdown.default"
         if not _theme.has_token(token): token = "components.dropdown.default"
 
@@ -521,7 +581,7 @@ class CustomButton(wx.Panel):
     """
     Custom action button matching Component/ActionButton and SecondaryButton
     """
-    def __init__(self, parent, label=None, icon=None, icon_font_family=None, primary=True, ghost=False, danger=False, icon_color=None, icon_color_hover=None, icon_color_pressed=None, bg_color=None, bg_color_hover=None, bg_color_pressed=None, size=(-1, 36), id=wx.ID_ANY):
+    def __init__(self, parent, label=None, icon=None, icon_font_family=None, primary=True, ghost=False, danger=False, icon_color=None, icon_color_hover=None, icon_color_pressed=None, bg_color=None, bg_color_hover=None, bg_color_pressed=None, size=(-1, 36), id=wx.ID_ANY, section=None):
         # Extract style_id if passed as string (e.g. id="render")
         if isinstance(id, str):
             self.style_id = id
@@ -551,6 +611,14 @@ class CustomButton(wx.Panel):
         self.bg_color_override, self.bg_color_hover, self.bg_color_pressed = bg_color, bg_color_hover, bg_color_pressed
         self.border_color_override, self.border_color_hover, self.border_color_pressed = None, None, None
         self.hovered, self.pressed = False, False
+
+        _p = self.GetParent()
+        while _p is not None:
+            if hasattr(_p, '_registry'):
+                _p._registry.add(self, section=section)
+                break
+            _p = _p.GetParent()
+
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_SIZE, self.on_size)
         self.Bind(wx.EVT_LEFT_UP, self.on_mouse_up)
@@ -566,7 +634,7 @@ class CustomButton(wx.Panel):
         width, height = self.GetSize()
         enabled = self.IsEnabled()
 
-        # V2 Mapping Logic
+        # Theme token mapping Logic
         if hasattr(self, 'style_id') and self.style_id:
             token = f"components.button.{self.style_id}"
             if not _theme.has_token(token):
@@ -622,7 +690,7 @@ class CustomButton(wx.Panel):
             else: gc.SetPen(wx.TRANSPARENT_PEN)
             gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 6)
 
-        # Resolve icon from theme glyphs (V2 logic)
+        # Resolve icon from theme glyphs
         icon_char = ""
         if self.icon and str(self.icon).lower() != "none":
             stripped = str(self.icon).replace('mdi-', '')
@@ -688,27 +756,35 @@ class PresetCard(wx.Panel):
     """
     Preset card matching Component/PresetCard
     """
-    def __init__(self, parent, label=None, icon_name=None, size=(90, 64), id=wx.ID_ANY):
+    def __init__(self, parent, label=None, icon_name=None, size=(90, 64), id=wx.ID_ANY, section=None):
         if isinstance(id, str):
             self.style_id = id
             real_id = wx.ID_ANY
         else:
             self.style_id = None
             real_id = id
-            
+
         super().__init__(parent, id=real_id, size=size)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
-        
+
         if self.style_id:
             if label is None:
                 label = _locale.get(f"component.preset_card.{self.style_id}.label", self.style_id.upper())
             if icon_name is None:
                 icon_name = _locale.get(f"component.preset_card.{self.style_id}.icon_ref")
-                
+
         if label is None: label = "PRESET"
-        
+
         self.label, self.icon_name, self.selected = label, icon_name, False
         self.hovered = False
+
+        _p = self.GetParent()
+        while _p is not None:
+            if hasattr(_p, '_registry'):
+                _p._registry.add(self, section=section)
+                break
+            _p = _p.GetParent()
+
         self.Bind(wx.EVT_PAINT, self.on_paint)
         bind_mouse_events(self, hover_handler=self.on_enter, leave_handler=self.on_leave, click_handler=self.on_click)
 
@@ -723,7 +799,7 @@ class PresetCard(wx.Panel):
         width, height = self.GetSize()
         enabled = self.IsEnabled()
         
-        # V2 Mapping
+        # Theme token mapping
         token = f"components.preset_card.{self.style_id}" if self.style_id else "components.preset_card.default"
         if not _theme.has_token(token):
             token = "components.preset_card.default"
@@ -797,7 +873,7 @@ class SectionLabel(wx.Panel):
 
         width, height = self.GetSize()
         
-        # V2 Mapping
+        # Theme token mapping
         text_color = _theme.color("layout.main.leftpanel.headers.color")
         line_color = _theme.color("layout.main.divider.bg")
         line_size = _theme.size("layout.main.divider.size") or 1
@@ -810,10 +886,10 @@ class SectionLabel(wx.Panel):
 
 class CustomInput(wx.Panel):
     """
-    HUD-style input using a hidden wx.TextCtrl for rich editing state.
-    Provides native selection UX with 100% theme-driven visuals.
+    HUD-style input using a visible native wx.TextCtrl for rich editing.
+    The parent panel draws the HUD frame (border/bg) and non-editable elements (units/icons).
     """
-    def __init__(self, parent, value="", placeholder="", size=(-1, 32), id=wx.ID_ANY, **kwargs):
+    def __init__(self, parent, value="", placeholder="", size=(-1, 32), id=wx.ID_ANY, section=None, **kwargs):
         if isinstance(id, str):
             self.style_id = id
             real_id = wx.ID_ANY
@@ -827,7 +903,6 @@ class CustomInput(wx.Panel):
         
         super().__init__(parent, id=real_id, size=tuple(actual_size))
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
-        self.SetCanFocus(True)
 
         # Resolve DNA
         self.token = f"components.input.{self.style_id}"
@@ -839,12 +914,29 @@ class CustomInput(wx.Panel):
         self.prefix = kwargs.get('prefix') or _theme._resolve(f"{self.token}.prefix")
         if not isinstance(self.prefix, str) or self.prefix == "#FF00FF": self.prefix = ""
         
-        # 1. Native Proxy (Hidden)
-        style = wx.TE_PROCESS_ENTER
-        if kwargs.get('multiline'): style |= wx.TE_MULTILINE
+        # 1. Native Control
+        style = wx.TE_PROCESS_ENTER | wx.BORDER_NONE
+        self.multiline = kwargs.get('multiline', False)
+        if self.multiline:
+            style |= wx.TE_MULTILINE | wx.TE_NO_VSCROLL | wx.TE_RICH
         
-        self.proxy = wx.TextCtrl(self, value=str(value), style=style, size=(0,0))
-        self.proxy.Hide()
+        # Determine native alignment
+        align_token = _theme._resolve(f"{self.token}.alignment")
+        if align_token == "right" or self.type == "numeric":
+            style |= wx.TE_RIGHT
+        elif align_token == "center":
+            style |= wx.TE_CENTRE
+            
+        self.text_ctrl = wx.TextCtrl(self, value=str(value), style=style)
+        self.text_ctrl.SetBackgroundColour("TRANSPARENT")
+        
+        if hasattr(self.text_ctrl, 'SetFocusAppearance'):
+            self.text_ctrl.SetFocusAppearance(False)
+        if hasattr(self.text_ctrl, 'OSXSetFocusRingStyle'):
+            self.text_ctrl.OSXSetFocusRingStyle(wx.USER_FOCUS_RING_NONE)
+        
+        # Aggressive Mac suppression
+        disable_mac_focus_ring(self.text_ctrl)
         
         # 2. State
         self.placeholder = str(placeholder)
@@ -858,58 +950,123 @@ class CustomInput(wx.Panel):
             self.chip = ProjectFolderChip(self)
             self.chip.Hide()
 
-        # 3. Native Event Proxies
-        self.proxy.Bind(wx.EVT_TEXT, self._on_native_text)
-        self.proxy.Bind(wx.EVT_TEXT_ENTER, self._on_native_enter)
-        self.proxy.Bind(wx.EVT_SET_FOCUS, self._on_proxy_focus)
-        self.proxy.Bind(wx.EVT_KILL_FOCUS, self._on_proxy_blur)
+        # 3. Bindings
+        self.text_ctrl.Bind(wx.EVT_TEXT, self._on_text)
+        self.text_ctrl.Bind(wx.EVT_TEXT_ENTER, self._on_enter)
+        self.text_ctrl.Bind(wx.EVT_SET_FOCUS, self._on_focus)
+        self.text_ctrl.Bind(wx.EVT_KILL_FOCUS, self._on_blur)
+        self.text_ctrl.Bind(wx.EVT_ENTER_WINDOW, self._on_mouse_enter)
+        self.text_ctrl.Bind(wx.EVT_LEAVE_WINDOW, self._on_mouse_leave)
         
-        # 4. Panel Events
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_SIZE, self.on_size)
-        self.Bind(wx.EVT_SET_FOCUS, lambda e: self.proxy.SetFocus())
-        bind_mouse_events(self, hover_handler=self.on_enter, leave_handler=self.on_leave, click_handler=self.on_click)
+        self.Bind(wx.EVT_SET_FOCUS, lambda e: self.text_ctrl.SetFocus())
+        self.Bind(wx.EVT_ENTER_WINDOW, self._on_mouse_enter)
+        self.Bind(wx.EVT_LEAVE_WINDOW, self._on_mouse_leave)
+        self.Bind(wx.EVT_LEFT_DOWN, lambda e: self.text_ctrl.SetFocus())
 
-    def _on_native_text(self, e): 
-        val = self.proxy.GetValue()
-        if self.case == "upper": self.proxy.ChangeValue(val.upper())
-        self.Refresh(); self.Update()
+        _p = self.GetParent()
+        while _p is not None:
+            if hasattr(_p, '_registry'):
+                _p._registry.add(self, section=section)
+                break
+            _p = _p.GetParent()
+
+    def _on_text(self, e):
+        val = self.text_ctrl.GetValue()
+        
+        # Auto-convert em-dash (—) to double hyphen (--) for CLI compatibility
+        if "—" in val:
+            pos = self.text_ctrl.GetInsertionPoint()
+            new_val = val.replace("—", "--")
+            self.text_ctrl.ChangeValue(new_val)
+            # Adjust insertion point if we replaced a single char with two
+            self.text_ctrl.SetInsertionPoint(pos + (len(new_val) - len(val)))
+            val = new_val
+
+        if self.case == "upper": self.text_ctrl.ChangeValue(val.upper())
         self._fire_event(wx.EVT_TEXT)
+        e.Skip()
 
-    def _on_native_enter(self, e): self._confirm(); self._fire_event(wx.EVT_TEXT_ENTER)
-    def _on_proxy_focus(self, e): self.original_value = self.proxy.GetValue(); self.proxy.SelectAll(); self.Refresh(); e.Skip()
-    def _on_proxy_blur(self, e): self._confirm(); self.Refresh(); e.Skip()
+    def _on_enter(self, e): self._confirm(); self._fire_event(wx.EVT_TEXT_ENTER)
+    def _on_focus(self, e): 
+        self.original_value = self.text_ctrl.GetValue()
+        wx.CallAfter(self.text_ctrl.SelectAll)
+        self.Refresh(); e.Skip()
+    def _on_blur(self, e): self._confirm(); self.Refresh(); e.Skip()
+    
+    def _on_mouse_enter(self, e): self.hovered = True; self.Refresh(); e.Skip()
+    def _on_mouse_leave(self, e): self.hovered = False; self.Refresh(); e.Skip()
 
     def _confirm(self):
-        val = self.proxy.GetValue().strip()
-        if not val: self.proxy.ChangeValue(self.original_value)
+        val = self.text_ctrl.GetValue().strip()
+        if not val: self.text_ctrl.ChangeValue(self.original_value)
         elif self.type == "numeric":
             try:
                 v = float(val)
-                self.proxy.ChangeValue(f"{v:.2f}")
+                self.text_ctrl.ChangeValue(f"{v:.2f}")
             except: pass
 
     def _fire_event(self, evt_type):
         evt = wx.PyCommandEvent(evt_type.typeId, self.GetId())
-        evt.SetString(self.proxy.GetValue())
+        evt.SetString(self.text_ctrl.GetValue())
         self.GetEventHandler().ProcessEvent(evt)
 
-    def on_click(self, event): self.proxy.SetFocus()
+    def on_click(self, event): self.text_ctrl.SetFocus()
     def on_enter(self, event): self.hovered = True; self.Refresh(); self.Update()
     def on_leave(self, event): self.hovered = False; self.Refresh(); self.Update()
+
     def on_size(self, event):
-        if self.chip: self.chip.Move(wx.Point(36, (self.GetSize().y - 18) / 2))
+        w, h = self.GetSize()
+        # Area calculation
+        px = 12
+        if self.type == "rich": px = 36
+        if self.type == "rich" and self.show_chip and self.chip:
+            self.chip.Move(wx.Point(36, (h - 18) / 2))
+            px += self.chip.GetSize().x + 6
+            
+        pw = w - px - 12
+        if self.type == "numeric":
+            # Probe font size for unit width
+            font = _theme.font(self.token)
+            temp_dc = wx.ScreenDC(); temp_dc.SetFont(font)
+            utw, _ = temp_dc.GetTextExtent(self.unit)
+            pw -= (utw + 8)
+            
+        # Position native control
+        if self.multiline:
+            # Multiline fills available height with 8px padding
+            # Increase width by reducing right padding to 4px
+            pw = w - px - 4
+            ph = h - 16
+            self.text_ctrl.SetSize(pw, ph)
+            self.text_ctrl.SetPosition((px, 8))
+        else:
+            ph = self.text_ctrl.GetBestSize().y - 4 # Add vertical padding
+            self.text_ctrl.SetSize(pw, ph)
+            self.text_ctrl.SetPosition((px, (h - ph) / 2))
         self.Refresh(); event.Skip()
 
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self); gc = wx.GraphicsContext.Create(dc)
         if not gc: return
-        w, h = self.GetSize(); enabled = self.IsEnabled(); focused = self.proxy.HasFocus()
+        w, h = self.GetSize(); enabled = self.IsEnabled(); focused = self.text_ctrl.HasFocus()
 
-        # 1. Background & Border
+        # 1. Sync Native Visuals
+        tc = _theme.color(f"{self.token}.color", self.hovered, focused, enabled)
         bg = _theme.color(f"{self.token}.frame.bg", self.hovered, False, enabled)
-        bc_tok, bs_tok = f"{self.token}.frame.border.color", f"{self.token}.frame.border.size"
+        font = _theme.font(self.token)
         
+        # self.text_ctrl.SetBackgroundColour("TRANSPARENT")
+        self.text_ctrl.SetForegroundColour(tc)
+        self.text_ctrl.SetFont(font)
+        
+        if self.multiline:
+            # Ensure multiline colors apply to all existing text
+            self.text_ctrl.SetDefaultStyle(wx.TextAttr(tc))
+
+        # 2. Draw HUD Frame
+        bc_tok, bs_tok = f"{self.token}.frame.border.color", f"{self.token}.frame.border.size"
         if focused and _theme.has_token(f"{bc_tok}.active"):
             bc, bs = _theme.color(bc_tok, self.hovered, True, enabled), _theme.size(bs_tok) or 1
         elif focused:
@@ -920,64 +1077,37 @@ class CustomInput(wx.Panel):
         gc.SetBrush(wx.Brush(bg)); gc.SetPen(wx.Pen(bc, bs))
         gc.DrawRoundedRectangle(1, 1, w - 2, h - 2, _theme.size(f"{self.token}.frame.radius") or 6)
 
-        # 2. Text Content
-        val = self.proxy.GetValue()
-        is_empty = not val
-        display_text = self.placeholder if (is_empty and not focused) else val
-        
-        tc = _theme.color(f"{self.token}.color", self.hovered, focused, enabled)
-        if is_empty and not focused: tc = _theme.color("colors.gray-text", self.hovered, False, enabled)
-        
-        font = _theme.font(self.token)
-        gc.SetFont(gc.CreateFont(font, tc))
-        
-        text_x = 36 if (self.type == "rich") else 12
-        if self.type == "rich" and self.show_chip and self.chip: text_x += self.chip.GetSize().x + 6
+        # 3. Draw Non-editable content
+        if self.type == "rich" and self.icon_ref:
+            icon_char = _theme.glyph(self.icon_ref)
+            gc.SetFont(gc.CreateFont(_theme.font("icon"), tc))
+            itw, ith = gc.GetTextExtent(icon_char)
+            gc.DrawText(icon_char, 12, (h - ith) / 2)
 
-        full_str = f"{self.prefix}{display_text}"
-        tw, th = gc.GetTextExtent(full_str)
-        
-        align = _theme._resolve(f"{self.token}.alignment") or ("right" if self.type == "numeric" else "left")
-        if align == "right": 
-            utw, _ = gc.GetTextExtent(self.unit)
-            rx = w - tw - 12 - (utw + 4 if self.unit else 0)
-        elif align == "center": rx = (w - tw) / 2
-        else: rx = text_x
+        if self.type == "numeric" and self.unit:
+            gc.SetFont(gc.CreateFont(font, _theme.color(f"{self.token}.color", self.hovered, False, enabled)))
+            utw, uth = gc.GetTextExtent(self.unit)
+            gc.DrawText(self.unit, w - utw - 12, (h - uth) / 2)
 
-        # 3. Selection Rendering
-        sel_from, sel_to = self.proxy.GetSelection()
-        if sel_from != sel_to and not (is_empty and not focused):
-            sel_color = _theme.color(f"{self.token}.selection")
-            if not isinstance(sel_color, wx.Colour) or sel_color == "#FF00FF":
-                sel_color = wx.Colour(0, 188, 212, 76)
-            
-            # Calculate selection rect
-            pre_sel = full_str[:sel_from + len(self.prefix)]
-            sel_text = full_str[sel_from + len(self.prefix) : sel_to + len(self.prefix)]
-            sx = rx + gc.GetTextExtent(pre_sel)[0]
-            sw = gc.GetTextExtent(sel_text)[0]
-            gc.SetBrush(wx.Brush(sel_color)); gc.SetPen(wx.TRANSPARENT_PEN)
-            gc.DrawRectangle(sx, (h - th) / 2, sw, th)
-
-        # 4. Draw Text & Cursor
-        gc.DrawText(full_str, rx, (h - th) / 2)
-        if focused and not (sel_from != sel_to):
-            cur_pos = self.proxy.GetInsertionPoint()
-            cx = rx + gc.GetTextExtent(full_str[:cur_pos + len(self.prefix)])[0]
-            gc.SetPen(wx.Pen(tc, 1)); gc.StrokeLine(cx, (h - th)/2, cx, (h + th)/2)
-
-        if align == "right" and self.unit:
-            gc.SetFont(gc.CreateFont(font, _theme.color("colors.gray-text", self.hovered, False, enabled)))
-            gc.DrawText(self.unit, rx + tw + 4, (h - th) / 2)
-
-    def GetValue(self): return self.proxy.GetValue().strip()
+    def GetValue(self): return self.text_ctrl.GetValue().strip()
+    
+    # TODO - Do better hex value handling in input field
     def SetValue(self, val):
+        if self.type == "numeric" and val is not None:
+            try:
+                v = float(val)
+                self.text_ctrl.ChangeValue(f"{v:.2f}")
+                self.Refresh()
+                return
+            except:
+                pass    
+
         v = str(val)
         if self.prefix and v.startswith(self.prefix): v = v[len(self.prefix):]
-        self.proxy.ChangeValue(v); self.Refresh()
-    def SetEditable(self, e): self.proxy.SetEditable(e); self.Enable(e); self.Refresh()
+        self.text_ctrl.ChangeValue(v); self.Refresh()
+    def SetEditable(self, e): self.text_ctrl.SetEditable(e); self.Enable(e); self.Refresh()
     def SetPath(self, p, in_project=False):
-        self.proxy.ChangeValue(p); self.show_chip = in_project
+        self.text_ctrl.ChangeValue(p); self.show_chip = in_project
         if self.chip: self.chip.Show() if in_project else self.chip.Hide()
         self.Refresh()
 
@@ -1018,14 +1148,21 @@ class CustomColorPicker(wx.Panel):
     """
     PRESETS = [("#000000", "BLACK"), ("#1A1F23", "SLATE"), ("#F5F0E8", "CREAM"), ("#FFFFFF", "WHITE")]
 
-    def __init__(self, parent, current_color="#000000"):
+    def __init__(self, parent, current_color="#000000", section=None):
         super().__init__(parent)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.current_color, self.hover_idx, self.selection, self.editing = current_color.upper(), -1, -1, False
         self._update_selection()
+
+        _p = self.GetParent()
+        while _p is not None:
+            if hasattr(_p, '_registry'):
+                _p._registry.add(self, section=section)
+                break
+            _p = _p.GetParent()
         
         # Use consolidated CustomInput
-        self.hex_input = CustomInput(self, value=self.current_color, placeholder="#000000", size=(-1, 28), id="hex")
+        self.hex_input = CustomInput(self, value=self.current_color, placeholder="#000000", size=(100, 32), id="hex")
         self.hex_input.Bind(wx.EVT_TEXT_ENTER, self.on_hex_enter); self.hex_input.Bind(wx.EVT_KILL_FOCUS, self.on_hex_focus_lost)
         
         self.Bind(wx.EVT_PAINT, self.on_paint)
@@ -1077,7 +1214,7 @@ class CustomColorPicker(wx.Panel):
         if not gc: return
         w, h = self.GetSize(); enabled, rects = self.IsEnabled(), self._get_rects()
         
-        # V2 Mappings
+        # Theme token mappings
         bg = _theme.color("components.colorpicker.default.bg")
         gc.SetBrush(wx.Brush(_theme.disabled(bg) if not enabled else bg))
         gc.SetPen(wx.TRANSPARENT_PEN); gc.DrawRoundedRectangle(0, 0, w, h, 4)
@@ -1198,17 +1335,20 @@ class CustomListItem(wx.Panel):
         if x > w - action_width:
             self.handle_action_click(x - (w - action_width))
         else:
-            self._fire_event(wx.EVT_LIST_ITEM_SELECTED)
+            self._fire_event(EVT_LIST_ITEM_SELECTED)
 
     def handle_action_click(self, local_x):
         if self.confirm_mode:
             if local_x < 40: # Cancel
                 self.confirm_mode = False
             else: # Confirm
-                self._fire_event(wx.EVT_LIST_ITEM_DELETED)
+                self._fire_event(EVT_LIST_ITEM_DELETED)
+                return # Stop here as item is destroyed
         else:
             self.confirm_mode = True
-        self.Refresh(); self.Update()
+        
+        if self:
+            self.Refresh(); self.Update()
 
     def _fire_event(self, evt_type):
         evt = wx.PyCommandEvent(evt_type.typeId, self.GetId())
@@ -1226,10 +1366,16 @@ class CustomListItem(wx.Panel):
         # 1. Background
         bg = _theme.color(f"{self.token}.frame.bg", self.hovered, False, enabled)
         gc.SetBrush(wx.Brush(bg))
-        gc.SetPen(wx.TRANSPARENT_PEN)
-        gc.DrawRectangle(0, 0, w, h)
+        
+        # 2. Resolve Frame Border
+        bc_token = f"{self.token}.frame.border.color"
+        bc = _theme.color(bc_token, self.hovered, False, enabled)
+        gc.SetPen(wx.Pen(bc, 1))
+        
+        radius = _theme.size(f"{self.token}.frame.radius") or 4
+        gc.DrawRoundedRectangle(1, 1, w - 2, h - 2, radius)
 
-        # 2. Icon & Label
+        # 3. Icon & Label
         tc = _theme.color(f"{self.token}.label.color", self.hovered, False, enabled)
         gc.SetFont(gc.CreateFont(_theme.font("body"), tc))
         
@@ -1244,7 +1390,7 @@ class CustomListItem(wx.Panel):
 
         gc.DrawText(self.label, text_x, (h - gc.GetTextExtent(self.label)[1]) / 2)
 
-        # 3. Actions
+        # 4. Actions
         if self.hovered or self.confirm_mode:
             self.draw_actions(gc, w, h)
 
