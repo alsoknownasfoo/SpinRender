@@ -307,9 +307,8 @@ class SpinRenderPanel(wx.Panel):
 
     def on_parameter_interaction(self, event):
         """Close render preview when an enabled parameter control is interacted with."""
-        obj = event.GetEventObject()
         registry = self.controls_side_panel._registry
-        if obj and obj.IsEnabled() and any(e['control'] == obj for e in registry):
+        if any(e['control'].GetId() == event.GetId() for e in registry):
             self.reset_status_bar()
         event.Skip()
 
