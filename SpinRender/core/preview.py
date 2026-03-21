@@ -101,8 +101,8 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         # Render Mode: "wireframe" | "shaded" | "both"
         self.render_mode = "both"
 
-        # Background color
-        self.bg_color = (0.04, 0.04, 0.04, 1.0)
+        # Background color - Start pure black for "Black White Loading" state
+        self.bg_color = (0.0, 0.0, 0.0, 1.0)
 
         # Computed Axis
         self.rotation_axis = np.array([0.0, 1.0, 0.0])
@@ -564,7 +564,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
 
     def _draw_loading_overlay(self, width, height):
         glDisable(GL_DEPTH_TEST)
-        glColor4f(0.04, 0.04, 0.04, 0.8)
+        glColor4f(0.0, 0.0, 0.0, 1.0) # Pure black loading background
         glBegin(GL_QUADS)
         glVertex2f(0, 0); glVertex2f(width, 0); glVertex2f(width, height); glVertex2f(0, height)
         glEnd()
@@ -577,14 +577,14 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
                 _SPINRENDER_GLUT_INIT = True
             text = "Loading 3D Model..."
             text_w = len(text) * 9
-            glColor3f(0.6, 0.6, 0.6)
+            glColor3f(1.0, 1.0, 1.0) # White text
             glRasterPos2f(CX - (text_w/2), CY - 15)
             for char in text:
                 glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord(char))
         except:
             pass
         bx, by = CX - (BAR_W/2), CY + 10
-        glColor3f(0.15, 0.15, 0.15)
+        glColor3f(0.2, 0.2, 0.2) # Gray track
         glBegin(GL_QUADS)
         glVertex2f(bx, by); glVertex2f(bx+BAR_W, by); glVertex2f(bx+BAR_W, by+BAR_H); glVertex2f(bx, by+BAR_H)
         glEnd()
@@ -592,7 +592,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         pos = (t * 150) % (BAR_W + 40) - 40
         vs, ve = max(bx, bx + pos), min(bx + BAR_W, bx + pos + 40)
         if vs < ve:
-            glColor3f(0.0, 0.737, 0.831)
+            glColor3f(1.0, 1.0, 1.0) # White progress
             glBegin(GL_QUADS)
             glVertex2f(vs, by); glVertex2f(ve, by); glVertex2f(ve, by+BAR_H); glVertex2f(vs, by+BAR_H)
             glEnd()

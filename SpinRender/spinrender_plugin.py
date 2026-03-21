@@ -76,7 +76,18 @@ class SpinRenderPlugin(pcbnew.ActionPlugin):
         """
         logger.info("SpinRender Run() called")
         try:
-            # Check if window already exists - bring to front instead of creating new one
+            # 1. CHECK DEPENDENCIES (INCLUDING wxPython) FIRST
+            logger.debug("Starting dependency check...")
+            checker = DependencyChecker()
+            if not checker.check_and_prompt():
+                # User chose to exit or installation failed/cancelled
+                logger.info("Dependency check/prompt returned False - exiting")
+                return
+
+            # Now that dependencies (specifically wxPython) are guaranteed:
+            import wx
+
+            # 2. Check if window already exists - bring to front instead of creating new one
             if SpinRenderFrame.active_instance is not None:
                 logger.debug("Found existing SpinRenderFrame instance - bringing to front")
                 frame = SpinRenderFrame.active_instance

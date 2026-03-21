@@ -39,7 +39,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Search for KiCad versions in descending order
-declare -a SEARCH_VERSIONS=("9.0" "8.0" "7.0")
+declare -a SEARCH_VERSIONS=("10.0" "9.0" "8.0" "7.0")
 
 # Find KiCad Python interpreter
 find_kicad_python() {

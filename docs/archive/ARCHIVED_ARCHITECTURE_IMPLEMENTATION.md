@@ -1136,7 +1136,7 @@ def validate_all_contrasts(self, warn_only=True):
 ### Testing Strategy
 
 **Unit tests (test/core/test_validation.py):**
-1. `test_token_resolver_valid_path()` — resolve `colors.accent.primary`
+1. `test_token_resolver_valid_path()` — resolve `colors.primary`
 2. `test_token_resolver_missing_key()` — raises ValidationError
 3. `test_token_resolver_circular_ref()` — detects cycle
 4. `test_contrast_checker_aa_compliance()` — known good/bad pairs

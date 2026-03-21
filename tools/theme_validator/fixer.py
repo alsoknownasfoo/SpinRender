@@ -8,7 +8,13 @@ based on validation results from the comparator.
 from pathlib import Path
 from typing import Dict, Set, Any, Optional, List
 import shutil
-import yaml
+# Conditional import of yaml (PyYAML)
+try:
+    import yaml
+    _YAML_AVAILABLE = True
+except ImportError:
+    yaml = None
+    _YAML_AVAILABLE = False
 import datetime
 import sys
 
@@ -257,12 +263,16 @@ def _write_yaml_ruamel(data: Any, yaml_path: str) -> None:
 
 def _load_yaml_safe(yaml_path: str) -> Dict:
     """Load YAML using safe_load."""
+    if not _YAML_AVAILABLE:
+        raise ImportError("PyYAML is required to load YAML files. Install with: pip install pyyaml")
     with open(yaml_path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f) or {}
 
 
 def _validate_yaml(yaml_path: str) -> bool:
     """Validate that YAML file is parseable."""
+    if not _YAML_AVAILABLE:
+        return False  # Cannot validate without PyYAML
     try:
         with open(yaml_path, 'r', encoding='utf-8') as f:
             yaml.safe_load(f)
@@ -592,6 +602,9 @@ def apply_fixes(
             if RUAMEL_AVAILABLE:
                 _write_yaml_ruamel(yaml_data, yaml_path)
             else:
+                if not _YAML_AVAILABLE:
+                    summary['errors'].append("PyYAML is required to write YAML. Install with: pip install pyyaml")
+                    return summary
                 with open(yaml_path, 'w', encoding='utf-8') as f:
                     yaml.dump(yaml_data, f, default_flow_style=False, sort_keys=False)
 

@@ -22,6 +22,10 @@ class DependencyChecker:
     """
 
     REQUIRED_DEPS = {
+        'wxPython': {
+            'package_name': 'wxPython',
+            'type': 'python'
+        },
         'kicad-cli': {
             'command': 'kicad-cli',
             'test_args': ['--version'],
@@ -53,6 +57,16 @@ class DependencyChecker:
         'PyYAML': {
             'package_name': 'PyYAML',
             'type': 'python'
+        },
+        'pyobjc-core': {
+            'package_name': 'pyobjc-core',
+            'type': 'python',
+            'platforms': ['darwin']
+        },
+        'pyobjc-framework-Cocoa': {
+            'package_name': 'pyobjc-framework-Cocoa',
+            'type': 'python',
+            'platforms': ['darwin']
         }
     }
 
@@ -151,6 +165,10 @@ class DependencyChecker:
                 pkg = 'OpenGL'
             elif pkg == 'PyYAML':
                 pkg = 'yaml'
+            elif pkg == 'wxPython':
+                pkg = 'wx'
+            elif pkg.startswith('pyobjc'):
+                pkg = 'objc'
             __import__(pkg)
             logger.debug(f"  Package {pkg} is available")
             return True
@@ -165,6 +183,12 @@ class DependencyChecker:
         self.missing_deps = []
 
         for dep_name, dep_info in self.REQUIRED_DEPS.items():
+            # Skip if not for this platform
+            platforms = dep_info.get('platforms')
+            if platforms and self.system not in platforms:
+                logger.debug(f"Skipping dependency {dep_name} - not required for platform {self.system}")
+                continue
+
             logger.debug(f"Checking dependency: {dep_name}")
             if dep_info['type'] == 'command':
                 found = self.check_dependency(dep_name)

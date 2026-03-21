@@ -1,4 +1,4 @@
-# SpinRender Theme V2 — Dark (Default)
+# SpinRender Theme V2 — Light
 # Note: STYLING ONLY. All text/icon content is in locale_en.yaml.
 
 # ─────────────────────────────────────────────────────────────────
@@ -6,25 +6,25 @@
 # ─────────────────────────────────────────────────────────────────
 colors:
   # Base Palette (Primes)
-  gray-black:  "#0D0D0D"
-  gray-dark:   "#121212"
-  gray-border: "#1F1F1F"
-  gray-medium: "#323232"
-  gray-light:  "#646464"
-  gray-text:   "#777777"
-  gray-white:  "#E0E0E0"
-  white:       "#FFFFFF"
-  white-68:    "rgba(255,255,255,0.68)"
-  black:       "#000000"
+  gray-black:  "#FFFFFF"   # Inverted: Input wells / secondary surfaces
+  gray-dark:   "#F8F8F8"   # Inverted: Page background
+  gray-border: "#E0E0E0"   # Inverted: Standard dividers
+  gray-medium: "#D0D0D0"   # Inverted: Subtle tracks / inactive
+  gray-light:  "#C0C0C0"   # Inverted: Generic hover tint
+  gray-text:   "#666666"   # Inverted: Secondary text
+  gray-white:  "#1A1A1A"   # Inverted: Primary text
+  white:       "#000000"   # Inverted: Purest contrast
+  white-68:    "rgba(0,0,0,0.68)"
+  black:       "#FFFFFF"
   transparent: "rgba(0,0,0,0)"
 
-  cyan:        "#00BCD4"
-  yellow:      "#FFD600"
-  green:       "#4CAF50"
-  orange:      "#FF6B35"
-  red:         "#FF3B30"
-  purple:      "#AA6BFF"
-  pink:        "#F240FF"
+  cyan:        "#00ACC1"   # Deepened for light bg
+  yellow:      "#F9A825"   # Deepened
+  green:       "#388E3C"   # Deepened
+  orange:      "#F4511E"   # Deepened
+  red:         "#D32F2F"   # Deepened
+  purple:      "#7B1FA2"
+  pink:        "#C2185B"
 
   # Semantic Roles (Theme)
   primary:     "@colors.cyan"
@@ -77,11 +77,26 @@ typography:
     display: "Oswald"
     icon:    "Material Design Icons"
 
+  weights:
+    hairline: 100
+    thin:     200
+    light:    300
+    normal:   400
+    medium:   500
+    semibold: 600
+    bold:     700
+    extrabold: 800
+    black:    900
+
   scale:
+    xs: 7
     sm: 9
     base: 11
     md: 14
     lg: 18
+    xl: 24
+    icon: 16
+    icon-lg: 20
 
   spacing:
     none: 0
@@ -225,7 +240,7 @@ glyphs:
 # 7. VIEWPORT
 # ─────────────────────────────────────────────────────────────────
 viewport:
-  bg: "@colors.gray-black"
+  bg: "@colors.gray-dark"   # Lighter bg for viewport in light mode
   grid: "@colors.gray-medium"
   wireframe: null
   axes:
@@ -276,7 +291,7 @@ components:
     icon: "@text.icon"
     label:
       font: "@typography.scale.sm"
-      color: "@colors.gray-dark"
+      color: "@colors.gray-black"
     gap: "@typography.spacing.sm"
 
   preset_card:
@@ -290,7 +305,7 @@ components:
         cursor: "hand"
       gap: 8
       default:
-        bg: "@colors.gray-dark"
+        bg: "@colors.gray-black"
         border: "@borders.subtle"
         icon: "@text.icon_lg"
         label: "@text.label"
@@ -320,7 +335,7 @@ components:
         active:  "@colors.primary"
         disabled: "@colors.gray-text"
       border: "@borders.subtle"
-      selection: "rgba(0, 188, 212, 0.3)"
+      selection: "rgba(0, 188, 212, 0.15)"
       font: "@text.body.font"
       error:
         color: "@colors.error"
@@ -453,7 +468,7 @@ components:
       ref: "@components.button.default"
       frame:
         bg: "@colors.transparent"
-        hover: "rgba(255,255,255,0.08)"
+        hover: "rgba(0,0,0,0.08)"
     options:
       ref: "@components.button.default"
       frame:

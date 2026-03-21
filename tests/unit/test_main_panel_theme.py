@@ -3,6 +3,15 @@
 Test suite for main_panel.py theme migration.
 TDD: Verify SpinRenderPanel uses centralized theme instead of class-level color constants.
 """
+import sys
+from unittest.mock import MagicMock
+
+# Mock OpenGL module to avoid dependency in tests
+sys.modules['OpenGL'] = MagicMock()
+sys.modules['OpenGL.GL'] = MagicMock()
+sys.modules['OpenGL.GLU'] = MagicMock()
+sys.modules['OpenGL.GLUT'] = MagicMock()
+
 import pytest
 
 from SpinRender.core.theme import Theme

@@ -87,7 +87,7 @@ set TARGET_PATH=
 
 echo [i] SCANNING FOR KICAD ENVIRONMENTS...
 
-for %%v in (9.0 8.0 7.0) do (
+for %%v in (10.0 9.0 8.0 7.0) do (
     if "!TARGET_PATH!"=="" (
         if exist "!APPDATA!\kicad\%%v\scripting\plugins" (
             set "TARGET_PATH=!APPDATA!\kicad\%%v\scripting\plugins"

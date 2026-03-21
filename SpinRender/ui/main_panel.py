@@ -10,7 +10,9 @@ logger = logging.getLogger("SpinRender")
 
 # Import theme module for centralized colors
 from SpinRender.core.theme import Theme
+from SpinRender.core.locale import Locale
 _theme = Theme.current()
+_locale = Locale.current()
 from .preview_panel import PreviewPanel
 
 # Import RenderSettings
@@ -18,6 +20,7 @@ from SpinRender.core.settings import RenderSettings
 from .preset_controller import PresetController
 from SpinRender.core.render_controller import RenderController
 from .controls_side_panel import ControlsSidePanel
+from .custom_controls import EVT_COLOURPICKER_CHANGED
 from .status_bar import StatusBar
 from .parameter_controller import ParameterController
 
@@ -73,7 +76,7 @@ class SpinRenderPanel(wx.Panel):
         from utils.logger import SpinLogger
         SpinLogger.setup(level=getattr(self.settings, 'logging_level', 'simple'))
             
-        self.SetBackgroundColour(_theme.color("colors.bg.page"))
+        self.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
         self.drag_start_pos = None
         self.frame_start_pos = None
         self.render_controller = RenderController()
@@ -85,7 +88,7 @@ class SpinRenderPanel(wx.Panel):
     def build_ui(self):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.top_container = wx.Panel(self)
-        self.top_container.SetBackgroundColour(_theme.color("colors.bg.page"))
+        self.top_container.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         # Left: Controls panel - instantiate ControlsSidePanel
@@ -103,7 +106,7 @@ class SpinRenderPanel(wx.Panel):
 
         # Center Divider
         self.center_divider = wx.Panel(self.top_container, size=(1, -1))
-        self.center_divider.SetBackgroundColour(_theme.color("colors.border.default"))
+        self.center_divider.SetBackgroundColour(_theme.color("borders.default.color"))
         top_sizer.Add(self.center_divider, 0, wx.EXPAND)
 
         # Right: Preview panel
@@ -117,7 +120,7 @@ class SpinRenderPanel(wx.Panel):
         main_sizer.Add(self.top_container, 1, wx.EXPAND)
 
         self.status_divider = wx.Panel(self, size=(-1, 1))
-        self.status_divider.SetBackgroundColour(_theme.color("colors.border.default"))
+        self.status_divider.SetBackgroundColour(_theme.color("borders.default.color"))
         main_sizer.Add(self.status_divider, 0, wx.EXPAND)
 
         self.status_bar = StatusBar(self)
@@ -141,16 +144,16 @@ class SpinRenderPanel(wx.Panel):
 
     def reapply_theme(self):
         """Orchestrate theme re-application across all sub-panels."""
-        self.SetBackgroundColour(_theme.color("colors.bg.page"))
+        self.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
         
         if hasattr(self, 'top_container'):
-            self.top_container.SetBackgroundColour(_theme.color("colors.bg.page"))
+            self.top_container.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
             
         if hasattr(self, 'center_divider'):
-            self.center_divider.SetBackgroundColour(_theme.color("colors.border.default"))
+            self.center_divider.SetBackgroundColour(_theme.color("borders.default.color"))
             
         if hasattr(self, 'status_divider'):
-            self.status_divider.SetBackgroundColour(_theme.color("colors.border.default"))
+            self.status_divider.SetBackgroundColour(_theme.color("borders.default.color"))
             
         # Call reapply_theme on sub-panels
         if hasattr(self, 'controls_side_panel'):
@@ -161,7 +164,7 @@ class SpinRenderPanel(wx.Panel):
             
         # StatusBar handles its own dynamic lookups in _on_paint
         if hasattr(self, 'status_bar'):
-            self.status_bar.SetBackgroundColour(_theme.color("colors.bg.panel"))
+            self.status_bar.SetBackgroundColour(_theme.color("layout.main.status.default.bg"))
             self.status_bar.Refresh()
             self.status_bar.Update()
             
@@ -257,7 +260,7 @@ class SpinRenderPanel(wx.Panel):
         self.controls_side_panel.res_choice.Bind(wx.EVT_CHOICE, pc.on_resolution_change)
         # Background color
         if self.controls_side_panel.bg_picker:
-            self.controls_side_panel.bg_picker.Bind(wx.EVT_COLOURPICKER_CHANGED, lambda e: pc.on_bg_color_change(e.GetString()))
+            self.controls_side_panel.bg_picker.Bind(EVT_COLOURPICKER_CHANGED, lambda e: pc.on_bg_color_change(e.GetString()))
 
     def create_preview_panel(self, parent):
         """Create the preview panel using the extracted PreviewPanel component."""
@@ -282,52 +285,22 @@ class SpinRenderPanel(wx.Panel):
         self.enable_drag(self.preview.ov_top_left)
         self.enable_drag(self.preview.ov_bottom_left)
         self.enable_drag(self.preview.ov_bottom_center)
-        self.enable_drag(self.preview.ov_bottom_right)
 
         # Initial overlay update will be called by PreviewPanel constructor
         return self.preview
 
 
-    def enable_left_panel_controls(self, enable=True):
-        """Recursively enable or disable controls in the left panel and manage preview-closing bindings"""
-        from ui.custom_controls import CustomSlider, CustomButton, CustomToggleButton, NumericInput, PresetCard, CustomDropdown, CustomTextInput
-        
-        def process_widget(widget):
-            # Skip the render button so we can still click STOP
-            if widget == self.render_btn:
-                return
-                
-            is_control = isinstance(widget, (CustomSlider, CustomButton, CustomToggleButton, NumericInput, PresetCard, CustomDropdown, CustomTextInput, wx.Choice))
-            
-            # Special case for Save Preset button which is a CustomButton
-            if isinstance(widget, CustomButton) and widget.GetLabel() == "+ SAVE PRESET":
-                is_control = True
+    def enable_parameter_controls(self, enable=True):
+        """Enable or disable parameter controls during render. Export controls (render/options/cancel) are unaffected."""
+        registry = self.controls_side_panel._registry
+        for ctrl in registry.controls(section='presets') + \
+                    registry.controls(section='parameters') + \
+                    registry.controls(section='output'):
+            ctrl.Enable(enable)
 
-            if is_control:
-                widget.Enable(enable)
-                
-                # Bind click interaction to close preview only if control is enabled
-                if enable:
-                    # Bind our specific handler
-                    widget.Bind(wx.EVT_LEFT_DOWN, self.on_left_panel_interaction)
-                else:
-                    # ONLY unbind our specific handler to avoid breaking internal control logic
-                    widget.Unbind(wx.EVT_LEFT_DOWN, handler=self.on_left_panel_interaction)
-            
-            for child in widget.GetChildren():
-                process_widget(child)
-        
-        process_widget(self.controls_side_panel)
-        
-        # Header close button should NEVER be disabled
-        if hasattr(self, 'header_close_btn'):
-            self.header_close_btn.Enable(True)
-        
-        # Force a refresh of all controls to update their visual state
+        if hasattr(self.controls_side_panel, 'reapply_theme'):
+            self.controls_side_panel.reapply_theme()
         self.controls_side_panel.Refresh()
-
-
-
 
 
     def on_left_panel_interaction(self, event):
@@ -381,14 +354,9 @@ class SpinRenderPanel(wx.Panel):
         self.save_settings()
 
     def update_render_mode_ui(self, active_mode):
-        """Updates the colors of the mode toggle labels"""
-        if not hasattr(self, 'render_mode_btns'): return
-        for mode_id, btn in self.preview.render_mode_btns.items():
-            if mode_id == active_mode:
-                btn.SetForegroundColour(_theme.color("colors.accent.primary"))
-            else:
-                btn.SetForegroundColour(_theme.GREY_100)
-            btn.Refresh()
+        """Updates the colors of the mode toggle labels - delegate to preview panel"""
+        if hasattr(self.preview, 'update_render_mode_ui'):
+            self.preview.update_render_mode_ui(active_mode)
         
 
     def on_advanced_options(self, event):
@@ -426,16 +394,16 @@ class SpinRenderPanel(wx.Panel):
         # Check if already rendering via controller
         if self.render_controller.is_rendering():
             self.render_controller.cancel()
-            self.status_bar.set_status("STOPPING RENDER...", fg_color=_theme.color("colors.accent.warning"))
+            self.status_bar.set_status(_locale.get("component.status.stopping", "STOPPING RENDER..."), fg_color=_theme.color("colors.warning"))
             return
 
         # Prepare UI for rendering
-        self.render_btn.SetLabel("STOP")
-        self.render_btn.SetIcon("mdi-stop")
-        self.render_btn.SetDanger(True)
+        self.render_btn.SetStyle("exit", update_content=False)
+        self.render_btn.SetLabel(_locale.get("component.button.stop.label", "STOP"))
+        self.render_btn.SetIcon(_locale.get("component.button.stop.icon_ref", "stop"))
 
         # Disable all controls during render
-        self.enable_left_panel_controls(False)
+        self.enable_parameter_controls(False)
 
         # Hide CANCEL and ADVANCED buttons, expand STOP button
         if hasattr(self, 'can_btn'):
@@ -449,7 +417,7 @@ class SpinRenderPanel(wx.Panel):
         self.controls_side_panel.Layout()
         self.Layout()
 
-        self.status_bar.set_status("PREPARING RENDER...", fg_color=_theme.color("colors.accent.primary"), progress=0.0)
+        self.status_bar.set_status("PREPARING RENDER...", fg_color=_theme.color("colors.primary"), progress=0.0)
 
         # Start render state
         self.preview.stop_playback()
@@ -464,13 +432,14 @@ class SpinRenderPanel(wx.Panel):
 
         # IMMEDIATELY ACTIVATE RENDER PREVIEW (hides wireframe)
         self.preview.render_preview_active = True
+        self.preview.is_rendering = True
         self.preview.render_preview_bitmap = None  # Clear old frame
         self.preview.preview_manually_closed = False
         self.preview.current_render_frame = 0
         self.preview.total_render_frames = 0
         self.preview.final_output_type = None
 
-        if hasattr(self, 'render_preview_panel'):
+        if hasattr(self.preview, 'render_preview_panel'):
             # Force size/pos sync before showing
             if hasattr(self.preview, 'viewport'):
                 v_size = self.preview.viewport.GetSize()
@@ -525,12 +494,11 @@ class SpinRenderPanel(wx.Panel):
     def on_render_finished(self, result, error=None):
         if not self: return
         # RenderController handles engine cleanup; just update UI
-        self.render_btn.SetLabel("RENDER")
-        self.render_btn.SetIcon("mdi-video-vintage")
-        self.render_btn.SetDanger(False)
+        self.render_btn.SetStyle("render")
         
         # Re-enable all controls
-        self.enable_left_panel_controls(True)
+        self.enable_parameter_controls(True)
+        self.preview.is_rendering = False
         
         # Restore CANCEL and ADVANCED buttons
         if hasattr(self, 'can_btn'):
@@ -614,7 +582,7 @@ class SpinRenderPanel(wx.Panel):
                     self.preview.render_preview_panel.Hide()
 
             self.preview.final_output_type = None
-            self.status_bar.set_status("RENDER STOPPED", fg_color=_theme.color("colors.accent.warning"), progress=0.0)
+            self.status_bar.set_status("RENDER STOPPED", fg_color=_theme.color("colors.warning"), progress=0.0)
 
         self.preview.update_preview_overlay()
         self.status_bar.Refresh()

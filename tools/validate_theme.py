@@ -21,6 +21,7 @@ if str(project_root) not in sys.path:
 
 # Import theme validator modules
 from tools.theme_validator import scanner, yaml_parser, comparator, fixer
+from tools.theme_validator.yaml_parser import ThemeValidatorError
 
 
 VERSION = "1.0.0"
@@ -230,6 +231,12 @@ def main():
     """Main entry point."""
     args = parse_args()
 
+    # Check if fix operations are requested but PyYAML is unavailable
+    if (args.add_missing or args.purge_unused or args.deprecate) and not yaml_parser._YAML_AVAILABLE:
+        print("ERROR: Fix operations (--add-missing, --purge-unused, --deprecate) require PyYAML.", file=sys.stderr)
+        print("       Install PyYAML: pip install pyyaml", file=sys.stderr)
+        sys.exit(1)
+
     # Validate paths early
     validate_paths(args.yaml, args.src, args.baseline)
 
@@ -246,7 +253,11 @@ def main():
     # Step 2: Parse YAML
     if not args.quiet:
         print(f"Parsing theme file: {args.yaml}", file=sys.stderr)
-    defined = yaml_parser.parse_yaml(args.yaml)
+    try:
+        defined = yaml_parser.parse_yaml(args.yaml)
+    except (ThemeValidatorError, ImportError) as e:
+        # Error message already printed by yaml_parser or fixer; just exit
+        sys.exit(1)
 
     # Step 3: Compare tokens
     baseline_path = args.baseline if not args.dry_run else None
@@ -267,6 +278,12 @@ def main():
         )
 
         # Show fix summary
+        # Always show errors
+        if fix_result.get("errors"):
+            print("\nFixer Errors:", file=sys.stderr)
+            for error in fix_result["errors"]:
+                print(f"  - {error}", file=sys.stderr)
+
         if not args.quiet:
             print("\nFix Summary:", file=sys.stderr)
             if fix_result['changes_made']:

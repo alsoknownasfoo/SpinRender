@@ -1,4 +1,3 @@
-#!/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
 """
 Shared helper functions for unified component construction.
 """
@@ -8,21 +7,24 @@ _theme = Theme.current()
 from .text_styles import TextStyle
 
 
-# Valid theme token paths for validation (using Theme.color() API)
+# Valid theme token paths for validation (Theme Schema)
 VALID_BG_TOKENS = {
-    'colors.bg.page', 'colors.bg.panel', 'colors.bg.input',
-    'colors.bg.surface', 'colors.bg.modal'
+    'layout.main.frame.bg', 'layout.main.leftpanel.bg',
+    'layout.main.header.bg', 'layout.main.rightpanel.bg',
+    'colors.gray-dark', 'colors.gray-black', 'colors.transparent'
 }
 VALID_BORDER_TOKENS = {
-    'colors.border.default', 'colors.border.modal', 'colors.border.focus'
+    'borders.default.color', 'borders.subtle.color', 'borders.focus.color',
+    'layout.main.divider.bg'
 }
 VALID_ACCENT_TOKENS = {
-    'colors.accent.cyan', 'colors.accent.yellow', 'colors.accent.green',
-    'colors.accent.orange', 'colors.accent.red', 'colors.accent.amber',
-    'colors.accent.blue', 'colors.accent.purple'
+    'colors.primary', 'colors.secondary', 'colors.tertiary',
+    'colors.ok', 'colors.warning', 'colors.error'
 }
 VALID_TEXT_TOKENS = {
-    'colors.text.primary', 'colors.text.secondary', 'colors.text.muted'
+    'text.body.color', 'text.subtitle.color', 'text.metadata.color',
+    'text.subheader.color', 'text.button.color', 'text.label.color',
+    'text.title.color'
 }
 ALL_VALID_TOKENS = (
     VALID_BG_TOKENS | VALID_BORDER_TOKENS | VALID_ACCENT_TOKENS | VALID_TEXT_TOKENS
@@ -128,26 +130,18 @@ def apply_disabled_state(widget: wx.Window, is_enabled: bool) -> None:
         widget.SetBackgroundColour(disabled_color)
 
 
-def create_section_label(parent, text):
+def create_section_label(parent, text, id="default"):
     """Create a section label with divider line."""
-    panel = wx.Panel(parent)
-    sizer = wx.BoxSizer(wx.HORIZONTAL)
-    label = wx.StaticText(panel, label=text)
-    label.SetForegroundColour(_theme.color("colors.accent.primary"))
-    label.SetFont(TextStyle(family=_theme.font_family("display"), size=13, weight=600).create_font())
-    sizer.Add(label, 0, wx.ALIGN_CENTER_VERTICAL)
-    line = wx.Panel(panel, size=(60, 1))
-    line.SetBackgroundColour(_theme.color("colors.border.default"))
-    sizer.Add(line, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 8)
-    panel.SetSizerAndFit(sizer)
-    return panel
+    from .custom_controls import SectionLabel
+    return SectionLabel(parent, label=text, id=id)
 
 
-def create_numeric_input(parent, value, unit, editable=True, min_val=None, max_val=None):
-    """Create a numeric input or display widget."""
-    from .custom_controls import NumericInput, NumericDisplay
+def create_numeric_input(parent, value, unit, editable=True, min_val=None, max_val=None, id="slider", size=(100, 32), section=None):
+    """Create a numeric input or display widget using consolidated CustomInput."""
+    from .custom_controls import CustomInput
     v = float(value) if isinstance(value, str) else value
-    if editable:
-        return NumericInput(parent, value=v, unit=unit, min_val=min_val, max_val=max_val, size=(100, 32))
-    else:
-        return NumericDisplay(parent, value=v, unit=unit, size=(100, 32))
+
+    inp = CustomInput(parent, value=v, unit=unit, min_val=min_val, max_val=max_val, id=id, size=size, section=section)
+    if not editable:
+        inp.Enable(False)
+    return inp

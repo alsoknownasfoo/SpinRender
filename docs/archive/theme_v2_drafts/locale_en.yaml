@@ -1,0 +1,160 @@
+# SpinRender Localization — English (US)
+# Maps content (labels, icons) to component identifiers.
+
+locale:
+  en_US:
+    # ─────────────────────────────────────────────────────────────
+    # APP HEADER
+    # ─────────────────────────────────────────────────────────────
+    component.main.header:
+      title: "SPINRENDER"
+      subtitle: "0.9.0-alpha"
+      logo_id: "res/logo.svg"
+
+    # ─────────────────────────────────────────────────────────────
+    # DIALOG TITLES
+    # ─────────────────────────────────────────────────────────────
+    dialog:
+      advanced:
+        title: "ADVANCED OPTIONS"
+      save_preset:
+        title: "SAVE PRESET"
+      recall_preset:
+        title: "SELECT CUSTOM PRESET"
+
+    # ─────────────────────────────────────────────────────────────
+    # PRESET CARDS
+    # ─────────────────────────────────────────────────────────────
+    component.preset_card:
+      card1:
+        label: "HERO"
+        icon_ref: "glyphs.preset-hero"
+      card2:
+        label: "SPIN"
+        icon_ref: "glyphs.preset-spin"
+      card3:
+        label: "FLIP"
+        icon_ref: "glyphs.preset-flip"
+      card4:
+        label: "SELECT CUSTOM..."
+        icon_ref: "glyphs.preset-custom"
+
+    # ─────────────────────────────────────────────────────────────
+    # SECTION HEADERS
+    # ─────────────────────────────────────────────────────────────
+    sections:
+      presets: "LOOP PRESET"
+      parameters: "PARAMETERS"
+      output: "OUTPUT SETTINGS"
+
+    # ─────────────────────────────────────────────────────────────
+    # PARAMETERS (SLIDERS & INPUTS)
+    # ─────────────────────────────────────────────────────────────
+    parameters:
+      rotation_heading: "ROTATION SETTINGS"
+      rotation_desc: "BOARD: ORIENT ON SPINDLE | SPIN: ORIENT THE SPINDLE ITSELF"
+      lighting_hint: "SELECT WORKSPACE TO USE KICAD 3D VIEWER SETTINGS"
+      system_logging: "SYSTEM LOGGING"
+      log_info: "Logs are kept for 30 days. Useful for troubleshooting render failures."
+      open_logs: "OPEN LOGS FOLDER"
+      
+      board_tilt:
+        label: "BOARD TILT"
+        icon_ref: "glyphs.axis-x"
+        unit: "°"
+      board_roll:
+        label: "BOARD ROLL"
+        icon_ref: "glyphs.axis-y"
+        unit: "°"
+      spin_tilt:
+        label: "SPIN TILT"
+        icon_ref: "glyphs.axis-y-rot"
+        unit: "°"
+      spin_heading:
+        label: "SPIN HEADING"
+        icon_ref: "glyphs.axis-z-rot"
+        unit: "°"
+      period:
+        label: "ROTATION PERIOD"
+        desc: "SPEED OF 360° SPIN"
+        unit: "sec"
+      direction:
+        label: "DIRECTION"
+        options:
+          cw:  { label: "CW",  icon_ref: "glyphs.cw" }
+          ccw: { label: "CCW", icon_ref: "glyphs.ccw" }
+      lighting:
+        label: "LIGHTING"
+        options:
+          studio:    { label: "STUDIO",    icon_ref: "glyphs.sun" }
+          dramatic:  { label: "DRAMATIC",  icon_ref: "glyphs.bolt" }
+          soft:      { label: "SOFT",      icon_ref: "glyphs.cloud" }
+          workspace: { label: "WORKSPACE", icon_ref: "glyphs.edit" }
+
+    # ─────────────────────────────────────────────────────────────
+    # OUTPUT SETTINGS
+    # ─────────────────────────────────────────────────────────────
+    output:
+      auto_desc: "Automatically save to time-stamped directories."
+      format:
+        label: "FORMAT"
+        options: ["MP4 (H.264)", "GIF", "PNG Sequence"]
+      resolution:
+        label: "RESOLUTION"
+        options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
+      bg_color:
+        label: "BACKGROUND COLOR"
+
+    # ─────────────────────────────────────────────────────────────
+    # BUTTONS
+    # ─────────────────────────────────────────────────────────────
+    component.button:
+      render:
+        label: "RENDER"
+        icon_ref: "glyphs.render-action"
+      stop:
+        label: "STOP"
+        icon_ref: "glyphs.stop"
+      cancel:
+        label: "CANCEL"
+        icon_ref: "glyphs.close"
+      ok:
+        label: "OK"
+        icon_ref: "glyphs.save"
+      save:
+        label: "SAVE"
+        icon_ref: "glyphs.save"
+      overwrite:
+        label: "OVERWRITE"
+        icon_ref: "glyphs.alert"
+      close:
+        label: "CLOSE"
+        icon_ref: "glyphs.close"
+      options:
+        label: ""
+        icon_ref: "glyphs.settings"
+      save_preset:
+        label: "+ PRESET"
+        icon_ref: "glyphs.plus"
+
+      browse:
+        label: "BROWSE"
+        icon_ref: "glyphs.folder"
+      exit:
+        label: "EXIT"
+        icon_ref: "glyphs.exit-action"
+      trash:
+        label: ""
+        icon_ref: "glyphs.trash"
+
+    # ─────────────────────────────────────────────────────────────
+    # STATUS MESSAGES
+    # ─────────────────────────────────────────────────────────────
+    component.status:
+      ready: "READY"
+      rendering: "RENDERING FRAME {current}/{total}"
+      complete: "RENDER COMPLETE"
+      stopped: "RENDER STOPPED"
+      stopping: "STOPPING RENDER..."
+      error: "ERROR: {message}"
+      no_presets: "No saved presets found."

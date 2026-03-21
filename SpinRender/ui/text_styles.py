@@ -52,95 +52,70 @@ class TextStyle:
 # ---------------------------------------------------------------------------
 
 class TextStyles:
-    """Container for predefined semantic text styles.
+    """Container for semantic text styles.
 
-    These styles reference theme font families and are used throughout the UI.
-    Values are fetched dynamically from the Theme singleton to support hot-reloading.
+    Resolves styles dynamically from the Theme singleton via __getattr__.
+    This ensures any new style added to the YAML theme is automatically available.
     """
     
+    # Map code style names to their definitive theme paths
+    _ALIASES = {
+        "title": "layout.main.header.title",
+        "version": "layout.main.header.subtitle",
+        "header": "layout.main.leftpanel.headers",
+        "subheader": "layout.main.leftpanel.subheaders",
+        "metadata": "layout.main.leftpanel.body",
+        "icon": "icon",
+        "label": "label",
+
+        # Right Panel styles
+        "info": "layout.main.rightpanel.info",
+        "shader": "layout.main.rightpanel.shader",
+
+        "status": "components.status.default.label",
+
+        # Legacy/helper aliases
+        "label_sm": "layout.main.leftpanel.headers",
+        "label_xs": "layout.main.leftpanel.body",
+        "numeric_unit": "layout.main.leftpanel.body",
+        "section_heading": "layout.main.leftpanel.headers",
+        "panel_title": "layout.main.header.title"
+    }
+
     @property
     def theme(self):
         return Theme.current()
 
-    @property
-    def body(self) -> TextStyle:
+    def _get_style(self, role: str) -> TextStyle:
+        """Helper to create TextStyle from theme role."""
+        font = self.theme.font(role)
+        color = self.theme.color(role) # Engine handles extracting .color from dict or sibling
+        
+        # Resolve extra metadata like formatting from the theme spec
+        spec = self.theme.text_style(role)
+        if not isinstance(spec, dict) or spec == "#FF00FF":
+            spec = self.theme._resolve(role)
+            
+        formatting = None
+        if isinstance(spec, dict):
+            formatting = spec.get("formatting")
+            
         return TextStyle(
-            family=self.theme.font_family("mono"),
-            size=self.theme.font_size("base"),
-            weight=self.theme.font_weight("normal")
+            family=font.GetFaceName(),
+            size=font.GetPointSize(),
+            weight=font.GetWeight(),
+            color=color,
+            formatting=formatting
         )
 
-    @property
-    def body_strong(self) -> TextStyle:
-        return TextStyle(
-            family=self.theme.font_family("mono"),
-            size=self.theme.font_size("base"),
-            weight=self.theme.font_weight("semibold")
-        )
-
-    @property
-    def label_sm(self) -> TextStyle:
-        return TextStyle(
-            family=self.theme.font_family("mono"),
-            size=self.theme.font_size("sm"),
-            weight=self.theme.font_weight("semibold")
-        )
-
-    @property
-    def label_xs(self) -> TextStyle:
-        return TextStyle(
-            family=self.theme.font_family("mono"),
-            size=self.theme.font_size("xs"),
-            weight=self.theme.font_weight("bold")
-        )
-
-    @property
-    def numeric_value(self) -> TextStyle:
-        return TextStyle(
-            family=self.theme.font_family("mono"),
-            size=self.theme.font_size("md"),
-            weight=self.theme.font_weight("semibold")
-        )
-
-    @property
-    def numeric_unit(self) -> TextStyle:
-        return TextStyle(
-            family=self.theme.font_family("mono"),
-            size=self.theme.font_size("base"),
-            weight=self.theme.font_weight("normal")
-        )
-
-    @property
-    def section_heading(self) -> TextStyle:
-        return TextStyle(
-            family=self.theme.font_family("display"),
-            size=self.theme.font_size("md"),
-            weight=self.theme.font_weight("semibold"),
-            formatting="uppercase"
-        )
-
-    @property
-    def panel_title(self) -> TextStyle:
-        return TextStyle(
-            family=self.theme.font_family("display"),
-            size=self.theme.font_size("xl"),
-            weight=self.theme.font_weight("bold"),
-            formatting="uppercase"
-        )
-
-    @property
-    def icon(self) -> TextStyle:
-        return TextStyle(
-            family=self.theme.font_family("icon"),
-            size=self.theme.font_size("icon")
-        )
-
-    @property
-    def icon_lg(self) -> TextStyle:
-        return TextStyle(
-            family=self.theme.font_family("icon"),
-            size=self.theme.font_size("icon-lg")
-        )
+    def __getattr__(self, name: str) -> TextStyle:
+        """Dynamically resolve style properties."""
+        role = self._ALIASES.get(name, name)
+        try:
+            return self._get_style(role)
+        except Exception:
+            # Fallback to body if resolution fails completely
+            return self._get_style("body")
 
 # Singleton access
 TextStyles = TextStyles()

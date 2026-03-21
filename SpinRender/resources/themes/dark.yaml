@@ -1,382 +1,796 @@
-# SpinRender Theme — Dark (default)
-# File: SpinRender/resources/themes/dark.yaml
-#
-# This file is the single source of truth for all visual tokens.
-# Load with: from core.theme import Theme; t = Theme.load("dark")
+# SpinRender Theme — Dark (Default)
+# Note: STYLING ONLY. All text/icon content is in locale_en.yaml.
 
-# TODO:
-# - Remove neutral and color definitions and add a theme helpder function to obtain color values from names via wx.ColourDatabase
-
-meta:
-  name: "Dark"
-  version: "1.0.0"
-  description: "Default dark theme matching the SpinRender design system"
-
-# ─────────────────────────────────────────────
-# 1. RAW PALETTE
-#    Low-level color definitions. Do NOT use these directly in
-#    components — use semantic tokens below instead.
-# ─────────────────────────────────────────────
-palette:
-  # Neutrals (darkest → lightest)
-  neutral-1:  "#0A0A0A"   # near-black (10)
-  neutral-2:  "#0D0D0D"   # input wells (13)
-  neutral-3:  "#121212"   # page background (18)
-  neutral-4:  "#1A1A1A"   # overlay panels (26)
-  neutral-5:  "#1A1A1A"   # side panels (26)
-  neutral-6:  "#222222"   # nested surfaces (34)
-  neutral-7:  "#1F1F1F"   # borders/dividers (31)
-  neutral-8:  "#222222"   # raised surfaces (34)
-  neutral-9:  "#2A2A2A"   # generic hover (42)
-  neutral-10: "#323232"   # track / subtle border (50)
-  neutral-11: "#777777"   # secondary text (119)
-  neutral-12: "#555555"   # muted text (85)
-  neutral-13: "#CCCCCC"   # light gray (204)
-  neutral-14: "#E0E0E0"   # primary text (224)
-  neutral-15: "#FFFFFF"   # white (255)
-  neutral-16: "#333333"   # modal border (51)
-  neutral-17: "#787878"   # hover highlight (120)
-  neutral-18: "#646464"   # grey-100 (100)
-
-  # Accent colors
-  cyan:       "#00BCD4"   # primary accent (0,188,212)
-  yellow:     "#FFD600"   # secondary/highlights
-  green:      "#4CAF50"   # success/info
-  orange:     "#FF6B35"   # warnings/badges
-  red:        "#FF3B30"   # errors/danger
-  purple:     "#AA6BFF"   # purple accent
-  pink:       "#FF4081"   # pink accent
-
-  # Preset card colors
-  preset-red:    "#FF6B6B"
-  preset-amber:  "#FFB46B"
-  preset-blue:   "#4D96FF"
-  preset-purple: "#AA6BFF"
-
-  # Danger button states
-  danger-dark:   "#8C0000"
-  danger-hover:  "#DC1414"
-  danger-medium: "#B40000"
-
-  # Overlays (RGBA with alpha)
-  overlay-faint:  "rgba(255,255,255,0.08)"
-  overlay-light:  "rgba(255,255,255,0.16)"
-  overlay-medium: "rgba(255,255,255,0.27)"
-  transparent:    "rgba(0,0,0,0)"
-  black-solid:    "#000000"
-
-# ─────────────────────────────────────────────
-# 2. SEMANTIC COLOR TOKENS
-#    Purpose-named aliases over the raw palette.
-#    These are what components should reference.
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────
+# 1. COLORS (Global Design Tokens & Semantic Roles)
+# ─────────────────────────────────────────────────────────────────
 colors:
+  # Auto State Shifts (for undefined states, e.g. hover/active on buttons)
+  auto_states:
+    hover: rgb(60, 60, 60) # Lighten by 10 for hover
+    active: rgb(-60, -60, -60) # Darken by 10 for active
+    disabled: rgb(0, 0, 0, 0.5) # 50% opacity for disabled
 
-  # — Backgrounds —
-  bg:
-    page:       {ref: "palette.neutral-3"}   # Window/outermost container
-    panel:      {ref: "palette.neutral-5"}   # Side panels, scrolled areas
-    surface:    {ref: "palette.neutral-8"}   # Cards, elevated surfaces
-    input:      {ref: "palette.neutral-2"}   # Text fields, numeric inputs
-    inner:      {ref: "palette.neutral-6"}   # Nested surfaces
-    overlay:    {ref: "palette.neutral-4"}   # Color picker, popups
-    track:      {ref: "palette.neutral-10"}  # Slider track fill area
-    hover:      {ref: "palette.neutral-9"}   # Generic hover state
-    output:     {ref: "palette.neutral-1"}   # GL/video preview backdrop
+  # Base Palette (Primes)
+  gray-black:  "#0D0D0D"
+  gray-dark:   "#121212"
+  gray-border: "#1F1F1F"
+  gray-medium: "#444444"
+  gray-light:  "#646464"
+  gray-text:   "#777777"
+  gray-white:  "#E0E0E0"
+  white:       "#FFFFFF"
+  white-68:    "rgba(255,255,255,0.68)"
+  black:       "#000000"
+  transparent: "rgba(0,0,0,0)"
 
-  # — Text —
-  text:
-    primary:    {ref: "palette.neutral-14"}  # Main body text
-    secondary:  {ref: "palette.neutral-11"}  # Subtitles, metadata
-    muted:      {ref: "palette.neutral-12"}  # Disabled, placeholders
-    on-accent:  {ref: "palette.neutral-2"}   # Text over accent bg
-    on-danger:  {ref: "palette.neutral-15"}  # Text over danger bg
+  cyan:        "#00BCD4"
+  yellow:      "#FFD600"
+  green:       "#4CAF50"
+  orange:      "#FF6B35"
+  red:         "#FF3B30"
+  purple:      "#AA6BFF"
+  pink:        "#F240FF"
 
-  # — Accent (primary brand color) —
-  accent:
-    primary:    {ref: "palette.cyan"}
-    secondary:  {ref: "palette.yellow"}
-    success:    {ref: "palette.green"}
-    warning:    {ref: "palette.orange"}
+  cyan-10:     "rgba(0, 188, 212, 0.1)"
+  yellow-10:   "rgba(255, 214, 0, 0.1)"
+  green-10:    "rgba(76, 175, 80, 0.1)"
+  orange-10:   "rgba(255, 107, 53, 0.1)"
+  red-10:      "rgba(255, 59, 48, 0.1)"
+  purple-10:   "rgba(170, 107, 255, 0.1)"
+  pink-10:     "rgba(242, 64, 255, 0.1)"
 
-  # — Borders —
-  border:
-    default:    {ref: "palette.neutral-7"}   # Panels, cards
-    subtle:     {ref: "palette.neutral-10"}  # Toggles, dropdowns
-    focus:      {ref: "palette.cyan"}        # Focused inputs
-    strong:     {ref: "palette.neutral-10"}  # Strong dividers
+  cyan-20:     "rgba(0, 188, 212, 0.2)"
+  yellow-20:   "rgba(255, 214, 0, 0.2)"
+  green-20:    "rgba(76, 175, 80, 0.2)"
+  orange-20:   "rgba(255, 107, 53, 0.2)"
+  red-20:      "rgba(255, 59, 48, 0.2)"
+  purple-20:   "rgba(170, 107, 255, 0.2)"
+  pink-20:     "rgba(242, 64, 255, 0.2)"
 
-  # — Preset card accent colors —
-  preset:
-    - {ref: "palette.preset-red"}
-    - {ref: "palette.preset-amber"}
-    - {ref: "palette.preset-blue"}
-    - {ref: "palette.preset-purple"}
+  # Semantic Roles (Theme)
+  primary:     "@colors.cyan"
+  secondary:   "@colors.yellow"
+  tertiary:    "@colors.purple"
+  quaternary:  "@colors.pink"
+  ok:          "@colors.green"
+  warning:     "@colors.orange"
+  error:       "@colors.red"
 
-  # — State overlays (for hover, pressed, etc.) —
-  state:
-    hover-overlay:   {ref: "palette.overlay-light"}
-    pressed-overlay: {ref: "palette.overlay-medium"}
-    ghost-overlay:   {ref: "palette.overlay-faint"}
-    active:          {ref: "palette.green"}      # toggle/option active bg
-    danger:          {ref: "palette.danger-medium"}
-    danger-hover:    {ref: "palette.danger-hover"}
-    danger-pressed:  {ref: "palette.danger-dark"}
+# ─────────────────────────────────────────────────────────────────
+# 2. RADIUS (Rounding Scale)
+# ─────────────────────────────────────────────────────────────────
+radius:
+  none: 0
+  sm:   4
+  md:   6
+  lg:   8
+  full: 9999
 
-# ─────────────────────────────────────────────
-# 3. TYPOGRAPHY
-# ─────────────────────────────────────────────
-typography:
-
-  # Font family stacks
-  families:
-    mono:    "JetBrains Mono"   # Primary UI font (monospaced)
-    display: "Oswald"           # Headings, panel titles
-    icon:    "Material Design Icons"  # MDI icon glyph font
-    inter:   "Inter"            # Alternative font (for progress dlg)
-
-  # Scale (point sizes)
-  scale:
-    xs:      8    # Tick marks, graph labels
-    sm:      9    # Icon labels on preset cards
-    base:    11   # Default body / button text
-    md:      13   # Numeric display values, section headings
-    lg:      14   # MDI icon default size
-    xl:      18   # Panel title (Oswald)
-    icon:    14   # MDI icons (same as lg, aliased for clarity)
-    icon-lg: 20   # Large icon buttons
-
-  # Weight aliases (map to wx.FONTWEIGHT_*)
-  weights:
-    normal:   400   # wx.FONTWEIGHT_NORMAL
-    semibold: 600   # wx.FONTWEIGHT_SEMIBOLD
-    bold:     700   # wx.FONTWEIGHT_BOLD
-
-  # Composite presets — (family, size, weight)
-  presets:
-    body:
-      family: {ref: "typography.families.mono"}
-      size:   {ref: "typography.scale.base"}
-      weight: {ref: "typography.weights.normal"}
-
-    body_strong:
-      family: {ref: "typography.families.mono"}
-      size:   {ref: "typography.scale.base"}
-      weight: {ref: "typography.weights.semibold"}
-
-    label_sm:
-      family: {ref: "typography.families.mono"}
-      size:   {ref: "typography.scale.sm"}
-      weight: {ref: "typography.weights.semibold"}
-
-    label_xs:
-      family: {ref: "typography.families.mono"}
-      size:   {ref: "typography.scale.xs"}
-      weight: {ref: "typography.weights.bold"}
-
-    numeric_value:
-      family: {ref: "typography.families.mono"}
-      size:   {ref: "typography.scale.md"}
-      weight: {ref: "typography.weights.semibold"}
-
-    numeric_unit:
-      family: {ref: "typography.families.mono"}
-      size:   {ref: "typography.scale.base"}
-      weight: {ref: "typography.weights.normal"}
-
-    section_heading:
-      family: {ref: "typography.families.display"}
-      size:   {ref: "typography.scale.md"}
-      weight: {ref: "typography.weights.semibold"}
-
-    panel_title:
-      family: {ref: "typography.families.display"}
-      size:   {ref: "typography.scale.xl"}
-      weight: {ref: "typography.weights.bold"}
-
-    icon:
-      family: {ref: "typography.families.icon"}
-      size:   {ref: "typography.scale.icon"}
-      weight: {ref: "typography.weights.normal"}
-
-    icon_lg:
-      family: {ref: "typography.families.icon"}
-      size:   {ref: "typography.scale.icon-lg"}
-      weight: {ref: "typography.weights.normal"}
-
-# ─────────────────────────────────────────────
-# 4. SPACING
-#    All layout/padding/gap values in pixels.
-# ─────────────────────────────────────────────
-spacing:
-  0:   0
-  xs:  4    # Tight gaps
-  sm:  6    # Icon+label gap (toggle button)
-  md:  10   # Icon+label gap (standard button)
-  lg:  16   # Main layout section padding
-  xl:  24   # Section-to-section gap (future)
-
-# ─────────────────────────────────────────────
-# 5. BORDERS
-#    Border radius values in pixels.
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────
+# 3. BORDERS (Width Scales & Roles)
+# ─────────────────────────────────────────────────────────────────
 borders:
-  radius:
-    sm:   4   # Small radius (toggles, sliders)
-    md:   6   # Medium radius (buttons, dropdowns)
-    lg:   8   # Large radius (cards, panels)
-    full: 9999   # Full radius (pill shapes, badges)
+  width:
+    none:   0
+    thin:   1
+    medium: 2
 
-# ─────────────────────────────────────────────
-# 6. COMPONENT TOKENS
-#    Per-component design decisions. Color properties use arrays:
-#    - [normal] → auto hover (+10 RGB) and active (-10 RGB)
-#    - [normal, hover] → auto active from hover (-10)
-#    - [normal, hover, active] → explicit all three
-# ─────────────────────────────────────────────
-components:
-
-  # Numeric Display (angle display, etc.)
-  numeric_display:
-    bg:         ["colors.bg.input"]
-    border:     ["colors.border.default"]
-    text-value: ["colors.text.primary"]
-    text-unit:  ["colors.text.secondary"]
-    font-value: {ref: "typography.presets.numeric-value"}
-    font-unit:  {ref: "typography.presets.numeric-unit"}
-
-  # Numeric Input (editable number fields)
-  numeric_input:
-    bg:             ["colors.bg.input"]
-    border:         ["colors.border.default"]
-    border-focus:   ["colors.border.focus"]
-    text:           ["colors.text.primary"]
-    placeholder:    ["colors.text.muted"]
-    font:           {ref: "typography.presets.body"}
-
-  # Color Picker
-  color_picker:
-    bg:             ["colors.bg.overlay"]
-    border:         ["colors.border.default"]
-    swatch-border:  ["colors.border.subtle"]
-    overlay-fg:     ["palette.overlay-medium"]
-    radius:         {ref: "borders.radius.md"}
-
-  # Main Panel / Header
-  panel:
-    bg:             ["colors.bg.page"]
-    header-bg:      ["colors.bg.panel"]
-    header-border:  ["colors.border.default"]
-    padding:        {ref: "spacing.lg"}
-    section-gap:    {ref: "spacing.lg"}
-    section-label:  {ref: "components.section_label"}
-
-  # Section Label
-  section_label:
-    text:           ["colors.text.secondary"]
-    line:           ["colors.border.default"]
-    font:           {ref: "typography.presets.section_heading"}
-
-  # Slider
-  slider:
-    height:         18
-    track:
-      color:        ["colors.bg.track"]
-      height:       4
-      radius:       {ref: "borders.radius.sm"}
-    fill:
-      color:        ["colors.accent.primary"]
-      radius:       {ref: "borders.radius.sm"}
-
-  # Toggle Button (segmented control)
-  toggle:
-    bg:             ["colors.bg.input"]
-    border:         ["colors.border.subtle"]
-    radius:         {ref: "borders.radius.md"}
-    option:
-      text:         ["colors.text.secondary"]
-      font:         {ref: "typography.presets.body-strong"}
-      icon_gap:     {ref: "spacing.sm"}
-    active:
-      bg:           ["colors.state.active"]
-      text:         ["colors.text.on-accent"]
-      font:         {ref: "typography.presets.body-strong"}
-
-  # Dropdown
-  dropdown:
-    height:         32
-    bg:             ["colors.bg.input"]
-    border:         ["colors.border.default"]
-    border-focus:   ["colors.border.focus"]
-    radius:         {ref: "borders.radius.md"}
-    text:           ["colors.text.primary"]
-    text-muted:     ["colors.text.muted"]
-    font:           {ref: "typography.presets.body-strong"}
-    popup:
-      bg:           ["colors.bg.inner"]
-      hover:        ["colors.bg.hover"]
-
-  # Button
+  # Semantic Roles
+  none:
+    size: "@borders.width.none"
+    color: "@colors.transparent"
+  default:
+    size: "@borders.width.thin"
+    color: "@colors.gray-border"
+  subtle:
+    size: "@borders.width.thin"
+    color: "@colors.gray-border"
   button:
-    height:         36
-    radius:         {ref: "borders.radius.md"}
-    font:           {ref: "typography.presets.body-strong"}
-    icon_gap:       {ref: "spacing.md"}
+    size: "@borders.width.thin"
+    color: "@colors.gray-medium"
+  focus:
+    size: "@borders.width.thin"
+    color: "@colors.primary"
+  strong:
+    size: "@borders.width.medium"
+    color: "@colors.primary"
 
-    primary:
-      bg:           ["colors.accent.primary"]
-      text:         ["colors.text.on-accent"]
-      hover:        ["colors.state.hover-overlay"]
-      pressed:      ["colors.state.pressed-overlay"]
+# ─────────────────────────────────────────────────────────────────
+# 4. TYPOGRAPHY (Scales & Roles)
+# ─────────────────────────────────────────────────────────────────
+typography:
+  families:
+    mono:    "JetBrains Mono"
+    display: "Oswald"
+    icon:    "Material Design Icons"
 
-    secondary:
-      bg:           ["colors.bg.surface"]
-      text:         ["colors.text.primary"]
-      border:       ["colors.border.default"]
-      hover:        ["colors.state.hover-overlay"]
+  weights:
+    hairline: 100
+    thin:     200
+    light:    300
+    normal:   400
+    medium:   500
+    semibold: 600
+    bold:     700
+    extrabold: 800
+    black:    900
 
-    ghost:
-      bg:           ["palette.transparent", "red"]
-      text:         ["colors.text.primary"]
-      hover:        ["colors.state.ghost-overlay"]
-      border:       ["palette.transparent"]
-      radius:       {ref: "borders.radius.md"}
+  scale:
+    xs: 7
+    sm: 9
+    base: 11
+    md: 14
+    lg: 18
+    xl: 24
+    icon: 16
+    icon-lg: 20
 
-    danger:
-      bg:           ["colors.state.danger"]
-      text:         ["colors.text.on-danger"]
-      hover-bg:     ["colors.state.danger-hover"]
-      pressed-bg:   ["colors.state.danger-pressed"]
+  spacing:
+    none: 0
+    sm:   6
+    base: 10
+    md:   16
+    lg:   24
 
-    # Explicit close button definition linked to ghost style
-    close:          {ref: "components.button.ghost"}
+# ─────────────────────────────────────────────────────────────────
+# 5. TEXT STYLES (Global Roles)
+# ─────────────────────────────────────────────────────────────────
+text:
+  title:
+    color: "@colors.gray-white"
+    formatting: "uppercase"
+    font:
+      typeface: "@typography.families.display"
+      size: "@typography.scale.lg"
+      weight: "@typography.weights.bold"
+  subtitle:
+    color: "@colors.primary"
+    font:
+      typeface: "@typography.families.mono"
+      size: "@typography.scale.sm"
+      weight: "@typography.weights.bold"
+  header:
+    color: "@colors.gray-medium"
+    formatting: "uppercase"
+    font:
+      typeface: "@typography.families.mono"
+      size: "@typography.scale.md"
+      weight: "@typography.weights.semibold"
+  subheader:
+    color: "@colors.primary"
+    font:
+      typeface: "@typography.families.mono"
+      size: "@typography.scale.sm"
+      weight: "@typography.weights.semibold"
+  body:
+    color: "@colors.gray-medium"
+    font:
+      typeface: "@typography.families.mono"
+      size: "@typography.scale.sm"
+      weight: "@typography.weights.normal"
+  body_strong:
+    ref: "@text.body"
+    font:
+      weight: "@typography.weights.semibold"
+  numeric:
+    color: "@colors.secondary"
+    font:
+      typeface: "@typography.families.mono"
+      size: "@typography.scale.base"
+      weight: "@typography.weights.semibold"
+  links:
+    color: "@colors.primary"
+    font:
+      typeface: "@typography.families.mono"
+      size: "@typography.scale.base"
+      weight: "@typography.weights.semibold"
+  metadata:
+    color: "@colors.gray-medium"
+    font:
+      typeface: "@typography.families.mono"
+      size: "@typography.scale.sm"
+      weight: "@typography.weights.normal"
+  label:
+    color: "@colors.gray-text"
+    font:
+      typeface: "@typography.families.mono"
+      size: "@typography.scale.sm"
+      weight: "@typography.weights.semibold"
+  button:
+    color: 
+      default: "@colors.gray-light"
+      hover: "@colors.primary"
+    font:
+      typeface: "@typography.families.mono"
+      size: "@typography.scale.base"
+      weight: "@typography.weights.semibold"
+  nav:
+    color: 
+      default: "@colors.gray-medium"
+      hover: "@colors.primary"
+      active: "@colors.primary"
+    font:
+      typeface: "@typography.families.mono"
+      size: "@typography.scale.sm"
+      weight: "@typography.weights.bold"
+  dropdown:
+    color: "@colors.gray-white"
+    font:
+      typeface: "@typography.families.mono"
+      size: "@typography.scale.sm"
+      weight: "@typography.weights.semibold"
+  status:
+    color: "@colors.primary"
+    font:
+      typeface: "@typography.families.mono"
+      size: "@typography.scale.sm"
+      weight: "@typography.weights.bold"
+  icon:
+    color: "@colors.gray-white"
+    font:
+      typeface: "@typography.families.icon"
+      size: "@typography.scale.md"
+      weight: "@typography.weights.normal"
+  icon_lg:
+    color: "@colors.gray-white"
+    font:
+      typeface: "@typography.families.icon"
+      size: "@typography.scale.lg"
+      weight: "@typography.weights.normal"
 
-  # Text Input
-  text_input:       {ref: "components.numeric_input"}
+# ─────────────────────────────────────────────────────────────────
+# 6. GLYPHS (Symbol Aliases)
+# ─────────────────────────────────────────────────────────────────
+glyphs:
+  # App Actions
+  render-action: "\U000F0A1C"
+  exit-action:   "\U000F0206"
+  settings:      "\U000F0493"
+  save:          "\U000F012C"
+  folder:        "\U000F024B"
+  close:         "\U000F0156"
+  stop:          "\U000F04DB"
+  trash:         "\U000F0A7A"
+  info:          "\U000F02FD"
+  alert:         "\U000F0CF0"
+  plus:          "\U000F0130"
+  
+  # Controls
+  cw:            "\U000F0453"
+  ccw:           "\U000F0459"
+  sun:           "\U000F0599"
+  bolt:          "\U000F033F"
+  cloud:         "\U000F02F9"
+  edit:          "\U000F0052"
+  
+  # Status
+  status-ok:     "\U000F05E0"
+  status-error:  "\U000F0156"
+  
+  # Axis
+  axis-x:        "\U000F0D4C"
+  axis-y:        "\U000F0D51"
+  axis-y-rot:    "\U000F0D54"
+  axis-z-rot:    "\U000F0D58"
+  
+  # Presets
+  preset-hero:   "\U000F0465"
+  preset-spin:   "\U000F1999"
+  preset-flip:   "\U000F0D98"
+  preset-custom: "\U000F166B"
+  
+  # Navigation
+  chevron-down:  "\U000F0140"
+  chevron-up:    "\U000F0143"
 
-  # Path Input
-  path_input:
-    bg:             ["colors.bg.input"]
-    border:         ["colors.border.default"]
-    text:           ["colors.text.secondary"]
-    icon:           ["colors.text.secondary"]
+# ─────────────────────────────────────────────────────────────────
+# 7. VIEWPORT
+# ─────────────────────────────────────────────────────────────────
+viewport:
+  bg: "@colors.gray-black"
+  grid: "@colors.gray-medium"
+  wireframe: null
+  axes:
+    x: "@colors.red"
+    y: "@colors.green"
+    z: "@colors.cyan"
 
-  # Preset Card
-  preset_card:
-    bg:             ["colors.bg.surface", "colors.bg.panel"]
-    border:         ["colors.border.default", "colors.accent.primary"]
-    text:           ["colors.text.secondary", "colors.accent.primary"]
+# ─────────────────────────────────────────────────────────────────
+# 8. LAYOUT (Application Layout Definitions)
+# ─────────────────────────────────────────────────────────────────
+layout:
+  # Main application layout (left panel, right panel, header, etc.)
+  main:
+    frame:
+      bg: "@colors.gray-black"
+      radius: "@radius.none"
+    header:
+      bg: "@colors.gray-black"
+      logo: "@colors.primary"
+      title: "@text.title"
+      subtitle: "@text.subtitle"
+    leftpanel:
+      bg: "@colors.gray-black"
+      width: 450
+      headers: "@text.header"
+      subheaders: "@text.subheader"
+      body: "@text.body"
+      border: "@borders.default"
+      scrollbar: "@components.scrollbar"
+    divider:
+      bg: "@colors.gray-border"
+      size: 1
+    rightpanel:
+      bg: "@colors.gray-black"
+      shader: "@text.nav"
+      title: "@text.title"
+      info: "@text.metadata"
+    status: "@components.status"
 
-  # Badge
+  # Modal dialog layouts
+  dialogs:
+    default:
+      frame:
+        width: 600
+        height: 500
+        bg: "@colors.gray-dark"
+        border: "@borders.default"
+        radius: "@radius.md"
+        shadow:
+          size: 16
+          color: "@colors.black"
+      header:
+        bg: "@colors.gray-black"
+        border: "@borders.default"
+        height: 48
+        title: "@text.header"
+      body:
+        bg: "@colors.gray-dark"
+        padding:
+          all: "@typography.spacing.lg"
+        text: "@text.body"
+      controls:
+        bg: "@colors.gray-dark"
+        border: None
+        gap: "@typography.spacing.base"
+        button1:
+          ref: "@components.button.ok"
+        button2:
+          ref: "@components.button.cancel"
+    options:
+      ref: "@layout.dialogs.default"
+      frame:
+        width: 600
+        height: 560
+    presets:
+      ref: "@layout.dialogs.default"
+      frame:
+        width: 300
+        height: 250
+      controls: None
+    addpreset:
+      ref: "@layout.dialogs.default"
+      frame: 
+        width: 300
+        height: 200
+      controls:
+        button1:
+          ref: "@components.button.save"
+
+# ─────────────────────────────────────────────────────────────────
+# 9. COMPONENT DEFINITIONS (Atomic UI Components)
+# ─────────────────────────────────────────────────────────────────x
+components:
   badge:
-    bg:             ["colors.accent.warning"]
-    text:           ["colors.bg.page"]
+    frame:
+      height: 18
+      bg: "@colors.warning"
+      radius: "@radius.sm"
+      padding:
+        horizontal: "@typography.spacing.sm"
+    icon: 
+      ref: "@text.icon"
+    label:
+      font: "@typography.scale.sm"
+      color: "@colors.gray-dark"
+    gap: "@typography.spacing.sm"
 
-  # Status Bar
-  status_bar:
-    bg:             ["colors.bg.panel"]
-    text:           ["colors.accent.success"]
-    text-error:     ["colors.accent.warning"]
-    text-filled:    ["colors.bg.input"]
-    progress-bar:   ["colors.accent.primary"]
-    font:           {ref: "typography.presets.label_xs"}
+  preset_card:
+    default:
+      frame:
+        width: 90
+        height: 64
+        bg:
+          default: "@colors.transparent"
+          hover: "@colors.cyan-20"
+          active: "@colors.primary"
+        border: 
+          size: "@borders.subtle.size"
+          color: 
+            default: "@borders.subtle.color"
+            hover: "@colors.transparent"
+            active: "@colors.transparent"
+        radius: "@radius.lg"
+        padding:
+          vertical: "@typography.spacing.sm"
+        cursor: "hand"
+      gap: 8
+      icon:
+        ref: "@text.icon_lg"
+        color:
+          default: "@colors.gray-light"
+          hover: "@colors.primary"
+          active: "@colors.gray-dark"
+      label: 
+        ref: "@text.label"
+        color:
+          default: "@colors.gray-light"
+          hover: "@colors.primary"
+          active: "@colors.gray-dark"
+    card1: "@components.preset_card.default"
+    card2: "@components.preset_card.default"
+    card3: "@components.preset_card.default"
+    card4: "@components.preset_card.default"
+
+  input:
+    default:
+      type: "text" # type can be text, numeric, or rich (for file paths with browse button)
+      editable: true # readonly bool
+      case: "none" # for text inputs, can be none, upper, or lower
+      frame: 
+        height: 32 # height of field
+        bg: # bg of field
+          default: "@colors.transparent"
+          hover: "@colors.cyan-20"
+        radius: "@radius.md" # border radius of field
+        border: # border of field
+          size: 1 # border size
+          color: # border color
+            default: "@borders.subtle.color"
+            hover: "@colors.transparent"
+            active: "@colors.primary"
+      color: # text color
+        default: "@colors.gray-light"
+        hover: "@colors.primary"
+        active:  "@colors.primary"
+      font: "@text.numeric.font" # font
+      selection: "@colors.cyan-20" # highlight selection color
+      alignment: "center" # text alignment
+      error:
+        color: "@colors.error"
+        border:
+          size: "@borders.width.medium"
+          color: "@colors.error"
+    path:
+      ref: "@components.input.default"
+      type: "rich"
+      alignment: "left"
+      icon: 
+        ref: "@glyphs.folder"
+        color: "@colors.gray-white"
+      frame:
+        height: 36
+        bg:
+          default: "@colors.transparent"
+          hover: "@colors.cyan-20"
+      color: 
+        default: "@colors.gray-white"
+        hover: "@colors.primary"
+        active: "@colors.primary"
+    axis:
+      ref: "@components.input.default"
+      type: "numeric"
+      alignment: "right"
+      unit: "°"
+      step: 0.1
+      frame:
+        height: 32
+    speed:
+      ref: "@components.input.default"
+      type: "numeric"
+      alignment: "right" 
+      unit: "f"
+      step: 0.1
+      frame:
+        height: 32
+    parameters:
+      ref: "@components.input.default"
+      type: "text"
+      alignment: "left"
+      multiline: true
+      frame:
+        height: 84
+    hex:
+      ref: "@components.input.default"
+      case: "upper"
+      alignment: "center"
+      prefix: "#"
+      frame:
+        height: 32
+
+  slider:
+    default:
+      frame:
+        height: 18
+      icon: 
+        ref: "@text.icon"
+      label: 
+        ref: "@text.label"
+      track:
+        frame:
+          height: 8
+          radius: "@radius.sm"
+        color: 
+          default: "@colors.gray-border"
+          hover: "@colors.cyan-20"
+        border: "@borders.width.none"
+      nub:
+        width: 1
+        height: 14
+        border: "@borders.width.none"
+        color: "@colors.primary"
+      input: "@components.input.axis"
+    primary:
+      ref: "@components.slider.default"
+      nub: { color: "@colors.yellow" }
+    secondary:
+      ref: "@components.slider.default"
+      nub: { color: "@colors.orange" }
+    tertiary:
+      ref: "@components.slider.default"
+      nub: { color: "@colors.cyan" }
+    quaternary:
+      ref: "@components.slider.default"
+      nub: { color: "@colors.purple" }
+
+  toggle:
+    default:
+      frame:
+        height: 32
+        radius: "@radius.md"
+        bg: 
+          default: "@colors.transparent"
+          hover: "@colors.cyan-10"
+        border:
+          size: "@borders.subtle.size"
+          color: 
+            default: "@borders.subtle.color"
+            hover: "@colors.transparent"
+      gap: "@typography.spacing.sm"
+      items: # individual toggle items
+        frame:
+          bg: 
+            default: "@colors.transparent"
+            hover: "@colors.transparent"
+            active: "@colors.primary"
+        icon: 
+          ref: "@text.icon"
+          color: 
+            default: "@colors.gray-light"
+            hover: "@colors.primary"
+            active: "@colors.gray-dark" #selected
+        label: 
+          ref: "@text.label"
+          color: 
+            default: "@colors.gray-light"
+            hover: "@colors.primary"
+            active: "@colors.gray-black" # selected
+    direction:
+      ref: "@components.toggle.default"
+    lighting:
+      ref: "@components.toggle.default"
+      items:
+        frame:
+          bg:
+            default: "@colors.transparent"
+            hover: "@colors.transparent"
+            active: "@colors.yellow"
+        label:
+          color:
+            default: "@colors.gray-light"
+            hover: "@colors.cyan"
+            active: "@colors.gray-dark"
+        icon:
+          color:
+            default: "@colors.gray-light"
+            hover: "@colors.cyan"
+            active: "@colors.gray-dark"
+    logging: "@components.toggle.default"
+
+  dropdown:
+    default: # default styles for all dropdowns, individual dropdowns can override specific properties
+      frame:
+        height: 32 # main module height
+        bg: 
+          default: "@colors.transparent" # main module bg
+          hover: "@colors.cyan-20"
+        radius: "@radius.md" # main module radius
+        border: 
+          size: "@borders.width.thin"
+          color: 
+            default: "@colors.gray-border"
+            hover: "@colors.transparent" 
+            active: "@colors.transparent" # main module while dropdown is open
+      label: # main module text font and color
+        font: "@text.dropdown.font"
+        color:
+          default: "@colors.gray-white"
+          hover: "@colors.primary"
+      icon: # main module chevron color
+        ref: "@text.icon"
+        color: 
+          default: "@colors.gray-light"
+          hover: "@colors.primary"
+      menu: # popout menu container
+        frame:
+          bg: "@colors.gray-dark" # menu container bg
+          radius: "@radius.md" # menu container radius
+          border: "@borders.subtle" # menu container border
+        items: # menu item styles
+          bg:
+            default: "@colors.transparent" # menu item bg
+            hover: "@colors.cyan-20"
+            active: "@colors.primary" # selected state  
+          radius: "@radius.md" # menu items have no border
+          border: "@borders.none"
+          label:
+            font: "@text.dropdown.font"
+            color:
+              default: "@colors.gray-white"
+              hover: "@colors.primary"
+              active: "@colors.gray-dark" # selected item text color
+    format: "@components.dropdown.default" # specific dropdown for output format selection
+    resolution: "@components.dropdown.default" # specific dropdown for output resolution selection
+
+  colorpicker:
+    default:
+      bg: "@colors.transparent"
+      border: "@borders.subtle"
+      radius: "@radius.sm"
+      items:
+        innerborder:
+          size: 1
+          color: 
+            default: "@colors.gray-black"
+            hover: "@colors.primary"
+            active: "@colors.gray-black"
+        border: 
+          size: 2
+          color: 
+            default: "@borders.subtle.color"
+            hover: "@colors.red"
+            active: "@colors.primary"
+      input: "@components.input.default"
+
+  button:
+    default:
+      frame:
+        height: 36
+        bg: 
+          default: "@colors.transparent"
+          hover: "@colors.cyan-20"
+        border: 
+          size: "@borders.subtle.size"
+          color:
+            default: "@borders.subtle.color"
+            hover: "@colors.transparent"
+        radius: "@radius.md"
+        padding:
+          horizontal: "@typography.spacing.base"
+        content_alignment: "center"
+        cursor: "hand"
+      icon: 
+        ref: "@text.icon"
+      label: 
+        ref: "@text.button"
+      gap: "@typography.spacing.base"
+    cancel:
+      ref: "@components.button.default"
+    ok:
+      ref: "@components.button.default"
+      frame:
+        bg: "@colors.primary"
+      label:
+        ref: "@text.button"
+        color: "@colors.gray-black"
+    close:
+      ref: "@components.button.default"
+      frame:
+        bg:
+          default: "@colors.transparent"
+          hover: "@colors.red"
+    closepreview:
+      ref: "@components.button.default"
+      label:
+        font: "@text.metadata.font"
+        color: "@colors.cyan"
+    options:
+      ref: "@components.button.default"
+      frame:
+        padding:
+          horizontal: 0
+        bg:
+          default: "@colors.transparent"
+          hover: "@colors.primary"
+      label:
+        color:
+          default: "@colors.gray-light"
+          hover: "@colors.gray-dark"
+    browse:
+      ref: "@components.button.default"
+    exit:
+      ref: "@components.button.default"
+      frame:
+        bg: "@colors.error"
+        hover: "@colors.red"
+      label:
+        ref: "@text.button"
+        color: "@colors.white"
+    render:
+      ref: "@components.button.ok"
+    save:
+      ref: "@components.button.ok"
+
+  scrollbar:
+    track:
+      frame:
+        bg: "@colors.transparent"
+    thumb:
+      frame:
+        bg: "@colors.gray-medium"
+        radius: "@radius.full"
+
+  status:
+    default:
+      bg: "@colors.gray-black"
+      label:
+        ref: "@text.status"
+        color: "@colors.gray-white"
+    progress:
+      bg: "@colors.primary"
+      label:
+        ref: "@text.status"
+        color: "@colors.gray-black"
+    complete:
+      bg: "@colors.gray-black"
+      label:
+        ref: "@text.status"
+        color: "@colors.ok"
+    error:
+      bg: "@colors.gray-black"
+      label:
+        ref: "@text.status"
+        color: "@colors.error"
+
+  list:
+    default:
+      frame:
+        height: 40
+        bg:
+          default: "@colors.transparent"
+          hover: "@colors.cyan-20"
+        radius: "@radius.sm"
+        border:
+          size: 1
+          color:
+            default: "@colors.gray-border"
+            hover: "@colors.transparent"
+            active: "@colors.primary"
+        cursor: "hand"
+      label:
+        color: 
+          default: "@colors.gray-white"
+          hover: "@colors.primary"
+      border: 
+        size: "@borders.subtle.size"
+        color: 
+          default: "@borders.subtle.color"
+          hover: "@colors.transparent"
+          active: "@colors.transparent"
+      actions:
+        delete:  { icon: { ref: "glyphs.trash" }, color: "@colors.warning" }
+        confirm: { icon: { ref: "glyphs.save" },  color: "@colors.ok"      }
+        cancel:  { icon: { ref: "glyphs.close" }, color: "@colors.warning" }
+    custompresets:
+      ref: "@components.list.default"

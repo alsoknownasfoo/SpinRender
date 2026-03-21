@@ -12,11 +12,34 @@ import pytest
 class ColorMock:
     """Mock for wx.Colour that behaves like a simple data object."""
 
-    def __init__(self, r=0, g=0, b=0, a=255):
-        self._r = r
-        self._g = g
-        self._b = b
-        self._a = a
+    def __init__(self, *args, **kwargs):
+        # Support: ColorMock(r, g, b, a) OR ColorMock(hex_string) OR ColorMock(rgba_string)
+        if len(args) == 1 and isinstance(args[0], str):
+            val = args[0]
+            # Try to parse hex color string like "#RRGGBB" or "RRGGBB"
+            hex_str = val.lstrip('#')
+            if len(hex_str) in (6, 8) and all(c in '0123456789ABCDEFabcdef' for c in hex_str):
+                self._r = int(hex_str[0:2], 16)
+                self._g = int(hex_str[2:4], 16)
+                self._b = int(hex_str[4:6], 16)
+                self._a = int(hex_str[6:8], 16) if len(hex_str) == 8 else 255
+                return
+            # Try to parse rgba(r,g,b,a)
+            if val.startswith("rgba(") and val.endswith(")"):
+                parts = val[5:-1].split(',')
+                if len(parts) == 4:
+                    try:
+                        r, g, b = int(parts[0]), int(parts[1]), int(parts[2])
+                        a = max(0, min(255, int(round(float(parts[3]) * 255))))
+                        self._r, self._g, self._b, self._a = r, g, b, a
+                        return
+                    except (ValueError, IndexError):
+                        pass  # fall through to invalid
+        # Standard numeric construction
+        self._r = args[0] if args else kwargs.get('r', 0)
+        self._g = args[1] if len(args) > 1 else kwargs.get('g', 0)
+        self._b = args[2] if len(args) > 2 else kwargs.get('b', 0)
+        self._a = args[3] if len(args) > 3 else kwargs.get('a', 255)
 
     def Red(self):
         return self._r
@@ -29,6 +52,30 @@ class ColorMock:
 
     def Alpha(self):
         return self._a
+
+    def IsOk(self):
+        """Return True if color components are valid (0-255)."""
+        try:
+            # Check that all components are numbers and within 0-255
+            if not all(isinstance(v, (int, float)) for v in (self._r, self._g, self._b)):
+                return False
+            return 0 <= self._r <= 255 and 0 <= self._g <= 255 and 0 <= self._b <= 255
+        except TypeError:
+            return False
+
+    def GetAsString(self, style=None):
+        """Return hex representation for logging (mocking wx.C2S_HTML_SYNTAX)."""
+        if self._a < 255:
+            return "#%02X%02X%02X%02X" % (self._r, self._g, self._b, self._a)
+        return "#%02X%02X%02X" % (self._r, self._g, self._b)
+
+    def __repr__(self):
+        return f"ColorMock({self._r}, {self._g}, {self._b}, {self._a})"
+
+    def __eq__(self, other):
+        if isinstance(other, ColorMock):
+            return (self._r, self._g, self._b, self._a) == (other._r, other._g, other._b, other._a)
+        return False
 
 
 class FontMock:
@@ -53,10 +100,33 @@ class FontMock:
 class DummyWindow:
     """Simple window mock that accepts arbitrary kwargs like wx.Window."""
     def __init__(self, *args, **kwargs):
-        pass
+        self._size = (100, 100)  # default size
 
     def __getattr__(self, name):
         return MagicMock()
+
+    def GetSize(self):
+        """Return window size as (width, height) tuple."""
+        return self._size
+
+    def SetMinSize(self, size):
+        """Mock SetMinSize."""
+        pass
+
+    def SetSizerAndFit(self, sizer):
+        """Mock SetSizerAndFit."""
+        self.SetSizer(sizer)
+        # Optionally compute minimum size
+        min_size = sizer.CalcMin() if hasattr(sizer, 'CalcMin') else (100, 100)
+        self.SetMinSize(min_size)
+
+    def SetSizer(self, sizer):
+        """Mock SetSizer."""
+        self._sizer = sizer
+
+    def GetSizer(self):
+        """Mock GetSizer."""
+        return getattr(self, '_sizer', None)
 
 
 class Mockwx:
@@ -122,7 +192,7 @@ class Mockwx:
             'PopupTransientWindow'
         ]
         if name in window_classes:
-            return DummyWindow
+            return DummyWindow  # Return the class, not an instance
 
         # Other classes
         if name == 'GraphicsContext':
@@ -210,5 +280,41 @@ def wx_mock():
 
 @pytest.fixture(scope='function', autouse=True)
 def reset_mocks():
-    """Reset all mock calls before each test."""
+    """Reset all mock calls and module patching before each test."""
+    import wx
+
+    # Helper to get actual attribute from wx.__dict__ if set, avoiding __getattr__
+    def get_original(attr):
+        return wx.__dict__.get(attr)
+
+    # Restore original wx classes that may have been monkeypatched by test modules
+    orig_panel = get_original('_original_Panel')
+    if orig_panel is not None:
+        wx.Panel = orig_panel
+
+    orig_static = get_original('_original_StaticText')
+    if orig_static is not None:
+        wx.StaticText = orig_static
+
+    # Reset mock call counts
+    mock_wx = sys.modules['wx']
+    if hasattr(mock_wx, '_objects'):
+        for mock in mock_wx._objects.values():
+            mock.reset_mock()
+
+    # Reset Theme and Locale singletons to prevent state pollution
+    from SpinRender.core.theme import Theme
+    from SpinRender.core.locale import Locale
+    Theme._instance = None
+    Locale._instance = None
+
     yield
+
+    # Cleanup after test - restore again
+    orig_panel = get_original('_original_Panel')
+    if orig_panel is not None:
+        wx.Panel = orig_panel
+
+    orig_static = get_original('_original_StaticText')
+    if orig_static is not None:
+        wx.StaticText = orig_static

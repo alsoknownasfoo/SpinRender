@@ -133,7 +133,8 @@ def _get_suggestion(token: str) -> str:
 
     suggestions = {
         'colors': f"ADD: Define in {category} section with semantic color value",
-        'typography': f"ADD: Define in typography section (scale or presets.{subpath})",
+        'text': f"ADD: Define in text section (e.g. text.{subpath}.font)",
+        'glyphs': f"ADD: Define glyph in glyphs section: {subpath}: \"\\UXXXXXXXX\"",
         'spacing': f"ADD: Define spacing.{subpath} as pixel value",
         'borders': f"ADD: Define borders.{subpath} as pixel value",
         'components': f"ADD: Define component token in components.{subpath}",
@@ -142,12 +143,10 @@ def _get_suggestion(token: str) -> str:
 
     base_sugg = suggestions.get(category, f"ADD: Define token in YAML under {category}")
 
-    if token == 'colors.bg.modal':
-        return "ADD: Define colors.bg.modal = {ref: 'palette.neutral-3'} or similar"
-    elif token.startswith('typography.presets.'):
-        return f"ADD: Copy from existing preset, adjust family/size/weight as needed"
-    elif token.startswith('colors.state.'):
-        return f"ADD: Define state overlay color in colors.state or colors.accent"
+    if token.startswith('text.'):
+        return f"ADD: Define in text section (font + color): {token}"
+    elif token.startswith('glyphs.'):
+        return f"ADD: Define Unicode glyph in glyphs section: {subpath}"
     elif token.startswith('palette.'):
         color_name = parts[1] if len(parts) > 1 else ''
         return f"ADD: Define raw hex color in palette: {color_name}: '#RRGGBB'"

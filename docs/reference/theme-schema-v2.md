@@ -11,9 +11,11 @@
 # COLORS: Design Tokens & Semantic Roles
 colors:
   # Base Palette (Primes) - Raw hex/rgba values
+  # e.g., gray-black: "#0D0D0D"
   .[name]: "hex | rgba string"
   
   # Semantic Roles (Theme) - Logic-level aliases
+  # e.g., primary: "@colors.cyan"
   primary: "@colors.[palette_key]"
   secondary: "@colors.[palette_key]"
   tertiary: "@colors.[palette_key]"
@@ -23,13 +25,14 @@ colors:
   error: "@colors.[palette_key]"
 
 # RADIUS: Global rounding scale (px)
+# e.g., md: 6
 radius:
-  .[name]: int (e.g., none: 0, sm: 4, md: 6, lg: 8, full: 9999)
+  .[name]: int
 
 # BORDERS: Line thickness scale and semantic roles
 borders:
   width:
-    .[name]: int (e.g., none: 0, thin: 1, medium: 2)
+    .[name]: int
   # Semantic Roles - Standardized line styles
   default:
     size: "@borders.width.[name]"
@@ -110,6 +113,12 @@ text:
   subheader: text_role
   body: text_role
   links: text_role
+  metadata: text_role
+  metadata_active: text_role
+  label: text_role
+  button: text_role
+  nav: text_role
+  nav_active: text_role
   icon: text_role
   icon_lg: text_role
 
@@ -129,19 +138,17 @@ viewport:
 components:
   component.main:
     frame: frame
-    header: frame roles
-    leftpanel: frame roles (headers, subheaders, body, scrollbar)
-    rightpanel: frame roles (nav, title, info)
+    header: (bg, logo, title, subtitle)
+    leftpanel: (bg, headers, subheaders, body, border, scrollbar)
+    divider: (bg, size)
+    rightpanel: (bg, nav, nav_active, title, info, info_active)
     status: ref: component.status
 
   component.badge:
     frame: frame
     icon: "@text.icon"
-    label:
-      font: "@typography.scale.[name]"
-      color: "@colors.[path]"
+    label: (font, color)
     gap: "@typography.spacing.[name]"
-    vertical: boolean
 
   component.preset_card:
     default:
@@ -149,7 +156,10 @@ components:
       gap: int
       default: (bg, border, icon, label)
       selected: (bg, border, icon, label)
-    .[card_id]: ref: component.preset_card.default
+    card1: ref: component.preset_card.default
+    card2: ref: component.preset_card.default
+    card3: ref: component.preset_card.default
+    card4: ref: component.preset_card.default
 
   component.input:
     default:
@@ -157,11 +167,10 @@ components:
       color: (default, active, disabled)
       border: border
       selection: color
-      prefix: text_role
-      suffix: text_role
-      multiline: boolean
+      font: "@text.body.font"
       error: (color, border)
-    .[input_id]: ref: component.input.default
+    path: ref: component.input.default
+    parameters: ref: component.input.default
 
   component.slider:
     default:
@@ -171,7 +180,10 @@ components:
       track: (frame, color, border)
       nub: (width, height, border, color)
       input: ref: component.input.parameters
-    .[slider_id]: ref: component.slider.default
+    primary: ref: component.slider.default
+    secondary: ref: component.slider.default
+    tertiary: ref: component.slider.default
+    quaternary: ref: component.slider.default
 
   component.toggle:
     default:
@@ -179,7 +191,9 @@ components:
       gap: "@typography.spacing.[name]"
       default: (frame, icon, label)
       selected: (frame, icon, label)
-    .[toggle_id]: ref: component.toggle.default
+    direction: ref: component.toggle.default
+    lighting: ref: component.toggle.default
+    logging: ref: component.toggle.default
 
   component.dropdown:
     default:
@@ -189,7 +203,8 @@ components:
       icon: text_role
       open: (border, icon)
       menu: (frame, default_label, selected_label)
-    .[dropdown_id]: ref: component.dropdown.default
+    format: ref: component.dropdown.default
+    resolution: ref: component.dropdown.default
 
   component.colorpicker:
     default:
@@ -206,8 +221,13 @@ components:
       icon: text_role
       label: text_role
       gap: "@typography.spacing.[name]"
-      vertical: boolean
-    .[button_id]: ref: component.button.default
+    cancel: ref: component.button.default
+    ok: ref: component.button.default
+    close: ref: component.button.default
+    options: ref: component.button.default
+    browse: ref: component.button.default
+    exit: ref: component.button.default
+    render: ref: component.button.ok
 
   component.scrollbar:
     track: frame

@@ -1,4 +1,3 @@
-#!/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
 """
 PreviewPanel component extracted from SpinRenderPanel.
 
@@ -11,7 +10,9 @@ from typing import List, Optional
 
 from .text_styles import TextStyle, TextStyles
 from SpinRender.core.theme import Theme
+from SpinRender.core.locale import Locale
 _theme = Theme.current()
+_locale = Locale.current()
 from SpinRender.core.preview import GLPreviewRenderer
 
 
@@ -73,8 +74,9 @@ class PreviewPanel(wx.Panel):
 
         # Top-Left: Preset name OR parameters
         self.ov_top_left = wx.StaticText(top_meta, label="")
-        self.ov_top_left.SetForegroundColour(_theme.WHITE_ALPHA_68)
-        self.ov_top_left.SetFont(TextStyles.label_sm.create_font())
+        info_style = TextStyles.info
+        self.ov_top_left.SetForegroundColour(info_style.color)
+        self.ov_top_left.SetFont(info_style.create_font())
         top_sizer.Add(self.ov_top_left, 1, wx.ALIGN_CENTER_VERTICAL)
 
         # Top-Right: Render mode buttons container
@@ -82,29 +84,53 @@ class PreviewPanel(wx.Panel):
         self.render_mode_btns = {}
         self.render_mode_divs = []
 
-        modes = [("WIREFRAME", "wireframe"), ("SHADED", "shaded"), ("BOTH", "both")]
+        nav_style = TextStyles.shader
+        nav_font = nav_style.create_font()
+        nav_color = _theme.color("layout.main.rightpanel.shader.color")
+        nav_div_color = _theme._shift_color(nav_color, -40)
+
+        modes = [(_locale.get("viewport.mode.wireframe", "WIREFRAME"), "wireframe"),
+                 (_locale.get("viewport.mode.shaded", "SHADED"), "shaded"),
+                 (_locale.get("viewport.mode.both", "BOTH"), "both")]
+
+        prefix = wx.StaticText(top_meta, label="[ ")
+        prefix.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        prefix.SetFont(nav_font)
+        prefix.SetForegroundColour(nav_div_color)
+        self.render_mode_sizer.Add(prefix, 0, wx.ALIGN_CENTER_VERTICAL)
 
         for i, (label, mode_id) in enumerate(modes):
             btn = wx.StaticText(top_meta, label=label)
-            btn.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font())
             btn.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+            btn.SetFont(nav_font)
+            btn.SetForegroundColour(nav_color)
             self.render_mode_btns[mode_id] = btn
             self.render_mode_sizer.Add(btn, 0, wx.ALIGN_CENTER_VERTICAL)
 
             if i < len(modes) - 1:
-                div = wx.StaticText(top_meta, label="  |  ")
-                div.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font())
-                div.SetForegroundColour(_theme.color("colors.border.default"))
+                div = wx.StaticText(top_meta, label=" | ")
+                div.SetFont(nav_font)
+                div.SetForegroundColour(nav_div_color)
                 self.render_mode_divs.append(div)
                 self.render_mode_sizer.Add(div, 0, wx.ALIGN_CENTER_VERTICAL)
 
-        top_sizer.Add(self.render_mode_sizer, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+        suffix = wx.StaticText(top_meta, label=" ]")
+        suffix.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        suffix.SetFont(nav_font)
+        suffix.SetForegroundColour(nav_div_color)
+        self.render_mode_sizer.Add(suffix, 0, wx.ALIGN_CENTER_VERTICAL)
+
+        top_sizer.Add(self.render_mode_sizer, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 0)
 
         # Close Preview button (hidden by default)
-        self.ov_top_right = wx.StaticText(top_meta, label="CLOSE PREVIEW")
-        self.ov_top_right.SetForegroundColour(_theme.color("colors.accent.primary"))
-        self.ov_top_right.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font())
+        self.ov_top_right = wx.StaticText(top_meta, label=_locale.get("component.button.closepreview.label", "CLOSE PREVIEW"))
         self.ov_top_right.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        
+        # Apply closepreview button style
+        btn_role = "components.button.closepreview.label"
+        self.ov_top_right.SetForegroundColour(_theme.color(btn_role + ".color"))
+        self.ov_top_right.SetFont(_theme.font(btn_role))
+        
         self.ov_top_right.Hide()
         top_sizer.Add(self.ov_top_right, 0, wx.ALIGN_CENTER_VERTICAL)
 
@@ -114,55 +140,63 @@ class PreviewPanel(wx.Panel):
         bottom_meta = wx.Panel(self)
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
+        info_style = TextStyles.info
+        info_font = info_style.create_font()
+        info_color = info_style.color
+
         self.ov_bottom_left = wx.StaticText(bottom_meta, label="")
-        self.ov_bottom_left.SetForegroundColour(_theme.WHITE_ALPHA_68)
-        self.ov_bottom_left.SetFont(TextStyles.label_sm.create_font())
+        self.ov_bottom_left.SetForegroundColour(info_color)
+        self.ov_bottom_left.SetFont(info_font)
         bottom_sizer.Add(self.ov_bottom_left, 1, wx.ALIGN_CENTER_VERTICAL)
 
+        # Resolution info moved from center to right
         self.ov_bottom_center = wx.StaticText(bottom_meta, label="")
-        self.ov_bottom_center.SetForegroundColour(_theme.WHITE_ALPHA_68)
-        self.ov_bottom_center.SetFont(TextStyles.label_sm.create_font())
-        bottom_sizer.Add(self.ov_bottom_center, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_CENTER_HORIZONTAL)
-        self.ov_bottom_center.SetWindowStyle(wx.ST_NO_AUTORESIZE | wx.ALIGN_CENTRE_HORIZONTAL)
-
-        self.ov_bottom_right = wx.StaticText(bottom_meta, label="")
-        self.ov_bottom_right.SetForegroundColour(_theme.color("colors.accent.success"))
-        self.ov_bottom_right.SetFont(TextStyles.label_sm.create_font())
-        bottom_sizer.Add(self.ov_bottom_right, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
-        self.ov_bottom_right.SetWindowStyle(wx.ST_NO_AUTORESIZE | wx.ALIGN_RIGHT)
+        self.ov_bottom_center.SetForegroundColour(info_color)
+        self.ov_bottom_center.SetFont(info_font)
+        bottom_sizer.Add(self.ov_bottom_center, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
+        self.ov_bottom_center.SetWindowStyle(wx.ALIGN_RIGHT)
 
         bottom_meta.SetSizer(bottom_sizer)
 
         # Store references for later use
         self._top_meta = top_meta
         self._bottom_meta = bottom_meta
+        
+        # Initial highlight update
+        self.update_render_mode_ui(self.settings.render_mode)
 
     def reapply_theme(self):
         """Re-apply theme to static overlay elements."""
-        self.SetBackgroundColour(_theme.color("colors.bg.page"))
-        
-        # Overlay labels
-        label_font = TextStyles.label_sm.create_font()
-        for lbl in [self.ov_top_left, self.ov_bottom_left, self.ov_bottom_center]:
-            lbl.SetForegroundColour(_theme.WHITE_ALPHA_68)
-            lbl.SetFont(label_font)
-            
-        self.ov_bottom_right.SetForegroundColour(_theme.color("colors.accent.success"))
-        self.ov_bottom_right.SetFont(label_font)
-        
-        self.ov_top_right.SetForegroundColour(_theme.color("colors.accent.primary"))
-        self.ov_top_right.SetFont(TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font())
-        
-        # Render mode buttons
-        mode_font = TextStyle(family=_theme.font_family("mono"), size=9, weight=700).create_font()
+        self.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
+
+        # 1. Top-Left Title (Preset/Params)
+        info_style = TextStyles.info
+        info_font = info_style.create_font()
+        self.ov_top_left.SetForegroundColour(info_style.color)
+        self.ov_top_left.SetFont(info_font)
+
+        # 2. Navigation / Render Modes
+        nav_style = TextStyles.shader
+        nav_font = nav_style.create_font()
+        nav_color = _theme.color("layout.main.rightpanel.shader.color")  # Removed .color suffix
         for mode_id, btn in self.render_mode_btns.items():
-            btn.SetFont(mode_font)
-            # Active mode will be updated via update_render_mode_ui below
-            
+            btn.SetFont(nav_font)
+            btn.SetForegroundColour(nav_color)
+
         for div in self.render_mode_divs:
-            div.SetFont(mode_font)
-            div.SetForegroundColour(_theme.color("colors.border.default"))
-            
+            div.SetFont(nav_font)
+            div.SetForegroundColour(nav_color)
+
+        # 3. Close Button
+        btn_role = "components.button.closepreview.label"
+        self.ov_top_right.SetForegroundColour(_theme.color(btn_role + ".color"))
+        self.ov_top_right.SetFont(_theme.font(btn_role))
+
+        # 4. Bottom Labels (Metadata)
+        for lbl in [self.ov_bottom_left, self.ov_bottom_center]:
+            lbl.SetForegroundColour(info_style.color)
+            lbl.SetFont(info_font)
+
         self.update_render_mode_ui(self.settings.render_mode)
         self.update_preview_overlay()
         self.Refresh()
@@ -215,7 +249,9 @@ class PreviewPanel(wx.Panel):
         self.viewport.set_period(self.settings.period)
         self.viewport.set_direction(self.settings.direction)
         self.viewport.set_render_mode(getattr(self.settings, 'render_mode', 'both'))
-        self.viewport.set_background_color(getattr(self.settings, 'bg_color', '#000000'))
+        
+        # Defer background color until model is loaded
+        self.viewport.on_model_loaded = self._on_model_ready
 
         # Set aspect ratio from resolution
         try:
@@ -225,6 +261,12 @@ class PreviewPanel(wx.Panel):
             pass
 
         self.viewport.start_preview()
+
+    def _on_model_ready(self):
+        """Callback for when model finishes loading. Transition to saved color."""
+        bg_hex = getattr(self.settings, 'bg_color', '#000000')
+        self.viewport.set_background_color(bg_hex)
+        self.update_preview_overlay()
 
     # ------------------------------------------------------------------------
     # Public API for parent/orchestrator to call
@@ -257,10 +299,16 @@ class PreviewPanel(wx.Panel):
             self.ov_top_left.SetLabel("  ".join(params))
 
         # Top-Right: Close button visibility
-        if self.render_preview_active and not self.preview_manually_closed and not self.is_rendering:
-            self.ov_top_right.Show()
+        if self.render_preview_active and not self.preview_manually_closed:
+            # Hide render mode sizer if render preview is active (rendering or playback)
             if hasattr(self, 'render_mode_sizer'):
                 self.render_mode_sizer.ShowItems(False)
+            
+            # Only show Close button if NOT currently rendering (viewing playback)
+            if not self.is_rendering:
+                self.ov_top_right.Show()
+            else:
+                self.ov_top_right.Hide()
         else:
             self.ov_top_right.Hide()
             if hasattr(self, 'render_mode_sizer'):
@@ -287,18 +335,9 @@ class PreviewPanel(wx.Panel):
                 ratio = f"{w}:{h}"
         except Exception:
             ratio = "16:9"
-        self.ov_bottom_center.SetLabel(f"{res.replace('x', ' × ')}  ·  {ratio}  ·  {fps}")
-
-        # Bottom-Right: State info
-        if self.render_preview_active and not self.preview_manually_closed:
-            if self.current_render_frame is not None and self.total_render_frames:
-                self.ov_bottom_right.SetLabel(f"FRAME {self.current_render_frame} / {self.total_render_frames}")
-            elif self.final_output_type:
-                self.ov_bottom_right.SetLabel(f"{self.final_output_type.upper()} OUTPUT")
-            else:
-                self.ov_bottom_right.SetLabel("RENDER PREVIEW")
-        else:
-            self.ov_bottom_right.SetLabel("WIREFRAME")
+        
+        # Only show resolution/fps, right-aligned
+        self.ov_bottom_center.SetLabel(f"{res.upper()}  ·  {ratio}  ·  {fps}")
 
         self.Layout()
 
@@ -471,9 +510,14 @@ class PreviewPanel(wx.Panel):
         Update colors of render mode toggle buttons.
         Called by parent when mode changes.
         """
+        role = "layout.main.rightpanel.shader"
+        fonttoken = _theme.font(role)
+        colortoken = role + ".color"
+        
         for mode_id, btn in self.render_mode_btns.items():
-            if mode_id == active_mode:
-                btn.SetForegroundColour(_theme.color("colors.accent.primary"))
-            else:
-                btn.SetForegroundColour(_theme.GREY_100)
+            is_active = (mode_id == active_mode)
+            # Fetch stateful color (Normal vs Active)
+            color = _theme.color(colortoken, pressed=is_active)
+            btn.SetFont(fonttoken)
+            btn.SetForegroundColour(color)
             btn.Refresh()

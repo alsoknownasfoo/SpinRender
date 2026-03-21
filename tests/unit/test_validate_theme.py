@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 # Add tools directory to path
-sys.path.insert(0, '/Users/foo/Code/SpinRender_claude/tools')
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
 
 import pytest
 
@@ -56,12 +56,12 @@ class TestScanner:
         """Test extracting tokens from a simple Python snippet."""
         code = '''
 from core.theme import theme
-color = theme.color("colors.bg.page")
+color = theme.color("layout.main.frame.bg")
 size = theme.size("spacing.md")
 '''
         tree = ast.parse(code)
         tokens = extract_tokens_from_ast(tree)
-        assert 'colors.bg.page' in tokens
+        assert 'layout.main.frame.bg' in tokens
         assert 'spacing.md' in tokens
         assert len(tokens) == 2
 
@@ -75,7 +75,7 @@ a = theme.color("colors.primary")
 b = theme.size("spacing.lg")
 
 # Pattern 2: _theme.token()
-c = _theme.font("fonts.body")
+c = _theme.font("body")
 
 # Pattern 3: Theme.current().token()
 d = Theme.current().color("palette.neutral-1")
@@ -84,27 +84,27 @@ d = Theme.current().color("palette.neutral-1")
         tokens = extract_tokens_from_ast(tree)
         assert 'colors.primary' in tokens
         assert 'spacing.lg' in tokens
-        assert 'fonts.body' in tokens
+        assert 'body' in tokens
         assert 'palette.neutral-1' in tokens
 
     def test_extract_tokens_different_types(self):
         """Test extracting different token types (color, size, font)."""
         code = '''
-theme.color("colors.bg.page")
-theme.color_states("colors.state.hover")
-theme.size("spacing.sm")
-theme.font_size("typography.scale.h1")
-theme.font("fonts.mono")
-theme.font_family("typography.presets.body")
+theme.color("layout.main.frame.bg")
+theme.color_states("colors.auto_states.hover")
+theme.size("typography.spacing.sm")
+theme.font_size("text.body.font.size")
+theme.font("body")
+theme.glyph("glyphs.folder")
 '''
         tree = ast.parse(code)
         tokens = extract_tokens_from_ast(tree)
-        assert 'colors.bg.page' in tokens
-        assert 'colors.state.hover' in tokens
-        assert 'spacing.sm' in tokens
-        assert 'typography.scale.h1' in tokens
-        assert 'fonts.mono' in tokens
-        assert 'typography.presets.body' in tokens
+        assert 'layout.main.frame.bg' in tokens
+        assert 'colors.auto_states.hover' in tokens
+        assert 'typography.spacing.sm' in tokens
+        assert 'text.body.font.size' in tokens
+        assert 'body' in tokens
+        assert 'glyphs.folder' in tokens
 
     def test_extract_tokens_ignores_non_string_args(self):
         """Test that non-string arguments are ignored."""
@@ -123,7 +123,7 @@ theme.color("valid.token")
     def test_extract_tokens_ignores_non_theme_calls(self):
         """Test that calls not matching theme patterns are ignored."""
         code = '''
-other.color("colors.bg.page")
+other.color("layout.main.frame.bg")
 theme.other_method("some.token")
 some_object.theme.color("ignore.me")
 '''
@@ -134,32 +134,32 @@ some_object.theme.color("ignore.me")
     def test_categorization(self):
         """Test token categorization by type."""
         tokens = {
-            'colors.bg.page',
-            'colors.accent.primary',
+            'layout.main.frame.bg',
+            'colors.primary',
             'palette.neutral-3',
             'palette.cyan',
             'spacing.md',
-            'typography.scale.h1',
-            'components.button.bg',
-            'fonts.mono'
+            'text.body.font.size',
+            'components.button.default.frame.bg',
+            'glyphs.folder'
         }
         categorized = _categorize_tokens(tokens)
         
         # Colors (colors.* and palette.*)
-        assert 'colors.bg.page' in categorized['colors']
-        assert 'colors.accent.primary' in categorized['colors']
+        assert 'layout.main.frame.bg' in categorized['colors']
+        assert 'colors.primary' in categorized['colors']
         assert 'palette.neutral-3' in categorized['colors']
         assert 'palette.cyan' in categorized['colors']
         
-        # Sizes (spacing.* and typography.scale.*)
+        # Sizes (spacing.* and text.*.size)
         assert 'spacing.md' in categorized['sizes']
-        assert 'typography.scale.h1' in categorized['sizes']
+        assert 'text.body.font.size' in categorized['sizes']
         
         # Components
-        assert 'components.button.bg' in categorized['components']
+        assert 'components.button.default.frame.bg' in categorized['components']
         
-        # Fonts (everything else used with font methods)
-        assert 'fonts.mono' in categorized['fonts']
+        # Glyphs
+        assert 'glyphs.folder' in categorized['fonts']
         
         # All should be present
         assert categorized['all'] == tokens
@@ -217,7 +217,7 @@ colors:
         result = parse_yaml(str(yaml_file))
         
         assert 'palette.neutral-1' in result['all']
-        assert 'colors.bg.page' in result['all']
+        assert 'layout.main.frame.bg' in result['all']
         assert 'palette' in result
         assert 'colors' in result
 
@@ -233,19 +233,19 @@ colors:
                     'primary': {'ref': 'palette.neutral-14'}
                 }
             },
-            'typography': {
-                'scale': {
-                    'h1': {'size': 24}
+            'text': {
+                'body': {
+                    'font': {'size': 11}
                 }
             }
         }
         tokens = collect_tokens(data)
         
         expected = {
-            'colors.bg.page',
+            'layout.main.frame.bg',
             'colors.bg.panel',
             'colors.text.primary',
-            'typography.scale.h1'
+            'text.body.font'
         }
         assert tokens == expected
 
@@ -271,21 +271,20 @@ colors:
         data = {
             'palette': {'red': '#FF0000'},
             'colors': {'bg': {'page': {'ref': 'palette.red'}}},
-            'typography': {'scale': {'body': 14}},
+            'text': {'body': {'font': {'size': 14}}},
             'spacing': {'sm': 8, 'md': 16},
             'borders': {'radius': {'md': 4}},
-            'components': {'button': {'bg': {'ref': 'colors.bg.page'}}}
+            'components': {'button': {'bg': {'ref': 'layout.main.frame.bg'}}}
         }
         result = categorize_tokens(collect_tokens(data))
         
-        assert 'palette.neutral-1' not in result['palette']  # our test key is 'red'
         assert 'palette.red' in result['palette']
-        assert 'colors.bg.page' in result['colors']
-        assert 'typography.scale.body' in result['typography']
+        assert 'layout.main.frame.bg' in result['colors']
+        assert 'text.body.font' in result['text']
         assert 'spacing.sm' in result['spacing']
         assert 'spacing.md' in result['spacing']
         assert 'borders.radius.md' in result['borders']
-        assert 'components.button.bg' in result['components']
+        assert 'components.button.default.frame.bg' in result['components']
 
     def test_missing_section_returns_empty(self, tmp_path):
         """Test that missing top-level sections yield empty category sets."""
@@ -301,7 +300,7 @@ palette:
         assert 'palette' in result
         assert result['palette'] == {'palette.red'}
         assert result['colors'] == set()
-        assert result['typography'] == set()
+        assert result['text'] == set()
         assert result['spacing'] == set()
         assert result['borders'] == set()
         assert result['components'] == set()
@@ -319,8 +318,8 @@ palette:
         result = parse_yaml(str(yaml_file))
         
         # All categories should be empty
-        for cat in ['palette', 'colors', 'typography', 'spacing', 'borders', 'components', 'all']:
-            assert result[cat] == set()
+        for cat in ['palette', 'colors', 'text', 'glyphs', 'spacing', 'borders', 'components', 'all']:
+            assert result.get(cat, set()) == set()
 
 
 # ============================================================================
@@ -333,22 +332,22 @@ class TestComparator:
     def test_compare_tokens_basic(self):
         """Test basic comparison logic."""
         used = {
-            'all': {'colors.bg.page', 'colors.bg.panel', 'colors.accent.primary'}
+            'all': {'layout.main.frame.bg', 'colors.bg.panel', 'colors.primary'}
         }
         defined = {
             'all': {
-                'colors.bg.page',
+                'layout.main.frame.bg',
                 'colors.bg.panel',
                 'colors.bg.surface',
-                'colors.accent.primary',
+                'colors.primary',
                 'colors.text.primary'
             }
         }
         
         result = compare_tokens(used, defined)
         
-        assert 'colors.bg.page' in result.used
-        assert 'colors.bg.page' in result.defined
+        assert 'layout.main.frame.bg' in result.used
+        assert 'layout.main.frame.bg' in result.defined
         assert 'colors.bg.surface' in result.unused
         assert 'colors.text.primary' in result.unused
         assert result.missing == set()
@@ -356,12 +355,12 @@ class TestComparator:
 
     def test_compare_tokens_with_missing(self):
         """Test when there are missing tokens."""
-        used = {'all': {'colors.bg.page', 'colors.bg.panel', 'colors.accent.missing'}}
-        defined = {'all': {'colors.bg.page', 'colors.bg.panel', 'colors.accent.primary'}}
+        used = {'all': {'layout.main.frame.bg', 'colors.bg.panel', 'colors.missing'}}
+        defined = {'all': {'layout.main.frame.bg', 'colors.bg.panel', 'colors.primary'}}
         
         result = compare_tokens(used, defined)
         
-        assert 'colors.accent.missing' in result.missing
+        assert 'colors.missing' in result.missing
         assert abs(result.coverage - 66.67) < 0.1
 
     def test_coverage_calculation(self):
@@ -428,8 +427,8 @@ class TestComparator:
     def test_generate_report_text(self):
         """Test text report generation."""
         result = ValidationResult(
-            used={'colors.bg', 'colors.accent', 'spacing.md'},
-            defined={'colors.bg', 'colors.accent', 'colors.text', 'spacing.md', 'spacing.lg'},
+            used={'colors.bg', 'colors', 'spacing.md'},
+            defined={'colors.bg', 'colors', 'colors.text', 'spacing.md', 'spacing.lg'},
             missing=set(),
             unused={'colors.text', 'spacing.lg'},
             coverage=100.0,
@@ -520,23 +519,23 @@ class TestComparator:
     def test_categorize_by_prefix(self):
         """Test token categorization by prefix."""
         tokens = {
-            'colors.bg.page',
+            'layout.main.frame.bg',
             'colors.text.primary',
-            'typography.scale.h1',
+            'text.body.font',
             'spacing.md',
-            'components.button.bg',
+            'components.button.default.frame.bg',
             'borders.radius.sm'
         }
         categorized = _categorize_by_prefix(tokens)
         
         assert 'colors' in categorized
-        assert 'typography' in categorized
+        assert 'text' in categorized
         assert 'spacing' in categorized
         assert 'components' in categorized
         assert 'borders' in categorized
         
-        assert 'colors.bg.page' in categorized['colors']
-        assert 'typography.scale.h1' in categorized['typography']
+        assert 'layout.main.frame.bg' in categorized['colors']
+        assert 'text.body.font' in categorized['text']
 
     def test_empty_sets(self):
         """Test comparison with empty sets."""
@@ -575,12 +574,12 @@ class TestFixer:
     def test_generate_placeholder_colors(self):
         """Test placeholder generation for color tokens."""
         # Test different color subcategories
-        assert _generate_placeholder('colors.bg.page') == {'ref': 'palette.neutral-3'}
+        assert _generate_placeholder('layout.main.frame.bg') == {'ref': 'palette.neutral-3'}
         assert _generate_placeholder('colors.bg.modal') == {'ref': 'palette.neutral-3'}
         assert _generate_placeholder('colors.text.primary') == {'ref': 'palette.neutral-14'}
-        assert _generate_placeholder('colors.accent.primary') == {'ref': 'palette.cyan'}
+        assert _generate_placeholder('colors.primary') == {'ref': 'palette.cyan'}
         assert _generate_placeholder('colors.border.default') == {'ref': 'palette.neutral-7'}
-        assert _generate_placeholder('colors.state.hover') == {'ref': 'palette.overlay-light'}
+        assert _generate_placeholder('colors.auto_states.hover') == {'ref': 'palette.overlay-light'}
         assert _generate_placeholder('colors.state.pressed') == {'ref': 'palette.overlay-medium'}
 
     def test_generate_placeholder_palette(self):
@@ -588,18 +587,10 @@ class TestFixer:
         placeholder = _generate_placeholder('palette.neutral-1')
         assert placeholder == "#XXXXXX"
 
-    def test_generate_placeholder_typography(self):
-        """Test placeholder for typography tokens."""
-        assert _generate_placeholder('typography.scale.h1') == 11
-        assert _generate_placeholder('typography.weights.bold') == 400
-        assert _generate_placeholder('typography.families.mono') == "mono"
+    def test_generate_placeholder_text(self):
+        """Test placeholder for text tokens."""
+        assert _generate_placeholder('text.body.font') == {'size': 11, 'typeface': 'JetBrains Mono', 'weight': 400}
         
-        preset = _generate_placeholder('typography.presets.body')
-        assert isinstance(preset, dict)
-        assert 'family' in preset
-        assert 'size' in preset
-        assert 'weight' in preset
-
     def test_generate_placeholder_spacing(self):
         """Test placeholder for spacing tokens."""
         assert _generate_placeholder('spacing.md') == 10
@@ -613,14 +604,9 @@ class TestFixer:
     def test_generate_placeholder_components(self):
         """Test placeholder for component tokens."""
         # Color-related component
-        placeholder = _generate_placeholder('components.button.bg')
+        placeholder = _generate_placeholder('components.button.default.frame.bg')
         assert isinstance(placeholder, list)
         assert 'colors.bg.input' in placeholder
-        
-        # Font-related component
-        placeholder = _generate_placeholder('components.card.font')
-        assert isinstance(placeholder, dict)
-        assert 'ref' in placeholder
         
         # Radius-related component
         placeholder = _generate_placeholder('components.dialog.radius')
@@ -668,8 +654,6 @@ colors:
         yaml_file = tmp_path / "test.yaml"
         yaml_file.write_text(yaml_content)
         
-        yaml_data = parse_yaml(str(yaml_file))
-        # Manually construct a proper dict structure (parse_yaml returns categorized sets, not raw data)
         # Let's use yaml.safe_load directly
         import yaml
         with open(yaml_file, 'r') as f:
@@ -686,7 +670,7 @@ colors:
     def test_add_missing_token_dry_run(self):
         """Test dry-run doesn't modify data."""
         yaml_data = {'colors': {}}
-        result = _add_missing_token(yaml_data, 'colors.bg.page', dry_run=True)
+        result = _add_missing_token(yaml_data, 'layout.main.frame.bg', dry_run=True)
         
         assert result['added'] == True
         assert "bg" not in yaml_data.get("colors", {})  # No modification
@@ -732,7 +716,7 @@ colors:
         
         # Both should be removed successfully
         removed = _purge_unused_tokens(yaml_data, {
-            'colors.bg.page',
+            'layout.main.frame.bg',
             'colors.bg.panel'
         }, dry_run=False)
         
@@ -805,7 +789,7 @@ class TestIntegration:
         (src_dir / "module.py").write_text('''
 from core.theme import theme
 def render():
-    theme.color("colors.bg.page")
+    theme.color("layout.main.frame.bg")
     theme.size("spacing.md")
 ''')
         
@@ -842,9 +826,9 @@ palette:
         
         # Simulate a validation result with missing token
         result = ValidationResult(
-            used={'colors.bg.page'},
+            used={'layout.main.frame.bg'},
             defined={'palette.neutral-1'},
-            missing={'colors.bg.page'},
+            missing={'layout.main.frame.bg'},
             unused=set(),
             coverage=0.0
         )
@@ -861,7 +845,7 @@ palette:
         
         assert summary['changes_made'] == True
         assert len(summary['added']) == 1
-        assert summary['added'][0]['path'] == 'colors.bg.page'
+        assert summary['added'][0]['path'] == 'layout.main.frame.bg'
         
         # Verify YAML was updated
         import yaml

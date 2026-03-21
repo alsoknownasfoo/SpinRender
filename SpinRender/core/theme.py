@@ -5,8 +5,9 @@ This module provides the Theme singleton that loads color, font, and spacing
 tokens from YAML configuration. YAML loading is strictly required.
 """
 import logging
+import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 # Try to import PyYAML
 _yaml_available = False
@@ -25,9 +26,7 @@ class Theme:
     Usage:
         Theme.load("dark")           # Load theme by name, sets singleton
         Theme.current()              # Get loaded singleton
-        Theme.current().color("colors.accent.primary")  # → wx.Colour
-        Theme.current().font("body")  # → wx.Font
-        Theme.current().size("typography.scale.base")  # → int
+        Theme.current().color("colors.primary")  # → wx.Colour
     """
     _instance: "Theme | None" = None
     _data: dict[str, Any] = {}
@@ -40,7 +39,6 @@ class Theme:
     @classmethod
     def load(cls, name: str = "dark", force: bool = False) -> "Theme":
         """Load theme from YAML file. Sets singleton instance."""
-        # Use resolve() to follow symlinks and get the absolute path
         path = (Path(__file__).parent.parent / "resources" / "themes" / f"{name}.yaml").resolve()
         
         if not path.exists():
@@ -48,33 +46,20 @@ class Theme:
             logger.error(error_msg)
             raise FileNotFoundError(error_msg)
 
-        # Check mtime to auto-detect disk changes
         mtime = path.stat().st_mtime
         is_stale = mtime > cls._loaded_mtime or name != cls._loaded_name
         
-        # Idempotent: if already loaded and not forcing/stale, return existing instance
         if cls._instance is not None and not force and not is_stale:
             return cls._instance
 
-        logger.info(f"Theme: {'Reloading' if (force or is_stale) else 'Initializing'} '{name}' theme loading.")
-
         if not _yaml_available:
-            error_msg = "PyYAML is not available. Theme system requires PyYAML."
-            logger.error(error_msg)
-            raise ImportError(error_msg)
+            raise ImportError("PyYAML is not available. Theme system requires PyYAML.")
 
         try:
             with open(path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
             
-            # Print full loaded theme data at INFO level
-            debug_data = yaml.dump(data, sort_keys=False, default_flow_style=False)
-            logger.info(f"Theme Data (Loaded from {path.name}):\n{debug_data}")
-
             if cls._instance:
-                # CRITICAL: Update the existing instance's data dictionary in-place.
-                # This ensures all modules that hold a reference to this instance 
-                # (via _theme = Theme.current()) see the new data immediately.
                 cls._instance._data = data
             else:
                 cls._instance = cls(data)
@@ -91,670 +76,391 @@ class Theme:
 
     @classmethod
     def reload(cls) -> "Theme":
-        """Force a reload of the current theme from disk."""
-        # Use the name of the currently loaded theme, or default to dark
-        name = cls._loaded_name if cls._loaded_name else "dark"
-        instance = cls.load(name=name, force=True)
-        
-        if _yaml_available:
-            try:
-                # Print the full data as YAML for easy debugging
-                debug_data = yaml.dump(instance._data, sort_keys=False, default_flow_style=False)
-                logger.info(f"Theme Data (Reloaded):\n{debug_data}")
-            except Exception as e:
-                logger.info(f"Theme Data (Reloaded - Raw): {instance._data}")
-                logger.error(f"Failed to dump theme debug data: {e}")
-        else:
-            logger.info(f"Theme Data (Reloaded - Raw): {instance._data}")
-            
-        return instance
-
-
-    @classmethod
-    def _build_fallback_data(cls) -> dict:
-        """Return hardcoded fallback theme data for the default dark theme.
-
-        This is used by the theme validator when PyYAML is not available.
-        The structure matches the YAML format exactly.
-        """
-        return {
-            "meta": {
-                "name": "Dark",
-                "version": "1.0.0",
-                "description": "Default dark theme matching the SpinRender design system"
-            },
-            "palette": {
-                # Neutrals (darkest -> lightest)
-                "neutral-1": "#0A0A0A",
-                "neutral-2": "#0D0D0D",
-                "neutral-3": "#121212",
-                "neutral-4": "#1A1A1A",
-                "neutral-5": "#1A1A1A",
-                "neutral-6": "#222222",
-                "neutral-7": "#1F1F1F",
-                "neutral-8": "#222222",
-                "neutral-9": "#2A2A2A",
-                "neutral-10": "#323232",
-                "neutral-11": "#777777",
-                "neutral-12": "#555555",
-                "neutral-13": "#CCCCCC",
-                "neutral-14": "#E0E0E0",
-                "neutral-15": "#FFFFFF",
-                "neutral-16": "#333333",
-                "neutral-17": "#787878",
-                "neutral-18": "#646464",
-                # Accent colors
-                "cyan": "#00BCD4",
-                "yellow": "#FFD600",
-                "green": "#4CAF50",
-                "orange": "#FF6B35",
-                "red": "#FF3B30",
-                "purple": "#AA6BFF",
-                "pink": "#FF4081",
-                # Preset card colors
-                "preset-red": "#FF6B6B",
-                "preset-amber": "#FFB46B",
-                "preset-blue": "#4D96FF",
-                "preset-purple": "#AA6BFF",
-                # Danger button states
-                "danger-dark": "#8C0000",
-                "danger-hover": "#DC1414",
-                "danger-medium": "#B40000",
-                # Overlays (RGBA with alpha)
-                "overlay-faint": "rgba(255,255,255,0.08)",
-                "overlay-light": "rgba(255,255,255,0.16)",
-                "overlay-medium": "rgba(255,255,255,0.27)",
-                "transparent": "rgba(0,0,0,0)",
-                "black-solid": "#000000"
-            },
-            "colors": {
-                # Backgrounds
-                "bg": {
-                    "page": {"ref": "palette.neutral-3"},
-                    "panel": {"ref": "palette.neutral-5"},
-                    "surface": {"ref": "palette.neutral-8"},
-                    "input": {"ref": "palette.neutral-2"},
-                    "inner": {"ref": "palette.neutral-6"},
-                    "overlay": {"ref": "palette.neutral-4"},
-                    "track": {"ref": "palette.neutral-10"},
-                    "hover": {"ref": "palette.neutral-9"},
-                    "output": {"ref": "palette.neutral-1"}
-                },
-                # Text
-                "text": {
-                    "primary": {"ref": "palette.neutral-14"},
-                    "secondary": {"ref": "palette.neutral-11"},
-                    "muted": {"ref": "palette.neutral-12"},
-                    "on-accent": {"ref": "palette.neutral-2"},
-                    "on-danger": {"ref": "palette.neutral-15"}
-                },
-                # Accent
-                "accent": {
-                    "primary": {"ref": "palette.cyan"},
-                    "secondary": {"ref": "palette.yellow"},
-                    "success": {"ref": "palette.green"},
-                    "warning": {"ref": "palette.orange"}
-                },
-                # Borders
-                "border": {
-                    "default": {"ref": "palette.neutral-7"},
-                    "subtle": {"ref": "palette.neutral-10"},
-                    "focus": {"ref": "palette.cyan"},
-                    "strong": {"ref": "palette.neutral-10"}
-                },
-                # Presets
-                "preset": [
-                    {"ref": "palette.preset-red"},
-                    {"ref": "palette.preset-amber"},
-                    {"ref": "palette.preset-blue"},
-                    {"ref": "palette.preset-purple"}
-                ],
-                # State overlays
-                "state": {
-                    "hover-overlay": {"ref": "palette.overlay-light"},
-                    "pressed-overlay": {"ref": "palette.overlay-medium"},
-                    "ghost-overlay": {"ref": "palette.overlay-faint"},
-                    "active": {"ref": "palette.green"},
-                    "danger": {"ref": "palette.danger-medium"},
-                    "danger-hover": {"ref": "palette.danger-hover"},
-                    "danger-pressed": {"ref": "palette.danger-dark"}
-                }
-            },
-            "typography": {
-                "families": {
-                    "mono": "JetBrains Mono",
-                    "display": "Oswald",
-                    "icon": "Material Design Icons",
-                    "inter": "Inter"
-                },
-                "scale": {
-                    "xs": 8,
-                    "sm": 9,
-                    "base": 11,
-                    "md": 13,
-                    "lg": 14,
-                    "xl": 18,
-                    "icon": 14,
-                    "icon-lg": 20
-                },
-                "weights": {
-                    "normal": 400,
-                    "semibold": 600,
-                    "bold": 700
-                },
-                "presets": {
-                    "body": {
-                        "family": {"ref": "typography.families.mono"},
-                        "size": {"ref": "typography.scale.base"},
-                        "weight": {"ref": "typography.weights.normal"}
-                    },
-                    "body_strong": {
-                        "family": {"ref": "typography.families.mono"},
-                        "size": {"ref": "typography.scale.base"},
-                        "weight": {"ref": "typography.weights.semibold"}
-                    },
-                    "label_sm": {
-                        "family": {"ref": "typography.families.mono"},
-                        "size": {"ref": "typography.scale.sm"},
-                        "weight": {"ref": "typography.weights.semibold"}
-                    },
-                    "label_xs": {
-                        "family": {"ref": "typography.families.mono"},
-                        "size": {"ref": "typography.scale.xs"},
-                        "weight": {"ref": "typography.weights.bold"}
-                    },
-                    "numeric_value": {
-                        "family": {"ref": "typography.families.mono"},
-                        "size": {"ref": "typography.scale.md"},
-                        "weight": {"ref": "typography.weights.semibold"}
-                    },
-                    "numeric_unit": {
-                        "family": {"ref": "typography.families.mono"},
-                        "size": {"ref": "typography.scale.base"},
-                        "weight": {"ref": "typography.weights.normal"}
-                    },
-                    "section_heading": {
-                        "family": {"ref": "typography.families.display"},
-                        "size": {"ref": "typography.scale.md"},
-                        "weight": {"ref": "typography.weights.semibold"}
-                    },
-                    "panel_title": {
-                        "family": {"ref": "typography.families.display"},
-                        "size": {"ref": "typography.scale.xl"},
-                        "weight": {"ref": "typography.weights.bold"}
-                    },
-                    "icon": {
-                        "family": {"ref": "typography.families.icon"},
-                        "size": {"ref": "typography.scale.icon"},
-                        "weight": {"ref": "typography.weights.normal"}
-                    },
-                    "icon_lg": {
-                        "family": {"ref": "typography.families.icon"},
-                        "size": {"ref": "typography.scale.icon-lg"},
-                        "weight": {"ref": "typography.weights.normal"}
-                    }
-                }
-            },
-            "spacing": {
-                "0": 0,
-                "xs": 4,
-                "sm": 6,
-                "md": 10,
-                "lg": 16,
-                "xl": 24
-            },
-            "borders": {
-                "radius": {
-                    "sm": 4,
-                    "md": 6,
-                    "lg": 8,
-                    "full": 9999
-                }
-            },
-            "components": {
-                "numeric_display": {
-                    "bg": ["colors.bg.input"],
-                    "border": ["colors.border.default"],
-                    "text-value": ["colors.text.primary"],
-                    "text-unit": ["colors.text.secondary"],
-                    "font-value": {"ref": "typography.presets.numeric-value"},
-                    "font-unit": {"ref": "typography.presets.numeric-unit"}
-                },
-                "numeric_input": {
-                    "bg": ["colors.bg.input"],
-                    "border": ["colors.border.default"],
-                    "border-focus": ["colors.border.focus"],
-                    "text": ["colors.text.primary"],
-                    "placeholder": ["colors.text.muted"],
-                    "font": {"ref": "typography.presets.body"}
-                },
-                "color_picker": {
-                    "bg": ["colors.bg.overlay"],
-                    "border": ["colors.border.default"],
-                    "swatch-border": ["colors.border.subtle"],
-                    "overlay-fg": ["palette.overlay-medium"],
-                    "radius": {"ref": "borders.radius.md"}
-                },
-                "panel": {
-                    "bg": ["colors.bg.page"],
-                    "header-bg": ["colors.bg.panel"],
-                    "header-border": ["colors.border.default"],
-                    "padding": {"ref": "spacing.lg"},
-                    "section-gap": {"ref": "spacing.lg"}
-                },
-                "slider": {
-                    "height": 18,
-                    "track": {
-                        "color": ["colors.bg.track"],
-                        "height": 4,
-                        "radius": {"ref": "borders.radius.sm"}
-                    },
-                    "fill": {
-                        "color": ["colors.accent.primary"],
-                        "radius": {"ref": "borders.radius.sm"}
-                    }
-                },
-                "toggle": {
-                    "bg": ["colors.bg.input"],
-                    "border": ["colors.border.subtle"],
-                    "radius": {"ref": "borders.radius.md"},
-                    "option": {
-                        "text": ["colors.text.secondary"],
-                        "font": {"ref": "typography.presets.body-strong"},
-                        "icon_gap": {"ref": "spacing.sm"}
-                    },
-                    "active": {
-                        "bg": ["colors.state.active"],
-                        "text": ["colors.text.on-accent"],
-                        "font": {"ref": "typography.presets.body-strong"}
-                    }
-                },
-                "dropdown": {
-                    "height": 32,
-                    "bg": ["colors.bg.input"],
-                    "border": ["colors.border.default"],
-                    "border-focus": ["colors.border.focus"],
-                    "radius": {"ref": "borders.radius.md"},
-                    "text": ["colors.text.primary"],
-                    "text-muted": ["colors.text.muted"],
-                    "font": {"ref": "typography.presets.body-strong"},
-                    "popup": {
-                        "bg": ["colors.bg.inner"],
-                        "hover": ["colors.bg.hover"]
-                    }
-                },
-                "button": {
-                    "height": 36,
-                    "radius": {"ref": "borders.radius.md"},
-                    "font": {"ref": "typography.presets.body-strong"},
-                    "icon_gap": {"ref": "spacing.md"},
-                    "primary": {
-                        "bg": ["colors.accent.primary"],
-                        "text": ["colors.text.on-accent"],
-                        "hover": ["colors.state.hover-overlay"],
-                        "pressed": ["colors.state.pressed-overlay"]
-                    },
-                    "secondary": {
-                        "bg": ["colors.bg.surface"],
-                        "text": ["colors.text.primary"],
-                        "border": ["colors.border.default"],
-                        "hover": ["colors.state.hover-overlay"]
-                    },
-                    "ghost": {
-                        "bg": ["palette.transparent"],
-                        "text": ["colors.text.primary"],
-                        "hover": ["colors.state.ghost-overlay"],
-                        "border": ["palette.transparent"],
-                        "radius": {"ref": "borders.radius.md"}
-                    },
-                    "danger": {
-                        "bg": ["colors.state.danger"],
-                        "text": ["colors.text.on-danger"],
-                        "hover-bg": ["colors.state.danger-hover"],
-                        "pressed-bg": ["colors.state.danger-pressed"]
-                    },
-                    "close": {"ref": "components.button.ghost"}
-                },
-                "preset_card": {
-                    "bg": ["colors.bg.surface"],
-                    "border": ["colors.border.default"],
-                    "accent": ["colors.accent.primary"]
-                },
-                "badge": {
-                    "bg": ["colors.accent.warning"],
-                    "text": ["colors.text.on-accent"]
-                }
-            }
-        }
+        return cls.load(name=cls._loaded_name if cls._loaded_name else "dark", force=True)
 
     @classmethod
     def current(cls) -> "Theme":
-        """Get the current theme singleton, loading default if not set."""
         if cls._instance is None:
             cls.load()
         return cls._instance
 
     def has_token(self, path: str) -> bool:
-        """Check if a token path exists in the theme data."""
-        keys = path.split('.')
-        current = self._data
-        for key in keys:
-            if not isinstance(current, dict) or key not in current:
-                return False
-            current = current[key]
-        return True
+        """Check if a token path exists, following refs and merging inheritance."""
+        try:
+            res = self._resolve(path)
+            return res is not None and res != "#FF00FF"
+        except:
+            return False
 
-    def _resolve(self, path: str) -> Any:
+    def _get_raw(self, path: str) -> Any:
+        """Internal direct lookup in data dict without ref following."""
+        curr = self._data
+        for k in path.split('.'):
+            if isinstance(curr, dict) and k in curr:
+                curr = curr[k]
+            else:
+                return None
+        return curr
+
+    def _resolve(self, path: str, visited: set = None) -> Any:
         """
-        Resolve a dot-path token, following 'ref' references. 
-        If path is not a valid token but looks like a color name, returns it as-is.
-        Returns pink if undefined.
-        """
-        node = self._data
-        is_token_path = '.' in path or path in node
+        Resolve a dot-path token with robust Parent-Ref Recursive Lookup.
         
-        if not is_token_path:
-            # Not a token path (no dots, not in root). 
-            # Could be a direct color name (e.g. "red") or hex.
-            if path.startswith("#") or path.startswith("rgba(") or len(path) == 6:
-                return path
-            # If it's a simple word, let _parse_color try wx.ColourDatabase
-            if path.isalpha():
+        Strategy:
+        1. Start at data root.
+        2. Traverse keys. If a node is a pointer (@ or {ref:}), follow it 
+           to its target before continuing traversal.
+        3. If a key is missing, probe parents for a 'ref' and retry from base.
+        """
+        if visited is None: visited = set()
+        if not isinstance(path, str): return path
+        if path.startswith("@"): path = path[1:]
+        
+        if path in visited: raise RecursionError(f"Circular reference detected at '{path}'")
+        visited.add(path)
+
+        # Fast path for literals
+        if '.' not in path and path not in self._data:
+            if path.startswith("#") or path.startswith("rgba(") or path.isalpha():
                 return path
 
-        for key in path.split("."):
-            # If we encounter a ref during traversal, resolve it and continue from there
-            while isinstance(node, dict) and "ref" in node:
-                node = self._resolve(node["ref"])
+        parts = path.split(".")
+        node = self._data
+        
+        for i, key in enumerate(parts):
+            # 1. Follow any string pointers (@refs) mid-path
+            while isinstance(node, str) and node.startswith("@"):
+                node = self._resolve(node[1:], visited.copy())
 
-            if isinstance(node, dict):
-                if key not in node:
-                    logger.error(f"Theme: Undefined token: '{path}' (missing '{key}')")
-                    return "#FF00FF"  # Magenta/pink for visibility
+            # 2. Look for key in current node (Dictionary lookup)
+            if isinstance(node, dict) and key in node:
                 node = node[key]
             else:
-                logger.error(f"Theme: Cannot traverse into {type(node)} at '{key}' in '{path}'")
+                # 3. Inheritance: Climb parents of the ORIGINAL path to find a 'ref'
+                for j in range(i, 0, -1):
+                    parent_path = ".".join(parts[:j])
+                    parent = self._get_raw(parent_path)
+                    if isinstance(parent, dict) and "ref" in parent:
+                        base_ref = parent["ref"]
+                        remaining = ".".join(parts[j:])
+                        return self._resolve(f"{base_ref}.{remaining}", visited.copy())
+                
                 return "#FF00FF"
 
-        # Follow ref if present at the leaf
-        while isinstance(node, dict) and "ref" in node:
-            node = self._resolve(node["ref"])
+        # 4. Final Leaf Follow (if result is a pointer)
+        while isinstance(node, str) and node.startswith("@"):
+            node = self._resolve(node[1:], visited.copy())
+
         return node
 
+    # --- COLOR ENGINE ---
+
+    def color(self, token: str, hovered: bool = False, pressed: bool = False, enabled: bool = True) -> 'wx.Colour':
+        """Resolve a color token to a wx.Colour, considering component state.
+        
+        Priority: Disabled > Pressed > Hovered > Normal.
+        """
+        import wx
+        states = self.color_states(token)
+        
+        final_color = states[0]
+        state_name = "normal"
+
+        if not enabled:
+            state_name = "disabled"
+            if len(states) > 3 and states[3]:
+                final_color = states[3]
+            else:
+                # If no explicit disabled state, desaturate the state that would be active
+                base_for_disabled = states[2] if (pressed and len(states) > 2) else states[0]
+                final_color = self.disabled(base_for_disabled)
+        elif pressed:
+            final_color = states[2] if len(states) > 2 else states[0]
+            state_name = "pressed"
+        elif hovered:
+            final_color = states[1] if len(states) > 1 else states[0]
+            state_name = "hovered"
+            
+        try:
+            hex_val = final_color.GetAsString(wx.C2S_HTML_SYNTAX)
+            logger.debug(f"Theme: color('{token}') -> state '{state_name}' -> {hex_val}")
+        except:
+            pass
+            
+        return final_color
+
+    def color_states(self, token: str, states: int = 4) -> list['wx.Colour']:
+        """Resolve a color token to [normal, hover, active, disabled] states."""
+        import wx
+        raw = self._resolve(token)
+        
+        # Fallback for style roles (e.g. "icon", "label") that aren't at root
+        if raw is None or raw == "#FF00FF":
+            style_raw = self._resolve(f"text.{token}")
+            if isinstance(style_raw, dict):
+                raw = style_raw
+
+        if raw is None or raw == "#FF00FF":
+            logger.error(f"Theme: Color token '{token}' not found.")
+            pink = self._parse_color("#FF00FF")
+            return [pink] * states
+
+        # Extract defined states
+        colors, source = self._extract_defined_states(raw, token)
+        
+        # Fill missing states
+        final_colors, gen_count = self._fill_missing_states(colors)
+        
+        try:
+            hex_list = [c.GetAsString(wx.C2S_HTML_SYNTAX) for c in final_colors[:states]]
+            logger.debug(f"Theme: color_states('{token}') -> src={source} gen={gen_count} -> {hex_list}")
+        except:
+            pass
+
+        return final_colors[:states]
+
+    def _extract_defined_states(self, raw: Any, token: str) -> tuple[list[Optional['wx.Colour']], str]:
+        res = [None, None, None, None] # [normal, hover, active, disabled]
+        
+        if isinstance(raw, list):
+            for i, v in enumerate(raw[:4]):
+                res[i] = self._parse_color(v)
+            return res, "list"
+        
+        if isinstance(raw, dict):
+            # Resolve .color explicitly if it's a component dict
+            if "color" in raw:
+                # If .color is itself a dict (stateful), recurse
+                if isinstance(raw["color"], (dict, list)):
+                    return self._extract_defined_states(raw["color"], f"{token}.color")
+                res[0] = self._parse_color(raw["color"])
+                return res, "dict.color"
+                
+            # Direct property mapping
+            m = {"default": 0, "bg": 0, "value": 0, "hover": 1, "active": 2, "pressed": 2, "disabled": 3}
+            found = False
+            for k, idx in m.items():
+                val = raw.get(k)
+                if val:
+                    res[idx] = self._parse_color(val)
+                    found = True
+            if found: return res, "dict"
+
+        # Fallback: Treat as direct color value
+        try:
+            res[0] = self._parse_color(raw)
+            return res, "direct"
+        except ValueError:
+            # If the raw value isn't a color string (e.g. it's a nested dict we missed), return Pink
+            logger.error(f"Theme: Token '{token}' resolved to non-color value: {raw}")
+            pink = self._parse_color("#FF00FF")
+            return [pink] * 4, "error"
+
+    def _fill_missing_states(self, colors: list[Optional['wx.Colour']]) -> tuple[list['wx.Colour'], int]:
+        if not colors[0]:
+            pink = self._parse_color("#FF00FF")
+            return [pink] * 4, 0
+            
+        base = colors[0]
+        gen_count = 0
+        # 1. Fill Hover (Index 1)
+        if not colors[1]:
+            colors[1] = self._apply_auto_shift(base, "hover")
+            gen_count += 1
+        # 2. Fill Active (Index 2)
+        if not colors[2]:
+            colors[2] = self._apply_auto_shift(base, "active")
+            gen_count += 1
+        # 3. Fill Disabled (Index 3)
+        if not colors[3]:
+            colors[3] = self._apply_auto_shift(base, "disabled")
+            gen_count += 1
+            
+        return colors, gen_count
+
+    def _apply_auto_shift(self, base_color: 'wx.Colour', state: str) -> 'wx.Colour':
+        import wx
+        delta_raw = self._resolve(f"colors.auto_states.{state}")
+        
+        if not isinstance(delta_raw, str) or delta_raw == "#FF00FF":
+            if state == "hover": return self._shift_color(base_color, 10)
+            if state == "active": return self._shift_color(base_color, -10)
+            return self.disabled(base_color)
+
+        try:
+            parts = [float(p) for p in re.findall(r"[-?\d.]+", delta_raw)]
+            if state == "disabled" and len(parts) >= 4:
+                alpha = int(parts[3] * 255) if parts[3] <= 1.0 else int(parts[3])
+                # Desaturate using weighted luminance (0.299R + 0.587G + 0.114B)
+                gray = int(0.299 * base_color.Red() + 0.587 * base_color.Green() + 0.114 * base_color.Blue())
+                return wx.Colour(gray, gray, gray, alpha)
+
+            r = max(0, min(255, int(base_color.Red() + (parts[0] if len(parts) > 0 else 0))))
+            g = max(0, min(255, int(base_color.Green() + (parts[1] if len(parts) > 1 else 0))))
+            b = max(0, min(255, int(base_color.Blue() + (parts[2] if len(parts) > 2 else 0))))
+            a = int(parts[3] * 255) if len(parts) >= 4 else base_color.Alpha()
+            
+            if state == "disabled":
+                gray = int(0.299 * r + 0.587 * g + 0.114 * b)
+                return wx.Colour(gray, gray, gray, a)
+                
+            return wx.Colour(r, g, b, a)
+        except:
+            return base_color
+
     def disabled(self, color) -> 'wx.Colour':
-        """Return a copy of color with disabled opacity (alpha=128)."""
         import wx
         if isinstance(color, wx.Colour):
-            return wx.Colour(color.Red(), color.Green(), color.Blue(), 128)
-        raise ValueError(f"Expected wx.Colour, got {type(color)}")
+            # Desaturate using weighted luminance (0.299R + 0.587G + 0.114B)
+            gray = int(0.299 * color.Red() + 0.587 * color.Green() + 0.114 * color.Blue())
+            # Half alpha (128)
+            return wx.Colour(gray, gray, gray, 128)
+        return self._parse_color("#FF00FF")
 
-    def font_family(self, name: str) -> str:
-        """Get font family by name: 'mono', 'display', 'icon', 'inter'."""
-        return self._resolve(f"typography.families.{name}")
-
-    def font_size(self, name: str) -> int:
-        """Get font size by name: 'xs', 'sm', 'base', 'md', 'lg', 'xl', 'icon', 'icon-lg'."""
-        value = self._resolve(f"typography.scale.{name}")
-        return int(value)
-
-    def font_weight(self, name: str) -> int:
-        """Get font weight by name: 'normal' (400), 'semibold' (600), 'bold' (700)."""
-        value = self._resolve(f"typography.weights.{name}")
-        return int(value)
-
-    def get_palette_color(self, name: str) -> 'wx.Colour':
-        """Get a raw palette color by name (e.g., 'cyan', 'yellow', 'neutral-3')."""
-        return self.color(f"palette.{name}")
-
-    # Special colors via properties for cleaner access
-    @property
-    def BLACK(self) -> 'wx.Colour':
-        """Solid black."""
-        return self.color("palette.black-solid")
-
-    @property
-    def TRANSPARENT(self) -> 'wx.Colour':
-        """Fully transparent."""
-        return self.color("palette.transparent")
-
-    @property
-    def HOVER_HIGHLIGHT(self) -> 'wx.Colour':
-        """Hover highlight color (used for scrollbars etc)."""
-        return self.color("colors.bg.hover")
-
-    @property
-    def SCROLLBAR_GREY(self) -> 'wx.Colour':
-        """Scrollbar track color."""
-        return self.get_palette_color("neutral-10")
-
-    @property
-    def GREY_100(self) -> 'wx.Colour':
-        """Secondary text subtler color."""
-        # Use neutral-18 which exists in dark.yaml
-        return self.get_palette_color("neutral-18")
-
-    @property
-    def DANGER_DARK(self) -> 'wx.Colour':
-        """Danger state (pressed)."""
-        return self.color("palette.danger-dark")
-
-    @property
-    def DANGER_HOVER(self) -> 'wx.Colour':
-        """Danger state (hover)."""
-        return self.color("palette.danger-hover")
-
-    @property
-    def DANGER_MEDIUM(self) -> 'wx.Colour':
-        """Danger state (default)."""
-        return self.color("palette.danger-medium")
-
-    @property
-    def WHITE(self) -> 'wx.Colour':
-        """Solid white."""
-        return self.color("palette.neutral-15")
-
-    @property
-    def WHITE_ALPHA_20(self) -> 'wx.Colour':
-        """White with 20% opacity."""
-        return self.parse_color("rgba(255,255,255,0.08)")
-
-    @property
-    def WHITE_ALPHA_30(self) -> 'wx.Colour':
-        """White with 30% opacity."""
-        return self.parse_color("rgba(255,255,255,0.16)")
-
-    @property
-    def WHITE_ALPHA_40(self) -> 'wx.Colour':
-        """White with 40% opacity."""
-        return self.parse_color("rgba(255,255,255,0.27)")
-
-    @property
-    def WHITE_ALPHA_68(self) -> 'wx.Colour':
-        """White with 68% opacity."""
-        return self.parse_color("rgba(255,255,255,0.68)")
-
-    @property
-    def BG_MODAL(self) -> 'wx.Colour':
-        """Modal background (same as BG_PAGE)."""
-        return self.color("colors.bg.page")
-
-    def _parse_color(self, value: str):
-        """Parse color string to wx.Colour. Supports hex (#RRGGBB, RRGGBB, #RRGGBBAA), rgba(r,g,b,a), and basic color names."""
+    def _parse_color(self, value: str) -> 'wx.Colour':
+        """Parse color string to wx.Colour. Raises ValueError for invalid format."""
         import wx
-        import re
-
+        
+        # 0. wx.Colour Passthrough (Critical for tests)
         if isinstance(value, wx.Colour):
             return value
 
-        if not isinstance(value, str):
+        if not isinstance(value, str): 
             raise ValueError(f"Theme: Invalid color value type: {type(value)}")
-
-        # 1. Try wx.ColourDatabase for named colors (e.g. 'red', 'blue', 'LIGHT GREY')
-        named_color = wx.Colour(value)
-        if named_color.IsOk():
-            return named_color
+        
+        # 1. Handle @references
+        if value.startswith("@"):
+            resolved = self._resolve(value)
+            if resolved == "#FF00FF": return wx.Colour(255, 0, 255)
+            return self._parse_color(resolved)
 
         # 2. Parse rgba(r, g, b, a)
         if value.startswith("rgba("):
-            parts = re.findall(r"[\d.]+", value)
-            if len(parts) != 4:
-                raise ValueError(f"Theme: Invalid rgba format: {value}")
-            try:
-                r, g, b = int(parts[0]), int(parts[1]), int(parts[2])
-                a = max(0, min(255, int(round(float(parts[3]) * 255))))
-                return wx.Colour(r, g, b, a)
-            except (ValueError, IndexError):
-                raise ValueError(f"Theme: Invalid rgba format: {value}")
+            parts = [float(p) for p in re.findall(r"[\d.]+", value)]
+            if len(parts) == 4:
+                return wx.Colour(int(parts[0]), int(parts[1]), int(parts[2]), int(round(parts[3] * 255)))
+            raise ValueError(f"Theme: Invalid rgba format: {value}")
 
-        # 3. Parse hex #RRGGBB or RRGGBB or #RRGGBBAA
+        # 3. Parse hex
         clean = value.lstrip("#")
         try:
             if len(clean) == 6:
-                r = int(clean[0:2], 16)
-                g = int(clean[2:4], 16)
-                b = int(clean[4:6], 16)
-                return wx.Colour(r, g, b)
-            elif len(clean) == 8:
-                r = int(clean[0:2], 16)
-                g = int(clean[2:4], 16)
-                b = int(clean[4:6], 16)
-                a = int(clean[6:8], 16)
-                return wx.Colour(r, g, b, a)
-        except ValueError:
-            pass
+                return wx.Colour(int(clean[0:2], 16), int(clean[2:4], 16), int(clean[4:6], 16))
+            if len(clean) == 8:
+                return wx.Colour(int(clean[0:2], 16), int(clean[2:4], 16), int(clean[4:6], 16), int(clean[6:8], 16))
+        except: pass
 
-        # 4. Final attempt at direct wx.Colour constructor
+        # 4. Try direct construction (named colors)
         try:
-            direct = wx.Colour(value)
-            if direct.IsOk():
-                return direct
-        except Exception:
-            pass
+            c = wx.Colour(value)
+            if c.IsOk(): return c
+        except: pass
 
         raise ValueError(f"Theme: Invalid color format or unknown color name: '{value}'")
 
-    def parse_color(self, value: str):
-        """Public wrapper for _parse_color."""
-        return self._parse_color(value)
-
     def _shift_color(self, color: 'wx.Colour', delta: int) -> 'wx.Colour':
-        """Shift RGB channels by delta (±10), clamped 0-255, preserving alpha."""
         import wx
-        r = max(0, min(255, color.Red() + delta))
-        g = max(0, min(255, color.Green() + delta))
-        b = max(0, min(255, color.Blue() + delta))
-        a = color.Alpha()
-        return wx.Colour(r, g, b, a)
-
-    def color(self, token: str, state: int = 0) -> 'wx.Colour':
-        """Resolve a color token to a wx.Colour. e.g. 'colors.accent.primary'."""
-        logger.debug(f"Theme usage: resolve color '{token}' (state={state})")
-        states = self.color_states(token)
-        if state >= len(states):
-            logger.warning(f"Theme: Requested state {state} for token '{token}' exceeds available states ({len(states)}).")
-            return states[0]
-        return states[state]
-
-    def get_preset_colors(self) -> list['wx.Colour']:
-        """Get list of preset colors from the theme."""
-        raw_presets = self._resolve("colors.preset")
-        if isinstance(raw_presets, list):
-            colors = []
-            for item in raw_presets:
-                if isinstance(item, dict) and 'ref' in item:
-                    color_str = self._resolve(item['ref'])
-                elif isinstance(item, str):
-                    color_str = self._resolve(item) if not item.startswith('#') and not item.startswith('rgba(') else item
-                else:
-                    color_str = item
-                colors.append(self._parse_color(color_str))
-            return colors
-        
-        logger.error("Theme: 'colors.preset' not found or invalid in theme data.")
-        raise KeyError("colors.preset missing")
-
-    def has_palette_color(self, token: str) -> bool:
-        """Check if a palette color token exists."""
-        palette = self._data.get("palette", {})
-        return token in palette
-
-    def color_states(self, token: str, states: int = 3) -> list['wx.Colour']:
-        """Resolve a color token to a list of wx.Colour objects for [normal, hover, active] states."""
-        raw = self._resolve(token)
-
-        # Normalize to list and resolve each element
-        if isinstance(raw, list):
-            resolved_values = []
-            for v in raw:
-                if isinstance(v, dict) and 'ref' in v:
-                    resolved_values.append(self._resolve(v['ref']))
-                elif isinstance(v, str):
-                    try:
-                        resolved_values.append(self._resolve(v))
-                    except KeyError:
-                        resolved_values.append(v)
-                else:
-                    resolved_values.append(v)
-            colors = [self._parse_color(rv) for rv in resolved_values]
-        else:
-            if isinstance(raw, dict) and 'ref' in raw:
-                raw = self._resolve(raw['ref'])
-            colors = [self._parse_color(raw)]
-
-        # Pad with shifted colors
-        while len(colors) < states:
-            base = colors[-1]
-            if len(colors) == 1:
-                colors.append(self._shift_color(base, 10))  # hover
-                colors.append(self._shift_color(base, -10)) # active
-            elif len(colors) == 2:
-                colors.append(self._shift_color(colors[1], -10))
-            else:
-                colors.append(base)
-
-        return colors[:states]
-
-    def size(self, token: str) -> int:
-        """Resolve a spacing/size token to an int. e.g. 'spacing.lg'."""
-        logger.debug(f"Theme usage: resolve size '{token}'")
-        value = self._resolve(token)
-        return int(value)
-
-    def font(self, preset: str) -> 'wx.Font':
-        """Resolve a font preset to a wx.Font."""
-        logger.debug(f"Theme usage: resolve font preset '{preset}'")
-        import wx
-        spec = self._resolve(f"typography.presets.{preset}")
-
-        if isinstance(spec, str) and spec.startswith("#"):
-             # Failed resolution returned pink hex
-             logger.error(f"Theme: Cannot create font for invalid preset '{preset}'")
-             # Fallback to system font if resolution failed
-             return wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
-
-        # Resolve family
-        family_spec = spec.get("family", "wx.FONTFAMILY_DEFAULT")
-        family = self._resolve(family_spec["ref"]) if isinstance(family_spec, dict) else family_spec
-
-        # Resolve size
-        size_spec = spec.get("size", 11)
-        size = int(self._resolve(size_spec["ref"]) if isinstance(size_spec, dict) else size_spec)
-
-        # Resolve weight
-        weight_spec = spec.get("weight", 400)
-        weight = int(self._resolve(weight_spec["ref"]) if isinstance(weight_spec, dict) else weight_spec)
-
-        weight_map = {
-            400: wx.FONTWEIGHT_NORMAL,
-            600: wx.FONTWEIGHT_SEMIBOLD,
-            700: wx.FONTWEIGHT_BOLD,
-        }
-        wx_weight = weight_map.get(weight, wx.FONTWEIGHT_NORMAL)
-
-        return wx.Font(
-            size,
-            wx.FONTFAMILY_DEFAULT,
-            wx.FONTSTYLE_NORMAL,
-            wx_weight,
-            faceName=family
+        return wx.Colour(
+            max(0, min(255, color.Red() + delta)),
+            max(0, min(255, color.Green() + delta)),
+            max(0, min(255, color.Blue() + delta)),
+            color.Alpha()
         )
+
+    # --- PROPERTY ACCESSORS (Aliases to common literal tokens) ---
+
+    @property
+    def BLACK(self) -> 'wx.Colour': return self._parse_color("black")
+    @property
+    def WHITE(self) -> 'wx.Colour': return self._parse_color("white")
+    @property
+    def TRANSPARENT(self) -> 'wx.Colour': return self._parse_color("rgba(0,0,0,0)")
+
+    # --- OTHER HELPERS ---
+
+    def font_family(self, name: str) -> str:
+        res = self._resolve(f"typography.families.{name}")
+        return res if res != "#FF00FF" else "Arial"
+
+    def font_size(self, name: str) -> int:
+        res = self._resolve(f"typography.scale.{name}")
+        try: return int(res)
+        except: return 11
+
+    def font_weight(self, name: str) -> int:
+        res = self._resolve(f"typography.weights.{name}")
+        try: return int(res)
+        except: return 400
+
+    def size(self, token: str) -> int: 
+        val = self._resolve(token)
+        try: return int(val)
+        except: return 0
+    
+    def glyph(self, name: any) -> str:
+        if not name: return ""
+        
+        # Handle dictionary input (e.g. {ref: mdi-folder, color: ...})
+        if isinstance(name, dict):
+            name = name.get('ref') or name.get('icon') or ""
+            
+        if not isinstance(name, str) or name.lower() == "none": return ""
+        
+        token = f"glyphs.{name.replace('mdi-', '').replace('glyphs.', '')}"
+        val = self._resolve(token)
+        return str(val) if isinstance(val, str) and not val.startswith("#") else ""
+
+    def get_palette_color(self, name: str) -> 'wx.Colour': return self.color(f"colors.{name}")
+    def get_preset_colors(self) -> list['wx.Colour']:
+        raw = self._resolve("colors.preset")
+        return [self._parse_color(v) for v in raw] if isinstance(raw, list) else []
+
+    def font(self, token: str) -> 'wx.Font':
+        """Resolve a font preset. Returns a bold 'Webdings' font if resolution fails."""
+        import wx
+        # 1. Resolve spec (Check for direct .font, then text.{token}.font, then legacy presets)
+        spec = self._resolve(f"{token}.font")
+        if not isinstance(spec, dict):
+            spec = self._resolve(f"text.{token}.font")
+        if not isinstance(spec, dict):
+            spec = self._resolve(f"typography.presets.{token}")
+        
+        # 2. If resolution failed, return "Pink" equivalent for fonts: Webdings Symbols
+        if not isinstance(spec, dict):
+            logger.debug(f"Theme: Font preset '{token}' not found. Returning symbol fallback.")
+            return wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName="Webdings")
+
+        # 3. Resolve components
+        family_raw = spec.get("typeface") or spec.get("family")
+        family = self._resolve(family_raw) if family_raw else "#FF00FF"
+        
+        size_raw = spec.get("size")
+        size_val = self._resolve(size_raw) if size_raw else "#FF00FF"
+        
+        weight_raw = spec.get("weight")
+        weight_val = self._resolve(weight_raw) if weight_raw else "#FF00FF"
+
+        # 4. Handle internal component resolution failure
+        if "#FF00FF" in (family, size_val, weight_val):
+            if logger.isEnabledFor(logging.DEBUG):
+                missing = []
+                if family == "#FF00FF": missing.append(f"typeface/family ({family_raw})")
+                if size_val == "#FF00FF": missing.append(f"size ({size_raw})")
+                if weight_val == "#FF00FF": missing.append(f"weight ({weight_raw})")
+                logger.debug(f"Theme: Font preset '{preset}' has missing components: {', '.join(missing)}. Raw Spec: {spec}. Returning symbol fallback.")
+            return wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName="Webdings")
+
+        try:
+            size = int(size_val)
+            weight = int(weight_val)
+            w_map = {100:wx.FONTWEIGHT_THIN, 200:wx.FONTWEIGHT_LIGHT, 300:wx.FONTWEIGHT_LIGHT, 400:wx.FONTWEIGHT_NORMAL, 
+                     500:wx.FONTWEIGHT_NORMAL, 600:wx.FONTWEIGHT_SEMIBOLD, 700:wx.FONTWEIGHT_BOLD, 800:wx.FONTWEIGHT_BOLD, 900:wx.FONTWEIGHT_BOLD}
+            
+            return wx.Font(size, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, w_map.get(weight, wx.FONTWEIGHT_NORMAL), faceName=family)
+        except Exception as e:
+            logger.debug(f"Theme: Failed to create font for '{preset}': {e}. (Family: {family}, Size: {size_val}, Weight: {weight_val})")
+            return wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName="Webdings")
+
+    def frame(self, path: str) -> dict[str, Any]: return self._resolve(f"components.{path}.frame")
+    def border(self, role: str = "default") -> dict[str, Any]: return self._resolve(f"borders.{role}")
+    def text_style(self, role: str) -> dict[str, Any]: return self._resolve(f"text.{role}")
