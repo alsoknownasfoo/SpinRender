@@ -20,6 +20,7 @@ from SpinRender.core.settings import RenderSettings
 from .preset_controller import PresetController
 from SpinRender.core.render_controller import RenderController
 from .controls_side_panel import ControlsSidePanel
+from .events import EVT_PARAMETER_INTERACTION
 from .custom_controls import EVT_COLOURPICKER_CHANGED
 from .status_bar import StatusBar
 from .parameter_controller import ParameterController
@@ -93,6 +94,7 @@ class SpinRenderPanel(wx.Panel):
 
         # Left: Controls panel - instantiate ControlsSidePanel
         self.controls_side_panel = ControlsSidePanel(self.top_container, self.settings, self.board_path)
+        self.controls_side_panel.Bind(EVT_PARAMETER_INTERACTION, self.on_parameter_interaction)
         # Fixed width of 450px for controls panel
         self.controls_side_panel.SetMinSize((450, -1))
         self.controls_side_panel.SetMaxSize((450, -1))
@@ -303,11 +305,11 @@ class SpinRenderPanel(wx.Panel):
         self.controls_side_panel.Refresh()
 
 
-    def on_left_panel_interaction(self, event):
-        """Handle clicks on active controls in left panel to close preview"""
-        # Only close if the control we clicked is actually enabled
+    def on_parameter_interaction(self, event):
+        """Close render preview when an enabled parameter control is interacted with."""
         obj = event.GetEventObject()
-        if obj and obj.IsEnabled():
+        registry = self.controls_side_panel._registry
+        if obj and obj.IsEnabled() and any(e['control'] == obj for e in registry):
             self.reset_status_bar()
         event.Skip()
 
