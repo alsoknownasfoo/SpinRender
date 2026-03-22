@@ -155,9 +155,9 @@ class FilenameEntryDialog(BaseStyledDialog):
     """
 
     def __init__(self, parent, chosen_dir, default_name):
-        w = _theme._resolve("layout.dialogs.filename.frame.width") or 300
+        self.dialog_w = _theme._resolve("layout.dialogs.filename.frame.width") or 300
         h = _theme._resolve("layout.dialogs.filename.frame.height") or 220
-        super().__init__(parent, "ENTER BASE FILENAME", (w, h))
+        super().__init__(parent, "ENTER BASE FILENAME", (self.dialog_w, h))
         self.chosen_dir = chosen_dir
         self.build_ui()
         self.Centre()
@@ -182,10 +182,23 @@ class FilenameEntryDialog(BaseStyledDialog):
 
         content = wx.Panel(self.main_container)
         content_sizer = wx.BoxSizer(wx.VERTICAL)
+
         self.name_input = CustomInput(content, size=(-1, 36), id="default")
         self.name_input.Bind(wx.EVT_TEXT_ENTER, self.on_save)
         self.name_input.Bind(wx.EVT_TEXT, self.on_text_change)
-        content_sizer.Add(self.name_input, 0, wx.EXPAND | wx.ALL, padding['left'])
+        content_sizer.Add(self.name_input, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, padding['left'])
+
+        helper = wx.StaticText(
+            content,
+            label=_locale.get("dialog.filename.helper", "Frames are saved as name_00001.png, name_00002.png, …"),
+            style=wx.ALIGN_CENTRE_HORIZONTAL
+        )
+        helper.SetForegroundColour(_theme.color("text.metadata.color"))
+        helper.SetFont(_theme.font("metadata"))
+        helper.Wrap(self.dialog_w - 2 * padding['left'])
+        content_sizer.Add((0, gap))
+        content_sizer.Add(helper, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, padding['left'])
+
         content.SetSizer(content_sizer)
         main_sizer.Add(content, 1, wx.EXPAND)
 
@@ -448,7 +461,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
             existing = getattr(self.settings, 'output_path', '')
             default_name = os.path.basename(existing) if existing else board_name
             default_dir = os.path.dirname(existing) if existing else start_dir
-            dir_dlg = wx.DirDialog(self, "Select Output Folder for PNG Sequence", defaultPath=default_dir)
+            dir_dlg = wx.DirDialog(self, "Select output folder", defaultPath=default_dir)
             if dir_dlg.ShowModal() != wx.ID_OK:
                 dir_dlg.Destroy()
                 return
