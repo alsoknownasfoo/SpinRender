@@ -358,6 +358,16 @@ layout:
           ref: "@components.button.ok"
         button2:
           ref: "@components.button.cancel"
+    overwrite:
+      ref: "@layout.dialogs.default"
+      frame:
+        width: 420
+        height: 180
+      controls:
+        button_cancel:
+          width: 110
+        button_confirm:
+          width: 130
     options:
       ref: "@layout.dialogs.default"
       frame:

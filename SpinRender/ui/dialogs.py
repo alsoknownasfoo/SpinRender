@@ -150,7 +150,12 @@ class BaseStyledDialog(wx.Dialog):
 class OverwriteConfirmDialog(BaseStyledDialog):
     """Small styled confirmation dialog for destructive overwrite actions."""
     def __init__(self, parent, message):
-        super().__init__(parent, "CONFIRM OVERWRITE", (420, 180))
+        w = _theme._resolve("layout.dialogs.overwrite.frame.width") or 420
+        h = _theme._resolve("layout.dialogs.overwrite.frame.height") or 180
+        cancel_w = _theme._resolve("layout.dialogs.overwrite.controls.button_cancel.width") or 110
+        confirm_w = _theme._resolve("layout.dialogs.overwrite.controls.button_confirm.width") or 130
+
+        super().__init__(parent, "CONFIRM OVERWRITE", (w, h))
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         sizer.Add(self.create_header("CONFIRM OVERWRITE", show_close=False), 0, wx.EXPAND)
@@ -162,16 +167,16 @@ class OverwriteConfirmDialog(BaseStyledDialog):
         msg = wx.StaticText(self.main_container, label=message)
         msg.SetForegroundColour(_theme.color("text.body.color"))
         msg.SetFont(_theme.font("metadata"))
-        msg.Wrap(388)
+        msg.Wrap(w - 32)
         sizer.Add(msg, 1, wx.EXPAND | wx.ALL, 16)
 
         footer = wx.Panel(self.main_container)
         footer_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        cancel_btn = CustomButton(footer, id="cancel", size=(110, 36))
+        cancel_btn = CustomButton(footer, id="cancel", size=(cancel_w, 36))
         cancel_btn.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_NO))
 
-        overwrite_btn = CustomButton(footer, label="OVERWRITE", id="exit", size=(130, 36))
+        overwrite_btn = CustomButton(footer, label="OVERWRITE", id="exit", size=(confirm_w, 36))
         overwrite_btn.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_YES))
 
         footer_sizer.AddStretchSpacer()
