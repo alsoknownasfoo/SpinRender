@@ -200,7 +200,9 @@ class FilenameEntryDialog(BaseStyledDialog):
         content_sizer.Add(helper, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, padding['left'])
 
         content.SetSizer(content_sizer)
-        main_sizer.Add(content, 1, wx.EXPAND)
+        main_sizer.Add((0, 0), 1)  # stretch above
+        main_sizer.Add(content, 0, wx.EXPAND)
+        main_sizer.Add((0, 0), 1)  # stretch below
 
         footer = wx.Panel(self.main_container)
         footer_sizer = wx.BoxSizer(wx.HORIZONTAL)
