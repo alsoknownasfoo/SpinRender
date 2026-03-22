@@ -148,7 +148,7 @@ class ControlsSidePanel(wx.Panel):
         sizer.AddStretchSpacer()
         
         # Close button - use id syntax for auto-derivation
-        self.header_close_btn = CustomButton(header, id="close", label="", ghost=True, size=(36, 36))
+        self.header_close_btn = CustomButton(header, id="close", label="", size=(36, 36))
         
         self.header_close_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_close)
         sizer.Add(self.header_close_btn, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 16)

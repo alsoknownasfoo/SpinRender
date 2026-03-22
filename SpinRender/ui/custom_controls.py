@@ -596,7 +596,7 @@ class CustomButton(wx.Panel):
     """
     Custom action button matching Component/ActionButton and SecondaryButton
     """
-    def __init__(self, parent, label=None, icon=None, icon_font_family=None, primary=True, ghost=False, danger=False, icon_color=None, icon_color_hover=None, icon_color_pressed=None, bg_color=None, bg_color_hover=None, bg_color_pressed=None, size=(-1, 36), id=wx.ID_ANY, section=None):
+    def __init__(self, parent, label=None, icon=None, icon_font_family=None, size=(-1, 36), id=wx.ID_ANY, section=None):
         # Extract style_id if passed as string (e.g. id="render")
         if isinstance(id, str):
             self.style_id = id
@@ -608,23 +608,18 @@ class CustomButton(wx.Panel):
         super().__init__(parent, id=real_id, size=size)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
 
-        # Auto-derive from style_id if provided
+        # Auto-derive label/icon from style_id via locale
         if self.style_id:
             if label is None:
                 label = _locale.get(f"component.button.{self.style_id}.label", self.style_id.upper())
             if icon is None:
                 icon_ref = _locale.get(f"component.button.{self.style_id}.icon_ref")
                 if icon_ref:
-                    # Store icon_ref; on_paint resolves it to glyph via theme
                     icon = icon_ref
 
-        # Fallbacks for manual usage
         if label is None: label = "BUTTON"
 
-        self.label, self.icon, self.icon_font_family, self.primary, self.ghost, self.danger = str(label), icon, icon_font_family, primary, ghost, danger
-        self.icon_color_override, self.icon_color_hover, self.icon_color_pressed = icon_color, icon_color_hover, icon_color_pressed
-        self.bg_color_override, self.bg_color_hover, self.bg_color_pressed = bg_color, bg_color_hover, bg_color_pressed
-        self.border_color_override, self.border_color_hover, self.border_color_pressed = None, None, None
+        self.label, self.icon, self.icon_font_family = str(label), icon, icon_font_family
         self.hovered, self.pressed = False, False
 
         _p = self.GetParent()
@@ -649,61 +644,30 @@ class CustomButton(wx.Panel):
         width, height = self.GetSize()
         enabled = self.IsEnabled()
 
-        # Theme token mapping Logic
-        if hasattr(self, 'style_id') and self.style_id:
-            token = f"components.button.{self.style_id}"
-            if not _theme.has_token(token):
-                token = "components.button.default"
-        else:
-            if self.primary:
-                token = "components.button.exit" if self.danger else "components.button.ok"
-            elif self.ghost:
-                token = "components.button.close"
-            else:
-                token = "components.button.cancel"
+        # Theme token mapping
+        token = f"components.button.{self.style_id}" if self.style_id else "components.button.default"
+        if not _theme.has_token(token):
+            token = "components.button.default"
 
         # Resolve stateful colors from hierarchical token
         bg = _theme.color(f"{token}.frame.bg", self.hovered, self.pressed, enabled)
-        
+
         # Label colors
         label_token = f"{token}.label.color"
         if not _theme.has_token(label_token):
             label_token = "text.button.color"
-        text_color = _theme.color(label_token, self.hovered, self.pressed, enabled)
-        
-        # Border defaults
+        final_text = _theme.color(label_token, self.hovered, self.pressed, enabled)
+
+        # Border
         border_token = f"{token}.frame.border.color"
-        border_color = _theme.color(border_token, self.hovered, self.pressed, enabled) if _theme.has_token(border_token) else None
-
-        # Overrides (if any)
-        if self.bg_color_override:
-            if not enabled: bg = _theme.disabled(self.bg_color_override)
-            elif self.pressed and self.bg_color_pressed: bg = self.bg_color_pressed
-            elif self.hovered and self.bg_color_hover: bg = self.bg_color_hover
-            else: bg = self.bg_color_override
-
-        if self.border_color_override:
-            if not enabled: border_color = _theme.disabled(self.border_color_override)
-            elif self.pressed and self.border_color_pressed: border_color = self.border_color_pressed
-            elif self.hovered and self.border_color_hover: border_color = self.hovered
-            else: border_color = self.border_color_override
-
-        final_bg = bg
-        final_text = text_color
-        final_border = border_color
+        final_border = _theme.color(border_token, self.hovered, self.pressed, enabled) if _theme.has_token(border_token) else None
 
         final_icon_color = final_text
-        if self.icon_color_override:
-            if not enabled: final_icon_color = _theme.disabled(self.icon_color_override)
-            elif self.pressed and self.icon_color_pressed: final_icon_color = self.icon_color_pressed
-            elif self.hovered and self.icon_color_hover: final_icon_color = self.icon_color_hover
-            else: final_icon_color = self.icon_color_override
 
-        if not self.ghost or (self.hovered or self.pressed):
-            gc.SetBrush(wx.Brush(final_bg))
-            if final_border: gc.SetPen(wx.Pen(final_border, 1))
-            else: gc.SetPen(wx.TRANSPARENT_PEN)
-            gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 6)
+        gc.SetBrush(wx.Brush(bg))
+        if final_border: gc.SetPen(wx.Pen(final_border, 1))
+        else: gc.SetPen(wx.TRANSPARENT_PEN)
+        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 6)
 
         # Resolve icon from theme glyphs
         icon_char = ""
@@ -763,8 +727,6 @@ class CustomButton(wx.Panel):
             if icon_ref:
                 self.icon = icon_ref
         self.Refresh(); self.Update()
-    def SetPrimary(self, primary): self.primary = primary; self.Refresh(); self.Update()
-    def SetDanger(self, danger): self.danger = danger; self.Refresh(); self.Update()
     def AcceptsFocus(self): return False
     def AcceptsFocusFromKeyboard(self): return False
 
