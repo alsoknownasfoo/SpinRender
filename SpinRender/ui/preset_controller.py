@@ -210,8 +210,9 @@ class PresetController:
         from SpinRender.core.presets import PresetManager
 
         presets = RenderEngine.PRESETS
+        manager = PresetManager(self.board_path)
         if self._custom_presets_cache is None:
-            self._custom_presets_cache = PresetManager(self.board_path).list_presets()
+            self._custom_presets_cache = manager.list_presets()
         custom_presets = self._custom_presets_cache
 
         matched_any = False
