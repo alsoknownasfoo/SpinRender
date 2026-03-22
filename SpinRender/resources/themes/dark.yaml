@@ -322,7 +322,7 @@ layout:
       bg: "@colors.gray-border"
       size: 1
     rightpanel:
-      bg: "@colors.gray-black"
+      bg: "@colors.black"
       shader: "@text.nav"
       title: "@text.title"
       info: "@text.metadata"
