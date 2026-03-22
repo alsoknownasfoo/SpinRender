@@ -354,6 +354,8 @@ layout:
         padding:
           all: "@typography.spacing.lg"
         text: "@text.body"
+        description: "@text.metadata"
+        section_label: "@text.subheader"
       controls:
         bg: "@colors.gray-dark"
         border: None

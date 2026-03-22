@@ -1,10 +1,11 @@
 """
 Shared helper functions for unified component construction.
 """
+import weakref
 import wx
 from SpinRender.core.theme import Theme
 _theme = Theme.current()
-from .text_styles import TextStyle
+from .text_styles import TextStyle, TextStyles
 
 
 # Valid theme token paths for validation (Theme Schema)
@@ -30,6 +31,72 @@ ALL_VALID_TOKENS = (
     VALID_BG_TOKENS | VALID_BORDER_TOKENS | VALID_ACCENT_TOKENS | VALID_TEXT_TOKENS
 )
 
+
+# ---------------------------------------------------------------------------
+# Global text registry for hot-reload
+# ---------------------------------------------------------------------------
+
+# Each entry: (weakref_to_widget, style_name, original_label)
+_text_registry: list = []
+
+
+def reapply_text_styles() -> None:
+    """Re-apply font, color, and formatting to all live text widgets.
+
+    Call this from any panel's reapply_theme() to hot-reload styled text.
+    Dead widget references are pruned automatically.
+    """
+    live = []
+    for ref, style_name, original_label in _text_registry:
+        widget = ref()
+        if widget:
+            style = getattr(TextStyles, style_name)
+            widget.SetFont(style.create_font())
+            widget.SetForegroundColour(style.color)
+            widget.SetLabel(style.format_text(original_label))
+            live.append((ref, style_name, original_label))
+    _text_registry[:] = live
+
+
+# ---------------------------------------------------------------------------
+# Text creation
+# ---------------------------------------------------------------------------
+
+def create_text(parent: wx.Window, label: str, style_name: str,
+                color_token: str = None, **kwargs) -> wx.StaticText:
+    """Create a themed, formatted wx.StaticText and register it for hot-reload.
+
+    Args:
+        parent:      Parent wx.Window.
+        label:       Raw (un-formatted) label string. Formatting (e.g. uppercase)
+                     is applied automatically from the style definition.
+        style_name:  TextStyles alias (e.g. "header", "metadata", "subheader").
+                     Must map to a layout.* or components.* YAML path.
+        color_token: Optional theme token to override the style's default color
+                     (e.g. "colors.primary" or an axis-specific token).
+        **kwargs:    Additional wx.StaticText constructor args.
+
+    Returns:
+        wx.StaticText with font, color, and formatting applied.
+    """
+    style = getattr(TextStyles, style_name)
+    formatted = style.format_text(label)
+    txt = wx.StaticText(parent, label=formatted, **kwargs)
+    txt.SetFont(style.create_font())
+    color = _theme.color(color_token) if color_token else style.color
+    txt.SetForegroundColour(color)
+
+    # Pass through mouse clicks to parent (essential for labels inside
+    # clickable containers like PresetCard, CustomButton)
+    txt.Bind(wx.EVT_LEFT_DOWN, lambda e: e.Skip())
+
+    _text_registry.append((weakref.ref(txt), style_name, label))
+    return txt
+
+
+# ---------------------------------------------------------------------------
+# Frame / panel helpers
+# ---------------------------------------------------------------------------
 
 def _resolve_token(token: str):
     """Resolve theme token path to actual color value."""
@@ -58,39 +125,6 @@ def create_frame(parent: wx.Panel, style_token: str, **kwargs) -> wx.Panel:
     color = _resolve_token(style_token)
     frame.SetBackgroundColour(color)
     return frame
-
-
-def create_text(parent: wx.Window, label: str, text_style, **kwargs) -> wx.StaticText:
-    """
-    Create StaticText with TextStyle applied.
-
-    Args:
-        parent: Parent wx.Window
-        label: Text to display
-        text_style: TextStyle object with font/color specifications
-        **kwargs: Additional wx.StaticText constructor args
-
-    Returns:
-        wx.StaticText with font and foreground color set, and mouse pass-through
-        for click events (EVT_LEFT_DOWN calls event.Skip()).
-    """
-    text = wx.StaticText(parent, label=label, **kwargs)
-
-    # Apply font from TextStyle
-    if text_style:
-        font = text_style.create_font()
-        text.SetFont(font)
-
-        # Apply foreground color if specified
-        if text_style.color:
-            text.SetForegroundColour(text_style.color)
-
-    # Enable mouse pass-through: clicks on the label propagate to parent
-    # This is essential for non-interactive labels inside clickable containers
-    # (e.g., PresetCard, CustomButton). The label will not consume the event.
-    text.Bind(wx.EVT_LEFT_DOWN, lambda e: e.Skip())
-
-    return text
 
 
 def bind_mouse_events(widget: wx.Window,

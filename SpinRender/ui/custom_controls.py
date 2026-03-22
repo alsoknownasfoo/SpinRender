@@ -11,7 +11,7 @@ from pathlib import Path
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
 from .text_styles import TextStyle, TextStyles
-from .helpers import bind_mouse_events
+from .helpers import bind_mouse_events, create_text
 from .events import ParameterInteractionEvent
 
 _theme = Theme.current()
@@ -837,31 +837,16 @@ class PresetCard(wx.Panel):
 
 class SectionLabel(wx.Panel):
     """
-    Section label matching Component/SectionLabel
+    Section label matching Component/SectionLabel.
+    Uses create_text() so formatting (e.g. uppercase) is driven by YAML.
     """
-    def __init__(self, parent, label="SECTION", size=(-1, 20), id="default"):
+    def __init__(self, parent, label="Section", size=(-1, 20), id="default"):
         super().__init__(parent, size=size)
         self.style_id = id
-        self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
-        self.label = label
-        self.Bind(wx.EVT_PAINT, self.on_paint)
-
-    def on_paint(self, event):
-        dc = wx.AutoBufferedPaintDC(self)
-        gc = wx.GraphicsContext.Create(dc)
-        if not gc: return
-
-        width, height = self.GetSize()
-        
-        # Theme token mapping
-        text_color = _theme.color("layout.main.leftpanel.headers.color")
-        line_color = _theme.color("layout.main.divider.bg")
-        line_size = _theme.size("layout.main.divider.size") or 1
-        
-        gfx_font = gc.CreateFont(_theme.font("header"), text_color)
-        gc.SetFont(gfx_font)
-        tw, th = gc.GetTextExtent(self.label)
-        gc.DrawText(self.label, 0, (height - th) / 2)
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self._txt = create_text(self, label, "header")
+        sizer.Add(self._txt, 0, wx.ALIGN_CENTER_VERTICAL)
+        self.SetSizer(sizer)
 
 
 class CustomInput(wx.Panel):

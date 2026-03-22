@@ -45,7 +45,9 @@ glyphs:
 ```
 
 ### 4. Text
-Composite font + color specifications.
+Composite font + color specifications. An optional `formatting` key drives
+programmatic text transformation at render time — locale strings are stored
+in sentence case and transformed by `TextStyle.format_text()`.
 ```yaml
 text:
   body:
@@ -54,7 +56,13 @@ text:
       size:     "@typography.scale.base"
       weight:   400
     color: "@colors.text.body"
+  subheader:
+    font: ...
+    color: ...
+    formatting: "uppercase"   # "uppercase" | "lowercase" | "capitalize"
 ```
+All `wx.StaticText` must be created via `helpers.create_text()` so formatting
+and hot-reload registration happen automatically.
 
 ### 5. Components
 Terminal design decisions for specific UI elements.

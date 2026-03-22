@@ -75,6 +75,10 @@ class TextStyles:
 
         "status": "components.status.default.label",
 
+        # Dialog styles
+        "dialog_description": "layout.dialogs.default.body.description",
+        "dialog_section_label": "layout.dialogs.default.body.section_label",
+
         # Legacy/helper aliases
         "label_sm": "layout.main.leftpanel.headers",
         "label_xs": "layout.main.leftpanel.body",

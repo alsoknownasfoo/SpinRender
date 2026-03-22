@@ -99,8 +99,6 @@ SpinRenderPanel (main_panel.py)
 
 **State**:
 - `settings` (RenderSettings) - current config
-- `_hotload_map: dict[style_name, list[(wx.Control, color_override)]]`
-  - Tracks theme-dependent widgets for hot-reload
 
 **Construction Flow**:
 ```
@@ -117,10 +115,10 @@ create_controls_panel()
 ```
 
 **Hot-Reload**:
-When theme reloads, `_refresh_theme()` iterates `_hotload_map`:
-- Reapply fonts via `TextStyles`
-- Recompute colors via `Theme.color()`
-- Update disabled states via `_theme.disabled(color)`
+`reapply_theme()` calls `reapply_text_styles()` from `helpers.py`.
+`reapply_text_styles()` iterates the global `_text_registry` (weak-refs to all
+`wx.StaticText` widgets created via `create_text()`), re-resolves fonts, colors,
+and `format_text()` output from the live theme, then prunes dead references.
 
 ---
 
@@ -185,9 +183,12 @@ font = TextStyles.normal.create_font()
 padding = _theme.token("layout.control.padding")
 ```
 
-**Hot-Reload Support**:
-Controls register themselves with parent's `_hotload_map` via `_add_text()` pattern,
-or expose `refresh_theme()` method to be called by main panel.
+**Text Creation Rule**:
+All `wx.StaticText` widgets must be created via `helpers.create_text(parent, label, style_name)`.
+- `style_name` must map to a `layout.*` or `components.*` YAML path (via `TextStyles._ALIASES`).
+- `create_text()` applies `format_text()` (e.g. uppercase from YAML), sets font+color, and
+  registers the widget in the global `_text_registry` for automatic hot-reload.
+- Never use bare `wx.StaticText(...)` + `SetFont()` for themed text.
 
 ---
 
