@@ -267,6 +267,7 @@ glyphs:
   # Status
   status-ok:     "\U000F05E0"
   status-error:  "\U000F0156"
+  alert-octagram: "\U000F0767"
   
   # Axis
   axis-x:        "\U000F0D4C"
@@ -361,13 +362,20 @@ layout:
     overwrite:
       ref: "@layout.dialogs.default"
       frame:
-        width: 420
+        width: 300
         height: 180
+      body:
+        text:
+          ref: "@text.body-strong"
+          color: "@colors.gray-white"
       controls:
+        padding: 16
+        gap: 8
         button_cancel:
-          width: 110
+          width: "50%"
         button_confirm:
-          width: 130
+          width: "50%"
+          icon: "@glyphs.alert-octagram"
     options:
       ref: "@layout.dialogs.default"
       frame:
@@ -383,7 +391,7 @@ layout:
       ref: "@layout.dialogs.default"
       frame: 
         width: 300
-        height: 200
+        height: 180
       controls:
         button1:
           ref: "@components.button.save"

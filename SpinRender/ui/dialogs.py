@@ -149,11 +149,31 @@ class BaseStyledDialog(wx.Dialog):
 
 class OverwriteConfirmDialog(BaseStyledDialog):
     """Small styled confirmation dialog for destructive overwrite actions."""
+
+    @staticmethod
+    def _resolve_btn_width(raw, dialog_w, padding, gap):
+        """Resolve a button width: percentage string or raw int."""
+        if isinstance(raw, str) and raw.endswith('%'):
+            pct = float(raw[:-1]) / 100
+            available = dialog_w - 2 * padding - gap
+            return max(1, int(available * pct))
+        return int(raw)
+
     def __init__(self, parent, message):
-        w = _theme._resolve("layout.dialogs.overwrite.frame.width") or 420
+        w = _theme._resolve("layout.dialogs.overwrite.frame.width") or 300
         h = _theme._resolve("layout.dialogs.overwrite.frame.height") or 180
-        cancel_w = _theme._resolve("layout.dialogs.overwrite.controls.button_cancel.width") or 110
-        confirm_w = _theme._resolve("layout.dialogs.overwrite.controls.button_confirm.width") or 130
+        padding = _theme._resolve("layout.dialogs.overwrite.controls.padding") or 16
+        gap = _theme._resolve("layout.dialogs.overwrite.controls.gap") or 8
+
+        raw_cancel = _theme._resolve("layout.dialogs.overwrite.controls.button_cancel.width") or "50%"
+        raw_confirm = _theme._resolve("layout.dialogs.overwrite.controls.button_confirm.width") or "50%"
+        confirm_icon = _theme._resolve("layout.dialogs.overwrite.controls.button_confirm.icon")
+        # Resolve glyph reference (strip @glyphs. prefix if present)
+        if confirm_icon and confirm_icon.startswith('@glyphs.'):
+            confirm_icon = _theme.glyph(confirm_icon[len('@glyphs.'):])
+
+        cancel_w = self._resolve_btn_width(raw_cancel, w, padding, gap)
+        confirm_w = self._resolve_btn_width(raw_confirm, w, padding, gap)
 
         super().__init__(parent, "CONFIRM OVERWRITE", (w, h))
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -167,8 +187,8 @@ class OverwriteConfirmDialog(BaseStyledDialog):
         msg = wx.StaticText(self.main_container, label=message)
         msg.SetForegroundColour(_theme.color("text.body.color"))
         msg.SetFont(_theme.font("metadata"))
-        msg.Wrap(w - 32)
-        sizer.Add(msg, 1, wx.EXPAND | wx.ALL, 16)
+        msg.Wrap(w - 2 * padding)
+        sizer.Add(msg, 1, wx.EXPAND | wx.ALL, padding)
 
         footer = wx.Panel(self.main_container)
         footer_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -176,12 +196,14 @@ class OverwriteConfirmDialog(BaseStyledDialog):
         cancel_btn = CustomButton(footer, id="cancel", size=(cancel_w, 36))
         cancel_btn.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_NO))
 
-        overwrite_btn = CustomButton(footer, label="OVERWRITE", id="exit", size=(confirm_w, 36))
+        overwrite_btn = CustomButton(footer, label="OVERWRITE", icon=confirm_icon, id="exit", size=(confirm_w, 36))
         overwrite_btn.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_YES))
 
-        footer_sizer.AddStretchSpacer()
-        footer_sizer.Add(cancel_btn, 0, wx.RIGHT, 12)
-        footer_sizer.Add(overwrite_btn, 0, wx.RIGHT, 16)
+        footer_sizer.Add((padding, 0))
+        footer_sizer.Add(cancel_btn, 0)
+        footer_sizer.Add((gap, 0))
+        footer_sizer.Add(overwrite_btn, 0)
+        footer_sizer.Add((padding, 0))
         footer.SetSizer(footer_sizer)
         sizer.Add(footer, 0, wx.EXPAND | wx.BOTTOM, 16)
 
