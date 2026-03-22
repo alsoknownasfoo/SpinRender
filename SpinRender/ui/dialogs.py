@@ -371,12 +371,28 @@ class AdvancedOptionsDialog(BaseStyledDialog):
                 defaultDir=default_dir,
                 defaultFile=default_name,
                 wildcard="PNG Sequence base name (*)|*",
-                style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+                style=wx.FD_SAVE,
             )
             if dlg.ShowModal() == wx.ID_OK:
-                path = dlg.GetPath()
-                # Strip any extension the user may have typed
-                self.settings.output_path = os.path.splitext(path)[0]
+                path = os.path.splitext(dlg.GetPath())[0]
+                # Check if any actual output files already exist
+                import glob as _glob
+                out_dir = os.path.dirname(path)
+                base = os.path.basename(path)
+                existing_files = _glob.glob(os.path.join(out_dir, f"{base}_*.png"))
+                if existing_files:
+                    confirm = wx.MessageDialog(
+                        self,
+                        f"{len(existing_files)} file(s) matching '{base}_#####.png' already exist. Overwrite?",
+                        "Overwrite PNG Sequence?",
+                        wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING,
+                    )
+                    overwrite = confirm.ShowModal() == wx.ID_YES
+                    confirm.Destroy()
+                    if not overwrite:
+                        dlg.Destroy()
+                        return
+                self.settings.output_path = path
                 self.update_path_display()
         else:
             dlg = wx.DirDialog(self, "Select Output Directory", defaultPath=start_dir)
