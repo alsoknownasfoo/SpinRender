@@ -111,7 +111,7 @@ class BaseStyledDialog(wx.Dialog):
         # Add standard close button if requested
         header_sizer.AddStretchSpacer()
         if show_close:
-            close_btn = CustomButton(header, id="close", label="", ghost=True, size=(32, 32))
+            close_btn = CustomButton(header, id="close", label="", size=(32, 32))
             close_btn.Bind(wx.EVT_BUTTON, self.on_cancel)
             header_sizer.Add(close_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 12)
         
