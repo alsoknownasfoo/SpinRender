@@ -169,3 +169,6 @@ locale:
       stopping: "STOPPING RENDER..."
       error: "ERROR: {message}"
       no_presets: "No saved presets found."
+
+    dialog.filename:
+      helper: "Frames are saved as name_00001.png, name_00002.png, …"

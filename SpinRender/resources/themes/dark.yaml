@@ -267,6 +267,7 @@ glyphs:
   # Status
   status-ok:     "\U000F05E0"
   status-error:  "\U000F0156"
+  alert-octagram: "\U000F0767"
   
   # Axis
   axis-x:        "\U000F0D4C"
@@ -358,6 +359,20 @@ layout:
           ref: "@components.button.ok"
         button2:
           ref: "@components.button.cancel"
+    filename:
+      ref: "@layout.dialogs.default"
+      frame:
+        width: 300
+        height: 220
+      controls:
+        padding: 16
+        gap: 16
+        button1:
+          ref: "@components.button.cancel"
+          width: "50%"
+        button2:
+          ref: "@components.button.save"
+          width: "50%"
     options:
       ref: "@layout.dialogs.default"
       frame:
@@ -373,10 +388,14 @@ layout:
       ref: "@layout.dialogs.default"
       frame: 
         width: 300
-        height: 200
+        height: 180
       controls:
         button1:
           ref: "@components.button.save"
+          width: "50%"
+        button2:
+          ref: "@components.button.cancel"
+          width: "50%"
 
 # ─────────────────────────────────────────────────────────────────
 # 9. COMPONENT DEFINITIONS (Atomic UI Components)
@@ -441,7 +460,7 @@ components:
       frame: 
         height: 32 # height of field
         bg: # bg of field
-          default: "@colors.transparent"
+          default: "@colors.gray-black"
           hover: "@colors.cyan-20"
         radius: "@radius.md" # border radius of field
         border: # border of field

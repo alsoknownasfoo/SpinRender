@@ -4,6 +4,7 @@ Implements modal dialogs from Pencil design
 """
 import wx
 import os
+import glob as _glob
 import webbrowser
 import threading
 from .custom_controls import (
@@ -145,6 +146,103 @@ class BaseStyledDialog(wx.Dialog):
             x, y = win.ClientToScreen(event.GetPosition())
             new_pos = wx.Point(x - self.drag_pos.x, y - self.drag_pos.y)
             self.Move(new_pos)
+
+
+class FilenameEntryDialog(BaseStyledDialog):
+    """
+    Filename entry dialog for PNG sequence base name.
+    Mirrors SavePresetDialog: text input with smart SAVE→OVERWRITE switching on keystroke.
+    """
+
+    def __init__(self, parent, chosen_dir, default_name):
+        self.dialog_w = _theme._resolve("layout.dialogs.filename.frame.width") or 300
+        h = _theme._resolve("layout.dialogs.filename.frame.height") or 220
+        super().__init__(parent, "ENTER BASE FILENAME", (self.dialog_w, h))
+        self.chosen_dir = chosen_dir
+        self.build_ui()
+        self.Centre()
+
+        self.name_input.SetValue(default_name)
+        wx.CallAfter(self.name_input.text_ctrl.SetFocus)
+        wx.CallAfter(self.name_input.text_ctrl.SetSelection, 0, -1)
+
+        self.on_text_change(None)
+
+    def build_ui(self):
+        padding_raw = _theme._resolve("layout.dialogs.filename.controls.padding") or 16
+        padding = _theme._parse_padding(padding_raw)
+        gap = _theme._resolve("layout.dialogs.filename.controls.gap") or 8
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(self.create_header("ENTER BASE FILENAME", show_close=False), 0, wx.EXPAND)
+
+        line = wx.Panel(self.main_container, size=(-1, 1))
+        line.SetBackgroundColour(_theme.color("borders.default.color"))
+        main_sizer.Add(line, 0, wx.EXPAND)
+
+        content = wx.Panel(self.main_container)
+        content_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        self.name_input = CustomInput(content, size=(-1, 36), id="default")
+        self.name_input.Bind(wx.EVT_TEXT_ENTER, self.on_save)
+        self.name_input.Bind(wx.EVT_TEXT, self.on_text_change)
+        content_sizer.Add(self.name_input, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, padding['left'])
+
+        helper = wx.StaticText(
+            content,
+            label=_locale.get("dialog.filename.helper", "Frames are saved as name_00001.png, name_00002.png, …").upper(),
+            style=wx.ALIGN_CENTRE_HORIZONTAL
+        )
+        helper.SetForegroundColour(_theme.color("text.metadata.color"))
+        helper.SetFont(_theme.font("metadata"))
+        helper.Wrap(self.dialog_w - 2 * padding['left'])
+        content_sizer.Add((0, gap))
+        content_sizer.Add(helper, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, padding['left'])
+
+        content.SetSizer(content_sizer)
+        main_sizer.Add((0, 0), 1)  # stretch above
+        main_sizer.Add(content, 0, wx.EXPAND)
+        main_sizer.Add((0, 0), 1)  # stretch below
+
+        footer = wx.Panel(self.main_container)
+        footer_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        self.cancel_btn = CustomButton(footer, id="cancel", size=(-1, 36))
+        self.cancel_btn.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_CANCEL))
+
+        self.save_btn = CustomButton(footer, id="save", size=(-1, 36))
+        self.save_btn.Bind(wx.EVT_BUTTON, self.on_save)
+
+        footer_sizer.Add((padding['left'], 0))
+        footer_sizer.Add(self.cancel_btn, 1)
+        footer_sizer.Add((gap, 0))
+        footer_sizer.Add(self.save_btn, 1)
+        footer_sizer.Add((padding['right'], 0))
+        footer.SetSizer(footer_sizer)
+
+        main_sizer.Add((0, padding['top']))
+        main_sizer.Add(footer, 0, wx.EXPAND | wx.BOTTOM, padding['bottom'])
+
+        self.main_container.SetSizer(main_sizer)
+
+    def on_save(self, event):
+        if self.save_btn.IsEnabled():
+            self.EndModal(wx.ID_OK)
+
+    def on_text_change(self, event):
+        val = self.name_input.GetValue().strip()
+        self.save_btn.Enable(bool(val))
+        if val:
+            existing = _glob.glob(os.path.join(self.chosen_dir, f"{val}_*.png"))
+            if existing:
+                self.save_btn.SetStyle("exit", update_content=False)
+                self.save_btn.SetLabel(_locale.get("component.button.overwrite.label", "OVERWRITE"))
+                self.save_btn.SetIcon(_locale.get("component.button.overwrite.icon_ref", "alert"))
+            else:
+                self.save_btn.SetStyle("save")
+
+    def GetFilename(self):
+        return self.name_input.GetValue().strip()
 
 
 class AdvancedOptionsDialog(BaseStyledDialog):
@@ -326,7 +424,8 @@ class AdvancedOptionsDialog(BaseStyledDialog):
     def update_path_display(self):
         auto = self.auto_toggle.GetValue()
         self.browse_btn.Enable(not auto)
-        
+        fmt = getattr(self.settings, 'format', 'mp4')
+
         if auto:
             self.path_display.SetPath("/Renders/[YYMMDD_HHMMSS]/..", in_project=True)
             self.path_display.Enable(False)
@@ -334,29 +433,61 @@ class AdvancedOptionsDialog(BaseStyledDialog):
             self.path_display.Enable(True)
             path = getattr(self.settings, 'output_path', '')
             if not path:
-                ext = getattr(self.settings, 'format', 'mp4')
-                self.path_display.SetPath(f"/Renders/Untitled.{ext}", in_project=True)
+                if fmt == 'png_sequence':
+                    self.path_display.SetPath("/Renders/Untitled_#####.png", in_project=True)
+                else:
+                    ext = 'mp4' if fmt == 'mp4' else 'gif'
+                    self.path_display.SetPath(f"/Renders/Untitled.{ext}", in_project=True)
             else:
+                display = f"{path}_#####.png" if fmt == 'png_sequence' else path
                 try:
-                    rel = os.path.relpath(path, self.board_dir)
+                    rel = os.path.relpath(display, self.board_dir)
                     if not rel.startswith('..'):
                         self.path_display.SetPath(f"/{rel}", in_project=True)
                     else:
-                        self.path_display.SetPath(path, in_project=False)
+                        self.path_display.SetPath(display, in_project=False)
                 except ValueError:
-                    self.path_display.SetPath(path, in_project=False)
+                    self.path_display.SetPath(display, in_project=False)
 
     def on_auto_toggle(self, event):
         self.update_path_display()
 
     def on_browse(self, event):
         start_dir = os.path.join(self.board_dir, "Renders")
-        if not os.path.exists(start_dir): os.makedirs(start_dir, exist_ok=True)
-        dlg = wx.DirDialog(self, "Select Output Directory", defaultPath=start_dir)
-        if dlg.ShowModal() == wx.ID_OK:
-            self.settings.output_path = dlg.GetPath()
+        os.makedirs(start_dir, exist_ok=True)
+        fmt = getattr(self.settings, 'format', 'mp4')
+
+        if fmt == 'png_sequence':
+            # Step 1: pick folder
+            board_name = os.path.splitext(os.path.basename(self.board_path))[0]
+            existing = getattr(self.settings, 'output_path', '')
+            default_name = os.path.basename(existing) if existing else board_name
+            default_dir = os.path.dirname(existing) if existing else start_dir
+            dir_dlg = wx.DirDialog(self, "Select output folder", defaultPath=default_dir)
+            if dir_dlg.ShowModal() != wx.ID_OK:
+                dir_dlg.Destroy()
+                return
+            chosen_dir = dir_dlg.GetPath()
+            dir_dlg.Destroy()
+
+            # Step 2: pick base name with inline overwrite detection
+            name_dlg = FilenameEntryDialog(self, chosen_dir, default_name)
+            if name_dlg.ShowModal() != wx.ID_OK:
+                name_dlg.Destroy()
+                return
+            base_name = os.path.splitext(name_dlg.GetFilename())[0]
+            name_dlg.Destroy()
+            if not base_name:
+                return
+
+            self.settings.output_path = os.path.join(chosen_dir, base_name)
             self.update_path_display()
-        dlg.Destroy()
+        else:
+            dlg = wx.DirDialog(self, "Select Output Directory", defaultPath=start_dir)
+            if dlg.ShowModal() == wx.ID_OK:
+                self.settings.output_path = dlg.GetPath()
+                self.update_path_display()
+            dlg.Destroy()
 
     def on_cancel(self, event):
         self.EndModal(wx.ID_CANCEL)

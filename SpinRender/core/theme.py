@@ -392,11 +392,36 @@ class Theme:
         try: return int(res)
         except: return 400
 
-    def size(self, token: str) -> int: 
+    def size(self, token: str) -> int:
         val = self._resolve(token)
         try: return int(val)
         except: return 0
-    
+
+    def _parse_padding(self, val) -> dict:
+        """Parse CSS-style padding shorthand into {top, right, bottom, left}.
+
+        Supports:
+          int/float or "16"     → all sides equal
+          "16 8"                → top/bottom=16, left/right=8
+          "16 8 12 4"           → top=16, right=8, bottom=12, left=4
+        """
+        if val is None:
+            return {'top': 0, 'right': 0, 'bottom': 0, 'left': 0}
+        if isinstance(val, (int, float)):
+            v = int(val)
+            return {'top': v, 'right': v, 'bottom': v, 'left': v}
+        try:
+            parts = [int(x) for x in str(val).split()]
+        except ValueError:
+            return {'top': 0, 'right': 0, 'bottom': 0, 'left': 0}
+        if len(parts) == 1:
+            return {'top': parts[0], 'right': parts[0], 'bottom': parts[0], 'left': parts[0]}
+        if len(parts) == 2:
+            return {'top': parts[0], 'right': parts[1], 'bottom': parts[0], 'left': parts[1]}
+        if len(parts) >= 4:
+            return {'top': parts[0], 'right': parts[1], 'bottom': parts[2], 'left': parts[3]}
+        return {'top': parts[0], 'right': parts[0], 'bottom': parts[0], 'left': parts[0]}
+
     def glyph(self, name: any) -> str:
         if not name: return ""
         
