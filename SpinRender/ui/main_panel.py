@@ -54,7 +54,7 @@ class SpinRenderPanel(wx.Panel):
             output_path='',
             cli_overrides='',
             render_mode='both',
-            logging_level='simple'
+            logging_level='info'
         )
         
         # Attempt to load last used settings
@@ -75,7 +75,7 @@ class SpinRenderPanel(wx.Panel):
             
         # Initialize logging level from settings
         from utils.logger import SpinLogger
-        SpinLogger.setup(level=getattr(self.settings, 'logging_level', 'simple'))
+        SpinLogger.setup(level=getattr(self.settings, 'logging_level', 'info'))
             
         self.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
         self.drag_start_pos = None
