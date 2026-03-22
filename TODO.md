@@ -37,7 +37,7 @@ If a refactor would significantly improve code quality, present it as an option 
 
 [UI/UX] Project Folder Badge: Ensure that the project folder badge can apply all customization in the yaml. we want to use a bigger and bolder font.
 
-[CODE] Research _add_text Globalization: Research if `_add_text` from `controls_side_panel.py` can be globalized into `custom_controls.py`, or if there is a better way to enable its functionality (creating/applying style formatting from YAML and registering for hot locale load). Document findings and propose the best approach.
+[CODE] Preview/Dependency Dialog Font Refactor: `preview_panel.py` and `dependency_dialog.py` use hardcoded `wx.Font()` calls with no theme integration. Migrate to `create_text()` with proper YAML-backed style paths. Dependency dialog also uses hardcoded font constants (FONT_MONO, FONT_BODY, FONT_ICON).
 
 [UI/UX] Advanced/About Section: In the advanced settings, add:
 - An "About" section with app origin, authorship, and tools/LLMs used.
@@ -67,7 +67,7 @@ Then, review the patterns and identify areas where code can be modularized for e
 
 [CODE] Code cleanup via @refactor-cleaner agent
 
-[CODE] Get code ready for publishing to the public.  Make sure we are following best practices for production code. Advance code version 0.99
+[CODE] Get code ready for publishing to the public.  Make sure we are following best practices for kicad plugins. Advance code version 0.99
 
 ---
 
@@ -76,7 +76,17 @@ Then, review the patterns and identify areas where code can be modularized for e
 # Move tasks here when a branch is ready for review.
 # Format: [TAG] [YYYY-MM-DD] [branch-name] Simple Title: Task...
 
-[UI/UX] [2026-03-22] [feat/programmatic-uppercase] Programmatic Uppercasing: Added formatting: "uppercase" to text.subheader, text.metadata, text.status in dark.yaml. All sub-body text now uppercased via TextStyles.format_text() at render time. Normalized locale strings to sentence case. Fixed bypass sites in dialogs.py, status_bar.py, main_panel.py.
+[UI/UX+CODE] [2026-03-22] [feat/programmatic-uppercase] Programmatic Uppercasing + Global create_text Refactor:
+- Added formatting: "uppercase" to text.subheader, text.metadata, text.status in dark.yaml
+- Normalized all sub-body locale strings to sentence case
+- Fixed bypass sites in dialogs.py, status_bar.py, main_panel.py
+- Upgraded helpers.create_text() to canonical styled-text factory: resolves TextStyle by name, applies format_text(), sets font+color, registers in global weak-ref registry for hot-reload
+- Added reapply_text_styles() for global theme hot-reload of all wx.StaticText
+- Deleted _add_text() and _hotload_map from controls_side_panel; replaced with create_text()
+- Redesigned SectionLabel from paint-based to wx.StaticText via create_text()
+- All dialogs.py bare wx.StaticText+SetFont replaced with create_text()
+- Added layout.dialogs.default.description and .section_label YAML paths
+- Updated docs: CODEMAPS/frontend.md, theme-design-principles.md
 
 ---
 
