@@ -268,11 +268,11 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         
         self.log_opts = [
             {'id': 'off', 'label': 'OFF'},
-            {'id': 'simple', 'label': 'SIMPLE'},
-            {'id': 'verbose', 'label': 'VERBOSE'}
+            {'id': 'info', 'label': 'INFO'},
+            {'id': 'debug', 'label': 'DEBUG'}
         ]
         self.log_toggle = CustomToggleButton(log_row, options=self.log_opts, size=(240, 28), id="direction")
-        curr_lvl = getattr(self.settings, 'logging_level', 'simple')
+        curr_lvl = getattr(self.settings, 'logging_level', 'info')
         lvl_idx = next((i for i, o in enumerate(self.log_opts) if o['id'] == curr_lvl), 1)
         self.log_toggle.SetSelection(lvl_idx)
         log_hsizer.Add(self.log_toggle, 0, wx.ALIGN_CENTER_VERTICAL)

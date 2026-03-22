@@ -19,23 +19,27 @@ class SpinLogger:
     _active_level = None  # Tracks last-initialized level; prevents redundant re-init
 
     @staticmethod
-    def setup(level='simple'):
+    def setup(level='info'):
         """
         Configure logging level and file path. No-op if level is unchanged.
 
         Args:
-            level: 'off', 'simple', or 'verbose'
+            level: 'off', 'info', or 'debug'
         """
+        # Normalize legacy level names from older saved settings
+        _legacy = {'simple': 'info', 'verbose': 'debug'}
+        level = _legacy.get(level.lower(), level.lower())
+
         if SpinLogger._active_level == level:
             return
 
         # Determine numeric level
         lvl_map = {
             'off': logging.CRITICAL + 1,
-            'simple': logging.INFO,
-            'verbose': logging.DEBUG
+            'info': logging.INFO,
+            'debug': logging.DEBUG
         }
-        numeric_level = lvl_map.get(level.lower(), logging.INFO)
+        numeric_level = lvl_map.get(level, logging.INFO)
 
         # Get project root and logs directory
         plugin_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

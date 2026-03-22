@@ -40,7 +40,7 @@ def test_render_settings_default_values():
     assert settings.format == 'mp4'
     assert settings.resolution == '1920x1080'
     assert settings.preset == 'custom'
-    assert settings.logging_level == 'simple'
+    assert settings.logging_level == 'info'
 
 
 def test_render_settings_from_dict_valid():
@@ -60,7 +60,7 @@ def test_render_settings_from_dict_valid():
         'format': 'gif',
         'resolution': '1280x720',
         'preset': 'preset1',
-        'logging_level': 'verbose'
+        'logging_level': 'debug'
     }
     settings = RenderSettings.from_dict(data)
 
@@ -76,7 +76,7 @@ def test_render_settings_from_dict_valid():
     assert settings.format == 'gif'
     assert settings.resolution == '1280x720'
     assert settings.preset == 'preset1'
-    assert settings.logging_level == 'verbose'
+    assert settings.logging_level == 'debug'
 
 
 def test_render_settings_from_dict_partial():
@@ -126,7 +126,7 @@ def test_render_settings_round_trip():
         format='gif',
         resolution='3840x2160',
         preset='my preset',
-        logging_level='verbose'
+        logging_level='debug'
     )
     data = original.to_dict()
     recreated = RenderSettings.from_dict(data)
@@ -212,7 +212,7 @@ def test_render_settings_backward_compatibility_old_preset_format():
     assert settings.format == 'mp4'
     assert settings.resolution == '1920x1080'
     assert settings.preset == 'custom'
-    assert settings.logging_level == 'simple'
+    assert settings.logging_level == 'info'
 
 
 def test_render_settings_to_dict_matches_preset_structure():
@@ -230,7 +230,7 @@ def test_render_settings_to_dict_matches_preset_structure():
         format='gif',
         resolution='1280x720',
         preset='my-preset',
-        logging_level='verbose'
+        logging_level='debug'
     )
     data = settings.to_dict()
 
@@ -282,7 +282,7 @@ def test_preset_manager_save_and_load_render_settings(tmp_path):
         format='gif',
         resolution='1920x1080',
         preset='test_preset',
-        logging_level='verbose'
+        logging_level='debug'
     )
 
     # Save preset

@@ -29,10 +29,10 @@ for p in [plugin_parent, plugin_dir]:
 # Initialize logging system
 try:
     from SpinRender.utils.logger import SpinLogger
-    SpinLogger.setup(level='verbose')
+    SpinLogger.setup(level='debug')
 except ImportError:
     from utils.logger import SpinLogger
-    SpinLogger.setup(level='verbose')
+    SpinLogger.setup(level='debug')
 
 logger = logging.getLogger("SpinRender")
 logger.info(f"Loading SpinRender plugin from {plugin_dir}")

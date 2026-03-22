@@ -18,7 +18,7 @@ class RenderSettings:
     format: str = 'mp4'
     resolution: str = '1920x1080'
     preset: str = 'custom'
-    logging_level: str = 'simple'
+    logging_level: str = 'info'
     easing: str = 'linear'
     output_auto: bool = True
     output_path: str = ''
