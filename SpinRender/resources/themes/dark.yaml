@@ -323,7 +323,7 @@ layout:
       bg: "@colors.gray-border"
       size: 1
     rightpanel:
-      bg: "@colors.gray-black"
+      bg: "@colors.black"
       shader: "@text.nav"
       title: "@text.title"
       info: "@text.metadata"
@@ -359,23 +359,20 @@ layout:
           ref: "@components.button.ok"
         button2:
           ref: "@components.button.cancel"
-    overwrite:
+    filename:
       ref: "@layout.dialogs.default"
       frame:
         width: 300
-        height: 180
-      body:
-        text:
-          ref: "@text.body-strong"
-          color: "@colors.gray-white"
+        height: 220
       controls:
-        padding: 16
+        padding: "12 16"
         gap: 8
-        button_cancel:
+        button1:
+          ref: "@components.button.cancel"
           width: "50%"
-        button_confirm:
+        button2:
+          ref: "@components.button.save"
           width: "50%"
-          icon: "@glyphs.alert-octagram"
     options:
       ref: "@layout.dialogs.default"
       frame:
@@ -395,6 +392,10 @@ layout:
       controls:
         button1:
           ref: "@components.button.save"
+          width: "50%"
+        button2:
+          ref: "@components.button.cancel"
+          width: "50%"
 
 # ─────────────────────────────────────────────────────────────────
 # 9. COMPONENT DEFINITIONS (Atomic UI Components)
