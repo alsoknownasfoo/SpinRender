@@ -12,13 +12,13 @@ from .custom_controls import (
     CustomSlider, CustomToggleButton, CustomButton,
     PresetCard, CustomDropdown, CustomColorPicker
 )
-from .text_styles import TextStyle, TextStyles
+from .text_styles import TextStyle
 from .registry import ControlRegistry
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
 _theme = Theme.current()
 _locale = Locale.current()
-from .helpers import create_section_label, create_numeric_input
+from .helpers import create_section_label, create_numeric_input, create_text, reapply_text_styles
 
 
 class ControlsSidePanel(wx.Panel):
@@ -33,9 +33,6 @@ class ControlsSidePanel(wx.Panel):
         self.settings = settings
         self.board_path = board_path
         
-        # Track elements for hot-reloading: { style_name: [wx.StaticText, ...] }
-        self._hotload_map = {}
-
         # Registry of all UI controls, populated automatically via self-registration.
         # Query with _registry.filter(section='parameters') etc.
         self._registry = ControlRegistry()
@@ -58,29 +55,6 @@ class ControlsSidePanel(wx.Panel):
             'section': section,
         })
         return ctrl
-
-    def _add_text(self, parent, label, style_name, color_token=None, **kwargs):
-        """Helper to create a StaticText and register it for hot-reloading."""
-        txt = wx.StaticText(parent, label=label, **kwargs)
-
-        # Register for refresh
-        if style_name not in self._hotload_map:
-            self._hotload_map[style_name] = []
-        self._hotload_map[style_name].append((txt, color_token))
-
-        # Initial application
-        style = getattr(TextStyles, style_name)
-        txt.SetFont(style.create_font())
-
-        color = _theme.color(color_token) if color_token else style.color
-        if not txt.IsEnabled():
-            color = _theme.disabled(color)
-        txt.SetForegroundColour(color)
-
-        if style.formatting == "uppercase":
-            txt.SetLabel(txt.GetLabel().upper())
-
-        return txt
 
     def create_controls_panel(self, parent):
         """Create the main scrolled controls container."""
@@ -138,10 +112,10 @@ class ControlsSidePanel(wx.Panel):
         sizer.Add(logo, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 16)
 
         title_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.header_title = self._add_text(header, _locale.get("component.main.header.title", "SPINRENDER"), "title")
+        self.header_title = create_text(header, _locale.get("component.main.header.title", "SPINRENDER"), "title")
         title_sizer.Add(self.header_title, 0)
 
-        self.header_subtitle = self._add_text(header, _locale.get("component.main.header.subtitle", "0.9 alpha"), "version")
+        self.header_subtitle = create_text(header, _locale.get("component.main.header.subtitle", "0.9 alpha"), "version")
         title_sizer.Add(self.header_subtitle, 0)
         sizer.Add(title_sizer, 0, wx.ALIGN_CENTER_VERTICAL)
 
@@ -167,19 +141,8 @@ class ControlsSidePanel(wx.Panel):
         if hasattr(self, 'header_panel'):
             self.header_panel.SetBackgroundColour(_theme.color("layout.main.header.bg"))
             
-        # 1. Update all tracked labels from map
-        for style_name, elements in self._hotload_map.items():
-            style = getattr(TextStyles, style_name)
-            font = style.create_font()
-            for txt, color_token in elements:
-                if not txt: continue
-                txt.SetFont(font)
-                color = _theme.color(color_token) if color_token else style.color
-                if not txt.IsEnabled():
-                    color = _theme.disabled(color)
-                txt.SetForegroundColour(color)
-                if style.formatting == "uppercase":
-                    txt.SetLabel(txt.GetLabel().upper())
+        # 1. Re-apply all registered text styles globally
+        reapply_text_styles()
 
         # 2. Update Dividers
         for attr in ['div1', 'div2', 'div3', 'div4']:
@@ -253,7 +216,7 @@ class ControlsSidePanel(wx.Panel):
         """Create all rotation axis controls."""
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        self.rot_heading = self._add_text(panel, _locale.get("parameters.rotation_heading", "ROTATION SETTINGS"), "subheader")
+        self.rot_heading = create_text(panel, _locale.get("parameters.rotation_heading", "ROTATION SETTINGS"), "subheader")
         sizer.Add(self.rot_heading, 0, wx.BOTTOM, 6)
 
         # Fetch icon_ref from locale for each axis. Colors are ID-driven.
@@ -285,7 +248,7 @@ class ControlsSidePanel(wx.Panel):
         )
         sizer.Add(row4, 0, wx.EXPAND | wx.BOTTOM, 4)
 
-        self.rot_desc = self._add_text(panel, _locale.get("parameters.rotation_desc", "BOARD: ORIENT ON SPINDLE | SPIN: ORIENT THE SPINDLE ITSELF"), "metadata")
+        self.rot_desc = create_text(panel, _locale.get("parameters.rotation_desc", "BOARD: ORIENT ON SPINDLE | SPIN: ORIENT THE SPINDLE ITSELF"), "metadata")
         sizer.Add(self.rot_desc, 0, wx.TOP | wx.BOTTOM, 10)
         panel.SetSizerAndFit(sizer)
         return panel
@@ -304,12 +267,12 @@ class ControlsSidePanel(wx.Panel):
         resolved_token = axis_token if _theme.has_token(axis_token) else "colors.primary"
 
         if icon_char:
-            icon_lbl = self._add_text(label_part, icon_char, "icon", color_token=resolved_token)
+            icon_lbl = create_text(label_part, icon_char, "icon", color_token=resolved_token)
             self._registry.add(icon_lbl, section='parameters')
             lp_sizer.Add(icon_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
 
         resolved_label = _locale.get(locale_key, label_text) if locale_key else label_text
-        lbl = self._add_text(label_part, f"{resolved_label}:", "label", color_token=resolved_token)
+        lbl = create_text(label_part, f"{resolved_label}:", "label", color_token=resolved_token)
         self._registry.add(lbl, section='parameters')
         lp_sizer.Add(lbl, 0, wx.ALIGN_CENTER_VERTICAL)
         label_part.SetSizer(lp_sizer)
@@ -331,7 +294,7 @@ class ControlsSidePanel(wx.Panel):
         """Create the rotation period control."""
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        self.period_heading = self._add_text(panel, _locale.get("parameters.period.label", "ROTATION PERIOD"), "subheader")
+        self.period_heading = create_text(panel, _locale.get("parameters.period.label", "ROTATION PERIOD"), "subheader")
         sizer.Add(self.period_heading, 0, wx.BOTTOM, 6)
 
 
@@ -348,9 +311,9 @@ class ControlsSidePanel(wx.Panel):
 
         mrow = wx.Panel(panel)
         msizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.period_desc = self._add_text(mrow, _locale.get("parameters.period.desc", "SPEED OF 360° SPIN"), "metadata")
+        self.period_desc = create_text(mrow, _locale.get("parameters.period.desc", "SPEED OF 360° SPIN"), "metadata")
         msizer.Add(self.period_desc, 1, wx.TOP | wx.BOTTOM, 10)
-        self.frame_count = self._add_text(mrow, f"{int(p_val * 30)} f", "metadata")
+        self.frame_count = create_text(mrow, f"{int(p_val * 30)} f", "metadata")
         msizer.Add(self.frame_count, 0, wx.TOP | wx.BOTTOM, 10)
         mrow.SetSizerAndFit(msizer)
         sizer.Add(mrow, 0, wx.EXPAND)
@@ -361,7 +324,7 @@ class ControlsSidePanel(wx.Panel):
         """Create the direction toggle (CW/CCW)."""
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        self.dir_heading = self._add_text(panel, _locale.get("parameters.direction.label", "DIRECTION"), "subheader")
+        self.dir_heading = create_text(panel, _locale.get("parameters.direction.label", "DIRECTION"), "subheader")
         sizer.Add(self.dir_heading, 0, wx.BOTTOM, 6)
 
         
@@ -384,7 +347,7 @@ class ControlsSidePanel(wx.Panel):
         """Create the lighting preset toggle."""
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        self.light_heading = self._add_text(panel, _locale.get("parameters.lighting.label", "LIGHTING"), "subheader")
+        self.light_heading = create_text(panel, _locale.get("parameters.lighting.label", "LIGHTING"), "subheader")
         sizer.Add(self.light_heading, 0, wx.BOTTOM, 6)
 
         
@@ -410,7 +373,7 @@ class ControlsSidePanel(wx.Panel):
         self.light_toggle.SetSelection(initial_idx)
         sizer.Add(self.light_toggle, 0, wx.EXPAND)
 
-        self.light_hint = self._add_text(panel, _locale.get("parameters.lighting_hint", "SELECT WORKSPACE TO USE KICAD 3D VIEWER SETTINGS"), "metadata")
+        self.light_hint = create_text(panel, _locale.get("parameters.lighting_hint", "SELECT WORKSPACE TO USE KICAD 3D VIEWER SETTINGS"), "metadata")
         sizer.Add(self.light_hint, 0, wx.TOP | wx.BOTTOM, 10)
 
         panel.SetSizerAndFit(sizer)
@@ -428,7 +391,7 @@ class ControlsSidePanel(wx.Panel):
         cols_sizer = wx.BoxSizer(wx.HORIZONTAL)
         f_col = wx.Panel(cols_panel)
         f_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.format_heading = self._add_text(f_col, _locale.get("parameters.format.label", "FORMAT"), "subheader")
+        self.format_heading = create_text(f_col, _locale.get("parameters.format.label", "FORMAT"), "subheader")
         f_sizer.Add(self.format_heading, 0, wx.BOTTOM, 6)
 
         self.format_choices = ["MP4 (H.264)", "GIF", "PNG Sequence"]
@@ -443,7 +406,7 @@ class ControlsSidePanel(wx.Panel):
 
         r_col = wx.Panel(cols_panel)
         r_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.res_heading = self._add_text(r_col, _locale.get("parameters.resolution.label", "RESOLUTION"), "subheader")
+        self.res_heading = create_text(r_col, _locale.get("parameters.resolution.label", "RESOLUTION"), "subheader")
         r_sizer.Add(self.res_heading, 0, wx.BOTTOM, 6)
 
         self.res_choices = ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
@@ -461,7 +424,7 @@ class ControlsSidePanel(wx.Panel):
         # Row 2: Background Color
         bg_col = wx.Panel(panel)
         bg_vsizer = wx.BoxSizer(wx.VERTICAL)
-        self.bg_heading = self._add_text(bg_col, _locale.get("parameters.bg_color.label", "BACKGROUND COLOR"), "subheader")
+        self.bg_heading = create_text(bg_col, _locale.get("parameters.bg_color.label", "BACKGROUND COLOR"), "subheader")
         bg_vsizer.Add(self.bg_heading, 0, wx.BOTTOM, 6)
 
         self.bg_picker = CustomColorPicker(bg_col, current_color=self.settings.bg_color, section='output')

@@ -159,6 +159,7 @@ text:
       weight: "@typography.weights.semibold"
   subheader:
     color: "@colors.primary"
+    formatting: "uppercase"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
@@ -187,6 +188,7 @@ text:
       weight: "@typography.weights.semibold"
   metadata:
     color: "@colors.gray-medium"
+    formatting: "uppercase"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
@@ -222,6 +224,7 @@ text:
       weight: "@typography.weights.semibold"
   status:
     color: "@colors.primary"
+    formatting: "uppercase"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
@@ -351,6 +354,8 @@ layout:
         padding:
           all: "@typography.spacing.lg"
         text: "@text.body"
+        description: "@text.metadata"
+        section_label: "@text.subheader"
       controls:
         bg: "@colors.gray-dark"
         border: None
