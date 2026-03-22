@@ -12,6 +12,7 @@ from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
 from .text_styles import TextStyle, TextStyles
 from .helpers import bind_mouse_events
+from .events import ParameterInteractionEvent
 
 _theme = Theme.current()
 _locale = Locale.current()
@@ -195,6 +196,7 @@ class CustomSlider(wx.Panel):
 
     def on_mouse_down(self, event):
         if not self.IsEnabled(): return
+        wx.PostEvent(self, ParameterInteractionEvent(self.GetId()))
         self.dragging = True
         self.update_value_from_mouse(event.GetX())
         self.CaptureMouse()
@@ -366,6 +368,7 @@ class CustomToggleButton(wx.Panel):
 
     def on_click(self, event):
         if not self.IsEnabled(): return
+        wx.PostEvent(self, ParameterInteractionEvent(self.GetId()))
         width, num_options = self.GetSize().x, len(self.options)
         state_width = width / num_options
         new_selection = max(0, min(int(event.GetX() // state_width), num_options - 1))
@@ -553,7 +556,9 @@ class CustomDropdown(wx.Panel):
         gc.DrawText(icon_char, width - iw - 12, (height - ih) / 2)
 
     def on_click(self, event):
-        if self.IsEnabled(): self.show_popup()
+        if self.IsEnabled():
+            wx.PostEvent(self, ParameterInteractionEvent(self.GetId()))
+            self.show_popup()
     def on_enter(self, event): self.hovered = True; self.Refresh(); self.Update()
     def on_leave(self, event): self.hovered = False; self.Refresh(); self.Update()
 
@@ -734,7 +739,9 @@ class CustomButton(wx.Panel):
             gc.DrawText(self.label, start_x + iw + gap, (height - th) / 2)
 
     def on_mouse_down(self, event):
-        if self.IsEnabled(): self.pressed = True; self.Refresh(); self.Update()
+        if self.IsEnabled():
+            wx.PostEvent(self, ParameterInteractionEvent(self.GetId()))
+            self.pressed = True; self.Refresh(); self.Update()
     def on_mouse_up(self, event):
         if self.pressed:
             self.pressed = False; self.Refresh(); self.Update()
@@ -854,6 +861,7 @@ class PresetCard(wx.Panel):
 
     def on_click(self, event):
         if self.IsEnabled():
+            wx.PostEvent(self, ParameterInteractionEvent(self.GetId()))
             self.selected = True; self.Refresh(); self.Update()
             evt = wx.PyCommandEvent(wx.EVT_BUTTON.typeId, self.GetId())
             self.GetEventHandler().ProcessEvent(evt)
@@ -999,7 +1007,9 @@ class CustomInput(wx.Panel):
         e.Skip()
 
     def _on_enter(self, e): self._confirm(); self._fire_event(wx.EVT_TEXT_ENTER)
-    def _on_focus(self, e): 
+    def _on_focus(self, e):
+        if self.IsEnabled():
+            wx.PostEvent(self, ParameterInteractionEvent(self.GetId()))
         self.original_value = self.text_ctrl.GetValue()
         wx.CallAfter(self.text_ctrl.SelectAll)
         self.Refresh(); e.Skip()
@@ -1283,6 +1293,7 @@ class CustomColorPicker(wx.Panel):
 
     def on_click(self, event):
         if not self.IsEnabled(): return
+        wx.PostEvent(self, ParameterInteractionEvent(self.GetId()))
         p, r = event.GetPosition(), self._get_rects(); ci = -1
         for i in range(len(self.PRESETS)):
             if r[f'preset_{i}'].Contains(p): ci = i; break
