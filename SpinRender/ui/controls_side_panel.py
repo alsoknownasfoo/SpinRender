@@ -59,27 +59,27 @@ class ControlsSidePanel(wx.Panel):
         })
         return ctrl
 
-    def _add_text(self, parent, label, style_name, color_override=None, **kwargs):
+    def _add_text(self, parent, label, style_name, color_token=None, **kwargs):
         """Helper to create a StaticText and register it for hot-reloading."""
         txt = wx.StaticText(parent, label=label, **kwargs)
-        
+
         # Register for refresh
         if style_name not in self._hotload_map:
             self._hotload_map[style_name] = []
-        self._hotload_map[style_name].append((txt, color_override))
-        
+        self._hotload_map[style_name].append((txt, color_token))
+
         # Initial application
         style = getattr(TextStyles, style_name)
         txt.SetFont(style.create_font())
-        
-        color = color_override if color_override else style.color
+
+        color = _theme.color(color_token) if color_token else style.color
         if not txt.IsEnabled():
             color = _theme.disabled(color)
         txt.SetForegroundColour(color)
-        
+
         if style.formatting == "uppercase":
             txt.SetLabel(txt.GetLabel().upper())
-            
+
         return txt
 
     def create_controls_panel(self, parent):
@@ -171,10 +171,10 @@ class ControlsSidePanel(wx.Panel):
         for style_name, elements in self._hotload_map.items():
             style = getattr(TextStyles, style_name)
             font = style.create_font()
-            for txt, color_override in elements:
+            for txt, color_token in elements:
                 if not txt: continue
                 txt.SetFont(font)
-                color = color_override if color_override else style.color
+                color = _theme.color(color_token) if color_token else style.color
                 if not txt.IsEnabled():
                     color = _theme.disabled(color)
                 txt.SetForegroundColour(color)
@@ -299,17 +299,17 @@ class ControlsSidePanel(wx.Panel):
         # icon_name is now a glyph name (e.g., 'axis-x-arrow'), call theme.glyph()
         icon_char = _theme.glyph(icon_name)
         
-        # Get axis color from theme if it exists, otherwise default to primary
+        # Get axis color token from theme if it exists, otherwise fall back to primary
         axis_token = f"components.slider.{id}.nub.color"
-        axis_col = _theme.color(axis_token) if _theme.has_token(axis_token) else _theme.color("colors.primary")
+        resolved_token = axis_token if _theme.has_token(axis_token) else "colors.primary"
 
         if icon_char:
-            icon_lbl = self._add_text(label_part, icon_char, "icon", color_override=axis_col)
+            icon_lbl = self._add_text(label_part, icon_char, "icon", color_token=resolved_token)
             self._registry.add(icon_lbl, section='parameters')
             lp_sizer.Add(icon_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
 
         resolved_label = _locale.get(locale_key, label_text) if locale_key else label_text
-        lbl = self._add_text(label_part, f"{resolved_label}:", "label", color_override=axis_col)
+        lbl = self._add_text(label_part, f"{resolved_label}:", "label", color_token=resolved_token)
         self._registry.add(lbl, section='parameters')
         lp_sizer.Add(lbl, 0, wx.ALIGN_CENTER_VERTICAL)
         label_part.SetSizer(lp_sizer)
