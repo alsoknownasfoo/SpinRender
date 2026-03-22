@@ -76,17 +76,6 @@ Then, review the patterns and identify areas where code can be modularized for e
 # Move tasks here when a branch is ready for review.
 # Format: [TAG] [YYYY-MM-DD] [branch-name] Simple Title: Task...
 
-[UI/UX+CODE] [2026-03-22] [feat/programmatic-uppercase] Programmatic Uppercasing + Global create_text Refactor:
-- Added formatting: "uppercase" to text.subheader, text.metadata, text.status in dark.yaml
-- Normalized all sub-body locale strings to sentence case
-- Fixed bypass sites in dialogs.py, status_bar.py, main_panel.py
-- Upgraded helpers.create_text() to canonical styled-text factory: resolves TextStyle by name, applies format_text(), sets font+color, registers in global weak-ref registry for hot-reload
-- Added reapply_text_styles() for global theme hot-reload of all wx.StaticText
-- Deleted _add_text() and _hotload_map from controls_side_panel; replaced with create_text()
-- Redesigned SectionLabel from paint-based to wx.StaticText via create_text()
-- All dialogs.py bare wx.StaticText+SetFont replaced with create_text()
-- Added layout.dialogs.default.description and .section_label YAML paths
-- Updated docs: CODEMAPS/frontend.md, theme-design-principles.md
 
 ---
 
@@ -100,6 +89,8 @@ Then, review the patterns and identify areas where code can be modularized for e
 [CODE] [2026-03-21] [fix/textyle-color] TextStyle Color Refactor: color_override (raw wx.Colour) replaced with color_token (theme string). TextStyle gains color_token field. reapply_theme now re-resolves from live theme on hot-reload.
 
 [UI/UX] [2026-03-21] [fix/custombutton-cleanup] CustomButton Parameter Cleanup: Dropped primary/ghost/danger/color-override params. on_paint simplified to pure style_id token lookup. SetPrimary/SetDanger removed. Two ghost=True caller sites cleaned up.
+
+[UI/UX+CODE] [2026-03-22] [feat/programmatic-uppercase] Programmatic Uppercasing + Global create_text Refactor: formatting: "uppercase" in YAML drives all uppercasing; locale normalized to sentence case; create_text() is now canonical factory with global weak-ref hot-reload registry; _add_text()/_hotload_map deleted; SectionLabel migrated from gc.DrawText to create_text(); all dialogs.py bare StaticText+SetFont replaced; color_token persisted in registry (fixes axis label color loss on render toggle). Merge: 4fe3eb1.
 
 [CODE] [2026-03-21] [fix/logger-alignment] Logger Alignment: Renamed 'simple'→'info' and 'verbose'→'debug' across 6 files. Backward compat via _legacy alias map in setup(). Merge: 2255abd.
 
