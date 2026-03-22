@@ -193,16 +193,16 @@ class OverwriteConfirmDialog(BaseStyledDialog):
         footer = wx.Panel(self.main_container)
         footer_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        cancel_btn = CustomButton(footer, id="cancel", size=(cancel_w, 36))
+        cancel_btn = CustomButton(footer, id="cancel", size=(-1, 36))
         cancel_btn.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_NO))
 
-        overwrite_btn = CustomButton(footer, label="OVERWRITE", icon=confirm_icon, id="exit", size=(confirm_w, 36))
+        overwrite_btn = CustomButton(footer, label="OVERWRITE", icon=confirm_icon, id="exit", size=(-1, 36))
         overwrite_btn.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_YES))
 
         footer_sizer.Add((padding, 0))
-        footer_sizer.Add(cancel_btn, 0)
+        footer_sizer.Add(cancel_btn, 1)
         footer_sizer.Add((gap, 0))
-        footer_sizer.Add(overwrite_btn, 0)
+        footer_sizer.Add(overwrite_btn, 1)
         footer_sizer.Add((padding, 0))
         footer.SetSizer(footer_sizer)
         sizer.Add(footer, 0, wx.EXPAND | wx.BOTTOM, 16)
