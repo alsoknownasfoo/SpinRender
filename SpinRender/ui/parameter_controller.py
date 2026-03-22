@@ -15,7 +15,7 @@ Responsible for:
 - Notifying preview viewport of parameter updates
 - Triggering preset match check via PresetController
 """
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Callable, Optional
 
 from SpinRender.core.settings import RenderSettings
 
@@ -29,14 +29,16 @@ class ParameterController:
         controls: Dict containing references to all control widgets
         preview: PreviewPanel instance for viewport updates
         preset_controller: PresetController for preset matching
+        schedule_save: Callable that schedules a debounced settings persist
     """
 
     def __init__(self, settings: RenderSettings, controls: Dict[str, Any],
-                 preview, preset_controller):
+                 preview, preset_controller, schedule_save: Optional[Callable] = None):
         self.settings = settings
         self.controls = controls
         self.preview = preview
         self.preset_controller = preset_controller
+        self.schedule_save = schedule_save or (lambda: None)
 
         # Extract controls for convenience
         self.board_tilt_slider = controls.get('board_tilt_slider')
@@ -64,6 +66,7 @@ class ParameterController:
         self.board_tilt_input.SetValue(val)
         self._update_viewport_rotation()
         self.preset_controller.check_preset_match(manual_change=True)
+        self.schedule_save()
 
     def on_board_tilt_input(self, event):
         val = float(self.board_tilt_input.GetValue())
@@ -71,6 +74,7 @@ class ParameterController:
         self.board_tilt_slider.SetValue(val)
         self._update_viewport_rotation()
         self.preset_controller.check_preset_match(manual_change=True)
+        self.schedule_save()
 
     def on_board_roll_change(self, event):
         val = float(self.board_roll_slider.GetValue())
@@ -78,6 +82,7 @@ class ParameterController:
         self.board_roll_input.SetValue(val)
         self._update_viewport_rotation()
         self.preset_controller.check_preset_match(manual_change=True)
+        self.schedule_save()
 
     def on_board_roll_input(self, event):
         val = float(self.board_roll_input.GetValue())
@@ -85,6 +90,7 @@ class ParameterController:
         self.board_roll_slider.SetValue(val)
         self._update_viewport_rotation()
         self.preset_controller.check_preset_match(manual_change=True)
+        self.schedule_save()
 
     def on_spin_tilt_change(self, event):
         val = float(self.spin_tilt_slider.GetValue())
@@ -92,6 +98,7 @@ class ParameterController:
         self.spin_tilt_input.SetValue(val)
         self._update_viewport_rotation()
         self.preset_controller.check_preset_match(manual_change=True)
+        self.schedule_save()
 
     def on_spin_tilt_input(self, event):
         val = float(self.spin_tilt_input.GetValue())
@@ -99,6 +106,7 @@ class ParameterController:
         self.spin_tilt_slider.SetValue(val)
         self._update_viewport_rotation()
         self.preset_controller.check_preset_match(manual_change=True)
+        self.schedule_save()
 
     def on_spin_heading_change(self, event):
         val = float(self.spin_heading_slider.GetValue())
@@ -106,6 +114,7 @@ class ParameterController:
         self.spin_heading_input.SetValue(val)
         self._update_viewport_rotation()
         self.preset_controller.check_preset_match(manual_change=True)
+        self.schedule_save()
 
     def on_spin_heading_input(self, event):
         val = float(self.spin_heading_input.GetValue())
@@ -113,6 +122,7 @@ class ParameterController:
         self.spin_heading_slider.SetValue(val)
         self._update_viewport_rotation()
         self.preset_controller.check_preset_match(manual_change=True)
+        self.schedule_save()
 
     def _update_viewport_rotation(self):
         """Update viewport universal joint parameters."""
@@ -136,6 +146,7 @@ class ParameterController:
             self.preview.viewport.set_period(val)
         self.preview.update_preview_overlay()
         self.preset_controller.check_preset_match(manual_change=True)
+        self.schedule_save()
 
     def on_period_input_change(self, event):
         val = round(float(self.period_input.GetValue()), 1)
@@ -147,6 +158,7 @@ class ParameterController:
             self.preview.viewport.set_period(val)
         self.preview.update_preview_overlay()
         self.preset_controller.check_preset_match(manual_change=True)
+        self.schedule_save()
 
     # Direction handler
     def on_direction_change(self, event):
@@ -155,6 +167,7 @@ class ParameterController:
             self.preview.viewport.set_direction(self.settings.direction)
         self.preview.update_preview_overlay()
         self.preset_controller.check_preset_match(manual_change=True)
+        self.schedule_save()
 
     # Lighting handler
     def on_lighting_change(self, event):
@@ -166,6 +179,7 @@ class ParameterController:
                 self.preview.viewport.set_lighting(preset_id)
             self.preview.update_preview_overlay()
             self.preset_controller.check_preset_match(manual_change=True)
+            self.schedule_save()
 
     # Output format handler
     def on_format_change(self, event):
@@ -173,14 +187,13 @@ class ParameterController:
         if 0 <= idx < len(self.format_ids):
             self.settings.format = self.format_ids[idx]
         self.preview.update_preview_overlay()
-        # Note: save_settings called by main panel after this
+        self.schedule_save()
 
     # Resolution handler
     def on_resolution_change(self, event):
         idx = self.res_choice.GetSelection()
         if 0 <= idx < len(self.res_ids):
             self.settings.resolution = self.res_ids[idx]
-            # Update viewport aspect ratio for WYSIWYG
             try:
                 w, h = map(int, self.settings.resolution.split('x'))
                 if hasattr(self.preview, 'viewport'):
@@ -188,7 +201,7 @@ class ParameterController:
             except Exception:
                 pass
         self.preview.update_preview_overlay()
-        # Note: save_settings called by main panel after this
+        self.schedule_save()
 
     # Background color handler (takes color_hex directly)
     def on_bg_color_change(self, color_hex):
@@ -196,4 +209,4 @@ class ParameterController:
         if hasattr(self.preview, 'viewport'):
             self.preview.viewport.set_background_color(color_hex)
         self.preview.update_preview_overlay()
-        # Note: save_settings called by main panel after this
+        self.schedule_save()

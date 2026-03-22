@@ -231,7 +231,8 @@ class SpinRenderPanel(wx.Panel):
             settings=self.settings,
             controls=param_controls,
             preview=self.preview,
-            preset_controller=self.preset_controller
+            preset_controller=self.preset_controller,
+            schedule_save=self.schedule_save
         )
 
         # Wire parameter control events to ParameterController
@@ -327,10 +328,28 @@ class SpinRenderPanel(wx.Panel):
 
         self.status_bar.reset()
 
+    def schedule_save(self):
+        """Debounced settings persist — resets 500ms timer on each call."""
+        if hasattr(self, '_save_timer') and self._save_timer and self._save_timer.IsRunning():
+            self._save_timer.Stop()
+        self._save_timer = wx.CallLater(500, self.save_settings)
+
+    def flush_save(self):
+        """Immediate settings persist — cancels pending debounce and writes now."""
+        if hasattr(self, '_save_timer') and self._save_timer and self._save_timer.IsRunning():
+            self._save_timer.Stop()
+        self.save_settings()
+
     def save_settings(self):
-        """Persist current settings to project-local config file."""
+        """Persist current settings to disk if changed since last save."""
+        import hashlib, json
         from core.presets import PresetManager
+        data = self.settings.to_dict() if hasattr(self.settings, 'to_dict') else vars(self.settings)
+        current_hash = hashlib.md5(json.dumps(data, sort_keys=True).encode()).hexdigest()
+        if getattr(self, '_last_saved_hash', None) == current_hash:
+            return
         PresetManager(self.board_path).save_last_used_settings(self.settings)
+        self._last_saved_hash = current_hash
 
     def on_preset_change(self, preset_id):
         """Delegates to PresetController."""
@@ -377,16 +396,16 @@ class SpinRenderPanel(wx.Panel):
         if self.render_controller.is_rendering():
             self.render_controller.cancel()
 
-        self.save_settings()
+        self.flush_save()
         f = self.GetTopLevelParent()
         if f:
             f.Close()
-            
+
     def on_close(self, event):
         if self.render_controller.is_rendering():
             self.render_controller.cancel()
 
-        self.save_settings()
+        self.flush_save()
         f = self.GetTopLevelParent()
         if f:
             f.Close()
