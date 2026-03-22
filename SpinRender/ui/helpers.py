@@ -36,7 +36,7 @@ ALL_VALID_TOKENS = (
 # Global text registry for hot-reload
 # ---------------------------------------------------------------------------
 
-# Each entry: (weakref_to_widget, style_name, original_label)
+# Each entry: (weakref_to_widget, style_name, original_label, color_token)
 _text_registry: list = []
 
 
@@ -47,14 +47,15 @@ def reapply_text_styles() -> None:
     Dead widget references are pruned automatically.
     """
     live = []
-    for ref, style_name, original_label in _text_registry:
+    for ref, style_name, original_label, color_token in _text_registry:
         widget = ref()
         if widget:
             style = getattr(TextStyles, style_name)
             widget.SetFont(style.create_font())
-            widget.SetForegroundColour(style.color)
+            color = _theme.color(color_token) if color_token else style.color
+            widget.SetForegroundColour(color)
             widget.SetLabel(style.format_text(original_label))
-            live.append((ref, style_name, original_label))
+            live.append((ref, style_name, original_label, color_token))
     _text_registry[:] = live
 
 
@@ -90,7 +91,7 @@ def create_text(parent: wx.Window, label: str, style_name: str,
     # clickable containers like PresetCard, CustomButton)
     txt.Bind(wx.EVT_LEFT_DOWN, lambda e: e.Skip())
 
-    _text_registry.append((weakref.ref(txt), style_name, label))
+    _text_registry.append((weakref.ref(txt), style_name, label, color_token))
     return txt
 
 
