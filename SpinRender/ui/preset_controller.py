@@ -73,6 +73,7 @@ class PresetController:
         self.dir_toggle = controls.get('dir_toggle')
         self.light_toggle = controls.get('light_toggle')
         self.light_options = controls.get('light_options', [])
+        self._custom_presets_cache = None  # Cached list_presets() result
 
     def on_preset_change(self, preset_id: str):
         """
@@ -210,7 +211,9 @@ class PresetController:
 
         presets = RenderEngine.PRESETS
         manager = PresetManager(self.board_path)
-        custom_presets = manager.list_presets()
+        if self._custom_presets_cache is None:
+            self._custom_presets_cache = manager.list_presets()
+        custom_presets = self._custom_presets_cache
 
         matched_any = False
 
@@ -274,17 +277,6 @@ class PresetController:
         self.preview.update_preview_overlay()
         # self.check_preset_match(manual_change=False)
 
-    def save_settings(self):
-        """Persist current settings to project-local config file."""
-        PresetManager(self.board_path).save_last_used_settings(self.settings)
-
-        # Re-apply logging level in case it changed
-        try:
-            from SpinRender.utils.logger import SpinLogger
-            SpinLogger.setup(level=getattr(self.settings, 'logging_level', 'simple'))
-        except ImportError:
-            pass
-
     def on_save_preset(self, event=None):
         """Handle Save Preset button click: open dialog and save."""
         if SavePresetDialog is None:
@@ -298,6 +290,7 @@ class PresetController:
                 if name:
                     manager = PresetManager(self.board_path)
                     if manager.save_preset(name, self.settings):
+                        self._custom_presets_cache = None  # Invalidate cache
                         if 'custom' in self.preset_buttons:
                             self.preset_buttons['custom'].SetLabel(name)
                         self.check_preset_match(manual_change=False)
