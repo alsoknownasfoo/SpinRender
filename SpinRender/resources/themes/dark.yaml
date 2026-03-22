@@ -154,7 +154,7 @@ text:
     color: "@colors.gray-medium"
     formatting: "uppercase"
     font:
-      typeface: "@typography.families.mono"
+      typeface: "@typography.families.display"
       size: "@typography.scale.md"
       weight: "@typography.weights.semibold"
   subheader:
