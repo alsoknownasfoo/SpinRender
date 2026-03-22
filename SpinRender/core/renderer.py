@@ -387,15 +387,15 @@ class RenderEngine:
                     cmd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
+                    stdin=subprocess.DEVNULL,
                     text=True,
                     env=env
                 )
 
-                # Stream output to verbose logger
-                for line in process.stdout:
-                    logger.debug(f"  [kicad-cli] {line.strip()}")
-
-                process.wait(timeout=30)
+                stdout, _ = process.communicate(timeout=30)
+                if logger.isEnabledFor(logging.DEBUG):
+                    for line in stdout.splitlines():
+                        logger.debug(f"  [kicad-cli] {line.strip()}")
                 if process.returncode != 0:
                     raise RuntimeError(f"Frame {i} render failed with exit code {process.returncode}")
 
@@ -446,14 +446,17 @@ class RenderEngine:
         logger.info(f"Assembling MP4: {output_path}")
         logger.debug(f"FFMPEG CMD: {' '.join(cmd)}")
         try:
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-            for line in process.stdout:
-                logger.debug(f"  [ffmpeg] {line.strip()}")
-            process.wait(timeout=300)
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                       stdin=subprocess.DEVNULL, text=True)
+            stdout, _ = process.communicate(timeout=300)
+            if logger.isEnabledFor(logging.DEBUG):
+                for line in stdout.splitlines():
+                    logger.debug(f"  [ffmpeg] {line.strip()}")
             if process.returncode != 0:
                 raise RuntimeError(f"MP4 assembly failed with code {process.returncode}")
         except subprocess.TimeoutExpired:
             process.kill()
+            process.communicate()
             raise RuntimeError("MP4 assembly timed out")
 
     def assemble_gif(self, frame_dir, output_path, frame_count):
@@ -484,12 +487,18 @@ class RenderEngine:
 
         logger.debug(f"GIF PALETTE CMD: {' '.join(palette_cmd)}")
         try:
-            process = subprocess.Popen(palette_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-            for line in process.stdout:
-                logger.debug(f"  [ffmpeg-palette] {line.strip()}")
-            process.wait(timeout=60)
+            process = subprocess.Popen(palette_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                       stdin=subprocess.DEVNULL, text=True)
+            stdout, _ = process.communicate(timeout=60)
+            if logger.isEnabledFor(logging.DEBUG):
+                for line in stdout.splitlines():
+                    logger.debug(f"  [ffmpeg-palette] {line.strip()}")
             if process.returncode != 0:
                 raise RuntimeError("GIF palette generation failed.")
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.communicate()
+            raise RuntimeError("GIF palette generation timed out.")
         except Exception as e:
             logger.error(f"Palette gen error: {e}")
             raise RuntimeError("GIF palette generation failed.")
@@ -506,12 +515,18 @@ class RenderEngine:
         logger.info(f"Assembling GIF: {output_path}")
         logger.debug(f"GIF ASSY CMD: {' '.join(gif_cmd)}")
         try:
-            process = subprocess.Popen(gif_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-            for line in process.stdout:
-                logger.debug(f"  [ffmpeg-gif] {line.strip()}")
-            process.wait(timeout=300)
+            process = subprocess.Popen(gif_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                       stdin=subprocess.DEVNULL, text=True)
+            stdout, _ = process.communicate(timeout=300)
+            if logger.isEnabledFor(logging.DEBUG):
+                for line in stdout.splitlines():
+                    logger.debug(f"  [ffmpeg-gif] {line.strip()}")
             if process.returncode != 0:
                 raise RuntimeError("GIF assembly failed.")
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.communicate()
+            raise RuntimeError("GIF assembly timed out.")
         except Exception as e:
             logger.error(f"GIF assembly error: {e}")
             raise RuntimeError("GIF assembly failed.")
