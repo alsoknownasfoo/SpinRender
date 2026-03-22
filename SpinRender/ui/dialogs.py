@@ -190,7 +190,7 @@ class FilenameEntryDialog(BaseStyledDialog):
 
         helper = wx.StaticText(
             content,
-            label=_locale.get("dialog.filename.helper", "Frames are saved as name_00001.png, name_00002.png, …"),
+            label=_locale.get("dialog.filename.helper", "Frames are saved as name_00001.png, name_00002.png, …").upper(),
             style=wx.ALIGN_CENTRE_HORIZONTAL
         )
         helper.SetForegroundColour(_theme.color("text.metadata.color"))

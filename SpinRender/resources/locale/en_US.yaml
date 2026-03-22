@@ -171,4 +171,4 @@ locale:
       no_presets: "No saved presets found."
 
     dialog.filename:
-      helper: "FRAMES ARE SAVED AS NAME_00001.PNG, NAME_00002.PNG, …"
+      helper: "Frames are saved as name_00001.png, name_00002.png, …"
