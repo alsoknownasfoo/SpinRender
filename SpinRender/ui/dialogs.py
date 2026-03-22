@@ -147,6 +147,43 @@ class BaseStyledDialog(wx.Dialog):
             self.Move(new_pos)
 
 
+class OverwriteConfirmDialog(BaseStyledDialog):
+    """Small styled confirmation dialog for destructive overwrite actions."""
+    def __init__(self, parent, message):
+        super().__init__(parent, "CONFIRM OVERWRITE", (420, 180))
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        sizer.Add(self.create_header("CONFIRM OVERWRITE", show_close=False), 0, wx.EXPAND)
+
+        line = wx.Panel(self.main_container, size=(-1, 1))
+        line.SetBackgroundColour(_theme.color("borders.default.color"))
+        sizer.Add(line, 0, wx.EXPAND)
+
+        msg = wx.StaticText(self.main_container, label=message)
+        msg.SetForegroundColour(_theme.color("text.body.color"))
+        msg.SetFont(_theme.font("metadata"))
+        msg.Wrap(388)
+        sizer.Add(msg, 1, wx.EXPAND | wx.ALL, 16)
+
+        footer = wx.Panel(self.main_container)
+        footer_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        cancel_btn = CustomButton(footer, id="cancel", size=(110, 36))
+        cancel_btn.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_NO))
+
+        overwrite_btn = CustomButton(footer, label="OVERWRITE", id="exit", size=(130, 36))
+        overwrite_btn.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_YES))
+
+        footer_sizer.AddStretchSpacer()
+        footer_sizer.Add(cancel_btn, 0, wx.RIGHT, 12)
+        footer_sizer.Add(overwrite_btn, 0, wx.RIGHT, 16)
+        footer.SetSizer(footer_sizer)
+        sizer.Add(footer, 0, wx.EXPAND | wx.BOTTOM, 16)
+
+        self.main_container.SetSizer(sizer)
+        self.Centre()
+
+
 class AdvancedOptionsDialog(BaseStyledDialog):
     """
     Advanced Options modal dialog
@@ -360,40 +397,45 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         fmt = getattr(self.settings, 'format', 'mp4')
 
         if fmt == 'png_sequence':
-            # For PNG sequences: user picks folder + types a base name
+            # Step 1: pick folder
             board_name = os.path.splitext(os.path.basename(self.board_path))[0]
             existing = getattr(self.settings, 'output_path', '')
             default_name = os.path.basename(existing) if existing else board_name
             default_dir = os.path.dirname(existing) if existing else start_dir
-            dlg = wx.FileDialog(
-                self,
-                message="Choose output folder and base name for PNG sequence",
-                defaultDir=default_dir,
-                defaultFile=default_name,
-                wildcard="PNG Sequence base name (*)|*",
-                style=wx.FD_SAVE,
-            )
-            if dlg.ShowModal() == wx.ID_OK:
-                path = os.path.splitext(dlg.GetPath())[0]
-                # Check if any actual output files already exist
-                import glob as _glob
-                out_dir = os.path.dirname(path)
-                base = os.path.basename(path)
-                existing_files = _glob.glob(os.path.join(out_dir, f"{base}_*.png"))
-                if existing_files:
-                    confirm = wx.MessageDialog(
-                        self,
-                        f"{len(existing_files)} file(s) matching '{base}_#####.png' already exist. Overwrite?",
-                        "Overwrite PNG Sequence?",
-                        wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING,
-                    )
-                    overwrite = confirm.ShowModal() == wx.ID_YES
-                    confirm.Destroy()
-                    if not overwrite:
-                        dlg.Destroy()
-                        return
-                self.settings.output_path = path
-                self.update_path_display()
+            dir_dlg = wx.DirDialog(self, "Select Output Folder for PNG Sequence", defaultPath=default_dir)
+            if dir_dlg.ShowModal() != wx.ID_OK:
+                dir_dlg.Destroy()
+                return
+            chosen_dir = dir_dlg.GetPath()
+            dir_dlg.Destroy()
+
+            # Step 2: pick base name
+            name_dlg = wx.TextEntryDialog(self, "Base name for PNG sequence files:", "PNG Sequence Name", default_name)
+            if name_dlg.ShowModal() != wx.ID_OK:
+                name_dlg.Destroy()
+                return
+            base_name = os.path.splitext(name_dlg.GetValue().strip())[0]
+            name_dlg.Destroy()
+            if not base_name:
+                return
+
+            path = os.path.join(chosen_dir, base_name)
+
+            # Step 3: check for actual output file conflicts
+            import glob as _glob
+            existing_files = _glob.glob(os.path.join(chosen_dir, f"{base_name}_*.png"))
+            if existing_files:
+                confirm = OverwriteConfirmDialog(
+                    self,
+                    f"{len(existing_files)} file(s) matching '{base_name}_#####.png' already exist in this folder."
+                )
+                overwrite = confirm.ShowModal() == wx.ID_YES
+                confirm.Destroy()
+                if not overwrite:
+                    return
+
+            self.settings.output_path = path
+            self.update_path_display()
         else:
             dlg = wx.DirDialog(self, "Select Output Directory", defaultPath=start_dir)
             if dlg.ShowModal() == wx.ID_OK:
