@@ -326,7 +326,8 @@ class AdvancedOptionsDialog(BaseStyledDialog):
     def update_path_display(self):
         auto = self.auto_toggle.GetValue()
         self.browse_btn.Enable(not auto)
-        
+        fmt = getattr(self.settings, 'format', 'mp4')
+
         if auto:
             self.path_display.SetPath("/Renders/[YYMMDD_HHMMSS]/..", in_project=True)
             self.path_display.Enable(False)
@@ -334,28 +335,54 @@ class AdvancedOptionsDialog(BaseStyledDialog):
             self.path_display.Enable(True)
             path = getattr(self.settings, 'output_path', '')
             if not path:
-                ext = getattr(self.settings, 'format', 'mp4')
-                self.path_display.SetPath(f"/Renders/Untitled.{ext}", in_project=True)
+                if fmt == 'png_sequence':
+                    self.path_display.SetPath("/Renders/Untitled_#####.png", in_project=True)
+                else:
+                    ext = 'mp4' if fmt == 'mp4' else 'gif'
+                    self.path_display.SetPath(f"/Renders/Untitled.{ext}", in_project=True)
             else:
+                display = f"{path}_#####.png" if fmt == 'png_sequence' else path
                 try:
-                    rel = os.path.relpath(path, self.board_dir)
+                    rel = os.path.relpath(display, self.board_dir)
                     if not rel.startswith('..'):
                         self.path_display.SetPath(f"/{rel}", in_project=True)
                     else:
-                        self.path_display.SetPath(path, in_project=False)
+                        self.path_display.SetPath(display, in_project=False)
                 except ValueError:
-                    self.path_display.SetPath(path, in_project=False)
+                    self.path_display.SetPath(display, in_project=False)
 
     def on_auto_toggle(self, event):
         self.update_path_display()
 
     def on_browse(self, event):
         start_dir = os.path.join(self.board_dir, "Renders")
-        if not os.path.exists(start_dir): os.makedirs(start_dir, exist_ok=True)
-        dlg = wx.DirDialog(self, "Select Output Directory", defaultPath=start_dir)
-        if dlg.ShowModal() == wx.ID_OK:
-            self.settings.output_path = dlg.GetPath()
-            self.update_path_display()
+        os.makedirs(start_dir, exist_ok=True)
+        fmt = getattr(self.settings, 'format', 'mp4')
+
+        if fmt == 'png_sequence':
+            # For PNG sequences: user picks folder + types a base name
+            board_name = os.path.splitext(os.path.basename(self.board_path))[0]
+            existing = getattr(self.settings, 'output_path', '')
+            default_name = os.path.basename(existing) if existing else board_name
+            default_dir = os.path.dirname(existing) if existing else start_dir
+            dlg = wx.FileDialog(
+                self,
+                message="Choose output folder and base name for PNG sequence",
+                defaultDir=default_dir,
+                defaultFile=default_name,
+                wildcard="PNG Sequence base name (*)|*",
+                style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
+            )
+            if dlg.ShowModal() == wx.ID_OK:
+                path = dlg.GetPath()
+                # Strip any extension the user may have typed
+                self.settings.output_path = os.path.splitext(path)[0]
+                self.update_path_display()
+        else:
+            dlg = wx.DirDialog(self, "Select Output Directory", defaultPath=start_dir)
+            if dlg.ShowModal() == wx.ID_OK:
+                self.settings.output_path = dlg.GetPath()
+                self.update_path_display()
         dlg.Destroy()
 
     def on_cancel(self, event):

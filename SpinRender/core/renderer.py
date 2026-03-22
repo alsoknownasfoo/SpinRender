@@ -256,7 +256,9 @@ class RenderEngine:
                 self.assemble_gif(temp_dir, output_path, frame_count)
             elif format_type == 'png_sequence':
                 self.assemble_png_sequence(temp_dir, output_path, frame_count)
-                last_frame = os.path.join(output_path, f"frame{frame_count-1:04d}.png")
+                out_dir = os.path.dirname(output_path)
+                base_name = os.path.basename(output_path)
+                last_frame = os.path.join(out_dir, f"{base_name}_{frame_count-1:05d}.png")
                 if os.path.exists(last_frame):
                     preview_frame_path = last_frame
 
@@ -533,12 +535,16 @@ class RenderEngine:
 
     def assemble_png_sequence(self, frame_dir, output_path, frame_count):
         """
-        Copy PNG sequence to output directory
+        Copy PNG sequence to output directory.
+        output_path is the full base prefix (e.g. /path/to/my_board).
+        Files are named {base_name}_{i:05d}.png to match the _##### preview.
         """
-        os.makedirs(output_path, exist_ok=True)
+        out_dir = os.path.dirname(output_path)
+        base_name = os.path.basename(output_path)
+        os.makedirs(out_dir, exist_ok=True)
         for i in range(frame_count):
             src = os.path.join(frame_dir, f"frame{i:04d}.png")
-            dst = os.path.join(output_path, f"frame{i:04d}.png")
+            dst = os.path.join(out_dir, f"{base_name}_{i:05d}.png")
             shutil.copy2(src, dst)
 
     def get_output_path(self):
@@ -556,8 +562,15 @@ class RenderEngine:
         board_name = os.path.splitext(os.path.basename(self.board_path))[0]
 
         if format_type == 'png_sequence':
-            output_path = os.path.join(output_base, board_name)
-            os.makedirs(output_path, exist_ok=True)
+            if not self.settings.get('output_auto', True):
+                # output_base is the full base prefix (dir + name) set by the user
+                base = self.settings.get('output_path', '')
+                if base and os.path.basename(base):
+                    output_path = base
+                else:
+                    output_path = os.path.join(output_base, board_name)
+            else:
+                output_path = os.path.join(output_base, board_name)
         else:
             ext = 'mp4' if format_type == 'mp4' else 'gif'
             output_path = os.path.join(output_base, f"{board_name}.{ext}")
