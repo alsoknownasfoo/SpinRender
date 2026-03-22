@@ -103,7 +103,7 @@ class BaseStyledDialog(wx.Dialog):
         header.SetBackgroundColour(_theme.color("colors.gray-dark"))
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.header_title = wx.StaticText(header, label=title_text)
+        self.header_title = wx.StaticText(header, label=TextStyles.header.format_text(title_text))
         self.header_title.SetForegroundColour(_theme.color("colors.secondary") if "SETUP" in title_text else _theme.color("colors.primary"))
         self.header_title.SetFont(_theme.font("header"))
         
@@ -157,7 +157,7 @@ class FilenameEntryDialog(BaseStyledDialog):
     def __init__(self, parent, chosen_dir, default_name):
         self.dialog_w = _theme._resolve("layout.dialogs.filename.frame.width") or 300
         h = _theme._resolve("layout.dialogs.filename.frame.height") or 220
-        super().__init__(parent, "ENTER BASE FILENAME", (self.dialog_w, h))
+        super().__init__(parent, "Enter base filename", (self.dialog_w, h))
         self.chosen_dir = chosen_dir
         self.build_ui()
         self.Centre()
@@ -174,7 +174,7 @@ class FilenameEntryDialog(BaseStyledDialog):
         gap = _theme._resolve("layout.dialogs.filename.controls.gap") or 8
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(self.create_header("ENTER BASE FILENAME", show_close=False), 0, wx.EXPAND)
+        main_sizer.Add(self.create_header("Enter base filename", show_close=False), 0, wx.EXPAND)
 
         line = wx.Panel(self.main_container, size=(-1, 1))
         line.SetBackgroundColour(_theme.color("borders.default.color"))
@@ -190,7 +190,7 @@ class FilenameEntryDialog(BaseStyledDialog):
 
         helper = wx.StaticText(
             content,
-            label=_locale.get("dialog.filename.helper", "Frames are saved as name_00001.png, name_00002.png, …").upper(),
+            label=TextStyles.metadata.format_text(_locale.get("dialog.filename.helper", "Frames are saved as name_00001.png, name_00002.png, …")),
             style=wx.ALIGN_CENTRE_HORIZONTAL
         )
         helper.SetForegroundColour(_theme.color("text.metadata.color"))
@@ -272,7 +272,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Header
-        main_sizer.Add(self.create_header("ADVANCED OPTIONS"), 0, wx.EXPAND)
+        main_sizer.Add(self.create_header("Advanced options"), 0, wx.EXPAND)
 
         # Border separator
         line = wx.Panel(self.main_container, size=(-1, 1))
@@ -290,7 +290,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         auto_row = wx.Panel(content)
         auto_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
-        auto_desc = wx.StaticText(auto_row, label=_locale.get("output.auto_desc", "Automatically save to time-stamped directories."))
+        auto_desc = wx.StaticText(auto_row, label=TextStyles.metadata.format_text(_locale.get("output.auto_desc", "Automatically save to time-stamped directories.")))
         auto_desc.SetForegroundColour(_theme.color("colors.gray-light"))
         auto_desc.SetFont(_theme.font("metadata"))
         auto_sizer.Add(auto_desc, 1, wx.ALIGN_CENTER_VERTICAL)
@@ -341,11 +341,11 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         info_icon.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         link_sizer.Add(info_icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         
-        see_txt = wx.StaticText(link_row, label=_locale.get("dialog.advanced.see", "See "))
+        see_txt = wx.StaticText(link_row, label=TextStyles.metadata.format_text(_locale.get("dialog.advanced.see", "See ")))
         see_txt.SetForegroundColour(_theme.color("colors.gray-light")); see_txt.SetFont(_theme.font("metadata"))
         link_sizer.Add(see_txt, 0, wx.ALIGN_CENTER_VERTICAL)
 
-        link_txt = wx.StaticText(link_row, label=_locale.get("dialog.advanced.docs_link", "kicad-cli render options"))
+        link_txt = wx.StaticText(link_row, label=TextStyles.metadata.format_text(_locale.get("dialog.advanced.docs_link", "kicad-cli render options")))
         link_txt.SetForegroundColour(_theme.color("colors.primary")); link_txt.SetFont(_theme.font("metadata"))
         link_txt.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         link_sizer.Add(link_txt, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -378,7 +378,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         log_row.SetSizer(log_hsizer)
         content_sizer.Add(log_row, 0, wx.EXPAND | wx.BOTTOM, 12)
         
-        log_info = wx.StaticText(content, label=_locale.get("parameters.log_info", "Logs are kept for 30 days. Useful for troubleshooting render failures."))
+        log_info = wx.StaticText(content, label=TextStyles.metadata.format_text(_locale.get("parameters.log_info", "Logs are kept for 30 days. Useful for troubleshooting render failures.")))
         log_info.SetForegroundColour(_theme.color("colors.gray-light"))
         log_info.SetFont(_theme.font("metadata"))
         content_sizer.Add(log_info, 0, wx.EXPAND | wx.BOTTOM, 8)
@@ -514,7 +514,7 @@ class SavePresetDialog(BaseStyledDialog):
             dialog_width = 400
         if dialog_height is None:
             dialog_height = 200 # Reduced height since we removed label
-        super().__init__(parent, "SAVE PRESET", (dialog_width, dialog_height))
+        super().__init__(parent, "Save preset", (dialog_width, dialog_height))
         self.board_path = board_path
         self.preset_name = ""
         self.build_ui()
@@ -534,7 +534,7 @@ class SavePresetDialog(BaseStyledDialog):
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         # Header without close button as requested
-        main_sizer.Add(self.create_header("SAVE PRESET", show_close=False), 0, wx.EXPAND)
+        main_sizer.Add(self.create_header("Save preset", show_close=False), 0, wx.EXPAND)
         line = wx.Panel(self.main_container, size=(-1, 1)); line.SetBackgroundColour(_theme.color("borders.default.color"))
         main_sizer.Add(line, 0, wx.EXPAND)
 
@@ -606,7 +606,7 @@ class RecallPresetDialog(BaseStyledDialog):
             dialog_width = 400
         if dialog_height is None:
             dialog_height = 400
-        super().__init__(parent, "SELECT CUSTOM PRESET", (dialog_width, dialog_height))
+        super().__init__(parent, "Select custom preset", (dialog_width, dialog_height))
         self.board_path = board_path
         self.current_active_name = current_name
         self.selected_preset = self.selected_name = None
@@ -617,7 +617,7 @@ class RecallPresetDialog(BaseStyledDialog):
         from SpinRender.core.presets import PresetManager
         self.manager = PresetManager(self.board_path); presets = self.manager.list_presets()
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        header = self.create_header("SELECT CUSTOM PRESET")
+        header = self.create_header("Select custom preset")
         main_sizer.Add(header, 0, wx.EXPAND)
         line = wx.Panel(self.main_container, size=(-1, 1)); line.SetBackgroundColour(_theme.color("borders.default.color"))
         main_sizer.Add(line, 0, wx.EXPAND)

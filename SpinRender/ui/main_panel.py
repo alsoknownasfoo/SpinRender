@@ -439,7 +439,7 @@ class SpinRenderPanel(wx.Panel):
         self.controls_side_panel.Layout()
         self.Layout()
 
-        self.status_bar.set_status("PREPARING RENDER...", fg_color=_theme.color("colors.primary"), progress=0.0)
+        self.status_bar.set_status("Preparing render...", fg_color=_theme.color("colors.primary"), progress=0.0)
 
         # Start render state
         self.preview.stop_playback()
@@ -604,7 +604,7 @@ class SpinRenderPanel(wx.Panel):
                     self.preview.render_preview_panel.Hide()
 
             self.preview.final_output_type = None
-            self.status_bar.set_status("RENDER STOPPED", fg_color=_theme.color("colors.warning"), progress=0.0)
+            self.status_bar.set_status("Render stopped", fg_color=_theme.color("colors.warning"), progress=0.0)
 
         self.preview.update_preview_overlay()
         self.status_bar.Refresh()
