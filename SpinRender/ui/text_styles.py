@@ -22,6 +22,7 @@ class TextStyle:
     size: int
     weight: int = 400
     color: Optional[object] = None
+    color_token: Optional[str] = None
     formatting: Optional[str] = None
 
     def create_font(self) -> wx.Font:
