@@ -57,7 +57,26 @@ class PCBModelLoader:
             if isinstance(scene, trimesh.Scene):
                 if not scene.geometry:
                     return None
-                mesh = scene.to_mesh()
+                # Manually concatenate geometry without triggering trimesh's
+                # texture-atlas packing (to_mesh() is expensive and unsafe in
+                # background threads; the GL preview only needs geometry).
+                parts = []
+                for node_name in scene.graph.nodes_geometry:
+                    transform, geometry_name = scene.graph[node_name]
+                    geom = scene.geometry[geometry_name]
+                    m = trimesh.Trimesh(
+                        vertices=geom.vertices.copy(),
+                        faces=geom.faces.copy(),
+                        process=False
+                    )
+                    m.apply_transform(transform)
+                    parts.append(m)
+                if not parts:
+                    return None
+                all_vertices = np.concatenate([m.vertices for m in parts])
+                offsets = np.cumsum([0] + [len(m.vertices) for m in parts[:-1]])
+                all_faces = np.concatenate([m.faces + off for m, off in zip(parts, offsets)])
+                mesh = trimesh.Trimesh(vertices=all_vertices, faces=all_faces, process=False)
             else:
                 mesh = scene
             
