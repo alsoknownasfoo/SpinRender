@@ -384,8 +384,10 @@ class SpinRenderPanel(wx.Panel):
         from ui.dialogs import AdvancedOptionsDialog
         dlg = AdvancedOptionsDialog(self, self.settings, self.board_path)
         if dlg.ShowModal() == wx.ID_OK:
+            from utils.logger import SpinLogger
+            SpinLogger.setup(level=self.settings.logging_level)
             self.save_settings()
-            
+
         dlg.Destroy()
         self.preview.update_preview_overlay()
         pf = self.GetTopLevelParent()

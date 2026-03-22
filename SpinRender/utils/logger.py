@@ -16,15 +16,19 @@ class SpinLogger:
     """
     _LOGGER_NAME = 'SpinRender'
     _CLEANUP_DAYS = 30
+    _active_level = None  # Tracks last-initialized level; prevents redundant re-init
 
     @staticmethod
     def setup(level='simple'):
         """
-        Configure logging level and file path
-        
+        Configure logging level and file path. No-op if level is unchanged.
+
         Args:
             level: 'off', 'simple', or 'verbose'
         """
+        if SpinLogger._active_level == level:
+            return
+
         # Determine numeric level
         lvl_map = {
             'off': logging.CRITICAL + 1,
@@ -67,6 +71,8 @@ class SpinLogger:
                 logger.info("--- SpinRender Session Started ---")
             except Exception as e:
                 print(f"[SpinRender] Failed to initialize file logger: {e}")
+
+        SpinLogger._active_level = level
 
         # Always run cleanup
         SpinLogger.cleanup(logs_dir)
