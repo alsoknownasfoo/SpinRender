@@ -31,18 +31,13 @@ If a refactor would significantly improve code quality, present it as an option 
 # Format: [TAG] Simple Title: Task...
 # Branch name format: (feat/fix)/name-of-task
 
-[UI/UX] Programmatic Uppercasing: Any text below body level (subheader, metadata, helper/description copy) should be uppercased programmatically at render time, not in the locale file. Audit all such text placements and apply .upper() consistently so locale files stay in normal casing.
-
 [UI/UX] Advanced Output Formatting: output path, parameter overrides, system logging should all use subheader. the body text should all be upper. this shoud be defined in theme.yaml. The Parameter Overrides box still has a light gray bg on the input field. it should not show or be painted transparent. This interesting isnt an issue for non-multiline renders of the inputfield.
 
 [UI/UX] Window Borders: Add a 1px black border around the main window and dialog boxes and add a 4px radius on them. ensure that these definitions are in the yaml
 
 [UI/UX] Project Folder Badge: Ensure that the project folder badge can apply all customization in the yaml. we want to use a bigger and bolder font.
 
-[CODE] Documentation Cleanup: Use @doc-updater agent to review and clean up the `docs/` directory:
-- Remove outdated planning docs and temporary files.
-- Cross-check documentation accuracy with current repo code.
-- Add missing details to ensure docs are efficient and informative for both humans and LLMs.
+[CODE] Research _add_text Globalization: Research if `_add_text` from `controls_side_panel.py` can be globalized into `custom_controls.py`, or if there is a better way to enable its functionality (creating/applying style formatting from YAML and registering for hot locale load). Document findings and propose the best approach.
 
 [UI/UX] Advanced/About Section: In the advanced settings, add:
 - An "About" section with app origin, authorship, and tools/LLMs used.
@@ -65,6 +60,11 @@ If a refactor would significantly improve code quality, present it as an option 
     - Any inconsistencies with usage patterns
 Then, review the patterns and identify areas where code can be modularized for efficiency and consistency.
 
+[CODE] Documentation Cleanup: Use @doc-updater agent to review and clean up the `docs/` directory:
+- Remove outdated planning docs and temporary files.
+- Cross-check documentation accuracy with current repo code.
+- Add missing details to ensure docs are efficient and informative for both humans and LLMs.
+
 [CODE] Code cleanup via @refactor-cleaner agent
 
 [CODE] Get code ready for publishing to the public.  Make sure we are following best practices for production code. Advance code version 0.99
@@ -75,6 +75,8 @@ Then, review the patterns and identify areas where code can be modularized for e
 
 # Move tasks here when a branch is ready for review.
 # Format: [TAG] [YYYY-MM-DD] [branch-name] Simple Title: Task...
+
+[UI/UX] [2026-03-22] [feat/programmatic-uppercase] Programmatic Uppercasing: Added formatting: "uppercase" to text.subheader, text.metadata, text.status in dark.yaml. All sub-body text now uppercased via TextStyles.format_text() at render time. Normalized locale strings to sentence case. Fixed bypass sites in dialogs.py, status_bar.py, main_panel.py.
 
 ---
 
