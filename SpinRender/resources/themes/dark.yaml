@@ -409,7 +409,7 @@ components:
   badge:
     frame:
       height: 18
-      bg: "@colors.warning"
+      bg: "@colors.cyan"
       radius: "@radius.sm"
       padding:
         horizontal: "@typography.spacing.sm"
@@ -420,7 +420,7 @@ components:
         typeface: "@typography.families.mono"
         size: "@typography.scale.base"
         weight: "@typography.weights.bold"
-      color: "@colors.gray-black"
+      color: "@colors.black"
     gap: "@typography.spacing.sm"
 
   preset_card:
