@@ -1,5 +1,5 @@
 #!/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
-"""Unit tests for StatusBar component (V2 theme)."""
+"""Unit tests for StatusBar component (theme)."""
 import pytest
 from unittest.mock import MagicMock, patch
 

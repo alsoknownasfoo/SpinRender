@@ -1,5 +1,5 @@
 #!/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
-"""Unit tests for DependencyDialog component (V2 theme)."""
+"""Unit tests for DependencyDialog component (theme)."""
 import pytest
 import wx
 from unittest.mock import MagicMock, patch, call

@@ -1,8 +1,8 @@
 #!/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
 """
-Unit tests for custom_controls.py V2 theme integration.
+Unit tests for custom_controls.py theme integration.
 
-Tests that all custom controls use V2 theme tokens and no hardcoded colors exist.
+Tests that all custom controls use theme tokens and no hardcoded colors exist.
 """
 import pytest
 import wx
@@ -14,14 +14,14 @@ _locale = Locale.current()
 
 
 class TestV2ThemeIntegration:
-    """Test that controls use V2 theme tokens correctly."""
+    """Test that controls use theme tokens correctly."""
 
     def test_locale_available(self):
         """Locale should be loaded and accessible."""
         assert _locale is not None
 
     def test_theme_glyph_works(self):
-        """Theme.glyph() should return unicode strings for V2 glyphs."""
+        """Theme.glyph() should return unicode strings for glyphs."""
         glyph = _theme.glyph("render-action")
         assert isinstance(glyph, str) and len(glyph) > 0
 
@@ -41,7 +41,7 @@ class TestGetPaintColorReplacement:
 
 
 class TestV2ThemeTokenIntegration:
-    """Test that V2 theme tokens are used correctly in controls."""
+    """Test that theme tokens are used correctly in controls."""
 
     def test_custom_slider_uses_v2_tokens(self):
         """CustomSlider should use components.slider.default tokens."""
@@ -92,7 +92,7 @@ class TestV2ThemeTokenIntegration:
 
 
 class TestV2TokenResolution:
-    """Test that V2 tokens referenced in controls actually resolve."""
+    """Test that theme tokens referenced in controls actually resolve."""
 
     def test_slider_tokens_resolve(self):
         """components.slider.default tokens should resolve."""

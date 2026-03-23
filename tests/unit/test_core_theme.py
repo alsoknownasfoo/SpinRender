@@ -69,7 +69,7 @@ class TestThemeTokenResolution:
         """_resolve should get value at simple path."""
         value = self.theme._resolve("colors.primary")
         # Should resolve to a hex color string (via ref) or a ref dict
-        # V2: colors.primary is "@colors.cyan" which resolves to palette.cyan
+        # colors.primary is "@colors.cyan" which resolves to palette.cyan
         assert isinstance(value, (str, dict))
 
     def test_resolve_nested_token(self):
@@ -79,7 +79,7 @@ class TestThemeTokenResolution:
 
     def test_resolve_follows_ref(self):
         """_resolve should follow 'ref' keys recursively."""
-        # V2: text.body.color is "@colors.gray-white" which resolves to hex
+        # text.body.color is "@colors.gray-white" which resolves to hex
         value = self.theme._resolve("text.body.color")
         assert isinstance(value, str)
         assert value.startswith("#") or value.startswith("rgba")
@@ -190,7 +190,7 @@ class TestThemeColorAPI:
     def test_color_bg_tokens(self):
         """color() should resolve background tokens."""
         import wx
-        # V2: layout.main.frame.bg -> @colors.gray-black -> very low RGB
+        # layout.main.frame.bg -> @colors.gray-black -> very low RGB
         bg_page = self.theme.color("layout.main.frame.bg")
         assert isinstance(bg_page, wx.Colour)
         # Dark theme: gray-black is #0D0D0D, very low RGB
@@ -201,7 +201,7 @@ class TestThemeColorAPI:
     def test_color_text_tokens(self):
         """color() should resolve text color tokens."""
         import wx
-        # V2: text.body.color -> @colors.gray-white -> near white
+        # text.body.color -> @colors.gray-white -> near white
         text_primary = self.theme.color("text.body.color")
         assert isinstance(text_primary, wx.Colour)
         # Dark theme: gray-white is #E0E0E0, very high RGB
@@ -259,11 +259,11 @@ class TestThemeFontAPI:
         assert hasattr(font, 'GetFaceName') and hasattr(font, 'GetPointSize') and hasattr(font, 'GetWeight')
 
     def test_font_body_properties(self):
-        """body font should be JetBrains Mono, 9px, normal (V2: from text.body.font)."""
+        """body font should be JetBrains Mono, 9px, normal (from text.body.font)."""
         font = self.theme.font("body")
         assert font.GetFaceName() == "JetBrains Mono"
         assert font.GetPointSize() == 9  # YAML: typography.scale.sm
-        # V2 text.body.font.weight = 400 maps to FONTWEIGHT_NORMAL
+        # text.body.font.weight = 400 maps to FONTWEIGHT_NORMAL
         assert font.GetWeight() == 400
 
     def test_font_unknown_preset_returns_system_fallback(self):
@@ -327,14 +327,14 @@ class TestThemeYAMLStructure:
         self.theme = Theme.load("dark")
 
     def test_yaml_has_required_top_level_keys(self):
-        """dark.yaml must have colors, typography, radius, borders, components, viewport (V2)."""
+        """dark.yaml must have colors, typography, radius, borders, components, viewport."""
         assert "colors" in self.theme._data
         assert "typography" in self.theme._data
         assert "radius" in self.theme._data
         assert "borders" in self.theme._data
         assert "components" in self.theme._data
         assert "viewport" in self.theme._data
-        # V2 does NOT have root-level 'palette' (uses colors.{name} instead)
+        # theme does not have root-level 'palette' (uses colors.{name} instead)
 
     def test_all_color_tokens_resolve(self):
         """All color tokens used in UI should resolve without errors."""
@@ -369,10 +369,10 @@ class TestThemeYAMLStructure:
     def test_all_font_presets_resolve(self):
         """All font presets used in UI should resolve.
 
-        V2 uses global text.* roles, not individual named presets.
+        theme uses global text.* roles, not individual named presets.
         TextStyles class builds fonts dynamically from font_family/font_size.
         """
-        # V2: font presets are defined in typography.presets
+        # font presets are defined in typography.presets
         # But the actual UI uses TextStyle that constructs fonts from families+scales
         # Test that the constituent parts exist:
         assert self.theme.font_family("mono") in ("JetBrains Mono", "mono")
@@ -433,17 +433,17 @@ class TestThemeColorStates:
 
 
 class TestThemeV2Features:
-    """Test V2-specific features: glyphs, text roles, scales.
+    """Test theme-specific features: glyphs, text roles, scales.
 
-    These tests are designed to run against V2 theme YAMLs.
+    These tests are designed to run against theme YAMLs.
     In Phase 1, we test the new methods exist and handle missing tokens gracefully.
-    In Phase 2+, V2 themes will be deployed and these tests will validate full V2 support.
+    In Phase 2+, full support for all theme features will be validated.
     """
 
     @pytest.fixture(autouse=True)
     def setup_theme(self):
         from SpinRender.core.theme import Theme
-        self.theme = Theme.load("dark")  # Will load V2 after Phase 2; for now V1 is okay
+        self.theme = Theme.load("dark")  # Load the current theme
 
     def test_glyph_method_exists(self):
         """Theme should have glyph() method."""
@@ -463,7 +463,7 @@ class TestThemeV2Features:
 
     def test_size_works_for_any_numeric_token(self):
         """size() should work for any numeric token (radius, borders, spacing)."""
-        # V2 tokens
+        # theme tokens
         assert self.theme.size("radius.sm") == 4
         assert self.theme.size("radius.md") == 6
         assert self.theme.size("borders.width.thin") == 1
@@ -473,7 +473,7 @@ class TestThemeV2Features:
 
     def test_color_works_for_text_roles(self):
         """color() should resolve text.*.color tokens."""
-        # V2: text.title.color should resolve
+        # text.title.color should resolve
         color = self.theme.color("text.title.color")
         assert hasattr(color, 'Red') and hasattr(color, 'Green') and hasattr(color, 'Blue')
 

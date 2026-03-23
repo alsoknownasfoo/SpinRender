@@ -1,12 +1,12 @@
 #!/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
 """
-Unit tests for V2 theme migration — validates that V2 themes load and key tokens resolve.
+Unit tests for theme migration — validates that themes load and key tokens resolve.
 """
 import pytest
 
 
 class TestV2ThemeLoading:
-    """Test that V2 themes load successfully."""
+    """Test that themes load successfully."""
 
     @pytest.fixture(autouse=True)
     def reset_theme(self):
@@ -16,14 +16,14 @@ class TestV2ThemeLoading:
         Theme._instance = None
 
     def test_dark_theme_loads(self):
-        """V2 dark theme should load without errors."""
+        """Dark theme should load without errors."""
         from SpinRender.core.theme import Theme
         theme = Theme.load("dark")
         assert theme is not None
         assert Theme._instance is theme
 
     def test_light_theme_loads(self):
-        """V2 light theme should load without errors."""
+        """Light theme should load without errors."""
         from SpinRender.core.theme import Theme
         theme = Theme.load("light")
         assert theme is not None
@@ -42,7 +42,7 @@ class TestV2ThemeLoading:
         assert dark_primary.Red() != light_primary.Red() or dark_primary.Blue() != light_primary.Blue()
 
     def test_v2_color_tokens(self):
-        """V2 theme should have colors.primary and colors.secondary."""
+        """Theme should have colors.primary and colors.secondary."""
         from SpinRender.core.theme import Theme
         theme = Theme.load("dark")
         assert theme.has_token("colors")
@@ -53,7 +53,7 @@ class TestV2ThemeLoading:
         assert isinstance(primary, wx.Colour)
 
     def test_v2_radius_tokens(self):
-        """V2 theme should have radius scale."""
+        """Theme should have radius scale."""
         from SpinRender.core.theme import Theme
         theme = Theme.load("dark")
         assert theme.has_token("radius")
@@ -61,7 +61,7 @@ class TestV2ThemeLoading:
         assert md == 6
 
     def test_v2_glyphs_exist(self):
-        """V2 theme should have glyphs section."""
+        """Theme should have glyphs section."""
         from SpinRender.core.theme import Theme
         theme = Theme.load("dark")
         assert theme.has_token("glyphs")
@@ -70,7 +70,7 @@ class TestV2ThemeLoading:
         assert isinstance(glyph, str) and len(glyph) > 0
 
     def test_v2_text_roles(self):
-        """V2 theme should have text.* roles."""
+        """Theme should have text.* roles."""
         from SpinRender.core.theme import Theme
         theme = Theme.load("dark")
         assert theme.has_token("text")
@@ -80,7 +80,7 @@ class TestV2ThemeLoading:
         assert isinstance(title_color, wx.Colour)
 
     def test_v2_components(self):
-        """V2 theme should have components. definitions."""
+        """Theme should have components. definitions."""
         from SpinRender.core.theme import Theme
         theme = Theme.load("dark")
         assert theme.has_token("components")

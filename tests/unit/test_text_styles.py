@@ -20,7 +20,7 @@ class TestTextStyle:
 
     def test_textstyle_creation(self):
         """Test TextStyle can be created with all fields."""
-        color = _theme.color("text.body.color")  # V2: primary text color
+        color = _theme.color("text.body.color")  # primary text color
         style = TextStyle(
             family="JetBrains Mono",
             size=11,
@@ -49,7 +49,7 @@ class TestTextStyle:
 
     def test_textstyle_is_frozen(self):
         """Test that TextStyle instances are immutable."""
-        color = _theme.color("text.body.color")  # V2: primary text color
+        color = _theme.color("text.body.color")  # primary text color
         style = TextStyle(
             family="JetBrains Mono",
             size=11,
@@ -158,14 +158,14 @@ class TestTextStyles:
         style = TextStyles.body
         assert isinstance(style, TextStyle)
         assert style.family == _theme.font_family("mono")
-        assert style.size == 9  # V2: typography.scale.sm
+        assert style.size == 9  # typography.scale.sm
         assert style.weight == 400
 
     def test_body_strong_token(self):
         """Test body-strong uses semibold weight."""
         style = TextStyles.body_strong
         assert style.weight == 600
-        assert style.size == 9  # V2: inherits body size (sm=9)
+        assert style.size == 9  # inherits body size (sm=9)
         assert style.family == _theme.font_family("mono")
 
     def test_label_sm_token(self):

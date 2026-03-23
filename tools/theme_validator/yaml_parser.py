@@ -323,7 +323,7 @@ class ThemeValidatorError(Exception):
     pass
 
 
-# Top-level categories we care about (V2 Mastering Schema)
+# Top-level categories we care about (Mastering Schema)
 CATEGORIES = ['palette', 'colors', 'glyphs', 'text', 'spacing', 'borders', 'components']
 
 
