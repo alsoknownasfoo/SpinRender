@@ -139,14 +139,27 @@ class Mockwx:
         self._lib = self._make_module('wx.lib')
         self._glcanvas = self._make_module('wx.glcanvas')
         self._scrolledpanel = self._make_module('wx.lib.scrolledpanel')
-        # Link scrolledpanel to lib
+        self._newevent = self._make_newevent_module()
+        # Link submodules to lib
         self._lib.scrolledpanel = self._scrolledpanel
+        self._lib.newevent = self._newevent
 
     def _make_module(self, name):
         m = MagicMock()
         m.__name__ = name
         m.__file__ = f'{name}.py'
         m.__path__ = [] if '.' in name else None
+        m.__spec__ = None
+        return m
+
+    def _make_newevent_module(self):
+        m = self._make_module('wx.lib.newevent')
+        def _make_event_pair(name='MockEvent'):
+            EventClass = type(name, (object,), {'GetClientData': lambda self: None})
+            EventBinder = MagicMock()
+            return EventClass, EventBinder
+        m.NewEvent = lambda: _make_event_pair('MockEvent')
+        m.NewCommandEvent = lambda: _make_event_pair('MockCommandEvent')
         return m
 
     def __getattr__(self, name):
@@ -251,6 +264,7 @@ sys.modules['wx.svg'] = mock_wx_module._svg
 sys.modules['wx.lib'] = mock_wx_module._lib
 sys.modules['wx.glcanvas'] = mock_wx_module._glcanvas
 sys.modules['wx.lib.scrolledpanel'] = mock_wx_module._scrolledpanel
+sys.modules['wx.lib.newevent'] = mock_wx_module._newevent
 
 
 @pytest.fixture(scope='session', autouse=True)

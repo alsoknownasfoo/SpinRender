@@ -140,3 +140,103 @@ class TestNoManualTextStylesInDialogs:
         ]
         for pattern in hardcoded_patterns:
             assert pattern not in source, f"Found hardcoded padding: {pattern}"
+
+
+class TestCreateFooterHelper:
+    """BaseStyledDialog.create_footer must exist and dialogs must use it."""
+
+    def test_create_footer_method_exists(self):
+        """BaseStyledDialog must have a create_footer method."""
+        from SpinRender.ui.dialogs import BaseStyledDialog
+        assert hasattr(BaseStyledDialog, 'create_footer')
+        assert callable(BaseStyledDialog.create_footer)
+
+    def test_create_footer_uses_proportion_one(self):
+        """When btn1_prop/btn2_prop are None, buttons use proportion=1."""
+        from SpinRender.ui.dialogs import BaseStyledDialog
+        import inspect
+
+        source = inspect.getsource(BaseStyledDialog.create_footer)
+        # None case defaults to prop1=prop2=1
+        assert "prop1 = 1" in source and "prop2 = 1" in source
+        # Buttons added with prop1, prop2
+        assert "footer_sizer.Add(btn1, prop1)" in source
+        assert "footer_sizer.Add(btn2, prop2)" in source
+
+    def test_create_footer_has_divider_line(self):
+        """create_footer must include a 1px divider panel at the top."""
+        from SpinRender.ui.dialogs import BaseStyledDialog
+        import inspect
+
+        source = inspect.getsource(BaseStyledDialog.create_footer)
+        assert 'size=(-1, 1)' in source
+        assert 'borders.default.color' in source
+
+    def test_create_footer_has_vertical_padding(self):
+        """create_footer must add top and bottom spacers around the buttons."""
+        from SpinRender.ui.dialogs import BaseStyledDialog
+        import inspect
+
+        source = inspect.getsource(BaseStyledDialog.create_footer)
+        assert "pad['top']" in source
+        assert "pad['bottom']" in source
+
+    def test_create_footer_has_gap_and_proportions(self):
+        """create_footer must accept gap, btn1_prop, btn2_prop parameters."""
+        import inspect
+        from SpinRender.ui.dialogs import BaseStyledDialog
+
+        sig = inspect.signature(BaseStyledDialog.create_footer)
+        params = list(sig.parameters.keys())
+        assert 'padding' in params
+        assert 'gap' in params
+        assert 'btn1_prop' in params
+        assert 'btn2_prop' in params
+
+    def test_create_footer_proportions_add_stretch_when_sum_lt_100(self):
+        """When btn1_prop + btn2_prop < 100, create_footer adds left stretch spacer."""
+        from SpinRender.ui.dialogs import BaseStyledDialog
+        import inspect
+
+        source = inspect.getsource(BaseStyledDialog.create_footer)
+        assert 'left_stretch' in source or 'AddStretchSpacer' in source
+        assert '100 - total' in source
+
+    def test_filename_dialog_uses_create_footer(self):
+        """FilenameEntryDialog.build_ui must compute proportions from theme and pass to create_footer."""
+        from SpinRender.ui.dialogs import FilenameEntryDialog
+        import inspect
+
+        source = inspect.getsource(FilenameEntryDialog.build_ui)
+        assert "create_footer" in source
+        assert "gap=gap" in source
+        assert 'layout.dialogs.filename.controls.button1.width' in source
+        assert 'layout.dialogs.filename.controls.button2.width' in source
+        assert "btn1_prop=prop1" in source
+        assert "btn2_prop=prop2" in source
+
+    def test_advanced_options_dialog_uses_create_footer(self):
+        """AdvancedOptionsDialog must pass btn1_prop=25, btn2_prop=25 and resolve gap."""
+        from SpinRender.ui.dialogs import AdvancedOptionsDialog
+        import inspect
+
+        source = inspect.getsource(AdvancedOptionsDialog.build_ui)
+        assert "create_footer" in source
+        assert "btn1_prop=25" in source
+        assert "btn2_prop=25" in source
+        assert 'layout.dialogs.options.controls.gap' in source
+        assert 'gap=footer_gap' in source
+
+    def test_save_preset_dialog_uses_create_footer(self):
+        """SavePresetDialog must compute proportions from theme, resolve gap, and pass to create_footer."""
+        from SpinRender.ui.dialogs import SavePresetDialog
+        import inspect
+
+        source = inspect.getsource(SavePresetDialog.build_ui)
+        assert "create_footer" in source
+        assert 'layout.dialogs.addpreset.controls.button1.width' in source
+        assert 'layout.dialogs.addpreset.controls.button2.width' in source
+        assert "btn1_prop=prop1" in source
+        assert "btn2_prop=prop2" in source
+        assert 'layout.dialogs.addpreset.controls.gap' in source
+        assert 'gap=footer_gap' in source

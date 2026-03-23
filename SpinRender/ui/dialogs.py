@@ -6,7 +6,6 @@ import wx
 import os
 import glob as _glob
 import webbrowser
-import threading
 from .custom_controls import (
     CustomButton, CustomInput, CustomListView, 
     EVT_LIST_ITEM_SELECTED, EVT_LIST_ITEM_DELETED
@@ -127,6 +126,70 @@ class BaseStyledDialog(wx.Dialog):
 
         return header
 
+    def create_footer(self, btn1_id, btn2_id, padding=16, gap=8, btn1_prop=None, btn2_prop=None):
+        """Create a footer panel with divider, vertical padding, and two buttons.
+
+        Args:
+            btn1_id: Button ID string for left button
+            btn2_id: Button ID string for right button
+            padding: int or dict with 'left'/'right'/'top'/'bottom' keys (defaults to 16)
+            gap: int gap between buttons (defaults to 8, typically half of horizontal padding)
+            btn1_prop: Optional int proportion for button1 (percentage 1-100 or arbitrary int).
+                       If None, defaults to 1 (fill mode with equal width).
+            btn2_prop: Optional int proportion for button2. If None, defaults to 1.
+
+            Proportion logic:
+            - If both props are provided and (btn1_prop + btn2_prop) < 100, a left stretch
+              spacer with proportion = 100 - (btn1_prop + btn2_prop) is added (right-align).
+            - If both props are provided and sum >= 100, no stretch is added (buttons fill).
+            - If either prop is None, both default to 1 and no stretch is added (fill mode).
+
+        Returns:
+            tuple: (footer_panel, btn1, btn2)
+        """
+        if isinstance(padding, int):
+            pad = {'left': padding, 'right': padding, 'top': padding, 'bottom': padding}
+        else:
+            pad = {'left': padding.get('left', 16), 'right': padding.get('right', 16),
+                   'top': padding.get('top', 16), 'bottom': padding.get('bottom', 16)}
+
+        footer = wx.Panel(self.main_container)
+        outer_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        divider = wx.Panel(footer, size=(-1, 1))
+        divider.SetBackgroundColour(_theme.color("borders.default.color"))
+        outer_sizer.Add(divider, 0, wx.EXPAND)
+
+        # Determine proportions and if we need a left stretch
+        if btn1_prop is None or btn2_prop is None:
+            prop1 = 1
+            prop2 = 1
+            left_stretch = 0
+        else:
+            prop1 = btn1_prop
+            prop2 = btn2_prop
+            total = prop1 + prop2
+            left_stretch = 100 - total if total < 100 else 0
+
+        footer_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        btn1 = CustomButton(footer, id=btn1_id, size=(-1, 36))
+        btn2 = CustomButton(footer, id=btn2_id, size=(-1, 36))
+
+        footer_sizer.Add((pad['left'], 0))
+        if left_stretch:
+            footer_sizer.AddStretchSpacer(left_stretch)
+        footer_sizer.Add(btn1, prop1)
+        footer_sizer.Add((gap, 0))
+        footer_sizer.Add(btn2, prop2)
+        footer_sizer.Add((pad['right'], 0))
+
+        outer_sizer.Add((0, pad['top']))
+        outer_sizer.Add(footer_sizer, 0, wx.EXPAND)
+        outer_sizer.Add((0, pad['bottom']))
+        footer.SetSizer(outer_sizer)
+
+        return footer, btn1, btn2
+
     def on_left_down(self, event):
         win = event.GetEventObject()
         win.CaptureMouse()
@@ -202,24 +265,25 @@ class FilenameEntryDialog(BaseStyledDialog):
         main_sizer.Add(content, 0, wx.EXPAND)
         main_sizer.Add((0, 0), 1)  # stretch below
 
-        footer = wx.Panel(self.main_container)
-        footer_sizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        self.cancel_btn = CustomButton(footer, id="cancel", size=(-1, 36))
+        # Resolve button proportions from theme
+        btn1_width = _theme._resolve("layout.dialogs.filename.controls.button1.width")
+        btn2_width = _theme._resolve("layout.dialogs.filename.controls.button2.width")
+        prop1 = prop2 = None
+        if isinstance(btn1_width, str) and btn1_width.endswith("%"):
+            try:
+                prop1 = int(btn1_width.rstrip("%").strip())
+            except ValueError:
+                prop1 = None
+        if isinstance(btn2_width, str) and btn2_width.endswith("%"):
+            try:
+                prop2 = int(btn2_width.rstrip("%").strip())
+            except ValueError:
+                prop2 = None
+        footer, self.cancel_btn, self.save_btn = self.create_footer("cancel", "save", padding=padding, gap=gap, btn1_prop=prop1, btn2_prop=prop2)
         self.cancel_btn.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_CANCEL))
-
-        self.save_btn = CustomButton(footer, id="save", size=(-1, 36))
         self.save_btn.Bind(wx.EVT_BUTTON, self.on_save)
 
-        footer_sizer.Add((padding['left'], 0))
-        footer_sizer.Add(self.cancel_btn, 1)
-        footer_sizer.Add((gap, 0))
-        footer_sizer.Add(self.save_btn, 1)
-        footer_sizer.Add((padding['right'], 0))
-        footer.SetSizer(footer_sizer)
-
-        main_sizer.Add((0, padding['top']))
-        main_sizer.Add(footer, 0, wx.EXPAND | wx.BOTTOM, padding['bottom'])
+        main_sizer.Add(footer, 0, wx.EXPAND)
 
         self.main_container.SetSizer(main_sizer)
 
@@ -384,21 +448,12 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         main_sizer.Add(content, 1, wx.EXPAND | wx.ALL, padding_lg)
 
         # Footer
-        footer = wx.Panel(self.main_container, size=(-1, 60))
-        footer_sizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        cancel_btn = CustomButton(footer, id="cancel", size=(120, 36))
+        # Resolve gap from theme
+        footer_gap = _theme._resolve("layout.dialogs.options.controls.gap") or 8
+        footer, cancel_btn, ok_btn = self.create_footer("cancel", "ok", btn1_prop=25, btn2_prop=25, gap=footer_gap)
         cancel_btn.Bind(wx.EVT_BUTTON, self.on_cancel)
-
-        ok_btn = CustomButton(footer, id="ok", size=(120, 36))
         ok_btn.Bind(wx.EVT_BUTTON, self.on_ok)
-
-        footer_sizer.AddStretchSpacer()
-        footer_sizer.Add(cancel_btn, 0, wx.RIGHT, 12)
-        footer_sizer.Add(ok_btn, 0, wx.RIGHT, 16)
-
-        footer.SetSizer(footer_sizer)
-        main_sizer.Add(footer, 0, wx.EXPAND | wx.BOTTOM, 16)
+        main_sizer.Add(footer, 0, wx.EXPAND)
 
         self.main_container.SetSizer(main_sizer)
         self.update_path_display()
@@ -536,18 +591,26 @@ class SavePresetDialog(BaseStyledDialog):
         content.SetSizer(content_sizer)
         main_sizer.Add(content, 1, wx.EXPAND)
 
-        footer = wx.Panel(self.main_container, size=(-1, 60))
-        footer_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        
-        cancel_btn = CustomButton(footer, id="cancel", size=(110, 36))
+        # Resolve button proportions from theme
+        btn1_width = _theme._resolve("layout.dialogs.addpreset.controls.button1.width")
+        btn2_width = _theme._resolve("layout.dialogs.addpreset.controls.button2.width")
+        prop1 = prop2 = None
+        if isinstance(btn1_width, str) and btn1_width.endswith("%"):
+            try:
+                prop1 = int(btn1_width.rstrip("%").strip())
+            except ValueError:
+                prop1 = None
+        if isinstance(btn2_width, str) and btn2_width.endswith("%"):
+            try:
+                prop2 = int(btn2_width.rstrip("%").strip())
+            except ValueError:
+                prop2 = None
+        # Resolve gap from theme
+        footer_gap = _theme._resolve("layout.dialogs.addpreset.controls.gap") or 8
+        footer, cancel_btn, self.save_btn = self.create_footer("cancel", "save", btn1_prop=prop1, btn2_prop=prop2, gap=footer_gap)
         cancel_btn.Bind(wx.EVT_BUTTON, self.on_cancel)
-        
-        self.save_btn = CustomButton(footer, id="save", size=(110, 36))
         self.save_btn.Bind(wx.EVT_BUTTON, self.on_save)
-        
-        footer_sizer.AddStretchSpacer(); footer_sizer.Add(cancel_btn, 0, wx.RIGHT, 12); footer_sizer.Add(self.save_btn, 0, wx.RIGHT, 16)
-        footer.SetSizer(footer_sizer)
-        main_sizer.Add(footer, 0, wx.EXPAND | wx.BOTTOM, 16)
+        main_sizer.Add(footer, 0, wx.EXPAND)
 
         self.main_container.SetSizer(main_sizer)
 

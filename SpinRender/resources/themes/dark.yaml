@@ -387,7 +387,7 @@ layout:
         height: 220
       controls:
         padding: 16
-        gap: 16
+        gap: 8
         button1:
           ref: "@components.button.cancel"
           width: "50%"
