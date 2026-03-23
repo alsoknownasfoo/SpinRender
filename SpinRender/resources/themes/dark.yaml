@@ -495,7 +495,7 @@ components:
       alignment: "left"
       icon:
         ref: "glyphs.folder"
-        color: "@colors.gray-white"
+        color: "@colors.primary"
       frame:
         height: 36
         bg:
