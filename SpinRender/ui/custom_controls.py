@@ -854,7 +854,7 @@ class CustomInput(wx.Panel):
     HUD-style input using a visible native wx.TextCtrl for rich editing.
     The parent panel draws the HUD frame (border/bg) and non-editable elements (units/icons).
     """
-    def __init__(self, parent, value="", placeholder="", size=(-1, 32), id=wx.ID_ANY, section=None, **kwargs):
+    def __init__(self, parent, value="", placeholder="", size=(-1, 32), id=wx.ID_ANY, section=None, allow_empty=False, **kwargs):
         if isinstance(id, str):
             self.style_id = id
             real_id = wx.ID_ANY
@@ -865,19 +865,22 @@ class CustomInput(wx.Panel):
         # Enforce minimum width
         actual_size = list(size)
         if actual_size[0] == -1: actual_size[0] = 100
-        
+
         super().__init__(parent, id=real_id, size=tuple(actual_size))
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
 
         # Resolve DNA
         self.token = f"components.input.{self.style_id}"
         if not _theme.has_token(self.token): self.token = "components.input.default"
-        
+
         self.type = _theme._resolve(f"{self.token}.type") or "text"
         self.case = _theme._resolve(f"{self.token}.case") or "none"
         self.unit = kwargs.get('unit') or _theme._resolve(f"{self.token}.unit") or ""
         self.prefix = kwargs.get('prefix') or _theme._resolve(f"{self.token}.prefix")
         if not isinstance(self.prefix, str) or self.prefix == "#FF00FF": self.prefix = ""
+
+        # Allow empty values (don't revert on blur)
+        self.allow_empty = allow_empty
         
         # 1. Native Control
         style = wx.TE_PROCESS_ENTER | wx.BORDER_NONE
@@ -967,7 +970,8 @@ class CustomInput(wx.Panel):
 
     def _confirm(self):
         val = self.text_ctrl.GetValue().strip()
-        if not val: self.text_ctrl.ChangeValue(self.original_value)
+        if not val and not self.allow_empty:
+            self.text_ctrl.ChangeValue(self.original_value)
         elif self.type == "numeric":
             try:
                 v = float(val)

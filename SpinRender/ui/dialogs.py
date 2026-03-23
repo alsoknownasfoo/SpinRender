@@ -323,7 +323,8 @@ class AdvancedOptionsDialog(BaseStyledDialog):
             placeholder=self.PLACEHOLDER_TEXT,
             multiline=True,
             size=(-1, 80),
-            id="parameters"
+            id="parameters",
+            allow_empty=True
         )
         content_sizer.Add(self.override_input, 1, wx.EXPAND | wx.BOTTOM, 8)
         
