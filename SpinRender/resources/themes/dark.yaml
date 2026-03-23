@@ -191,7 +191,7 @@ text:
     formatting: "uppercase"
     font:
       typeface: "@typography.families.mono"
-      size: "@typography.scale.sm"
+      size: "@typography.scale.base"
       weight: "@typography.weights.normal"
   label:
     color: "@colors.gray-text"
@@ -214,7 +214,7 @@ text:
       active: "@colors.primary"
     font:
       typeface: "@typography.families.mono"
-      size: "@typography.scale.sm"
+      size: "@typography.scale.base"
       weight: "@typography.weights.bold"
   dropdown:
     color: "@colors.gray-white"
@@ -227,7 +227,7 @@ text:
     formatting: "uppercase"
     font:
       typeface: "@typography.families.mono"
-      size: "@typography.scale.sm"
+      size: "@typography.scale.base"
       weight: "@typography.weights.bold"
   icon:
     color: "@colors.gray-white"

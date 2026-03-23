@@ -75,6 +75,9 @@ class TextStyles:
 
         "status": "components.status.default.label",
 
+        # Button styles
+        "closepreview": "components.button.closepreview.label",
+
         # Dialog styles
         "dialog_description": "layout.dialogs.default.body.description",
         "dialog_section_label": "layout.dialogs.default.body.section_label",
