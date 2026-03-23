@@ -989,7 +989,7 @@ class CustomInput(wx.Panel):
         px = 12
         if self.type == "rich": px = 36
         if self.type == "rich" and self.show_chip and self.chip:
-            self.chip.Move(wx.Point(36, (h - 18) / 2))
+            self.chip.Move(wx.Point(36, (h - self.chip.GetSize().y) / 2))
             px += self.chip.GetSize().x + 6
             
         pw = w - px - 12
@@ -1050,7 +1050,8 @@ class CustomInput(wx.Panel):
         # 3. Draw Non-editable content
         if self.type == "rich" and self.icon_ref:
             icon_char = _theme.glyph(self.icon_ref)
-            gc.SetFont(gc.CreateFont(_theme.font("icon"), tc))
+            icon_color = _theme.color(f"{self.token}.icon.color", self.hovered, False, enabled) if _theme.has_token(f"{self.token}.icon.color") else tc
+            gc.SetFont(gc.CreateFont(_theme.font("icon"), icon_color))
             itw, ith = gc.GetTextExtent(icon_char)
             gc.DrawText(icon_char, 12, (h - ith) / 2)
 

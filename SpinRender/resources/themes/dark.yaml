@@ -417,10 +417,10 @@ components:
       ref: "@text.icon"
     label:
       font:
-        typeface: "@typography.families.display"
+        typeface: "@typography.families.mono"
         size: "@typography.scale.base"
         weight: "@typography.weights.bold"
-      color: "@colors.gray-dark"
+      color: "@colors.gray-black"
     gap: "@typography.spacing.sm"
 
   preset_card:
