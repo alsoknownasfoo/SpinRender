@@ -124,6 +124,28 @@ def find_command(cmd):
     return None
 
 
+def _apply_overrides(cmd, override_str):
+    """
+    Remove any flags present in override_str from cmd, then return the
+    override tokens.  This ensures user-supplied overrides truly replace
+    the corresponding base-command flags rather than duplicating them
+    (kicad-cli uses first-wins semantics for duplicate flags).
+    """
+    tokens = override_str.split()
+    override_flags = {t for t in tokens if t.startswith('-')}
+    filtered = []
+    skip_next = False
+    for tok in cmd:
+        if skip_next:
+            skip_next = False
+            continue
+        if tok in override_flags:
+            skip_next = True
+            continue
+        filtered.append(tok)
+    return filtered, tokens
+
+
 class RenderEngine:
     """
     Core rendering engine for SpinRender
@@ -374,12 +396,14 @@ class RenderEngine:
                     cli_key = '--' + key.replace('_', '-')
                     cmd.extend([cli_key, str(light_params[key])])
 
-            cmd.extend(['-o', output_path, self.board_path])
-
-            # Add CLI overrides if specified
+            # Apply CLI overrides before positional args so kicad-cli sees them
+            # as flags.  Deduplicate first so user values win over base defaults.
             cli_overrides = self.settings.get('cli_overrides', '').strip()
             if cli_overrides:
-                cmd.extend(cli_overrides.split())
+                cmd, override_tokens = _apply_overrides(cmd, cli_overrides)
+                cmd.extend(override_tokens)
+
+            cmd.extend(['-o', output_path, self.board_path])
 
             # Execute render and pipe output to logger
             logger.debug(f"CLI CMD: {' '.join(cmd)}")
