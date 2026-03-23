@@ -409,15 +409,18 @@ components:
   badge:
     frame:
       height: 18
-      bg: "@colors.warning"
+      bg: "@colors.cyan"
       radius: "@radius.sm"
       padding:
         horizontal: "@typography.spacing.sm"
     icon: 
       ref: "@text.icon"
     label:
-      font: "@typography.scale.sm"
-      color: "@colors.gray-dark"
+      font:
+        typeface: "@typography.families.mono"
+        size: "@typography.scale.base"
+        weight: "@typography.weights.bold"
+      color: "@colors.black"
     gap: "@typography.spacing.sm"
 
   preset_card:
@@ -490,9 +493,9 @@ components:
       ref: "@components.input.default"
       type: "rich"
       alignment: "left"
-      icon: 
-        ref: "@glyphs.folder"
-        color: "@colors.gray-white"
+      icon:
+        ref: "glyphs.folder"
+        color: "@colors.primary"
       frame:
         height: 36
         bg:
