@@ -908,6 +908,7 @@ class CustomInput(wx.Panel):
         
         # 2. State
         self.placeholder = str(placeholder)
+        self._placeholder_active = False
         self.hovered = False
         self.original_value = str(value)
         self.icon_ref = _theme._resolve(f"{self.token}.icon")
@@ -940,6 +941,25 @@ class CustomInput(wx.Panel):
                 break
             _p = _p.GetParent()
 
+        # Show placeholder for multiline fields when initially empty
+        if self.multiline and self.placeholder and not value:
+            wx.CallAfter(self._show_placeholder)
+
+    def _show_placeholder(self):
+        """Display placeholder as muted styled text inside the text control."""
+        if not self.placeholder or self._placeholder_active:
+            return
+        self._placeholder_active = True
+        self.text_ctrl.ChangeValue(self.placeholder)
+        self.text_ctrl.SetStyle(0, len(self.placeholder), wx.TextAttr(_theme.color(f"{self.token}.placeholder.color")))
+
+    def _hide_placeholder(self):
+        """Clear placeholder text so the user can type."""
+        if not self._placeholder_active:
+            return
+        self._placeholder_active = False
+        self.text_ctrl.ChangeValue("")
+
     def _on_text(self, e):
         val = self.text_ctrl.GetValue()
         
@@ -960,17 +980,24 @@ class CustomInput(wx.Panel):
     def _on_focus(self, e):
         if self.IsEnabled():
             wx.PostEvent(self, ParameterInteractionEvent(self.GetId()))
+        self._hide_placeholder()
         self.original_value = self.text_ctrl.GetValue()
         wx.CallAfter(self.text_ctrl.SelectAll)
         self.Refresh(); e.Skip()
-    def _on_blur(self, e): self._confirm(); self.Refresh(); e.Skip()
+    def _on_blur(self, e):
+        self._confirm()
+        if self.multiline and self.placeholder and not self.text_ctrl.GetValue().strip():
+            self._show_placeholder()
+        self.Refresh(); e.Skip()
     
     def _on_mouse_enter(self, e): self.hovered = True; self.Refresh(); e.Skip()
     def _on_mouse_leave(self, e): self.hovered = False; self.Refresh(); e.Skip()
 
     def _confirm(self):
+        if self._placeholder_active:
+            return
         val = self.text_ctrl.GetValue().strip()
-        if not val and not self.allow_empty:
+        if not val and not self.allow_empty and not self.multiline:
             self.text_ctrl.ChangeValue(self.original_value)
         elif self.type == "numeric":
             try:
@@ -1038,6 +1065,14 @@ class CustomInput(wx.Panel):
             bgcolor = _theme._shift_color(bg, shiftby)
             self.text_ctrl.SetBackgroundColour(bgcolor)
             self.text_ctrl.SetDefaultStyle(wx.TextAttr(tc, bgcolor))
+            # Re-apply per-character style so SetForegroundColour/SetDefaultStyle take effect
+            # on existing text (SetDefaultStyle only affects future typed text in TE_RICH)
+            if self._placeholder_active and self.placeholder:
+                self.text_ctrl.SetStyle(0, len(self.placeholder), wx.TextAttr(_theme.color(f"{self.token}.placeholder.color"), bgcolor))
+            else:
+                real_text = self.text_ctrl.GetValue()
+                if real_text:
+                    self.text_ctrl.SetStyle(0, len(real_text), wx.TextAttr(tc, bgcolor))
 
         # 2. Draw HUD Frame
         bc_tok, bs_tok = f"{self.token}.frame.border.color", f"{self.token}.frame.border.size"
@@ -1064,7 +1099,10 @@ class CustomInput(wx.Panel):
             utw, uth = gc.GetTextExtent(self.unit)
             gc.DrawText(self.unit, w - utw - 12, (h - uth) / 2)
 
-    def GetValue(self): return self.text_ctrl.GetValue().strip()
+    def GetValue(self):
+        if self._placeholder_active:
+            return ""
+        return self.text_ctrl.GetValue().strip()
     
     # TODO - Do better hex value handling in input field
     def SetValue(self, val):
@@ -1079,7 +1117,12 @@ class CustomInput(wx.Panel):
 
         v = str(val)
         if self.prefix and v.startswith(self.prefix): v = v[len(self.prefix):]
-        self.text_ctrl.ChangeValue(v); self.Refresh()
+        self._placeholder_active = False
+        if self.multiline and self.placeholder and not v.strip():
+            self._show_placeholder()
+        else:
+            self.text_ctrl.ChangeValue(v)
+        self.Refresh()
     def SetEditable(self, e): self.text_ctrl.SetEditable(e); self.Enable(e); self.Refresh()
     def SetPath(self, p, in_project=False):
         self.text_ctrl.ChangeValue(p); self.show_chip = in_project

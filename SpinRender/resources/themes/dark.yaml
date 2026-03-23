@@ -484,6 +484,8 @@ components:
       font: "@text.numeric.font" # font
       selection: "@colors.cyan-20" # highlight selection color
       alignment: "center" # text alignment
+      placeholder:
+        color: "@colors.gray-medium"
       error:
         color: "@colors.error"
         border:

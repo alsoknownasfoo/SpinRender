@@ -248,7 +248,6 @@ class AdvancedOptionsDialog(BaseStyledDialog):
     Advanced Options modal dialog
     Follows Pencil design: Modal/AdvancedOptions
     """
-    PLACEHOLDER_TEXT = ".e.g. --color-theme=theme"
     # All colors use theme.*
 
     def __init__(self, parent, settings, board_path):
@@ -320,7 +319,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         self.override_input = CustomInput(
             content,
             value=getattr(self.settings, 'cli_overrides', ''),
-            placeholder=self.PLACEHOLDER_TEXT,
+            placeholder=_locale.get("dialog.advanced.overrides_placeholder", ""),
             multiline=True,
             size=(-1, 80),
             id="parameters",

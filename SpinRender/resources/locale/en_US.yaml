@@ -26,6 +26,7 @@ locale:
     dialog:
       advanced:
         title: "Advanced options"
+        overrides_placeholder: "e.g. --color-theme=theme"
       save_preset:
         title: "Save preset"
       recall_preset:
