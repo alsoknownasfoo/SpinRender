@@ -73,7 +73,7 @@ class TextStyles:
         "info": "layout.main.rightpanel.info",
         "shader": "layout.main.rightpanel.shader",
 
-        "status": "components.status.default.label",
+        "status": "status",
 
         # Button styles
         "closepreview": "components.button.closepreview.label",

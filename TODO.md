@@ -76,6 +76,8 @@ Then, review the patterns and identify areas where code can be modularized for e
 # Move tasks here when a branch is ready for review.
 # Format: [TAG] [YYYY-MM-DD] [branch-name] Simple Title: Task...
 
+[UI/UX] [2026-03-23] [vk/834c-ui-ux-status-bar] Status Bar Text Uppercase: Fixed `TextStyles._ALIASES["status"]` pointing to `"components.status.default.label"` — `text_style()` prepends `text.` making the path invalid, so `formatting: "uppercase"` was never resolved. Changed alias to `"status"` so `text_style("status")` correctly resolves `text.status` with `formatting: "uppercase"`.
+
 
 ---
 
