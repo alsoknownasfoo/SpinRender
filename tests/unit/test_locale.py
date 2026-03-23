@@ -84,9 +84,9 @@ class TestLocaleLookup:
         assert value == "glyphs.render-action"
 
     def test_get_section_presets(self):
-        """get('sections.presets') should return 'LOOP PRESET'."""
+        """get('sections.presets') should return 'Loop presets'."""
         value = self.locale.get("sections.presets")
-        assert value == "LOOP PRESET"
+        assert value == "Loop presets"
 
     def test_get_parameter_with_unit(self):
         """get('parameters.board_tilt.label') should return 'BOARD TILT'."""

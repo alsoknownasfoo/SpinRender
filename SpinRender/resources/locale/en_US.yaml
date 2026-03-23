@@ -53,7 +53,7 @@ locale:
     # SECTION HEADERS
     # ─────────────────────────────────────────────────────────────
     sections:
-      presets: "Loop preset"
+      presets: "Loop presets"
       parameters: "Parameters"
       output: "Output settings"
 

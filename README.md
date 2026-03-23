@@ -80,7 +80,7 @@ SpinRender will be available through the KiCad Plugin and Content Manager in a f
 
 1. Open your PCB in KiCad PCB Editor
 2. Click the SpinRender toolbar button or go to **Tools → External Plugins → SpinRender**
-3. Choose a loop preset (Hero Orbit, Top Sweep, or Angle Reveal)
+3. Choose a loop preset (Hero Orbit, Top Sweep, or Angle Reveal) from the available presets
 4. Adjust rotation settings (tilt, period, direction) as desired
 5. Select a lighting preset
 6. Choose output format (MP4, GIF, or PNG Sequence) and resolution
