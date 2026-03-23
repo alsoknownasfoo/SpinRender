@@ -493,8 +493,8 @@ components:
       ref: "@components.input.default"
       type: "rich"
       alignment: "left"
-      icon: 
-        ref: "@glyphs.folder"
+      icon:
+        ref: "glyphs.folder"
         color: "@colors.gray-white"
       frame:
         height: 36
