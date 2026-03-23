@@ -472,7 +472,7 @@ class Theme:
                 if family == "#FF00FF": missing.append(f"typeface/family ({family_raw})")
                 if size_val == "#FF00FF": missing.append(f"size ({size_raw})")
                 if weight_val == "#FF00FF": missing.append(f"weight ({weight_raw})")
-                logger.debug(f"Theme: Font preset '{preset}' has missing components: {', '.join(missing)}. Raw Spec: {spec}. Returning symbol fallback.")
+                logger.debug(f"Theme: Font preset '{token}' has missing components: {', '.join(missing)}. Raw Spec: {spec}. Returning symbol fallback.")
             return wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName="Webdings")
 
         try:
@@ -483,7 +483,7 @@ class Theme:
             
             return wx.Font(size, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, w_map.get(weight, wx.FONTWEIGHT_NORMAL), faceName=family)
         except Exception as e:
-            logger.debug(f"Theme: Failed to create font for '{preset}': {e}. (Family: {family}, Size: {size_val}, Weight: {weight_val})")
+            logger.debug(f"Theme: Failed to create font for '{token}': {e}. (Family: {family}, Size: {size_val}, Weight: {weight_val})")
             return wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName="Webdings")
 
     def frame(self, path: str) -> dict[str, Any]: return self._resolve(f"components.{path}.frame")

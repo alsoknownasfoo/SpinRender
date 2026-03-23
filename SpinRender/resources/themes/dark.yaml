@@ -416,7 +416,10 @@ components:
     icon: 
       ref: "@text.icon"
     label:
-      font: "@typography.scale.sm"
+      font:
+        typeface: "@typography.families.display"
+        size: "@typography.scale.base"
+        weight: "@typography.weights.bold"
       color: "@colors.gray-dark"
     gap: "@typography.spacing.sm"
 

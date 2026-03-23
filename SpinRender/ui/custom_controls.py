@@ -1090,10 +1090,12 @@ class ProjectFolderChip(wx.Panel):
     Small orange chip for "PROJECT FOLDER" prefix
     """
     def __init__(self, parent):
-        font = _theme.font("metadata")
+        font = _theme.font("components.badge.label")
+        height = _theme.size("components.badge.frame.height")
+        pad_h = _theme.size("components.badge.frame.padding.horizontal")
         temp_dc = wx.ScreenDC(); temp_dc.SetFont(font)
         tw, th = temp_dc.GetTextExtent("PROJECT FOLDER")
-        super().__init__(parent, size=(tw + 12, 18))
+        super().__init__(parent, size=(tw + pad_h * 2, height))
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT); self.Bind(wx.EVT_PAINT, self.on_paint)
 
     def on_paint(self, event):
@@ -1101,10 +1103,12 @@ class ProjectFolderChip(wx.Panel):
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
         w, h = self.GetSize()
+        radius = _theme.size("components.badge.frame.radius")
         gc.SetBrush(wx.Brush(_theme.color("components.badge.frame.bg")))
         gc.SetPen(wx.TRANSPARENT_PEN)
-        gc.DrawRoundedRectangle(0, 0, w, h, 4)
-        gc.SetFont(gc.CreateFont(_theme.font("metadata"), _theme.color("components.badge.label.color")))
+        gc.DrawRoundedRectangle(0, 0, w, h, radius)
+        gc.SetFont(gc.CreateFont(_theme.font("components.badge.label"),
+                                 _theme.color("components.badge.label.color")))
         tw, th = gc.GetTextExtent("PROJECT FOLDER")
         gc.DrawText("PROJECT FOLDER", (w - tw) / 2, (h - th) / 2)
 
