@@ -31,7 +31,7 @@ If a refactor would significantly improve code quality, present it as an option 
 # Format: [TAG] Simple Title: Task...
 # Branch name format: (feat/fix)/name-of-task
 
-[UI/UX] Advanced Output Formatting: output path, parameter overrides, system logging should all use subheader. the body text should all be upper. this shoud be defined in theme.yaml. The Parameter Overrides box still has a light gray bg on the input field. it should not show or be painted transparent. This interesting isnt an issue for non-multiline renders of the inputfield.
+[UI/UX] Advanced Output Formatting: output path, parameter overrides, system logging should all use subheader. this shoud be defined in theme.yaml. The Parameter Overrides box still has a light gray bg on the input field. it should not show or be painted transparent. This interesting isnt an issue for non-multiline renders of the inputfield.
 
 [UI/UX] Window Borders: Add a 1px black border around the main window and dialog boxes and add a 4px radius on them. ensure that these definitions are in the yaml
 

@@ -32,21 +32,21 @@ colors:
   purple:      "#AA6BFF"
   pink:        "#F240FF"
 
-  cyan-10:     "rgba(0, 188, 212, 0.1)"
-  yellow-10:   "rgba(255, 214, 0, 0.1)"
-  green-10:    "rgba(76, 175, 80, 0.1)"
-  orange-10:   "rgba(255, 107, 53, 0.1)"
-  red-10:      "rgba(255, 59, 48, 0.1)"
-  purple-10:   "rgba(170, 107, 255, 0.1)"
-  pink-10:     "rgba(242, 64, 255, 0.1)"
+  cyan-10:     "#001315"
+  yellow-10:   "#1A1500"
+  green-10:    "#081208"
+  orange-10:   "#1A0B05"
+  red-10:      "#1A0605"
+  purple-10:   "#110B1A"
+  pink-10:     "#180A1A"
 
-  cyan-20:     "rgba(0, 188, 212, 0.2)"
-  yellow-20:   "rgba(255, 214, 0, 0.2)"
-  green-20:    "rgba(76, 175, 80, 0.2)"
-  orange-20:   "rgba(255, 107, 53, 0.2)"
-  red-20:      "rgba(255, 59, 48, 0.2)"
-  purple-20:   "rgba(170, 107, 255, 0.2)"
-  pink-20:     "rgba(242, 64, 255, 0.2)"
+  cyan-20:     "#00262A"
+  yellow-20:   "#332B00"
+  green-20:    "#0F2310"
+  orange-20:   "#331515"
+  red-20:      "#330C0A"
+  purple-20:   "#221535"
+  pink-20:     "#300D33"
 
   # Semantic Roles (Theme)
   primary:     "@colors.cyan"
@@ -525,6 +525,9 @@ components:
       multiline: true
       frame:
         height: 84
+        bg:
+          default: "@colors.gray-black"
+          hover: "@colors.cyan-20"
     hex:
       ref: "@components.input.default"
       case: "upper"

@@ -1024,13 +1024,16 @@ class CustomInput(wx.Panel):
         bg = _theme.color(f"{self.token}.frame.bg", self.hovered, False, enabled)
         font = _theme.font(self.token)
         
-        # self.text_ctrl.SetBackgroundColour("TRANSPARENT")
+        self.text_ctrl.SetBackgroundColour("TRANSPARENT")
         self.text_ctrl.SetForegroundColour(tc)
         self.text_ctrl.SetFont(font)
         
         if self.multiline:
-            # Ensure multiline colors apply to all existing text
-            self.text_ctrl.SetDefaultStyle(wx.TextAttr(tc))
+            # Hack to darken bg for multiline since wx.TextCtrl doesn't support transparent bg in multiline mode
+            shiftby = -10 if self.hovered else -1
+            bgcolor = _theme._shift_color(bg, shiftby)
+            self.text_ctrl.SetBackgroundColour(bgcolor)
+            self.text_ctrl.SetDefaultStyle(wx.TextAttr(tc, bgcolor))
 
         # 2. Draw HUD Frame
         bc_tok, bs_tok = f"{self.token}.frame.border.color", f"{self.token}.frame.border.size"
