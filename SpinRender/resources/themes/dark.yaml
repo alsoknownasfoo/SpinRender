@@ -566,10 +566,10 @@ components:
       nub: { color: "@colors.orange" }
     tertiary:
       ref: "@components.slider.default"
-      nub: { color: "@colors.cyan" }
+      nub: { color: "@colors.purple" }
     quaternary:
       ref: "@components.slider.default"
-      nub: { color: "@colors.purple" }
+      nub: { color: "@colors.pink" }
 
   toggle:
     default:
