@@ -47,6 +47,15 @@ borders:
     size: "@borders.width.[name]"
     color: "@colors.[path]"
 
+# DIVIDERS: Separator lines between sections
+dividers:
+  width:
+    .[name]: int
+  # Semantic Roles - Separator lines (lighter than borders for visual hierarchy)
+  default:
+    size: "@dividers.width.[name]"
+    color: "@colors.[path]"
+
 # TYPOGRAPHY: Scale, spacing, and families
 typography:
   families:

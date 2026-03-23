@@ -176,7 +176,7 @@ class FilenameEntryDialog(BaseStyledDialog):
         main_sizer.Add(self.create_header("Enter base filename", show_close=False), 0, wx.EXPAND)
 
         line = wx.Panel(self.main_container, size=(-1, 1))
-        line.SetBackgroundColour(_theme.color("borders.default.color"))
+        line.SetBackgroundColour(_theme.color("dividers.default.color"))
         main_sizer.Add(line, 0, wx.EXPAND)
 
         content = wx.Panel(self.main_container)
@@ -273,7 +273,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
 
         # Border separator
         line = wx.Panel(self.main_container, size=(-1, 1))
-        line.SetBackgroundColour(_theme.color("borders.default.color"))
+        line.SetBackgroundColour(_theme.color("dividers.default.color"))
         main_sizer.Add(line, 0, wx.EXPAND)
 
         # Content
@@ -520,7 +520,7 @@ class SavePresetDialog(BaseStyledDialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         # Header without close button as requested
         main_sizer.Add(self.create_header("Save preset", show_close=False), 0, wx.EXPAND)
-        line = wx.Panel(self.main_container, size=(-1, 1)); line.SetBackgroundColour(_theme.color("borders.default.color"))
+        line = wx.Panel(self.main_container, size=(-1, 1)); line.SetBackgroundColour(_theme.color("dividers.default.color"))
         main_sizer.Add(line, 0, wx.EXPAND)
 
         content = wx.Panel(self.main_container)
@@ -604,7 +604,7 @@ class RecallPresetDialog(BaseStyledDialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         header = self.create_header("Select custom preset")
         main_sizer.Add(header, 0, wx.EXPAND)
-        line = wx.Panel(self.main_container, size=(-1, 1)); line.SetBackgroundColour(_theme.color("borders.default.color"))
+        line = wx.Panel(self.main_container, size=(-1, 1)); line.SetBackgroundColour(_theme.color("dividers.default.color"))
         main_sizer.Add(line, 0, wx.EXPAND)
 
         self.list_view = CustomListView(self.main_container, id="custompresets")

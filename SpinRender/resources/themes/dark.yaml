@@ -14,7 +14,8 @@ colors:
   # Base Palette (Primes)
   gray-black:  "#0D0D0D"
   gray-dark:   "#121212"
-  gray-border: "#1F1F1F"
+  gray-div:    "#1A1A1A"
+  gray-border: "#222222"
   gray-medium: "#444444"
   gray-light:  "#646464"
   gray-text:   "#777777"
@@ -95,6 +96,20 @@ borders:
   strong:
     size: "@borders.width.medium"
     color: "@colors.primary"
+
+# ─────────────────────────────────────────────────────────────────
+# 3a. DIVIDERS (Separator Lines)
+# ─────────────────────────────────────────────────────────────────
+dividers:
+  width:
+    thin:  1
+    medium: 2
+
+  # Semantic Roles - Separator lines between UI sections
+  # Lighter than borders to create visual contrast and hierarchy
+  default:
+    size: "@dividers.width.thin"
+    color: "@colors.gray-div"
 
 # ─────────────────────────────────────────────────────────────────
 # 4. TYPOGRAPHY (Scales & Roles)
@@ -324,7 +339,7 @@ layout:
       scrollbar: "@components.scrollbar"
       padding: 16
     divider:
-      bg: "@colors.gray-border"
+      bg: "@dividers.default.color"
       size: 1
     rightpanel:
       bg: "@colors.black"

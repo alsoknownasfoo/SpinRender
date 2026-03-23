@@ -108,7 +108,7 @@ class SpinRenderPanel(wx.Panel):
 
         # Center Divider
         self.center_divider = wx.Panel(self.top_container, size=(1, -1))
-        self.center_divider.SetBackgroundColour(_theme.color("borders.default.color"))
+        self.center_divider.SetBackgroundColour(_theme.color("dividers.default.color"))
         top_sizer.Add(self.center_divider, 0, wx.EXPAND)
 
         # Right: Preview panel
@@ -122,7 +122,7 @@ class SpinRenderPanel(wx.Panel):
         main_sizer.Add(self.top_container, 1, wx.EXPAND)
 
         self.status_divider = wx.Panel(self, size=(-1, 1))
-        self.status_divider.SetBackgroundColour(_theme.color("borders.default.color"))
+        self.status_divider.SetBackgroundColour(_theme.color("dividers.default.color"))
         main_sizer.Add(self.status_divider, 0, wx.EXPAND)
 
         self.status_bar = StatusBar(self)
@@ -152,10 +152,10 @@ class SpinRenderPanel(wx.Panel):
             self.top_container.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
             
         if hasattr(self, 'center_divider'):
-            self.center_divider.SetBackgroundColour(_theme.color("borders.default.color"))
+            self.center_divider.SetBackgroundColour(_theme.color("dividers.default.color"))
             
         if hasattr(self, 'status_divider'):
-            self.status_divider.SetBackgroundColour(_theme.color("borders.default.color"))
+            self.status_divider.SetBackgroundColour(_theme.color("dividers.default.color"))
             
         # Call reapply_theme on sub-panels
         if hasattr(self, 'controls_side_panel'):

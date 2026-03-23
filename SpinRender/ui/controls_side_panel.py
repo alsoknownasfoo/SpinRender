@@ -70,28 +70,28 @@ class ControlsSidePanel(wx.Panel):
         sizer.Add(self.header_panel, 0, wx.EXPAND)
 
         self.div1 = wx.Panel(self.scrolled_panel, size=(-1, 1))
-        self.div1.SetBackgroundColour(_theme.color("borders.default.color"))
+        self.div1.SetBackgroundColour(_theme.color("dividers.default.color"))
         sizer.Add(self.div1, 0, wx.EXPAND)
 
         presets = self.create_preset_section(self.scrolled_panel)
         sizer.Add(presets, 0, wx.EXPAND | wx.ALL, padding)
 
         self.div2 = wx.Panel(self.scrolled_panel, size=(-1, 1))
-        self.div2.SetBackgroundColour(_theme.color("borders.default.color"))
+        self.div2.SetBackgroundColour(_theme.color("dividers.default.color"))
         sizer.Add(self.div2, 0, wx.EXPAND)
 
         params = self.create_parameters_section(self.scrolled_panel)
         sizer.Add(params, 0, wx.EXPAND | wx.ALL, padding)
 
         self.div3 = wx.Panel(self.scrolled_panel, size=(-1, 1))
-        self.div3.SetBackgroundColour(_theme.color("borders.default.color"))
+        self.div3.SetBackgroundColour(_theme.color("dividers.default.color"))
         sizer.Add(self.div3, 0, wx.EXPAND)
 
         output_settings = self.create_output_settings_section(self.scrolled_panel)
         sizer.Add(output_settings, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, padding)
 
         self.div4 = wx.Panel(self.scrolled_panel, size=(-1, 1))
-        self.div4.SetBackgroundColour(_theme.color("borders.default.color"))
+        self.div4.SetBackgroundColour(_theme.color("dividers.default.color"))
         sizer.Add(self.div4, 0, wx.EXPAND)
 
         export = self.create_export_section(self.scrolled_panel)

@@ -16,7 +16,7 @@ VALID_BG_TOKENS = {
 }
 VALID_BORDER_TOKENS = {
     'borders.default.color', 'borders.subtle.color', 'borders.focus.color',
-    'layout.main.divider.bg'
+    'dividers.default.color', 'layout.main.divider.bg'
 }
 VALID_ACCENT_TOKENS = {
     'colors.primary', 'colors.secondary', 'colors.tertiary',
