@@ -63,7 +63,8 @@ class ControlsSidePanel(wx.Panel):
         self.scrolled_panel.SetupScrolling(scroll_x=False, scroll_y=True, rate_y=20)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
-        padding = 16
+        # Get uniform padding from theme (uses _parse_padding for CSS-style support)
+        padding = _theme._parse_padding(_theme._resolve("layout.main.leftpanel.padding") or 16)['left']
 
         self.header_panel = self.create_header(self.scrolled_panel)
         sizer.Add(self.header_panel, 0, wx.EXPAND)

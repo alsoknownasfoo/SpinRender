@@ -322,6 +322,7 @@ layout:
       body: "@text.body"
       border: "@borders.default"
       scrollbar: "@components.scrollbar"
+      padding: 16
     divider:
       bg: "@colors.gray-border"
       size: 1
