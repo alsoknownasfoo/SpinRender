@@ -1,7 +1,9 @@
 """
 Shared helper functions for unified component construction.
 """
+import html
 import weakref
+from typing import Optional
 import wx
 from SpinRender.core.theme import Theme
 _theme = Theme.current()
@@ -36,7 +38,9 @@ ALL_VALID_TOKENS = (
 # Global text registry for hot-reload
 # ---------------------------------------------------------------------------
 
-# Each entry: (weakref_to_widget, style_name, original_label, color_token)
+# Each entry:
+# (weakref_to_widget, style_name, original_label, color_token,
+#  link_suffix_arrow, link_suffix_color_token)
 _text_registry: list = []
 
 
@@ -47,15 +51,28 @@ def reapply_text_styles() -> None:
     Dead widget references are pruned automatically.
     """
     live = []
-    for ref, style_name, original_label, color_token in _text_registry:
+    for ref, style_name, original_label, color_token, link_suffix_arrow, link_suffix_color_token in _text_registry:
         widget = ref()
         if widget:
             style = getattr(TextStyles, style_name)
+            formatted = style.format_text(original_label)
             widget.SetFont(style.create_font())
             color = _theme.color(color_token) if color_token else style.color
             widget.SetForegroundColour(color)
-            widget.SetLabel(style.format_text(original_label))
-            live.append((ref, style_name, original_label, color_token))
+            _apply_link_suffix_label(
+                widget,
+                formatted,
+                link_suffix_arrow,
+                link_suffix_color_token
+            )
+            live.append((
+                ref,
+                style_name,
+                original_label,
+                color_token,
+                link_suffix_arrow,
+                link_suffix_color_token,
+            ))
     _text_registry[:] = live
 
 
@@ -63,36 +80,169 @@ def reapply_text_styles() -> None:
 # Text creation
 # ---------------------------------------------------------------------------
 
+def _resolve_text_style(text: str, style_name: str):
+    """Resolve TextStyle and apply formatting.
+
+    Shared by create_text() (widget context) and prepare_styled_text() (paint context).
+    Note: create_text() callsites should use TextStyles alias keys.
+    Paint-time helpers may pass direct theme paths for component-specific drawing.
+
+    Returns:
+        (formatted_text, style) tuple.
+    """
+    style = getattr(TextStyles, style_name)
+    return style.format_text(text), style
+
+
+def _apply_link_suffix_label(
+    text_widget: wx.StaticText,
+    formatted_text: str,
+    link_suffix_arrow: bool,
+    link_suffix_color_token: Optional[str],
+) -> None:
+    """Apply text label and optional colored external-link arrow suffix."""
+    if not link_suffix_arrow:
+        text_widget.SetLabel(formatted_text)
+        return
+
+    suffix = "\u2197"
+    if not link_suffix_color_token:
+        text_widget.SetLabel(f"{formatted_text} {suffix}")
+        return
+
+    suffix_color = _theme.color(link_suffix_color_token)
+    color_hex = suffix_color.GetAsString(wx.C2S_HTML_SYNTAX)
+    markup = (
+        f"{html.escape(formatted_text)} "
+        f"<span foreground=\"{color_hex}\">{suffix}</span>"
+    )
+    if not text_widget.SetLabelMarkup(markup):
+        text_widget.SetLabel(f"{formatted_text} {suffix}")
+
+
 def create_text(parent: wx.Window, label: str, style_name: str,
-                color_token: str = None, **kwargs) -> wx.StaticText:
+                color_token: Optional[str] = None,
+                link_suffix_arrow: bool = False,
+                link_suffix_color_token: Optional[str] = "colors.primary",
+                **kwargs) -> wx.StaticText:
     """Create a themed, formatted wx.StaticText and register it for hot-reload.
 
     Args:
         parent:      Parent wx.Window.
         label:       Raw (un-formatted) label string. Formatting (e.g. uppercase)
                      is applied automatically from the style definition.
-        style_name:  TextStyles alias (e.g. "header", "metadata", "subheader").
-                     Must map to a layout.* or components.* YAML path.
+        style_name:  TextStyles alias key (e.g. "header", "leftpanel_description", "dialog_link").
+                 Alias keys should be defined in TextStyles._ALIASES and map
+                 to layout.* or components.* YAML paths.
         color_token: Optional theme token to override the style's default color
                      (e.g. "colors.primary" or an axis-specific token).
+        link_suffix_arrow: Append an external-link arrow suffix (\u2197).
+        link_suffix_color_token: Theme token used for the suffix arrow color.
         **kwargs:    Additional wx.StaticText constructor args.
 
     Returns:
         wx.StaticText with font, color, and formatting applied.
     """
-    style = getattr(TextStyles, style_name)
-    formatted = style.format_text(label)
+    formatted, style = _resolve_text_style(label, style_name)
     txt = wx.StaticText(parent, label=formatted, **kwargs)
     txt.SetFont(style.create_font())
     color = _theme.color(color_token) if color_token else style.color
     txt.SetForegroundColour(color)
+    _apply_link_suffix_label(
+        txt,
+        formatted,
+        link_suffix_arrow,
+        link_suffix_color_token,
+    )
 
     # Pass through mouse clicks to parent (essential for labels inside
     # clickable containers like PresetCard, CustomButton)
     txt.Bind(wx.EVT_LEFT_DOWN, lambda e: e.Skip())
 
-    _text_registry.append((weakref.ref(txt), style_name, label, color_token))
+    _text_registry.append((
+        weakref.ref(txt),
+        style_name,
+        label,
+        color_token,
+        link_suffix_arrow,
+        link_suffix_color_token,
+    ))
     return txt
+
+
+def prepare_styled_text(gc, text: str, style_name: str, color=None):
+    """Paint-context companion to create_text().
+
+    Resolves font and formatting from TextStyles, sets the gc font,
+    and returns layout metrics.  The caller positions and draws.
+
+    Args:
+        gc:          wx.GraphicsContext from an OnPaint handler.
+        text:        Raw (un-formatted) label string.
+        style_name:  TextStyles alias key (preferred), or a direct theme path
+                 for component paint-time styles (e.g. "components.badge.label").
+        color:       wx.Colour for the text. Usually state-dependent
+                     (hover/pressed/enabled), so the caller computes it.
+
+    Returns:
+        (formatted_text, tw, th) — formatted string and its pixel extent.
+    """
+    formatted, style = _resolve_text_style(text, style_name)
+    draw_color = color or style.color
+    gc.SetFont(gc.CreateFont(style.create_font(), draw_color))
+    tw, th = gc.GetTextExtent(formatted)
+    return formatted, tw, th
+
+
+def draw_styled_text(gc, text: str, style_name: str, x: float, y: float, color=None):
+    """Draw text in a paint context using the same style pipeline as create_text().
+
+    This helper centralizes prepare+draw to keep gc.DrawText usage consistent.
+    """
+    formatted, tw, th = prepare_styled_text(gc, text, style_name, color)
+    gc.DrawText(formatted, x, y)
+    return formatted, tw, th
+
+
+def update_text(widget: wx.StaticText, label: str) -> None:
+    """Update a registered text widget's label, respecting its style's formatting.
+    
+    This should be used instead of SetLabel() for widgets created via create_text()
+    to ensure transformations like 'uppercase' are preserved during dynamic updates.
+    """
+    found = False
+    for i, (
+        ref,
+        style_name,
+        old_label,
+        color_token,
+        link_suffix_arrow,
+        link_suffix_color_token,
+    ) in enumerate(_text_registry):
+        if ref() == widget:
+            style = getattr(TextStyles, style_name)
+            formatted = style.format_text(label)
+            _apply_link_suffix_label(
+                widget,
+                formatted,
+                link_suffix_arrow,
+                link_suffix_color_token,
+            )
+            # Update the original label in the registry so hot-reload works with the new content
+            _text_registry[i] = (
+                ref,
+                style_name,
+                label,
+                color_token,
+                link_suffix_arrow,
+                link_suffix_color_token,
+            )
+            found = True
+            break
+            
+    if not found:
+        # Fallback if widget not in registry (though it should be if created via create_text)
+        widget.SetLabel(label)
 
 
 # ---------------------------------------------------------------------------

@@ -277,7 +277,7 @@ class ControlsSidePanel(wx.Panel):
         )
         sizer.Add(row4, 0, wx.EXPAND | wx.BOTTOM, 4)
 
-        self.rot_desc = create_text(panel, _locale.get("parameters.rotation_desc", "BOARD: ORIENT ON SPINDLE | SPIN: ORIENT THE SPINDLE ITSELF"), "metadata")
+        self.rot_desc = create_text(panel, _locale.get("parameters.rotation_desc", "BOARD: ORIENT ON SPINDLE | SPIN: ORIENT THE SPINDLE ITSELF"), "leftpanel_description")
         sizer.Add(self.rot_desc, 0, wx.TOP | wx.BOTTOM, 10)
         panel.SetSizerAndFit(sizer)
         return panel
@@ -340,9 +340,9 @@ class ControlsSidePanel(wx.Panel):
 
         mrow = wx.Panel(panel)
         msizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.period_desc = create_text(mrow, _locale.get("parameters.period.desc", "SPEED OF 360° SPIN"), "metadata")
+        self.period_desc = create_text(mrow, _locale.get("parameters.period.desc", "SPEED OF 360° SPIN"), "leftpanel_description")
         msizer.Add(self.period_desc, 1, wx.TOP | wx.BOTTOM, 10)
-        self.frame_count = create_text(mrow, f"{int(p_val * 30)} f", "metadata")
+        self.frame_count = create_text(mrow, f"{int(p_val * 30)} f", "leftpanel_description")
         msizer.Add(self.frame_count, 0, wx.TOP | wx.BOTTOM, 10)
         mrow.SetSizerAndFit(msizer)
         sizer.Add(mrow, 0, wx.EXPAND)
@@ -402,7 +402,7 @@ class ControlsSidePanel(wx.Panel):
         self.light_toggle.SetSelection(initial_idx)
         sizer.Add(self.light_toggle, 0, wx.EXPAND)
 
-        self.light_hint = create_text(panel, _locale.get("parameters.lighting_hint", "SELECT WORKSPACE TO USE KICAD 3D VIEWER SETTINGS"), "metadata")
+        self.light_hint = create_text(panel, _locale.get("parameters.lighting_hint", "SELECT WORKSPACE TO USE KICAD 3D VIEWER SETTINGS"), "leftpanel_description")
         sizer.Add(self.light_hint, 0, wx.TOP | wx.BOTTOM, 10)
 
         panel.SetSizerAndFit(sizer)

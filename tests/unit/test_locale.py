@@ -64,9 +64,9 @@ class TestLocaleLookup:
         self.locale = Locale.load("en_US")
 
     def test_get_component_header_title(self):
-        """get('component.main.header.title') should return 'SPINRENDER'."""
+        """get('component.main.header.title') should return 'SpinRender'."""
         value = self.locale.get("component.main.header.title")
-        assert value == "SPINRENDER"
+        assert value == "SpinRender"
 
     def test_get_component_header_subtitle(self):
         """get('component.main.header.subtitle') should return version string."""
@@ -74,9 +74,9 @@ class TestLocaleLookup:
         assert value == "0.9.0-alpha"
 
     def test_get_button_render_label(self):
-        """get('component.button.render.label') should return 'RENDER'."""
+        """get('component.button.render.label') should return 'Render'."""
         value = self.locale.get("component.button.render.label")
-        assert value == "RENDER"
+        assert value == "Render"
 
     def test_get_button_render_icon_ref(self):
         """get('component.button.render.icon_ref') should return 'glyphs.render-action'."""
@@ -89,9 +89,9 @@ class TestLocaleLookup:
         assert value == "Loop presets"
 
     def test_get_parameter_with_unit(self):
-        """get('parameters.board_tilt.label') should return 'BOARD TILT'."""
+        """get('parameters.board_tilt.label') should return 'Board tilt'."""
         value = self.locale.get("parameters.board_tilt.label")
-        assert value == "BOARD TILT"
+        assert value == "Board tilt"
 
     def test_get_parameter_with_unit_field(self):
         """get('parameters.board_tilt.unit') should return '°'."""
@@ -104,14 +104,14 @@ class TestLocaleLookup:
         assert value == "CW"
 
     def test_get_preset_card_label(self):
-        """get('component.preset_card.card1.label') should return 'HERO'."""
+        """get('component.preset_card.card1.label') should return 'Hero'."""
         value = self.locale.get("component.preset_card.card1.label")
-        assert value == "HERO"
+        assert value == "Hero"
 
     def test_get_status_message_with_placeholder(self):
         """get('component.status.rendering') should contain placeholder {current}/{total}."""
         value = self.locale.get("component.status.rendering")
-        assert value == "RENDERING FRAME {current}/{total}"
+        assert value == "Rendering frame {current}/{total}"
         assert "{current}" in value
         assert "{total}" in value
 
@@ -128,7 +128,7 @@ class TestLocaleLookup:
     def test_get_deep_nested_path(self):
         """get() should handle deeply nested paths."""
         value = self.locale.get("parameters.lighting.options.studio.label")
-        assert value == "STUDIO"
+        assert value == "Studio"
 
 
 class TestLocaleFileLoading:

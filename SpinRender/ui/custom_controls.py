@@ -11,7 +11,7 @@ from pathlib import Path
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
 from .text_styles import TextStyle, TextStyles
-from .helpers import bind_mouse_events, create_text
+from .helpers import bind_mouse_events, create_text, prepare_styled_text, draw_styled_text
 from .events import ParameterInteractionEvent
 
 _theme = Theme.current()
@@ -339,32 +339,23 @@ class CustomToggleButton(wx.Panel):
             stripped = str(icon_name).replace('mdi-', '')
             icon_char = _theme.glyph(stripped) or str(icon_name)
 
-        tw, th = 0, 0
+        formatted, tw, th = None, 0, 0
         if label:
-            font_obj = _theme.font(label_token)
-            gc.SetFont(gc.CreateFont(font_obj, l_color))
-            tw, th = gc.GetTextExtent(label)
-            
+            formatted, tw, th = prepare_styled_text(gc, label, label_token, l_color)
+
         iw, ih = 0, 0
-        icon_gfx_font = None
         if icon_char:
-            icon_font_obj = _theme.font(icon_token)
-            icon_gfx_font = gc.CreateFont(icon_font_obj, i_color)
-            gc.SetFont(icon_gfx_font)
-            iw, ih = gc.GetTextExtent(icon_char)
-            
+            _, iw, ih = prepare_styled_text(gc, icon_char, icon_token, i_color)
+
         gap = 6 if (icon_char and label) else 0
         total_w = iw + gap + tw
         start_x = x_offset + (width - total_w) / 2
-        
+
         if icon_char:
-            gc.SetFont(icon_gfx_font)
-            gc.DrawText(icon_char, start_x, (height - ih) / 2)
-            
-        if label:
-            font_obj = _theme.font(label_token)
-            gc.SetFont(gc.CreateFont(font_obj, l_color))
-            gc.DrawText(label, start_x + iw + gap, (height - th) / 2)
+            draw_styled_text(gc, icon_char, icon_token, start_x, (height - ih) / 2, i_color)
+
+        if formatted:
+            draw_styled_text(gc, label, label_token, start_x + iw + gap, (height - th) / 2, l_color)
 
     def on_click(self, event):
         if not self.IsEnabled(): return
@@ -462,11 +453,9 @@ class DropdownPopup(wx.PopupTransientWindow):
             # Resolve Item Label (Font & Color)
             label_token = f"{token}.menu.items.label"
             text_color = _theme.color(f"{label_token}.color", is_hovered, is_selected, True)
-            font_obj = _theme.font(label_token)
-            
-            gc.SetFont(gc.CreateFont(font_obj, text_color))
-            tw, th = gc.GetTextExtent(choice)
-            gc.DrawText(choice, rect.x + 8, rect.y + (rect.height - th) / 2)
+
+            _, _, th = prepare_styled_text(gc, choice, label_token, text_color)
+            draw_styled_text(gc, choice, label_token, rect.x + 8, rect.y + (rect.height - th) / 2, text_color)
 
     def on_mouse_move(self, event):
         idx = (event.GetY() - 4) // self.item_height
@@ -538,22 +527,16 @@ class CustomDropdown(wx.Panel):
         
         # Color resolution from label.color.default/hover
         text_color = _theme.color(f"{label_token}.color", self.hovered or self.is_open, False, enabled)
-        
-        # Font resolution from label.font
-        font_obj = _theme.font(label_token)
-        gc.SetFont(gc.CreateFont(font_obj, text_color))
-        
-        tw, th = gc.GetTextExtent(label)
-        gc.DrawText(label, 12, (height - th) / 2)
+
+        _, _, th = prepare_styled_text(gc, label, label_token, text_color)
+        draw_styled_text(gc, label, label_token, 12, (height - th) / 2, text_color)
 
         # 3. Resolve Chevron Icon
         icon_char = _theme.glyph("chevron-up" if self.is_open else "chevron-down")
         icon_color = _theme.color(f"{token}.icon.color", self.hovered or self.is_open, False, enabled)
             
-        icon_gfx_font = gc.CreateFont(_theme.font("icon"), icon_color)
-        gc.SetFont(icon_gfx_font)
-        iw, ih = gc.GetTextExtent(icon_char)
-        gc.DrawText(icon_char, width - iw - 12, (height - ih) / 2)
+        _, iw, ih = prepare_styled_text(gc, icon_char, f"{token}.icon", icon_color)
+        draw_styled_text(gc, icon_char, f"{token}.icon", width - iw - 12, (height - ih) / 2, icon_color)
 
     def on_click(self, event):
         if self.IsEnabled():
@@ -611,7 +594,7 @@ class CustomButton(wx.Panel):
         # Auto-derive label/icon from style_id via locale
         if self.style_id:
             if label is None:
-                label = _locale.get(f"component.button.{self.style_id}.label", self.style_id.upper())
+                label = _locale.get(f"component.button.{self.style_id}.label", self.style_id)
             if icon is None:
                 icon_ref = _locale.get(f"component.button.{self.style_id}.icon_ref")
                 if icon_ref:
@@ -653,10 +636,7 @@ class CustomButton(wx.Panel):
         bg = _theme.color(f"{token}.frame.bg", self.hovered, self.pressed, enabled)
 
         # Label colors
-        label_token = f"{token}.label.color"
-        if not _theme.has_token(label_token):
-            label_token = "text.button.color"
-        final_text = _theme.color(label_token, self.hovered, self.pressed, enabled)
+        final_text = _theme.color(f"{token}.label.color", self.hovered, self.pressed, enabled)
 
         # Border
         border_token = f"{token}.frame.border.color"
@@ -675,32 +655,23 @@ class CustomButton(wx.Panel):
             stripped = str(self.icon).replace('mdi-', '')
             icon_char = _theme.glyph(stripped) or str(self.icon)
 
-        tw, th = 0, 0
+        formatted, tw, th = None, 0, 0
         if self.label and len(self.label) > 0:
-            font_obj = _theme.font("button")
-            gfx_font = gc.CreateFont(font_obj, final_text)
-            gc.SetFont(gfx_font)
-            tw, th = gc.GetTextExtent(self.label)
+            formatted, tw, th = prepare_styled_text(gc, self.label, f"{token}.label", final_text)
 
         iw, ih = 0, 0
-        icon_gfx_font = None
         if icon_char:
-            icon_font_obj = _theme.font("icon")
-            icon_gfx_font = gc.CreateFont(icon_font_obj, final_icon_color)
-            gc.SetFont(icon_gfx_font)
-            iw, ih = gc.GetTextExtent(icon_char)
+            _, iw, ih = prepare_styled_text(gc, icon_char, f"{token}.icon", final_icon_color)
 
-        gap = 10 if (icon_char and self.label and len(self.label) > 0) else 0
+        gap = 10 if (icon_char and formatted) else 0
         total_w = iw + gap + tw
         start_x = (width - total_w) / 2
 
         if icon_char:
-            gc.SetFont(icon_gfx_font)
-            gc.DrawText(icon_char, start_x, (height - ih) / 2)
+            draw_styled_text(gc, icon_char, f"{token}.icon", start_x, (height - ih) / 2, final_icon_color)
 
-        if self.label and len(self.label) > 0:
-            gc.SetFont(gc.CreateFont(_theme.font("button"), final_text))
-            gc.DrawText(self.label, start_x + iw + gap, (height - th) / 2)
+        if formatted:
+            draw_styled_text(gc, self.label, f"{token}.label", start_x + iw + gap, (height - th) / 2, final_text)
 
     def on_mouse_down(self, event):
         if self.IsEnabled():
@@ -748,7 +719,7 @@ class PresetCard(wx.Panel):
 
         if self.style_id:
             if label is None:
-                label = _locale.get(f"component.preset_card.{self.style_id}.label", self.style_id.upper())
+                label = _locale.get(f"component.preset_card.{self.style_id}.label", self.style_id)
             if icon_name is None:
                 icon_name = _locale.get(f"component.preset_card.{self.style_id}.icon_ref")
 
@@ -786,9 +757,7 @@ class PresetCard(wx.Panel):
         bg = _theme.color(f"{token}.frame.bg", self.hovered, self.selected, enabled)
         border = _theme.color(f"{token}.frame.border.color", self.hovered, self.selected, enabled) if _theme.has_token(f"{token}.frame.border.color") else None
         
-        label_token = f"{token}.label.color"
-        if not _theme.has_token(label_token): label_token = "text.label.color"
-        txt_color = _theme.color(label_token, self.hovered, self.selected, enabled)
+        txt_color = _theme.color(f"{token}.label.color", self.hovered, self.selected, enabled)
 
         gc.SetBrush(wx.Brush(bg))
         if border: gc.SetPen(wx.Pen(border, 1))
@@ -805,21 +774,15 @@ class PresetCard(wx.Panel):
         if not _theme.has_token(icon_token): icon_token = txt_color # fallback to text color
         icon_color = _theme.color(icon_token, self.hovered, self.selected, enabled) if isinstance(icon_token, str) else icon_token
 
-        icon_gfx_font = gc.CreateFont(_theme.font("icon_lg"), icon_color)
-        gc.SetFont(icon_gfx_font)
-        iw, ih = gc.GetTextExtent(icon_char)
+        _, iw, ih = prepare_styled_text(gc, icon_char, f"{token}.icon", icon_color)
         
-        label_gfx_font = gc.CreateFont(_theme.font("label"), txt_color)
-        gc.SetFont(label_gfx_font)
-        tw, th = gc.GetTextExtent(self.label)
+        _, tw, th = prepare_styled_text(gc, self.label, f"{token}.label", txt_color)
 
         gap, total_h = 8, ih + 8 + th
         start_y = (height - total_h) / 2
 
-        gc.SetFont(icon_gfx_font)
-        gc.DrawText(icon_char, (width - iw) / 2, start_y)
-        gc.SetFont(label_gfx_font)
-        gc.DrawText(self.label, (width - tw) / 2, start_y + ih + gap)
+        draw_styled_text(gc, icon_char, f"{token}.icon", (width - iw) / 2, start_y, icon_color)
+        draw_styled_text(gc, self.label, f"{token}.label", (width - tw) / 2, start_y + ih + gap, txt_color)
 
     def on_click(self, event):
         if self.IsEnabled():
@@ -829,7 +792,7 @@ class PresetCard(wx.Panel):
             self.GetEventHandler().ProcessEvent(evt)
 
     def SetSelected(self, selected): self.selected = selected; self.Refresh(); self.Update()
-    def SetLabel(self, label): self.label = str(label).upper(); self.Refresh(); self.Update()
+    def SetLabel(self, label): self.label = str(label); self.Refresh(); self.Update()
     def IsSelected(self): return self.selected
     def AcceptsFocus(self): return False
     def AcceptsFocusFromKeyboard(self): return False
@@ -839,6 +802,8 @@ class SectionLabel(wx.Panel):
     """
     Section label matching Component/SectionLabel.
     Uses create_text() so formatting (e.g. uppercase) is driven by YAML.
+    Rule: style names passed to create_text() should use TextStyles alias keys.
+    Paint-time helpers may use direct component theme paths.
     """
     def __init__(self, parent, label="Section", size=(-1, 20), id="default"):
         super().__init__(parent, size=size)
@@ -1090,14 +1055,13 @@ class CustomInput(wx.Panel):
         if self.type == "rich" and self.icon_ref:
             icon_char = _theme.glyph(self.icon_ref)
             icon_color = _theme.color(f"{self.token}.icon.color", self.hovered, False, enabled) if _theme.has_token(f"{self.token}.icon.color") else tc
-            gc.SetFont(gc.CreateFont(_theme.font("icon"), icon_color))
-            itw, ith = gc.GetTextExtent(icon_char)
-            gc.DrawText(icon_char, 12, (h - ith) / 2)
+            _, _, ith = prepare_styled_text(gc, icon_char, f"{self.token}.icon_style", icon_color)
+            draw_styled_text(gc, icon_char, f"{self.token}.icon_style", 12, (h - ith) / 2, icon_color)
 
         if self.type == "numeric" and self.unit:
-            gc.SetFont(gc.CreateFont(font, _theme.color(f"{self.token}.color", self.hovered, False, enabled)))
-            utw, uth = gc.GetTextExtent(self.unit)
-            gc.DrawText(self.unit, w - utw - 12, (h - uth) / 2)
+            unit_color = _theme.color(f"{self.token}.color", self.hovered, False, enabled)
+            _, utw, uth = prepare_styled_text(gc, self.unit, f"{self.token}.label", unit_color)
+            draw_styled_text(gc, self.unit, f"{self.token}.label", w - utw - 12, (h - uth) / 2, unit_color)
 
     def GetValue(self):
         if self._placeholder_active:
@@ -1155,10 +1119,9 @@ class ProjectFolderChip(wx.Panel):
         gc.SetBrush(wx.Brush(_theme.color("components.badge.frame.bg")))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRoundedRectangle(0, 0, w, h, radius)
-        gc.SetFont(gc.CreateFont(_theme.font("components.badge.label"),
-                                 _theme.color("components.badge.label.color")))
-        tw, th = gc.GetTextExtent("PROJECT FOLDER")
-        gc.DrawText("PROJECT FOLDER", (w - tw) / 2, (h - th) / 2)
+        badge_color = _theme.color("components.badge.label.color")
+        _, tw, th = prepare_styled_text(gc, "PROJECT FOLDER", "components.badge.label", badge_color)
+        draw_styled_text(gc, "PROJECT FOLDER", "components.badge.label", (w - tw) / 2, (h - th) / 2, badge_color)
 
     def AcceptsFocus(self): return False
     def AcceptsFocusFromKeyboard(self): return False
@@ -1281,9 +1244,8 @@ class CustomColorPicker(wx.Panel):
         gc.SetBrush(wx.TRANSPARENT_BRUSH)
         gc.DrawRoundedRectangle(x, y, 28, 28, 4)
         
-        text_muted = _theme.color("colors.gray-text")
-        gfx_font = gc.CreateFont(_theme.font("metadata"), _theme.disabled(text_muted) if not enabled else text_muted)
-        gc.SetFont(gfx_font); tw, th = gc.GetTextExtent(lbl); gc.DrawText(lbl, x + (28 - tw) / 2, y + 32)
+        _, tw, _ = prepare_styled_text(gc, lbl, f"{token}.label")
+        draw_styled_text(gc, lbl, f"{token}.label",     x + (28 - tw) / 2, y + 32, _theme.color(f"{token}.label.color", hov, sel, enabled))
 
     def on_mouse_move(self, event):
         if not self.IsEnabled(): return
@@ -1400,18 +1362,16 @@ class CustomListItem(wx.Panel):
 
         # 3. Icon & Label
         tc = _theme.color(f"{self.token}.label.color", self.hovered, False, enabled)
-        gc.SetFont(gc.CreateFont(_theme.font("body"), tc))
-        
+
         text_x = 12
         if self.icon_ref:
             icon_char = _theme.glyph(self.icon_ref)
-            gc.SetFont(gc.CreateFont(_theme.font("icon"), tc))
-            itw, ith = gc.GetTextExtent(icon_char)
-            gc.DrawText(icon_char, 12, (h - ith) / 2)
+            _, _, ith = prepare_styled_text(gc, icon_char, f"{self.token}.icon", tc)
+            draw_styled_text(gc, icon_char, f"{self.token}.icon", 12, (h - ith) / 2, tc)
             text_x = 36
-            gc.SetFont(gc.CreateFont(_theme.font("body"), tc))
 
-        gc.DrawText(self.label, text_x, (h - gc.GetTextExtent(self.label)[1]) / 2)
+        _, _, th = prepare_styled_text(gc, self.label, f"{self.token}.label", tc)
+        draw_styled_text(gc, self.label, f"{self.token}.label", text_x, (h - th) / 2, tc)
 
         # 4. Actions
         if self.hovered or self.confirm_mode:
@@ -1429,17 +1389,13 @@ class CustomListItem(wx.Panel):
             s_icon = _theme.glyph(_theme._resolve(f"{actions_token}.confirm.icon"))
             s_color = _theme.color(f"{actions_token}.confirm.color")
             
-            gc.SetFont(gc.CreateFont(_theme.font("icon"), c_color))
-            gc.DrawText(c_icon, w - 70, (h - 16) / 2)
-            
-            gc.SetFont(gc.CreateFont(_theme.font("icon"), s_color))
-            gc.DrawText(s_icon, w - 30, (h - 16) / 2)
+            draw_styled_text(gc, c_icon, f"{self.token}.icon", w - 70, (h - 16) / 2, c_color)
+            draw_styled_text(gc, s_icon, f"{self.token}.icon", w - 30, (h - 16) / 2, s_color)
         else:
             # Draw Delete
             d_icon = _theme.glyph(_theme._resolve(f"{actions_token}.delete.icon"))
             d_color = _theme.color(f"{actions_token}.delete.color")
-            gc.SetFont(gc.CreateFont(_theme.font("icon"), d_color))
-            gc.DrawText(d_icon, w - 30, (h - 16) / 2)
+            draw_styled_text(gc, d_icon, f"{self.token}.icon", w - 30, (h - 16) / 2, d_color)
 
 
 class CustomListView(scrolled.ScrolledPanel):

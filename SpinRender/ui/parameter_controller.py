@@ -18,6 +18,7 @@ Responsible for:
 from typing import Dict, Any, Callable, Optional
 
 from SpinRender.core.settings import RenderSettings
+from .helpers import update_text
 
 
 class ParameterController:
@@ -141,7 +142,7 @@ class ParameterController:
         self.settings.period = val
         self.period_input.SetValue(val)
         if self.frame_count:
-            self.frame_count.SetLabel(f"{int(val * 30)} f")
+            update_text(self.frame_count, f"{int(val * 30)} f")
         if hasattr(self.preview, 'viewport'):
             self.preview.viewport.set_period(val)
         self.preview.update_preview_overlay()
@@ -153,7 +154,7 @@ class ParameterController:
         self.settings.period = val
         self.period_slider.SetValue(val)
         if self.frame_count:
-            self.frame_count.SetLabel(f"{int(val * 30)} f")
+            update_text(self.frame_count, f"{int(val * 30)} f")
         if hasattr(self.preview, 'viewport'):
             self.preview.viewport.set_period(val)
         self.preview.update_preview_overlay()

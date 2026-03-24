@@ -37,15 +37,29 @@ class TextStyle:
         )
 
     def format_text(self, text: str) -> str:
-        """Apply text formatting transformations."""
+        """Apply text formatting transformations.
+
+        Uppercase/lowercase/capitalize preserve {placeholder} tokens so that
+        format strings like "Rendering frame {current}/{total}" become
+        "RENDERING FRAME {current}/{total}" with placeholders intact.
+        """
         if self.formatting == "uppercase":
-            return text.upper()
+            # Upper-case every segment that is not a {placeholder} token.
+            return self._transform_segments(text, lambda s: s.upper())
         elif self.formatting == "lowercase":
-            return text.lower()
+            return self._transform_segments(text, lambda s: s.lower())
         elif self.formatting == "capitalize":
-            return text.capitalize()
+            return self._transform_segments(text, lambda s: s[0].upper() + s[1:].lower() if s else s)
         else:
             return text
+
+    def _transform_segments(self, text: str, fn) -> str:
+        """Split text into {placeholder} and non-placeholder segments, apply fn to non-placeholders."""
+        import re as _re
+        def _repl(m):
+            seg = m.group()
+            return seg if seg.startswith('{') else fn(seg)
+        return _re.sub(r'(\{[^}]*\}|[^{]+)', _repl, text)
 
 
 # ---------------------------------------------------------------------------
@@ -56,16 +70,19 @@ class TextStyles:
     """Container for semantic text styles.
 
     Resolves styles dynamically from the Theme singleton via __getattr__.
-    This ensures any new style added to the YAML theme is automatically available.
+    Rule: create_text() callsites should use alias keys from _ALIASES.
+    Raw theme path fallback remains supported for component paint helpers.
     """
     
-    # Map code style names to their definitive theme paths
+    # Canonical alias map for text styles used by create_text().
+    # Prefer adding aliases here for create_text() callsites.
+    # Paint helpers may use direct component theme paths.
     _ALIASES = {
         "title": "layout.main.header.title",
         "version": "layout.main.header.subtitle",
         "header": "layout.main.leftpanel.headers",
         "subheader": "layout.main.leftpanel.subheaders",
-        "metadata": "layout.main.leftpanel.body",
+        # "metadata": "layout.main.leftpanel.body",
         "icon": "icon",
         "label": "label",
 
@@ -75,12 +92,27 @@ class TextStyles:
 
         "status": "status",
 
+        # Component styles
+        "button": "button",
+        "dropdown": "dropdown",
+        "nav": "nav",
+        "link": "links",
+        "input": "numeric",  # input fields use numeric style (no unit) or label style? Using numeric as placeholder
+        "colorpicker": "label",  # color picker labels use label style
+
         # Button styles
         "closepreview": "components.button.closepreview.label",
 
         # Dialog styles
         "dialog_description": "layout.dialogs.default.body.description",
         "dialog_section_label": "layout.dialogs.default.body.section_label",
+        "dialog_link": "layout.dialogs.options.body.links",
+
+        # Component styles
+        "section_label_component": "components.section_label.label",
+
+        # Left panel styles
+        "leftpanel_description": "layout.main.leftpanel.descriptions",
 
         # Legacy/helper aliases
         "label_sm": "layout.main.leftpanel.headers",

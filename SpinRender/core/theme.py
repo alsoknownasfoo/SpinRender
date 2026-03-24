@@ -137,11 +137,18 @@ class Theme:
                 node = node[key]
             else:
                 # 3. Inheritance: Climb parents of the ORIGINAL path to find a 'ref'
+                # Supports both {ref: "path"} and "@path" pointer syntax.
                 for j in range(i, 0, -1):
                     parent_path = ".".join(parts[:j])
                     parent = self._get_raw(parent_path)
+                    
+                    base_ref = None
                     if isinstance(parent, dict) and "ref" in parent:
                         base_ref = parent["ref"]
+                    elif isinstance(parent, str) and parent.startswith("@"):
+                        base_ref = parent[1:]
+                        
+                    if base_ref:
                         remaining = ".".join(parts[j:])
                         return self._resolve(f"{base_ref}.{remaining}", visited.copy())
                 

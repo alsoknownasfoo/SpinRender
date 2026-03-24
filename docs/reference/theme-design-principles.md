@@ -63,6 +63,8 @@ text:
 ```
 All `wx.StaticText` must be created via `helpers.create_text()` so formatting
 and hot-reload registration happen automatically.
+For `create_text(style_name=...)`, prefer a `TextStyles` alias key instead of
+passing raw `layout.*` or `components.*` theme paths directly.
 
 ### 5. Components
 Terminal design decisions for specific UI elements.

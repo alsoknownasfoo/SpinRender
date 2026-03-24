@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from .text_styles import TextStyle, TextStyles
-from .helpers import create_text
+from .helpers import create_text, update_text
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
 _theme = Theme.current()
@@ -247,7 +247,7 @@ class PreviewPanel(wx.Panel):
                 btn_label = self.preset_buttons[preset_id].label
                 if btn_label and btn_label != "SELECT CUSTOM..":
                     label = btn_label
-            self.ov_top_left.SetLabel(label)
+            update_text(self.ov_top_left, label)
         else:
             # Show raw parameters
             params = [
@@ -257,7 +257,7 @@ class PreviewPanel(wx.Panel):
                 f"SH:{self.settings.spin_heading:.0f}°",
                 f"· {self.settings.period:.1f}s"
             ]
-            self.ov_top_left.SetLabel("  ".join(params))
+            update_text(self.ov_top_left, "  ".join(params))
 
         # Top-Right: Close button visibility
         if self.render_preview_active and not self.preview_manually_closed:
@@ -278,7 +278,7 @@ class PreviewPanel(wx.Panel):
         # Bottom-Left: Lighting + BG
         lighting = getattr(self.settings, 'lighting', 'studio').upper()
         bg_hex = getattr(self.settings, 'bg_color', '#000000').upper()
-        self.ov_bottom_left.SetLabel(f"{lighting} · BG:{bg_hex}")
+        update_text(self.ov_bottom_left, f"{lighting} · BG:{bg_hex}")
 
         # Bottom-Center: Resolution, aspect ratio, FPS
         res = self.settings.resolution
@@ -298,14 +298,14 @@ class PreviewPanel(wx.Panel):
             ratio = "16:9"
         
         # Only show resolution/fps, right-aligned
-        self.ov_bottom_center.SetLabel(f"{res.upper()}  ·  {ratio}  ·  {fps}")
+        update_text(self.ov_bottom_center, f"{res.upper()}  ·  {ratio}  ·  {fps}")
 
         self.Layout()
 
     def show_overlay(self, text: str = ""):
         """Show the render preview overlay."""
         if text:
-            self.ov_top_left.SetLabel(text)
+            update_text(self.ov_top_left, text)
         self.render_preview_panel.Show()
 
     def hide_overlay(self):

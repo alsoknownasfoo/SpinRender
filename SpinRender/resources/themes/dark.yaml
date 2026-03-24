@@ -24,6 +24,7 @@ colors:
   white-68:    "rgba(255,255,255,0.68)"
   black:       "#000000"
   transparent: "rgba(0,0,0,0)"
+  cyan-muted:  "rgba(100, 200, 220, 0.6)"
 
   cyan:        "#00BCD4"
   yellow:      "#FFD600"
@@ -161,23 +162,24 @@ text:
       weight: "@typography.weights.bold"
   subtitle:
     color: "@colors.primary"
+    formatting: "uppercase"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
       weight: "@typography.weights.bold"
   header:
-    color: "@colors.gray-medium"
+    color: "#333333"
     formatting: "uppercase"
     font:
       typeface: "@typography.families.display"
       size: "@typography.scale.md"
       weight: "@typography.weights.semibold"
   subheader:
-    color: "@colors.primary"
+    color: "@colors.cyan"
     formatting: "uppercase"
     font:
       typeface: "@typography.families.mono"
-      size: "@typography.scale.sm"
+      size: "@typography.scale.base"
       weight: "@typography.weights.semibold"
   body:
     color: "@colors.gray-medium"
@@ -196,10 +198,11 @@ text:
       size: "@typography.scale.base"
       weight: "@typography.weights.semibold"
   links:
-    color: "@colors.primary"
+    color: "@colors.gray-light"
+    formatting: "uppercase"
     font:
       typeface: "@typography.families.mono"
-      size: "@typography.scale.base"
+      size: "@typography.scale.sm"
       weight: "@typography.weights.semibold"
   metadata:
     color: "@colors.gray-medium"
@@ -208,34 +211,45 @@ text:
       typeface: "@typography.families.mono"
       size: "@typography.scale.base"
       weight: "@typography.weights.normal"
+  description:
+    color: "@colors.gray-medium"
+    formatting: "uppercase"
+    font:
+      typeface: "@typography.families.mono"
+      size: "@typography.scale.sm"
+      weight: "@typography.weights.normal"
   label:
     color: "@colors.gray-text"
+    formatting: "uppercase"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
       weight: "@typography.weights.semibold"
   button:
-    color: 
+    color:
       default: "@colors.gray-light"
       hover: "@colors.primary"
+    formatting: "uppercase"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.base"
       weight: "@typography.weights.semibold"
   nav:
-    color: 
+    color:
       default: "@colors.gray-medium"
       hover: "@colors.primary"
       active: "@colors.primary"
+    formatting: "uppercase"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.base"
       weight: "@typography.weights.bold"
   dropdown:
-    color: "@colors.gray-white"
+    color: "@colors.secondary"
+    formatting: "uppercase"
     font:
       typeface: "@typography.families.mono"
-      size: "@typography.scale.sm"
+      size: "@typography.scale.base"
       weight: "@typography.weights.semibold"
   status:
     color: "@colors.primary"
@@ -337,6 +351,7 @@ layout:
       headers: "@text.header"
       subheaders: "@text.subheader"
       body: "@text.body"
+      descriptions: "@text.description"
       border: "@borders.default"
       scrollbar: "@components.scrollbar"
       padding: 16
@@ -372,7 +387,7 @@ layout:
         padding:
           all: "@typography.spacing.lg"
         text: "@text.body"
-        description: "@text.metadata"
+        description: "@text.description"
         section_label: "@text.subheader"
       controls:
         bg: "@colors.gray-dark"
@@ -401,6 +416,8 @@ layout:
       frame:
         width: 600
         height: 640
+      body:
+        links: "@text.links"
     presets:
       ref: "@layout.dialogs.default"
       frame:
@@ -424,6 +441,10 @@ layout:
 # 9. COMPONENT DEFINITIONS (Atomic UI Components)
 # ─────────────────────────────────────────────────────────────────x
 components:
+  section_label:
+    label:
+      ref: "@text.header"
+
   badge:
     frame:
       height: 18
@@ -467,8 +488,8 @@ components:
           default: "@colors.gray-light"
           hover: "@colors.primary"
           active: "@colors.gray-dark"
-      label: 
-        ref: "@text.label"
+      label:
+        ref: "@text.body"
         color:
           default: "@colors.gray-light"
           hover: "@colors.primary"
@@ -483,6 +504,13 @@ components:
       type: "text" # type can be text, numeric, or rich (for file paths with browse button)
       editable: true # readonly bool
       case: "none" # for text inputs, can be none, upper, or lower
+      icon_style:
+        ref: "@text.icon"
+      label: # unit suffix label (e.g. "°", "f")
+        ref: "@text.numeric"
+        color:
+          default: "@colors.gray-light"
+          hover: "@colors.primary"
       frame: 
         height: 32 # height of field
         bg: # bg of field
@@ -663,9 +691,9 @@ components:
             hover: "@colors.transparent" 
             active: "@colors.transparent" # main module while dropdown is open
       label: # main module text font and color
-        font: "@text.dropdown.font"
+        ref: "@text.dropdown"
         color:
-          default: "@colors.gray-white"
+          default: "@colors.gray-light"
           hover: "@colors.primary"
       icon: # main module chevron color
         ref: "@text.icon"
@@ -685,7 +713,7 @@ components:
           radius: "@radius.md" # menu items have no border
           border: "@borders.none"
           label:
-            font: "@text.dropdown.font"
+            ref: "@text.dropdown"
             color:
               default: "@colors.gray-white"
               hover: "@colors.primary"
@@ -698,16 +726,25 @@ components:
       bg: "@colors.transparent"
       border: "@borders.subtle"
       radius: "@radius.sm"
+      label:
+        font:
+          typeface: "@typography.families.mono"
+          size: "@typography.scale.sm"
+          weight: "@typography.weights.semibold"
+        color: 
+          default: "@colors.gray-light"
+          hover: "@colors.primary"
+          active: "@colors.primary"
       items:
         innerborder:
           size: 1
-          color: 
+          color:
             default: "@colors.gray-black"
             hover: "@colors.primary"
             active: "@colors.gray-black"
-        border: 
+        border:
           size: 2
-          color: 
+          color:
             default: "@borders.subtle.color"
             hover: "@colors.red"
             active: "@colors.primary"
@@ -837,13 +874,19 @@ components:
             hover: "@colors.transparent"
             active: "@colors.primary"
         cursor: "hand"
-      label:
-        color: 
+      icon:
+        ref: "@text.icon"
+        color:
           default: "@colors.gray-white"
           hover: "@colors.primary"
-      border: 
+      label:
+        ref: "@text.body"
+        color:
+          default: "@colors.gray-white"
+          hover: "@colors.primary"
+      border:
         size: "@borders.subtle.size"
-        color: 
+        color:
           default: "@borders.subtle.color"
           hover: "@colors.transparent"
           active: "@colors.transparent"

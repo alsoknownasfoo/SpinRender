@@ -186,8 +186,10 @@ padding = _theme.token("layout.control.padding")
 **Text Creation Rule**:
 All `wx.StaticText` widgets must be created via `helpers.create_text(parent, label, style_name)`.
 - `style_name` must map to a `layout.*` or `components.*` YAML path (via `TextStyles._ALIASES`).
+- `style_name` should be an alias key (for example `dialog_link`, `leftpanel_description`) for create_text callsites, not a raw `layout.*` or `components.*` path.
 - `create_text()` applies `format_text()` (e.g. uppercase from YAML), sets font+color, and
   registers the widget in the global `_text_registry` for automatic hot-reload.
+- `prepare_styled_text()` may use direct component theme paths for paint-time rendering (for example `components.badge.label`).
 - Never use bare `wx.StaticText(...)` + `SetFont()` for themed text.
 
 ---

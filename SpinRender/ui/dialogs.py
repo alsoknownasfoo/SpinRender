@@ -395,7 +395,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         auto_row = wx.Panel(content)
         auto_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
-        auto_desc = create_text(auto_row, _locale.get("output.auto_desc", "Automatically save to time-stamped directories."), "dialog_description", color_token="colors.gray-light")
+        auto_desc = create_text(auto_row, _locale.get("output.auto_desc", "Automatically save to time-stamped directories."), "dialog_description")
         auto_sizer.Add(auto_desc, 1, wx.ALIGN_CENTER_VERTICAL)
         
         from .custom_controls import CustomToggleButton
@@ -422,7 +422,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         content_sizer.Add(path_input_row, 0, wx.EXPAND | wx.BOTTOM, 20)
 
         # 2. PARAMETER OVERRIDES section
-        content_sizer.Add(self.create_section_label(content, "PARAMETER OVERRIDES"), 0, wx.EXPAND | wx.BOTTOM, 12)
+        content_sizer.Add(self.create_section_label(content, _locale.get("dialog.advanced.parameter_overrides_label", "PARAMETER OVERRIDES")), 0, wx.EXPAND | wx.BOTTOM, 12)
         
         self.override_input = CustomInput(
             content,
@@ -443,10 +443,10 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         info_icon.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         link_sizer.Add(info_icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         
-        see_txt = create_text(link_row, _locale.get("dialog.advanced.see", "See "), "dialog_description", color_token="colors.gray-light")
+        see_txt = create_text(link_row, _locale.get("dialog.advanced.see", "See "), "dialog_description")
         link_sizer.Add(see_txt, 0, wx.ALIGN_CENTER_VERTICAL)
 
-        link_txt = create_text(link_row, _locale.get("dialog.advanced.docs_link", "kicad-cli render options"), "dialog_description", color_token="colors.primary")
+        link_txt = create_text(link_row, _locale.get("dialog.advanced.docs_link", "kicad-cli render options"), "dialog_description")
         link_txt.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         link_sizer.Add(link_txt, 0, wx.ALIGN_CENTER_VERTICAL)
         
@@ -478,11 +478,16 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         log_row.SetSizer(log_hsizer)
         content_sizer.Add(log_row, 0, wx.EXPAND | wx.BOTTOM, 12)
         
-        log_info = create_text(content, _locale.get("parameters.log_info", "Logs are kept for 30 days. Useful for troubleshooting render failures."), "dialog_description", color_token="colors.gray-light")
+        log_info = create_text(content, _locale.get("parameters.log_info", "Logs are kept for 30 days. Useful for troubleshooting render failures."), "dialog_description")
         content_sizer.Add(log_info, 0, wx.EXPAND | wx.BOTTOM, 8)
 
         from SpinRender.utils.logger import SpinLogger
-        open_logs_txt = create_text(content, _locale.get("parameters.open_logs", "Open logs folder"), "label", color_token="colors.primary")
+        open_logs_txt = create_text(
+            content,
+            _locale.get("parameters.open_logs", "Open logs folder"),
+            "dialog_link",
+            link_suffix_arrow=True,
+        )
         open_logs_txt.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         open_logs_txt.Bind(wx.EVT_LEFT_DOWN, lambda e: SpinLogger.open_logs_folder())
         content_sizer.Add(open_logs_txt, 0, wx.BOTTOM, 12)

@@ -160,6 +160,7 @@ text:
       weight: "@typography.weights.bold"
   subtitle:
     color: "@colors.primary"
+    formatting: "uppercase"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
@@ -209,6 +210,7 @@ text:
       weight: "@typography.weights.normal"
   label:
     color: "@colors.gray-text"
+    formatting: "uppercase"
     font:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
@@ -421,6 +423,11 @@ layout:
 # 9. COMPONENT DEFINITIONS (Atomic UI Components)
 # ─────────────────────────────────────────────────────────────────
 components:
+  section_label:
+    label:
+      ref: "@text.header"
+
+
   badge:
     frame:
       height: 18
@@ -480,6 +487,13 @@ components:
       type: "text"
       editable: true
       case: "none"
+      icon_style:
+        ref: "@text.icon"
+      label: # unit suffix label (e.g. "°", "f")
+        ref: "@text.numeric"
+        color:
+          default: "@colors.gray-light"
+          hover: "@colors.primary"
       frame:
         height: 32
         bg:
@@ -660,7 +674,7 @@ components:
             hover: "@colors.transparent"
             active: "@colors.transparent"
       label:
-        font: "@text.dropdown.font"
+        ref: "@text.dropdown"
         color:
           default: "@colors.gray-white"
           hover: "@colors.primary"
@@ -682,7 +696,7 @@ components:
           radius: "@radius.md"
           border: "@borders.none"
           label:
-            font: "@text.dropdown.font"
+            ref: "@text.dropdown"
             color:
               default: "@colors.gray-white"
               hover: "@colors.primary"
@@ -695,6 +709,9 @@ components:
       bg: "@colors.transparent"
       border: "@borders.subtle"
       radius: "@radius.sm"
+      label:
+        ref: "@text.metadata"
+        color: "@colors.gray-text"
       items:
         innerborder:
           size: 1
@@ -835,7 +852,13 @@ components:
             hover: "@colors.transparent"
             active: "@colors.primary"
         cursor: "hand"
+      icon:
+        ref: "@text.icon"
+        color:
+          default: "@colors.gray-white"
+          hover: "@colors.primary"
       label:
+        ref: "@text.body"
         color:
           default: "@colors.gray-white"
           hover: "@colors.primary"

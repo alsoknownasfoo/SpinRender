@@ -161,3 +161,83 @@ class TestV2TokenResolution:
         """components.badge tokens should resolve."""
         assert _theme.color("components.badge.bg") is not None
         assert _theme.color("components.badge.text") is not None
+
+
+class TestPrepareStyledText:
+    """Test the prepare_styled_text paint-context helper."""
+
+    def test_prepare_styled_text_returns_tuple(self):
+        """prepare_styled_text should return (formatted, tw, th)."""
+        from SpinRender.ui.helpers import prepare_styled_text
+        assert prepare_styled_text is not None
+
+    def test_resolve_text_style_formats_text(self):
+        """_resolve_text_style should apply format_text from TextStyle."""
+        from SpinRender.ui.helpers import _resolve_text_style
+        formatted, style = _resolve_text_style("hello", "header")
+        assert isinstance(formatted, str)
+        assert style is not None
+        
+class TestComponentTokenPathResolution:
+    """Test that component token paths resolve via TextStyles fallthrough."""
+
+    def test_toggle_label_path_resolves(self):
+        """components.toggle.default.items.label should resolve via __getattr__."""
+        from SpinRender.ui.text_styles import TextStyles
+        style = getattr(TextStyles, "components.toggle.default.items.label")
+        assert style is not None
+        assert hasattr(style, 'create_font')
+
+    def test_dropdown_label_path_resolves(self):
+        """components.dropdown.default.label should resolve via __getattr__."""
+        from SpinRender.ui.text_styles import TextStyles
+        style = getattr(TextStyles, "components.dropdown.default.label")
+        assert style is not None
+        assert hasattr(style, 'create_font')
+
+    def test_button_label_path_resolves(self):
+        """components.button.default.label should resolve via __getattr__."""
+        from SpinRender.ui.text_styles import TextStyles
+        style = getattr(TextStyles, "components.button.default.label")
+        assert style is not None
+        assert hasattr(style, 'create_font')
+
+    def test_preset_card_label_path_resolves(self):
+        """components.preset_card.default.label should resolve via __getattr__."""
+        from SpinRender.ui.text_styles import TextStyles
+        style = getattr(TextStyles, "components.preset_card.default.label")
+        assert style is not None
+        assert hasattr(style, 'create_font')
+
+    def test_badge_label_path_resolves(self):
+        """components.badge.label should resolve via __getattr__."""
+        from SpinRender.ui.text_styles import TextStyles
+        style = getattr(TextStyles, "components.badge.label")
+        assert style is not None
+        assert hasattr(style, 'create_font')
+
+    def test_list_label_path_resolves(self):
+        """components.list.default.label should resolve via __getattr__."""
+        from SpinRender.ui.text_styles import TextStyles
+        style = getattr(TextStyles, "components.list.default.label")
+        assert style is not None
+        assert hasattr(style, 'create_font')
+
+    def test_colorpicker_label_path_resolves(self):
+        """components.colorpicker.default.label should resolve via __getattr__."""
+        from SpinRender.ui.text_styles import TextStyles
+        style = getattr(TextStyles, "components.colorpicker.default.label")
+        assert style is not None
+        assert hasattr(style, 'create_font')
+
+    def test_input_label_path_resolves(self):
+        """components.input.default.label should resolve via __getattr__."""
+        from SpinRender.ui.text_styles import TextStyles
+        style = getattr(TextStyles, "components.input.default.label")
+        assert style is not None
+        assert hasattr(style, 'create_font')
+
+    def test_controls_import_prepare_styled_text(self):
+        """custom_controls should import prepare_styled_text."""
+        import SpinRender.ui.custom_controls as cc
+        assert hasattr(cc, 'prepare_styled_text')

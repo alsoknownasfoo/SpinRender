@@ -131,6 +131,39 @@ class TestTextStyle:
         result = style.format_text("Hello World")
         assert result == "Hello World"
 
+    def test_textstyle_format_text_uppercase_preserves_placeholders(self):
+        """Test .format_text() uppercase preserves {placeholder} tokens."""
+        style = TextStyle(
+            family="JetBrains Mono",
+            size=11,
+            weight=400,
+            formatting="uppercase"
+        )
+        result = style.format_text("frame {current} of {total}")
+        assert result == "FRAME {current} OF {total}"
+
+    def test_textstyle_format_text_lowercase_preserves_placeholders(self):
+        """Test .format_text() lowercase preserves {placeholder} tokens."""
+        style = TextStyle(
+            family="JetBrains Mono",
+            size=11,
+            weight=400,
+            formatting="lowercase"
+        )
+        result = style.format_text("Frame {current} of {total}")
+        assert result == "frame {current} of {total}"
+
+    def test_textstyle_format_text_capitalize_preserves_placeholders(self):
+        """Test .format_text() capitalize preserves {placeholder} tokens."""
+        style = TextStyle(
+            family="JetBrains Mono",
+            size=11,
+            weight=400,
+            formatting="capitalize"
+        )
+        result = style.format_text("frame {current} of {total}")
+        assert result == "Frame {current} of {total}"
+
     def test_textstyle_full_workflow(self):
         """Test complete TextStyle workflow: format text, create font."""
         color = _theme.color("colors.cyan")
