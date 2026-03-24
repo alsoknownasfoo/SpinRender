@@ -747,6 +747,16 @@ components:
         bg:
           default: "@colors.transparent"
           hover: "@colors.red"
+    xclose:
+      ref: "@components.button.default"
+      frame:
+        bg:
+          default: "@colors.transparent"
+          hover: "@colors.red"
+      label:
+        color:
+          default: "@text.icon.color"
+          hover: "@colors.black"
     closepreview:
       ref: "@components.button.default"
       label:

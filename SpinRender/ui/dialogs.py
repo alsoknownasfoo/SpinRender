@@ -352,7 +352,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Header
-        main_sizer.Add(self.create_header("Advanced options"), 0, wx.EXPAND)
+        main_sizer.Add(self.create_header("Advanced options", show_close=False), 0, wx.EXPAND)
 
         # Border separator
         line = wx.Panel(self.main_container, size=(-1, 1))

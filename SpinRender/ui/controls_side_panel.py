@@ -450,7 +450,7 @@ class ControlsSidePanel(wx.Panel):
         self.adv_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_advanced_options)
         asizer.Add(self.adv_btn, 0, wx.RIGHT, 8)
 
-        self.can_btn = CustomButton(arow, id="close", size=(110, 36), section='export')
+        self.can_btn = CustomButton(arow, id="exit", size=(110, 36), section='export')
         self.can_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_cancel)
         asizer.Add(self.can_btn, 0, wx.RIGHT, 8)
 

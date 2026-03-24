@@ -129,7 +129,7 @@ locale:
         label: "OVERWRITE"
         icon_ref: "glyphs.alert"
       close:
-        label: "CLOSE"
+        label: ""
         icon_ref: "glyphs.close"
       closepreview:
         label: "CLOSE PREVIEW"

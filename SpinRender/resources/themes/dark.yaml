@@ -750,6 +750,15 @@ components:
         bg:
           default: "@colors.transparent"
           hover: "@colors.red"
+          active: "@colors.red"
+        border:
+          size: 1
+          color: "@colors.transparent"
+      label:
+        color:
+          default: "@colors.gray-light"
+          hover: "@colors.gray-white"
+          active: "@colors.gray-white"
     closepreview:
       ref: "@components.button.default"
       label:
