@@ -18,6 +18,7 @@ SpinRender/logs/
 
 # Hardware (KiCad)
 *.kicad_pcb
+SpinRender/resources/kicad_config/10.0/3d_viewer.json
 SpinRender/resources/kicad_config/10.0/cvpcb.json
 SpinRender/resources/kicad_config/10.0/eeschema.json
 SpinRender/resources/kicad_config/10.0/fpedit.json
