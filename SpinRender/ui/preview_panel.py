@@ -29,7 +29,7 @@ class PreviewPanel(wx.Panel):
     - Expose controls for rotation, lighting, background, etc.
     """
 
-    def __init__(self, parent, settings, board_path: str):
+    def __init__(self, parent, settings, board_path: str, on_close_callback=None):
         """
         Initialize PreviewPanel.
 
@@ -37,10 +37,12 @@ class PreviewPanel(wx.Panel):
             parent: Parent wx.Window
             settings: RenderSettings object (or MagicMock/dict with required fields)
             board_path: Path to the KiCad PCB file for viewport loading
+            on_close_callback: Optional callback to invoke when render preview is closed
         """
         super().__init__(parent)
         self.settings = settings
         self.board_path = board_path
+        self.on_close_callback = on_close_callback
 
         # State flags
         self.render_preview_active = False
@@ -429,6 +431,8 @@ class PreviewPanel(wx.Panel):
         self.final_output_type = None
         self.render_preview_panel.Hide()
         self.update_preview_overlay()
+        if self.on_close_callback:
+            self.on_close_callback()
 
     # ------------------------------------------------------------------------
     # Viewport control methods (called by parent/orchestrator)

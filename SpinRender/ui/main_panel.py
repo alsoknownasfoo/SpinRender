@@ -295,8 +295,13 @@ class SpinRenderPanel(wx.Panel):
 
     def create_preview_panel(self, parent):
         """Create the preview panel using the extracted PreviewPanel component."""
-        # Create the PreviewPanel component
-        self.preview = PreviewPanel(parent, self.settings, self.board_path)
+        # Create the PreviewPanel component with status bar reset callback
+        self.preview = PreviewPanel(
+            parent,
+            self.settings,
+            self.board_path,
+            on_close_callback=self.reset_status_bar
+        )
 
         # Set preview panel width to 700px
         self.preview.SetMinSize((700, -1))

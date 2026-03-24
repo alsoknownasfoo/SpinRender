@@ -448,6 +448,33 @@ class TestPreviewPanelClose:
         preview.playback_timer.Stop.assert_called_once()
         preview.update_preview_overlay.assert_called_once()
 
+    def test_on_close_render_preview_calls_callback(self, wx_mock, mock_settings, mock_gl_preview):
+        """Should invoke on_close_callback if provided."""
+        parent = MagicMock()
+        callback = MagicMock()
+        preview = PreviewPanel(parent, mock_settings, '/fake/board.kicad_pcb', on_close_callback=callback)
+        preview.playback_timer = MagicMock()
+        preview.render_preview_panel = MagicMock()
+        preview.update_preview_overlay = MagicMock()
+
+        preview.on_close_render_preview(None)
+
+        callback.assert_called_once()
+
+    def test_on_close_render_preview_works_without_callback(self, wx_mock, mock_settings, mock_gl_preview):
+        """Should work normally if no callback provided."""
+        parent = MagicMock()
+        preview = PreviewPanel(parent, mock_settings, '/fake/board.kicad_pcb')
+        preview.playback_timer = MagicMock()
+        preview.render_preview_panel = MagicMock()
+        preview.update_preview_overlay = MagicMock()
+
+        # Should not raise
+        preview.on_close_render_preview(None)
+
+        preview.render_preview_panel.Hide.assert_called_once()
+        preview.playback_timer.Stop.assert_called_once()
+
 
 class TestPreviewPanelState:
     """Test state management and viewport updates."""
