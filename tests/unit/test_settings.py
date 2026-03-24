@@ -240,7 +240,7 @@ def test_render_settings_to_dict_matches_preset_structure():
         'period', 'direction', 'lighting', 'bg_color',
         'render_mode', 'format', 'resolution', 'preset',
         'logging_level', 'easing', 'output_auto', 'output_path',
-        'cli_overrides'
+        'cli_overrides', 'theme_mode'
     ]
     assert list(sorted(data.keys())) == sorted(expected_keys)
 

@@ -26,6 +26,31 @@ from .status_bar import StatusBar
 from .parameter_controller import ParameterController
 
 
+def _detect_system_theme() -> str:
+    """Return 'dark' or 'light' based on system appearance."""
+    try:
+        appearance = wx.SystemSettings.GetAppearance()
+        if hasattr(appearance, 'IsDark') and appearance.IsDark():
+            return 'dark'
+    except Exception:
+        pass
+    try:
+        bg = wx.SystemSettings.GetColour(wx.SYS_COLOUR_WINDOW)
+        lum = 0.299 * bg.Red() + 0.587 * bg.Green() + 0.114 * bg.Blue()
+        return 'dark' if lum < 128 else 'light'
+    except Exception:
+        return 'dark'
+
+
+def _apply_theme_mode(mode: str):
+    """Resolve a theme mode ('dark'/'light'/'system') and load the YAML theme."""
+    name = mode if mode in ('dark', 'light') else _detect_system_theme()
+    try:
+        Theme.load(name)
+    except (FileNotFoundError, RuntimeError):
+        Theme.load('dark')
+
+
 class SpinRenderPanel(wx.Panel):
     """
     Main SpinRender UI panel with two-panel layout
@@ -69,10 +94,13 @@ class SpinRenderPanel(wx.Panel):
                               'period', 'direction', 'lighting', 'bg_color',
                               'render_mode', 'format', 'resolution', 'preset',
                               'logging_level', 'easing', 'output_auto', 'output_path',
-                              'cli_overrides']:
+                              'cli_overrides', 'theme_mode']:
                     if hasattr(last_settings, field):
                         setattr(self.settings, field, getattr(last_settings, field))
-            
+
+        # Apply saved theme before building UI
+        _apply_theme_mode(getattr(self.settings, 'theme_mode', 'system'))
+
         # Initialize logging level from settings
         from utils.logger import SpinLogger
         SpinLogger.setup(level=getattr(self.settings, 'logging_level', 'info'))
@@ -379,10 +407,18 @@ class SpinRenderPanel(wx.Panel):
             self.preview.update_render_mode_ui(active_mode)
         
 
+    def _apply_theme_mode_from_dialog(self, mode):
+        """Immediate callback from AdvancedOptionsDialog when theme toggle changes."""
+        _apply_theme_mode(mode)
+        self.reapply_theme()
+
     def on_advanced_options(self, event):
         self.reset_status_bar()
         from ui.dialogs import AdvancedOptionsDialog
-        dlg = AdvancedOptionsDialog(self, self.settings, self.board_path)
+        dlg = AdvancedOptionsDialog(
+            self, self.settings, self.board_path,
+            on_theme_change=self._apply_theme_mode_from_dialog
+        )
         if dlg.ShowModal() == wx.ID_OK:
             from utils.logger import SpinLogger
             SpinLogger.setup(level=self.settings.logging_level)
@@ -391,7 +427,7 @@ class SpinRenderPanel(wx.Panel):
         dlg.Destroy()
         self.preview.update_preview_overlay()
         pf = self.GetTopLevelParent()
-        if pf: 
+        if pf:
             pf.Raise()
 
     def on_cancel(self, event):

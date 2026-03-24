@@ -224,10 +224,14 @@ class SpinRenderFrame(wx.Frame):
 
     def _init_theme_watcher(self):
         """Initialize a timer to watch for theme file changes (Hot Reload)."""
-        # Use the real directory to follow symlinks to the repo version
-        self.theme_path = Path(plugin_real_dir) / "resources" / "themes" / "dark.yaml"
+        try:
+            from SpinRender.core.theme import Theme as _Theme
+        except ImportError:
+            from core.theme import Theme as _Theme
+        active_name = _Theme._loaded_name or "dark"
+        self.theme_path = Path(plugin_real_dir) / "resources" / "themes" / f"{active_name}.yaml"
         self.last_theme_mtime = self.theme_path.stat().st_mtime if self.theme_path.exists() else 0
-        
+
         self.theme_timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_theme_watch_timer, self.theme_timer)
         self.theme_timer.Start(1000) # Check every second
@@ -235,30 +239,37 @@ class SpinRenderFrame(wx.Frame):
 
     def on_theme_watch_timer(self, event):
         """Check if theme file has been modified and reload if needed."""
-        if not self.theme_path.exists():
-            return
-            
-        mtime = self.theme_path.stat().st_mtime
-        if mtime > self.last_theme_mtime:
-            self.last_theme_mtime = mtime
-            logger.info(f"Theme file {self.theme_path.name} changed. Hot-reloading...")
+        try:
             try:
-                try:
-                    from SpinRender.core.theme import Theme
-                except ImportError:
-                    from core.theme import Theme
+                from SpinRender.core.theme import Theme
+            except ImportError:
+                from core.theme import Theme
+
+            # Update watch path if the active theme has changed (e.g. user switched)
+            active_name = Theme._loaded_name or "dark"
+            expected_path = Path(plugin_real_dir) / "resources" / "themes" / f"{active_name}.yaml"
+            if expected_path != self.theme_path:
+                self.theme_path = expected_path
+                self.last_theme_mtime = self.theme_path.stat().st_mtime if self.theme_path.exists() else 0
+
+            if not self.theme_path.exists():
+                return
+
+            mtime = self.theme_path.stat().st_mtime
+            if mtime > self.last_theme_mtime:
+                self.last_theme_mtime = mtime
+                logger.info(f"Theme file {self.theme_path.name} changed. Hot-reloading...")
                 Theme.reload()
-                
-                # Use the new orchestrated re-application method
+
                 if hasattr(self.panel, 'reapply_theme'):
                     self.panel.reapply_theme()
                 else:
                     self.panel.Refresh()
                     self._refresh_recursive(self.panel)
-                    
+
                 logger.info("Theme hot-reload complete.")
-            except Exception as e:
-                logger.error(f"Theme hot-reload failed: {e}")
+        except Exception as e:
+            logger.error(f"Theme watcher error: {e}")
 
     def _refresh_recursive(self, window):
         """Recursively refresh all child windows."""

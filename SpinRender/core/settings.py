@@ -23,6 +23,7 @@ class RenderSettings:
     output_auto: bool = True
     output_path: str = ''
     cli_overrides: str = ''
+    theme_mode: str = 'system'
 
     def __post_init__(self):
         """Validate settings after initialization."""

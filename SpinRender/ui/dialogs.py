@@ -94,11 +94,28 @@ class BaseStyledDialog(wx.Dialog):
         else:
             event.Skip()
 
+    def reapply_theme(self):
+        """Repaint the dialog and all children with the current theme colors."""
+        # Re-apply stored background colors that were set at construction time
+        self.main_container.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        if hasattr(self, '_dialog_header'):
+            self._dialog_header.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        # Refresh all children — custom controls query _theme in their on_paint handlers
+        self._refresh_recursive(self)
+        self.Refresh()
+        self.Update()
+
+    def _refresh_recursive(self, win):
+        win.Refresh()
+        for child in win.GetChildren():
+            self._refresh_recursive(child)
+
     def create_header(self, title_text, show_close=True):
         header_height = _theme._resolve("layout.dialogs.default.header.height")
         if header_height is None:
             header_height = 48
         header = wx.Panel(self.main_container, size=(-1, header_height))
+        self._dialog_header = header  # stored for reapply_theme
         header.SetBackgroundColour(_theme.color("colors.gray-dark"))
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -314,18 +331,20 @@ class AdvancedOptionsDialog(BaseStyledDialog):
     """
     # All colors use theme.*
 
-    def __init__(self, parent, settings, board_path):
+    def __init__(self, parent, settings, board_path, on_theme_change=None):
         # Get dimensions from theme
         dialog_width = _theme._resolve("layout.dialogs.options.frame.width")
         dialog_height = _theme._resolve("layout.dialogs.options.frame.height")
         if dialog_width is None:
             dialog_width = 480
         if dialog_height is None:
-            dialog_height = 560
+            dialog_height = 640
         super().__init__(parent, "Advanced Options", (dialog_width, dialog_height))
         self.settings = settings
         self.board_path = board_path
         self.board_dir = os.path.dirname(board_path)
+        self._on_theme_change = on_theme_change
+        self._original_theme_mode = getattr(settings, 'theme_mode', 'system')
         self.build_ui()
         self.Centre()
 
@@ -343,6 +362,31 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         # Content
         content = wx.Panel(self.main_container)
         content_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # 0. APPEARANCE section
+        content_sizer.Add(self.create_section_label(content, _locale.get("parameters.appearance.label", "APPEARANCE")), 0, wx.EXPAND | wx.BOTTOM, 12)
+
+        theme_row = wx.Panel(content)
+        theme_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        theme_desc = create_text(theme_row, _locale.get("dialog.advanced.theme_desc", "Interface theme."), "dialog_description", color_token="colors.gray-light")
+        theme_sizer.Add(theme_desc, 1, wx.ALIGN_CENTER_VERTICAL)
+
+        from .custom_controls import CustomToggleButton
+        self.theme_opts = [
+            {'id': 'dark',   'label': 'DARK',   'icon': 'moon'},
+            {'id': 'light',  'label': 'LIGHT',  'icon': 'sun'},
+            {'id': 'system', 'label': 'SYSTEM', 'icon': 'computer'},
+        ]
+        self.theme_toggle = CustomToggleButton(theme_row, options=self.theme_opts, size=(240, 28), id="direction")
+        curr_mode = getattr(self.settings, 'theme_mode', 'system')
+        mode_idx = next((i for i, o in enumerate(self.theme_opts) if o['id'] == curr_mode), 2)
+        self.theme_toggle.SetSelection(mode_idx)
+        self.theme_toggle.Bind(wx.EVT_TOGGLEBUTTON, self._on_theme_mode_change)
+        theme_sizer.Add(self.theme_toggle, 0, wx.ALIGN_CENTER_VERTICAL)
+
+        theme_row.SetSizer(theme_sizer)
+        content_sizer.Add(theme_row, 0, wx.EXPAND | wx.BOTTOM, 20)
 
         # 1. OUTPUT PATH section
         content_sizer.Add(self.create_section_label(content, _locale.get("parameters.output_path.label", "OUTPUT PATH")), 0, wx.EXPAND | wx.BOTTOM, 12)
@@ -529,13 +573,28 @@ class AdvancedOptionsDialog(BaseStyledDialog):
                 self.update_path_display()
             dlg.Destroy()
 
+    def _on_theme_mode_change(self, event):
+        idx = self.theme_toggle.GetSelection()
+        mode = self.theme_opts[idx]['id']
+        self.settings.theme_mode = mode
+        if self._on_theme_change:
+            self._on_theme_change(mode)
+        self.reapply_theme()
+
     def on_cancel(self, event):
+        # Restore original theme if the user changed it
+        if self.settings.theme_mode != self._original_theme_mode:
+            self.settings.theme_mode = self._original_theme_mode
+            if self._on_theme_change:
+                self._on_theme_change(self._original_theme_mode)
+            self.reapply_theme()
         self.EndModal(wx.ID_CANCEL)
 
     def on_ok(self, event):
         self.settings.cli_overrides = self.override_input.GetValue()
         self.settings.output_auto = self.auto_toggle.GetValue()
         self.settings.logging_level = self.log_opts[self.log_toggle.GetSelection()]['id']
+        # theme_mode already set via _on_theme_mode_change
         self.EndModal(wx.ID_OK)
 
 
