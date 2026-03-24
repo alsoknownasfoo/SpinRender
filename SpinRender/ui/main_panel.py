@@ -468,8 +468,6 @@ class SpinRenderPanel(wx.Panel):
             self.can_btn.Hide()
         if hasattr(self, 'adv_btn'):
             self.adv_btn.Hide()
-        if hasattr(self, 'export_row_sizer'):
-            self.export_row_sizer.Layout()
 
         # Ensure whole UI layout updates to reflect hidden buttons
         self.controls_side_panel.Layout()
@@ -563,9 +561,7 @@ class SpinRenderPanel(wx.Panel):
             self.can_btn.Show()
         if hasattr(self, 'adv_btn'):
             self.adv_btn.Show()
-        if hasattr(self, 'export_row_sizer'):
-            self.export_row_sizer.Layout()
-            
+
         # Force whole UI layout update
         self.controls_side_panel.Layout()
         self.Layout()

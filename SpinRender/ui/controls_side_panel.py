@@ -32,12 +32,12 @@ class ControlsSidePanel(wx.Panel):
         self.main_panel = parent.GetParent()  # SpinRenderPanel for event handlers
         self.settings = settings
         self.board_path = board_path
-        
+
         # Registry of all UI controls, populated automatically via self-registration.
         # Query with _registry.filter(section='parameters') etc.
         self._registry = ControlRegistry()
 
-        # Build the UI
+        # Build the UI - now returns a container with scrolled content + footer
         controls_panel = self.create_controls_panel(self)
 
         # Set up sizer for this panel
@@ -57,51 +57,73 @@ class ControlsSidePanel(wx.Panel):
         return ctrl
 
     def create_controls_panel(self, parent):
-        """Create the main scrolled controls container."""
-        self.scrolled_panel = scrolled.ScrolledPanel(parent, size=(400, -1))
-        self.scrolled_panel.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
-        self.scrolled_panel.SetupScrolling(scroll_x=False, scroll_y=True, rate_y=20)
-        sizer = wx.BoxSizer(wx.VERTICAL)
+        """Create the main controls container with scrollable content and persistent footer."""
+        # Main container that holds everything
+        main_container = wx.Panel(parent)
+        main_container.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        # Get uniform padding from theme (uses _parse_padding for CSS-style support)
+        # Get uniform padding from theme
         padding = _theme._parse_padding(_theme._resolve("layout.main.leftpanel.padding") or 16)['left']
 
-        self.header_panel = self.create_header(self.scrolled_panel)
-        sizer.Add(self.header_panel, 0, wx.EXPAND)
+        # Header (always visible at top)
+        self.header_panel = self.create_header(main_container)
+        main_sizer.Add(self.header_panel, 0, wx.EXPAND)
 
-        self.div1 = wx.Panel(self.scrolled_panel, size=(-1, 1))
-        self.div1.SetBackgroundColour(_theme.color("dividers.default.color"))
-        sizer.Add(self.div1, 0, wx.EXPAND)
+        # Divider after header
+        header_divider = wx.Panel(main_container, size=(-1, 1))
+        header_divider.SetBackgroundColour(_theme.color("dividers.default.color"))
+        main_sizer.Add(header_divider, 0, wx.EXPAND)
 
+        # Scrollable content area (presets, parameters, output)
+        self.scrolled_panel = scrolled.ScrolledPanel(main_container, size=(400, -1))
+        self.scrolled_panel.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
+        self.scrolled_panel.SetupScrolling(scroll_x=False, scroll_y=True, rate_y=20)
+        content_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Presets section
         presets = self.create_preset_section(self.scrolled_panel)
-        sizer.Add(presets, 0, wx.EXPAND | wx.ALL, padding)
+        content_sizer.Add(presets, 0, wx.EXPAND | wx.ALL, padding)
 
         self.div2 = wx.Panel(self.scrolled_panel, size=(-1, 1))
         self.div2.SetBackgroundColour(_theme.color("dividers.default.color"))
-        sizer.Add(self.div2, 0, wx.EXPAND)
+        content_sizer.Add(self.div2, 0, wx.EXPAND)
 
+        # Parameters section
         params = self.create_parameters_section(self.scrolled_panel)
-        sizer.Add(params, 0, wx.EXPAND | wx.ALL, padding)
+        content_sizer.Add(params, 0, wx.EXPAND | wx.ALL, padding)
 
         self.div3 = wx.Panel(self.scrolled_panel, size=(-1, 1))
         self.div3.SetBackgroundColour(_theme.color("dividers.default.color"))
-        sizer.Add(self.div3, 0, wx.EXPAND)
+        content_sizer.Add(self.div3, 0, wx.EXPAND)
 
+        # Output settings section
         output_settings = self.create_output_settings_section(self.scrolled_panel)
-        sizer.Add(output_settings, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, padding)
+        content_sizer.Add(output_settings, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, padding)
 
-        self.div4 = wx.Panel(self.scrolled_panel, size=(-1, 1))
-        self.div4.SetBackgroundColour(_theme.color("dividers.default.color"))
-        sizer.Add(self.div4, 0, wx.EXPAND)
+        self.scrolled_panel.SetSizer(content_sizer)
+        self.scrolled_panel.Layout()
 
-        export = self.create_export_section(self.scrolled_panel)
-        sizer.Add(export, 0, wx.EXPAND | wx.ALL, padding)
-
-        self.scrolled_panel.SetSizer(sizer)
-        required_h = sizer.CalcMin().y + 40
+        # Calculate minimum height needed to display all content without scrolling
+        min_height = content_sizer.CalcMin().y
+        # Add extra padding for comfortable viewing
+        required_h = min_height + 40
         self.scrolled_panel.SetMinSize((400, required_h))
-        sizer.Fit(self.scrolled_panel)
-        return self.scrolled_panel
+
+        main_sizer.Add(self.scrolled_panel, 1, wx.EXPAND)
+
+        # Divider before footer (distinctive separator)
+        footer_divider = wx.Panel(main_container, size=(-1, 1))
+        footer_divider.SetBackgroundColour(_theme.color("dividers.default.color"))
+        main_sizer.Add(footer_divider, 0, wx.EXPAND)
+
+        # Persistent footer with action buttons
+        self.footer_panel = self.create_footer_panel(main_container)
+        main_sizer.Add(self.footer_panel, 0, wx.EXPAND)
+
+        main_container.SetSizer(main_sizer)
+        main_sizer.Fit(main_container)
+        return main_container
 
     def create_header(self, parent):
         """Create the logo and title header."""
@@ -135,27 +157,33 @@ class ControlsSidePanel(wx.Panel):
     def reapply_theme(self):
         """Re-apply theme to static container elements and labels after hot-reload."""
         self.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
-        
+
         if hasattr(self, 'scrolled_panel'):
             self.scrolled_panel.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
-            
+
         if hasattr(self, 'header_panel'):
             self.header_panel.SetBackgroundColour(_theme.color("layout.main.header.bg"))
-            
+
+        if hasattr(self, 'footer_panel'):
+            footer_bg = _theme.color("layout.main.leftpanel.bg") or _theme.color("colors.secondary")
+            self.footer_panel.SetBackgroundColour(footer_bg)
+
         # 1. Re-apply all registered text styles globally
         reapply_text_styles()
 
         # 2. Update Dividers
-        for attr in ['div1', 'div2', 'div3', 'div4']:
+        for attr in ['div2', 'div3']:
             if hasattr(self, attr):
-                getattr(self, attr).SetBackgroundColour(_theme.color("layout.main.divider.bg"))
+                getattr(self, attr).SetBackgroundColour(_theme.color("dividers.default.color"))
+
+        # Note: div1 (header divider) and footer_divider handled in parent container
 
         # Refresh all components recursively to trigger their internal on_paint lookups
         def refresh_recursive(window):
             window.Refresh()
             for child in window.GetChildren():
                 refresh_recursive(child)
-        
+
         refresh_recursive(self)
         self.Update()
 
@@ -438,13 +466,13 @@ class ControlsSidePanel(wx.Panel):
         return panel
 
     def create_export_section(self, parent):
-        """Create the advanced, close, and render buttons."""
+        """Create the advanced, close, and render buttons (DEPRECATED - use create_footer_panel)."""
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.AddStretchSpacer()
         arow = wx.Panel(panel)
         asizer = wx.BoxSizer(wx.HORIZONTAL)
-        
+
         # Fetch labels and icon references from locale for export row
         self.adv_btn = CustomButton(arow, id="options", size=(36, 36), section='export')
         self.adv_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_advanced_options)
@@ -455,15 +483,60 @@ class ControlsSidePanel(wx.Panel):
         asizer.Add(self.can_btn, 0, wx.RIGHT, 8)
 
         self.render_btn = CustomButton(arow, id="render", section='export')
-
         self.render_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_render)
         asizer.Add(self.render_btn, 1, wx.EXPAND)
-        
+
         arow.SetSizerAndFit(asizer)
         self.export_row_sizer = asizer
         sizer.Add(arow, 0, wx.EXPAND)
         panel.SetSizerAndFit(sizer)
         return panel
+
+    def create_footer_panel(self, parent):
+        """Create the persistent footer panel with action buttons."""
+        # Create footer container with distinct styling
+        footer = wx.Panel(parent)
+        footer.SetBackgroundColour(_theme.color("layout.main.leftpanel.bg") or _theme.color("colors.secondary"))
+
+        # Vertical sizer for footer content
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Compute padding from theme (use same padding as main left panel)
+        padding = _theme._parse_padding(_theme._resolve("layout.main.leftpanel.padding") or 16)
+        vertical_pad = padding.get('top', 12)
+        horizontal_pad = padding.get('left', 16)
+
+        # Top divider already added by parent, but we add spacing
+        main_sizer.Add((0, vertical_pad))
+
+        # Button row
+        btn_row = wx.Panel(footer)
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        # Options button (small icon button)
+        self.adv_btn = CustomButton(btn_row, id="options", size=(36, 36), section='footer')
+        self.adv_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_advanced_options)
+        btn_sizer.Add(self.adv_btn, 0, wx.RIGHT, 8)
+
+        # Cancel/Exit button
+        self.can_btn = CustomButton(btn_row, id="close", size=(110, 36), section='footer')
+        self.can_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_cancel)
+        btn_sizer.Add(self.can_btn, 0, wx.RIGHT, 8)
+
+        # Render button (takes remaining space)
+        self.render_btn = CustomButton(btn_row, id="render", section='footer')
+        self.render_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_render)
+        btn_sizer.Add(self.render_btn, 1, wx.EXPAND)
+
+        # Apply consistent horizontal padding
+        btn_row.SetSizer(btn_sizer)
+        main_sizer.Add(btn_row, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, horizontal_pad)
+
+        main_sizer.Add((0, vertical_pad))
+        footer.SetSizer(main_sizer)
+        footer.Layout()
+
+        return footer
 
 
 # Need to define SVGLogoPanel since it's used in create_header
