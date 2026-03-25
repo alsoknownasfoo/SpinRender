@@ -461,7 +461,7 @@ class SpinRenderPanel(wx.Panel):
         # Check if already rendering via controller
         if self.render_controller.is_rendering():
             self.render_controller.cancel()
-            self.status_bar.set_status(_locale.get("component.status.stopping", "STOPPING RENDER..."), fg_color=_theme.color("colors.warning"))
+            self.status_bar.set_status(_locale.get("component.status.stopping", "STOPPING RENDER..."), fg_color=_theme.color("colors.error"))
             return
 
         # Prepare UI for rendering
