@@ -85,7 +85,9 @@ class PreviewPanel(wx.Panel):
         self.render_mode_divs = []
 
         nav_color = _theme.color("layout.main.rightpanel.shader.color")
-        nav_div_color = _theme._shift_color(nav_color, -40)
+        # Make nav brackets/dividers lighter in light mode
+        is_light = hasattr(_theme, '_loaded_name') and _theme._loaded_name == 'light'
+        nav_div_color = _theme._shift_color(nav_color, 40 if is_light else -40)
 
         modes = [(_locale.get("viewport.mode.wireframe", "WIREFRAME"), "wireframe"),
                  (_locale.get("viewport.mode.shaded", "SHADED"), "shaded"),
@@ -148,13 +150,15 @@ class PreviewPanel(wx.Panel):
         # Initial highlight update
         self.update_render_mode_ui(self.settings.render_mode)
 
+
     def reapply_theme(self):
         """Re-apply theme to static overlay elements."""
         self.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
 
         # Reapply dim color to nav bracket/divider widgets (computed, not in registry)
         nav_color = _theme.color("layout.main.rightpanel.shader.color")
-        nav_div_color = _theme._shift_color(nav_color, -40)
+        is_light = hasattr(_theme, '_loaded_name') and _theme._loaded_name == 'light'
+        nav_div_color = _theme._shift_color(nav_color, 40 if is_light else -40)
         for widget in [self._nav_prefix, self._nav_suffix] + self.render_mode_divs:
             widget.SetForegroundColour(nav_div_color)
 

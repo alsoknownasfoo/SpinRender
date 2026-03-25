@@ -408,7 +408,13 @@ layout:
       bg: "@colors.black"
       shader: "@text.nav"
       title: "@text.title"
-      info: "@text.metadata"
+      info:
+        ref: "@text.metadata"
+        color: "@colors.gray-text"
+        font:
+          typeface: "@typography.families.mono"
+          size: "@typography.scale.base"
+          weight: "@typography.weights.normal"
     status: "@components.status"
 
   # Modal dialog layouts
