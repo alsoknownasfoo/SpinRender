@@ -890,15 +890,15 @@ components:
         bg:
           default: "@colors.transparent"
           hover: "#BC1E1E"  # red #C62828 darkened -10 for readability
-          active: "#BC1E1E"  # red #C62828 darkened -10 for readability
+          active: "@colors.red-50"  # red #C62828 darkened -10 for readability
         border:
           size: 1
           color: "@colors.transparent"
       label:
         color:
           default: "@colors.gray-light"
-          hover: "@colors.gray-white"
-          active: "@colors.gray-white"
+          hover: "@colors.gray-black"
+          active: "#BC1E1E"
     closepreview:
       ref: "@components.button.default"
       label:
@@ -986,6 +986,8 @@ components:
         ref: "@text.button"
         color:
           default: "@colors.gray-white"  # match options/about default text color
+          hover: "@colors.gray-black"
+          active: "#BC1E1E"
     render:
       ref: "@components.button.ok"
     save:
