@@ -16,6 +16,8 @@ from typing import Dict, Any, Optional
 
 from SpinRender.core.settings import RenderSettings
 from SpinRender.core.presets import PresetManager
+from SpinRender.core.locale import Locale
+_locale = Locale.current()
 
 # Import dialogs for custom preset selection
 try:
@@ -136,7 +138,7 @@ class PresetController:
         """
         if not label.startswith("CUSTOM:"):
             if 'custom' in self.preset_buttons:
-                self.preset_buttons['custom'].SetLabel("SELECT CUSTOM..")
+                self.preset_buttons['custom'].SetLabel(_locale.get("component.preset_card.card4.label", "SELECT CUSTOM"))
 
         # Determine keys to update
         keys = ['board_tilt', 'board_roll', 'spin_tilt', 'spin_heading', 'period', 'direction', 'lighting', 'bg_color']
@@ -240,7 +242,7 @@ class PresetController:
                 matched_any = True
                 self.settings.preset = pid
                 if 'custom' in self.preset_buttons:
-                    self.preset_buttons['custom'].SetLabel("SELECT CUSTOM..")
+                    self.preset_buttons['custom'].SetLabel(_locale.get("component.preset_card.card4.label", "SELECT CUSTOM"))
 
         # Check custom presets if no built-in match
         cmn = None
@@ -272,7 +274,7 @@ class PresetController:
                 if not matched_any:
                     self.settings.preset = 'custom'
                 if manual_change and not matched_any:
-                    self.preset_buttons['custom'].SetLabel("SELECT CUSTOM..")
+                    self.preset_buttons['custom'].SetLabel(_locale.get("component.preset_card.card4.label", "SELECT CUSTOM"))
 
         self.preview.update_preview_overlay()
         # self.check_preset_match(manual_change=False)
