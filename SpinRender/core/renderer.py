@@ -227,6 +227,7 @@ class RenderEngine:
         self.settings = settings
         self.progress_callback = progress_callback
         self.canceled = False
+        self._temp_dir = None  # Tracked for deferred cleanup on cancel
 
         # Apply preset defaults if using a preset
         if settings.get('preset') in self.PRESETS:
@@ -243,14 +244,16 @@ class RenderEngine:
         # Create temp directory for frames - use a slightly more persistent name
         # so we can use it for looping preview after render finishes
         temp_dir = tempfile.mkdtemp(prefix='spinrender_frames_')
+        self._temp_dir = temp_dir  # Expose for deferred cleanup by controller
 
         try:
             # Generate frames
             frame_count = self.generate_frames(temp_dir)
             if self.canceled:
-                # Clean up on cancel
-                if os.path.exists(temp_dir):
-                    shutil.rmtree(temp_dir)
+                # Do NOT delete temp_dir here. The render controller schedules
+                # cleanup via wx.CallAfter so that any pending progress-callback
+                # events (which still reference frame file paths) finish executing
+                # on the UI thread before the directory is removed.
                 return None
 
             # Determine output path

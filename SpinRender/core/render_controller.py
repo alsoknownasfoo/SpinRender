@@ -9,6 +9,8 @@ Architecture:
 - Uses callbacks to communicate back to UI layer
 - Thread-safe with wx.CallAfter wrapping in UI callbacks
 """
+import os
+import shutil
 import threading
 import logging
 from typing import Optional, Callable, Any
@@ -73,8 +75,18 @@ class RenderController:
                 self._engine = RenderEngine(board_path, settings_dict, progress_callback=self._on_internal_progress)
                 result = self._engine.render()
                 if self._cancel_flag:
-                    # Render was cancelled - treat as stopped, not error
+                    # Schedule temp dir cleanup on the UI thread via wx.CallAfter.
+                    # All pending _update_progress_ui callbacks (which access frame
+                    # files) were queued before this point, so the FIFO wx event
+                    # queue guarantees they finish before the directory is removed.
+                    temp_dir = getattr(self._engine, '_temp_dir', None)
                     self._finish(None, None)
+                    if temp_dir and os.path.exists(temp_dir):
+                        try:
+                            import wx
+                            wx.CallAfter(shutil.rmtree, temp_dir, True)
+                        except ImportError:
+                            shutil.rmtree(temp_dir, ignore_errors=True)
                 else:
                     self._finish(result, None)
             except Exception as e:
