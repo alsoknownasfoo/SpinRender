@@ -554,7 +554,7 @@ components:
         typeface: "@typography.families.mono"
         size: "@typography.scale.base"
         weight: "@typography.weights.bold"
-      color: "@colors.black"
+      color: "@colors.white"
       formatting: "uppercase"
     gap: "@typography.spacing.sm"
 
@@ -743,13 +743,13 @@ components:
           color:
             default: "@colors.gray-light"
             hover: "@colors.primary"
-            active: "@colors.black"  # black icon on cyan active bg
+            active: "@colors.white"  # white icon on cyan active bg
         label:
           ref: "@text.label"
           color:
             default: "@colors.gray-light"
             hover: "@colors.primary"
-            active: "@colors.black"  # black text on cyan active bg
+            active: "@colors.white"  # white text on cyan active bg
     direction:
       ref: "@components.toggle.default"
     lighting:
@@ -765,12 +765,12 @@ components:
           color:
             default: "@colors.gray-light"
             hover: "@colors.cyan"
-            active: "@colors.black"  # black text on yellow active bg
+            active: "@colors.white"  # white text on yellow active bg
         icon:
           color:
             default: "@colors.gray-light"
             hover: "@colors.cyan"
-            active: "@colors.black"  # black icon on yellow active bg
+            active: "@colors.white"  # white icon on yellow active bg
     logging: "@components.toggle.default"
 
   dropdown:
@@ -814,7 +814,7 @@ components:
             color:
               default: "@colors.gray-white"
               hover: "@colors.primary"
-              active: "@colors.black" # selected item text — ensure dark on primary bg
+              active: "@colors.white" # white item text on primary bg
     format: "@components.dropdown.default" # specific dropdown for output format selection
     resolution: "@components.dropdown.default" # specific dropdown for output resolution selection
 
@@ -872,7 +872,7 @@ components:
         ref: "@text.button"
         color:
           default: "@colors.gray-light"
-          hover: "@colors.black"  # black text on cyan hover bg
+          hover: "@colors.white"  # white text on cyan hover bg
           active: "@colors.primary"
       gap: "@typography.spacing.base"
     cancel:
@@ -883,7 +883,7 @@ components:
         bg: "#008D9D"  # cyan #0097A7 darkened -10 for readability
       label:
         ref: "@text.button"
-        color: "@colors.black"
+        color: "@colors.white"
     close:
       ref: "@components.button.default"
       frame:
@@ -916,7 +916,7 @@ components:
         ref: "@text.button"
         color:
           default: "@colors.gray-white"
-          hover: "@colors.black"  # black text on cyan hover bg
+          hover: "@colors.white"  # white text on cyan hover bg
           active: "@colors.cyan"
         padding:
           horizontal: 0
@@ -935,7 +935,7 @@ components:
       label:
         ref: "@text.button"
         color:
-          default: "@colors.black"  # black text on cyan bg
+          default: "@colors.white"  # white text on cyan bg
           disabled: "@colors.cyan-50"
     donate:
       ref: "@components.button.default"
@@ -1025,7 +1025,7 @@ components:
       bg: "@colors.primary"
       label:
         ref: "@text.status"
-        color: "@colors.black"
+        color: "@colors.white"
     complete:
       bg: "@colors.gray-black"
       label:
