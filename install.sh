@@ -219,6 +219,12 @@ if [ -n "$TARGET_PATH" ]; then
         echo -e "    ${DIM}2. Locate${NC} ${TEAL}SpinRender${NC} ${DIM}in the toolbar${NC}"
         echo -e "       ${DIM}or: Tools → External Plugins → SpinRender${NC}"
         echo
+
+        # Configure git hooks so KiCad's runtime rewrites to seed config files
+        # are automatically ignored via --skip-worktree in every worktree.
+        if git -C "$SCRIPT_DIR" rev-parse --git-dir &>/dev/null 2>&1; then
+            git -C "$SCRIPT_DIR" config core.hooksPath .githooks 2>/dev/null || true
+        fi
     else
         echo -e "${RED}[!] DEPLOYMENT_FAILURE: Asset copy verify failed.${NC}"
         exit 1

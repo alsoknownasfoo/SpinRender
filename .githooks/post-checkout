@@ -1,0 +1,25 @@
+#!/bin/bash
+# Auto-apply --skip-worktree to KiCad config files that get rewritten at runtime.
+#
+# KiCad overwrites these seed configs with bloated runtime state (window positions,
+# recent files, etc.) whenever it starts. --skip-worktree tells git to ignore those
+# local mutations without un-tracking the file. This preserves the clean baseline
+# in git history while preventing KiCad-generated noise from polluting commits/merges.
+#
+# This hook fires on `git checkout` and `git worktree add`.
+#
+# To intentionally update a seed file:
+#   git update-index --no-skip-worktree <file>
+#   # edit the file
+#   git add <file> && git commit
+#   git update-index --skip-worktree <file>
+
+KICAD_CONFIGS=(
+    "SpinRender/resources/kicad_config/10.0/3d_viewer.json"
+)
+
+for f in "${KICAD_CONFIGS[@]}"; do
+    if git ls-files --error-unmatch "$f" &>/dev/null 2>&1; then
+        git update-index --skip-worktree "$f"
+    fi
+done
