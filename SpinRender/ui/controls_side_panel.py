@@ -283,6 +283,14 @@ class ControlsSidePanel(wx.Panel):
         )
         sizer.Add(row4, 0, wx.EXPAND | wx.BOTTOM, 4)
 
+        # Back-apply the final maximum label width to all axis label panels so
+        # every slider in the group ends up with the same (minimum) width.
+        final_label_width = getattr(self, '_max_axis_label_width', 0)
+        for lp in getattr(self, '_axis_label_parts', []):
+            lp.SetMinSize((final_label_width, -1))
+        # Reset tracking state so a future rebuild starts fresh
+        self._axis_label_parts = []
+        self._max_axis_label_width = 0
 
         panel.SetSizerAndFit(sizer)
         return panel
@@ -314,16 +322,16 @@ class ControlsSidePanel(wx.Panel):
         lp_sizer.Add(lbl, 0, wx.ALIGN_CENTER_VERTICAL)
 
         label_part.SetSizer(lp_sizer)
-        # Calculate the width needed for all axis labels to have consistent width
+        # Track label width so we can harmonise all axis labels after creation
         label_width = label_part.GetBestSize().x
-        # If we've already stored a max label width from previous axis controls, use that
         if not hasattr(self, '_max_axis_label_width'):
             self._max_axis_label_width = label_width
         else:
-            # Update max if this label is wider
             self._max_axis_label_width = max(self._max_axis_label_width, label_width)
-        # Apply the consistent width to all axis labels
-        label_part.SetMinSize((self._max_axis_label_width, -1))
+        # Register this label panel so create_rotation_controls can back-apply the max
+        if not hasattr(self, '_axis_label_parts'):
+            self._axis_label_parts = []
+        self._axis_label_parts.append(label_part)
 
         sizer.Add(label_part, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
 
