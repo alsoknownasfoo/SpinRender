@@ -247,7 +247,11 @@ class CustomToggleButton(wx.Panel):
 
         super().__init__(parent, id=real_id, size=size)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
-        self.options = options or [{'label': 'OFF', 'icon': None}, {'label': 'ON', 'icon': None}]
+        if options is None:
+            off_label = _locale.get("system.controls.toggle_off", "OFF")
+            on_label = _locale.get("system.controls.toggle_on", "ON")
+            options = [{'label': off_label, 'icon': None}, {'label': on_label, 'icon': None}]
+        self.options = options
         self.selection = 0
         self.hover_index = -1
 
@@ -485,6 +489,7 @@ class CustomDropdown(wx.Panel):
         super().__init__(parent, id=real_id, size=size)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.choices, self.selection, self.hovered, self.is_open = choices or [], 0, False, False
+        self._default_label = _locale.get("components.dropdown.default.label", "SELECT OPTION")
 
         _p = self.GetParent()
         while _p is not None:
@@ -522,7 +527,7 @@ class CustomDropdown(wx.Panel):
         gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, radius)
 
         # 2. Resolve Label (Font & Color)
-        label = self.choices[self.selection] if self.choices else "SELECT OPTION"
+        label = self.choices[self.selection] if self.choices else getattr(self, '_default_label', _locale.get("components.dropdown.default.label", "SELECT OPTION"))
         label_token = f"{token}.label"
         
         # Color resolution from label.color.default/hover
@@ -600,7 +605,8 @@ class CustomButton(wx.Panel):
                 if icon_ref:
                     icon = icon_ref
 
-        if label is None: label = "BUTTON"
+        if label is None:
+            label = _locale.get("components.button.default.label", "BUTTON")
 
         self.label, self.icon, self.icon_font_family = str(label), icon, icon_font_family
         self.hovered, self.pressed = False, False
@@ -723,7 +729,8 @@ class PresetCard(wx.Panel):
             if icon_name is None:
                 icon_name = _locale.get(f"component.preset_card.{self.style_id}.icon_ref")
 
-        if label is None: label = "PRESET"
+        if label is None:
+            label = _locale.get("components.preset_card.default.label", "PRESET")
 
         self.label, self.icon_name, self.selected = label, icon_name, False
         self.hovered = False
@@ -805,7 +812,9 @@ class SectionLabel(wx.Panel):
     Rule: style names passed to create_text() should use TextStyles alias keys.
     Paint-time helpers may use direct component theme paths.
     """
-    def __init__(self, parent, label="Section", size=(-1, 20), id="default"):
+    def __init__(self, parent, label=None, size=(-1, 20), id="default"):
+        if label is None:
+            label = _locale.get("components.section.default.label", "Section")
         super().__init__(parent, size=size)
         self.style_id = id
         sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -1119,9 +1128,10 @@ class ProjectFolderChip(wx.Panel):
         gc.SetBrush(wx.Brush(_theme.color("components.badge.frame.bg")))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRoundedRectangle(0, 0, w, h, radius)
+        label_text = _locale.get("component.badge.label", "PROJECT FOLDER")
         badge_color = _theme.color("components.badge.label.color")
-        _, tw, th = prepare_styled_text(gc, "PROJECT FOLDER", "components.badge.label", badge_color)
-        draw_styled_text(gc, "PROJECT FOLDER", "components.badge.label", (w - tw) / 2, (h - th) / 2, badge_color)
+        _, tw, th = prepare_styled_text(gc, label_text, "components.badge.label", badge_color)
+        draw_styled_text(gc, label_text, "components.badge.label", (w - tw) / 2, (h - th) / 2, badge_color)
 
     def AcceptsFocus(self): return False
     def AcceptsFocusFromKeyboard(self): return False

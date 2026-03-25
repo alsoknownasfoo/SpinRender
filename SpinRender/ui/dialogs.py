@@ -236,7 +236,7 @@ class FilenameEntryDialog(BaseStyledDialog):
     def __init__(self, parent, chosen_dir, default_name):
         self.dialog_w = _theme._resolve("layout.dialogs.filename.frame.width") or 300
         h = _theme._resolve("layout.dialogs.filename.frame.height") or 220
-        super().__init__(parent, "Enter base filename", (self.dialog_w, h))
+        super().__init__(parent, _locale.get("dialog.filename.title", "Enter base filename"), (self.dialog_w, h))
         self.chosen_dir = chosen_dir
         self.build_ui()
         self.Centre()
@@ -253,7 +253,7 @@ class FilenameEntryDialog(BaseStyledDialog):
         gap = _theme._resolve("layout.dialogs.filename.controls.gap") or 8
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        main_sizer.Add(self.create_header("Enter base filename", show_close=False), 0, wx.EXPAND)
+        main_sizer.Add(self.create_header(_locale.get("dialog.filename.header", "Enter base filename"), show_close=False), 0, wx.EXPAND)
 
         line = wx.Panel(self.main_container, size=(-1, 1))
         line.SetBackgroundColour(_theme.color("dividers.default.color"))
@@ -339,7 +339,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
             dialog_width = 480
         if dialog_height is None:
             dialog_height = 640
-        super().__init__(parent, "Advanced Options", (dialog_width, dialog_height))
+        super().__init__(parent, _locale.get("dialog.advanced.title", "Advanced Options"), (dialog_width, dialog_height))
         self.settings = settings
         self.board_path = board_path
         self.board_dir = os.path.dirname(board_path)
@@ -352,7 +352,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Header
-        main_sizer.Add(self.create_header("Advanced options", show_close=False), 0, wx.EXPAND)
+        main_sizer.Add(self.create_header(_locale.get("dialog.advanced.header", "Advanced options"), show_close=False), 0, wx.EXPAND)
 
         # Border separator
         line = wx.Panel(self.main_container, size=(-1, 1))
@@ -459,15 +459,15 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         content_sizer.Add(link_row, 0, wx.EXPAND | wx.BOTTOM, padding_lg)
 
         # 3. LOGGING section
-        content_sizer.Add(self.create_section_label(content, "SYSTEM LOGGING"), 0, wx.EXPAND | wx.BOTTOM, 12)
+        content_sizer.Add(self.create_section_label(content, _locale.get("dialog.advanced.section_logging", "SYSTEM LOGGING")), 0, wx.EXPAND | wx.BOTTOM, 12)
         
         log_row = wx.Panel(content)
         log_hsizer = wx.BoxSizer(wx.HORIZONTAL)
         
         self.log_opts = [
-            {'id': 'off', 'label': 'OFF'},
-            {'id': 'info', 'label': 'INFO'},
-            {'id': 'debug', 'label': 'DEBUG'}
+            {'id': 'off', 'label': _locale.get("system.controls.toggle_off", "OFF")},
+            {'id': 'info', 'label': _locale.get("system.controls.toggle_info", "INFO")},
+            {'id': 'debug', 'label': _locale.get("system.controls.toggle_debug", "DEBUG")}
         ]
         self.log_toggle = CustomToggleButton(log_row, options=self.log_opts, size=(240, 28), id="direction")
         curr_lvl = getattr(self.settings, 'logging_level', 'info')
@@ -552,7 +552,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
             existing = getattr(self.settings, 'output_path', '')
             default_name = os.path.basename(existing) if existing else board_name
             default_dir = os.path.dirname(existing) if existing else start_dir
-            dir_dlg = wx.DirDialog(self, "Select output folder", defaultPath=default_dir)
+            dir_dlg = wx.DirDialog(self, _locale.get("dir_dialog.select_output_folder", "Select output folder"), defaultPath=default_dir)
             if dir_dlg.ShowModal() != wx.ID_OK:
                 dir_dlg.Destroy()
                 return
@@ -572,7 +572,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
             self.settings.output_path = os.path.join(chosen_dir, base_name)
             self.update_path_display()
         else:
-            dlg = wx.DirDialog(self, "Select Output Directory", defaultPath=start_dir)
+            dlg = wx.DirDialog(self, _locale.get("dir_dialog.select_output_directory", "Select Output Directory"), defaultPath=start_dir)
             if dlg.ShowModal() == wx.ID_OK:
                 self.settings.output_path = dlg.GetPath()
                 self.update_path_display()
@@ -608,7 +608,7 @@ class SavePresetDialog(BaseStyledDialog):
     Save Preset dialog
     Follows Pencil design: Modal/SavePreset
     """
-    PLACEHOLDER_COPY = "PRESET_NAME"
+    PLACEHOLDER_COPY = "PRESET_NAME"  # Will be localized in __init__
 
     def __init__(self, parent, board_path):
         # Get dimensions from theme
@@ -618,7 +618,7 @@ class SavePresetDialog(BaseStyledDialog):
             dialog_width = 400
         if dialog_height is None:
             dialog_height = 200 # Reduced height since we removed label
-        super().__init__(parent, "Save preset", (dialog_width, dialog_height))
+        super().__init__(parent, _locale.get("dialog.preset.save.title", "Save preset"), (dialog_width, dialog_height))
         self.board_path = board_path
         self.preset_name = ""
         self.build_ui()
@@ -638,7 +638,7 @@ class SavePresetDialog(BaseStyledDialog):
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         # Header without close button as requested
-        main_sizer.Add(self.create_header("Save preset", show_close=False), 0, wx.EXPAND)
+        main_sizer.Add(self.create_header(_locale.get("dialog.preset.save.header", "Save preset"), show_close=False), 0, wx.EXPAND)
         line = wx.Panel(self.main_container, size=(-1, 1)); line.SetBackgroundColour(_theme.color("dividers.default.color"))
         main_sizer.Add(line, 0, wx.EXPAND)
 
@@ -718,7 +718,7 @@ class RecallPresetDialog(BaseStyledDialog):
             dialog_width = 400
         if dialog_height is None:
             dialog_height = 400
-        super().__init__(parent, "Select custom preset", (dialog_width, dialog_height))
+        super().__init__(parent, _locale.get("dialog.preset.recall.title", "Select custom preset"), (dialog_width, dialog_height))
         self.board_path = board_path
         self.current_active_name = current_name
         self.selected_preset = self.selected_name = None
@@ -729,7 +729,7 @@ class RecallPresetDialog(BaseStyledDialog):
         from SpinRender.core.presets import PresetManager
         self.manager = PresetManager(self.board_path); presets = self.manager.list_presets()
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        header = self.create_header("Select custom preset")
+        header = self.create_header(_locale.get("dialog.preset.recall.header", "Select custom preset"))
         main_sizer.Add(header, 0, wx.EXPAND)
         line = wx.Panel(self.main_container, size=(-1, 1)); line.SetBackgroundColour(_theme.color("dividers.default.color"))
         main_sizer.Add(line, 0, wx.EXPAND)

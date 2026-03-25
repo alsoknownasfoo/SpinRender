@@ -139,6 +139,10 @@ class TextStyles:
         formatting = None
         if isinstance(spec, dict):
             formatting = spec.get("formatting")
+            if formatting is None and "ref" in spec:
+                ref_spec = self.theme._resolve(spec["ref"].lstrip("@"))
+                if isinstance(ref_spec, dict):
+                    formatting = ref_spec.get("formatting")
             
         return TextStyle(
             family=font.GetFaceName(),

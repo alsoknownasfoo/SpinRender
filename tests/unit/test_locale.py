@@ -74,7 +74,7 @@ class TestLocaleLookup:
         assert value == "0.9.0-alpha"
 
     def test_get_button_render_label(self):
-        """get('component.button.render.label') should return 'Render'."""
+        """get('component.button.render.label') should return 'Render' (uppercase via theme)."""
         value = self.locale.get("component.button.render.label")
         assert value == "Render"
 
@@ -101,7 +101,7 @@ class TestLocaleLookup:
     def test_get_parameter_options(self):
         """get('parameters.direction.options.cw.label') should return 'CW'."""
         value = self.locale.get("parameters.direction.options.cw.label")
-        assert value == "CW"
+        assert value == "CW"  # Abbreviations remain uppercase
 
     def test_get_preset_card_label(self):
         """get('component.preset_card.card1.label') should return 'Hero'."""
@@ -111,7 +111,7 @@ class TestLocaleLookup:
     def test_get_status_message_with_placeholder(self):
         """get('component.status.rendering') should contain placeholder {current}/{total}."""
         value = self.locale.get("component.status.rendering")
-        assert value == "Rendering frame {current}/{total}"
+        assert value == "Rendering frame {current}/{total}"  # Sentence case, uppercase via theme formatting
         assert "{current}" in value
         assert "{total}" in value
 
@@ -128,7 +128,7 @@ class TestLocaleLookup:
     def test_get_deep_nested_path(self):
         """get() should handle deeply nested paths."""
         value = self.locale.get("parameters.lighting.options.studio.label")
-        assert value == "Studio"
+        assert value == "Studio"  # Base case, formatted uppercase via theme
 
 
 class TestLocaleFileLoading:

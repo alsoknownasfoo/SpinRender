@@ -478,7 +478,7 @@ class SpinRenderPanel(wx.Panel):
         self.controls_side_panel.Layout()
         self.Layout()
 
-        self.status_bar.set_status("Preparing render...", fg_color=_theme.color("colors.primary"), progress=0.0)
+        self.status_bar.set_status(_locale.get("component.status.preparing", "Preparing render..."), fg_color=_theme.color("colors.primary"), progress=0.0)
 
         # Start render state
         self.preview.stop_playback()
@@ -584,8 +584,9 @@ class SpinRenderPanel(wx.Panel):
                     self.preview.render_preview_panel.Hide()
 
             self.preview.final_output_type = None
-            self.status_bar.set_error(f"ERROR: {error.upper()}")
-            wx.MessageBox(error, "Render Error", wx.OK | wx.ICON_ERROR)
+            error_msg = _locale.get("component.status.error", "Error: {message}").format(message=error)
+            self.status_bar.set_error(error_msg)
+            wx.MessageBox(error, _locale.get("dialog.title.render_error", "Render Error"), wx.OK | wx.ICON_ERROR)
         elif result:
             # Handle new dict return format or legacy string format
             if isinstance(result, dict):
@@ -600,7 +601,7 @@ class SpinRenderPanel(wx.Panel):
                 frame_count = 0
 
             self.status_bar.set_complete()
-            self.status_bar.set_status("RENDER COMPLETE", progress=1.0)
+            self.status_bar.set_status(_locale.get("component.status.complete", "RENDER COMPLETE"), progress=1.0)
 
             # Start looping playback of the rendered result
             self.preview.render_preview_active = True
@@ -641,7 +642,7 @@ class SpinRenderPanel(wx.Panel):
                     self.preview.render_preview_panel.Hide()
 
             self.preview.final_output_type = None
-            self.status_bar.set_status("Render stopped", fg_color=_theme.color("colors.warning"), progress=0.0)
+            self.status_bar.set_status(_locale.get("component.status.stopped", "Render stopped"), fg_color=_theme.color("colors.warning"), progress=0.0)
 
         self.preview.update_preview_overlay()
         self.status_bar.Refresh()

@@ -1,8 +1,7 @@
-# SpinRender Localization — English (US)
-# Maps content (labels, icons) to component identifiers.
-#
-# All strings stored in base case. Uppercase styling is applied via theme's
-# text.formatting="uppercase" in dark.yaml, not here.
+# SpinRender Localization — Complete English (US) Locale
+# This file contains ALL user-facing strings for proper localization support.
+# Generated: 2026-03-23
+# Audit: STRING_LOCALIZATION_AUDIT.md
 
 locale:
   en_US:
@@ -10,7 +9,7 @@ locale:
     # APP HEADER
     # ─────────────────────────────────────────────────────────────
     component.main.header:
-      title: "SpinRender"
+      title: "SPINRENDER"
       subtitle: "0.9.0-alpha"
       logo_id: "res/logo.svg"
 
@@ -24,22 +23,43 @@ locale:
         both: "Both"
 
     # ─────────────────────────────────────────────────────────────
-    # DIALOG TITLES
+    # DIALOG TITLES & HEADERS
     # ─────────────────────────────────────────────────────────────
     dialog:
+      filename:
+        title: "Enter base filename"
+        header: "Enter base filename"
+        helper: "Frames are saved as name_00001.png, name_00002.png, …"
       advanced:
-        title: "Advanced options"
-        overrides_placeholder: "e.g. --color-theme=theme"
-        parameter_overrides_label: "Parameter overrides"
-        see: "See "
-        docs_link: "kicad-cli render options"
+        title: "Advanced Options"
+        header: "Advanced options"
         section_output: "Output path"
         section_overrides: "Parameter overrides"
         section_logging: "System logging"
-      save_preset:
-        title: "Save preset"
-      recall_preset:
-        title: "Select custom preset"
+        overrides_placeholder: "e.g. --color-theme=theme"
+        see: "See "
+        docs_link: "kicad-cli render options"
+        auto_desc: "Automatically save to time-stamped directories."
+        log_info: "Logs are kept for 30 days. Useful for troubleshooting render failures."
+        open_logs: "Open logs folder"
+      preset:
+        save:
+          title: "Save preset"
+          header: "Save preset"
+          placeholder: "PRESET_NAME"
+        recall:
+          title: "Select custom preset"
+          header: "Select custom preset"
+        no_presets: "No saved presets found."
+      render_error: "Render Error"
+      preparing: "Preparing render..."
+
+    # ─────────────────────────────────────────────────────────────
+    # DIR DIALOG TITLES
+    # ─────────────────────────────────────────────────────────────
+    dir_dialog:
+      select_output_folder: "Select output folder"
+      select_output_directory: "Select Output Directory"
 
     # ─────────────────────────────────────────────────────────────
     # PRESET CARDS
@@ -63,7 +83,7 @@ locale:
     # ─────────────────────────────────────────────────────────────
     sections:
       presets: "Loop presets"
-      parameters: "Parameters"  # Title case, stays as-is
+      parameters: "Parameters"
       output: "Output settings"
 
     # ─────────────────────────────────────────────────────────────
@@ -73,11 +93,7 @@ locale:
       rotation_heading: "Rotation settings"
       rotation_desc: "Board: orient on spindle | Spin: orient the spindle itself"
       lighting_hint: "Select workspace to use KiCad 3D viewer settings"
-      system_logging: "System logging"
-      log_info: "Logs are kept for 30 days. Useful for troubleshooting render failures."
       open_logs: "Open logs folder"
-      output_path:
-        label: "Output path"
 
       board_tilt:
         label: "Board tilt"
@@ -119,10 +135,16 @@ locale:
       auto_desc: "Automatically save to time-stamped directories."
       format:
         label: "Format"
-        options: ["MP4 (H.264)", "GIF", "PNG Sequence"]
+        options:
+          - "MP4 (H.264)"
+          - "GIF"
+          - "PNG Sequence"
       resolution:
         label: "Resolution"
-        options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
+        options:
+          - "1920×1080 (1080P)"
+          - "1280×720 (720P)"
+          - "800×800 (Square)"
       bg_color:
         label: "Background color"
 
@@ -153,13 +175,13 @@ locale:
         icon_ref: "glyphs.close"
       closepreview:
         label: "Close preview"
-        icon_ref: ~  #"glyphs.close"
+        icon_ref: "glyphs.close"
       options:
         label: ""
         icon_ref: "glyphs.settings"
       save_preset:
         label: "+ Preset"
-        icon_ref: ~  #"glyphs.plus"
+        icon_ref: "glyphs.plus"
       browse:
         label: "Browse"
         icon_ref: "glyphs.folder"
@@ -181,6 +203,40 @@ locale:
       stopping: "Stopping render..."
       error: "Error: {message}"
       no_presets: "No saved presets found."
+      preparing: "Preparing render..."
 
-    dialog.filename:
-      helper: "Frames are saved as name_00001.png, name_00002.png, …"
+    # ─────────────────────────────────────────────────────────────
+    # BADGE & LOGOS
+    # ─────────────────────────────────────────────────────────────
+    component.badge:
+      label: "Project folder"
+
+    # ─────────────────────────────────────────────────────────────
+    # SYSTEM CONTROLS (DEFAULTS)
+    # ─────────────────────────────────────────────────────────────
+    system.controls:
+      toggle_off: "Off"
+      toggle_on: "On"
+      toggle_info: "Info"
+      toggle_debug: "Debug"
+      dropdown_placeholder: "Select option"
+      section_default: "Section"
+
+    # ─────────────────────────────────────────────────────────────
+    # CUSTOM CONTROLS DEFAULTS
+    # ─────────────────────────────────────────────────────────────
+    components:
+      dropdown:
+        default:
+          label: "Select option"
+      button:
+        default:
+          label: "BUTTON"
+      preset_card:
+        default:
+          label: "PRESET"
+      section:
+        default:
+          label: "Section"
+      badge:
+        label: "Project folder"

@@ -225,6 +225,7 @@ text:
       typeface: "@typography.families.mono"
       size: "@typography.scale.sm"
       weight: "@typography.weights.semibold"
+    formatting: "uppercase"
   button:
     color:
       default: "@colors.gray-light"
@@ -234,6 +235,7 @@ text:
       typeface: "@typography.families.mono"
       size: "@typography.scale.base"
       weight: "@typography.weights.semibold"
+    formatting: "uppercase"
   nav:
     color:
       default: "@colors.gray-medium"
@@ -460,6 +462,7 @@ components:
         size: "@typography.scale.base"
         weight: "@typography.weights.bold"
       color: "@colors.black"
+      formatting: "uppercase"
     gap: "@typography.spacing.sm"
 
   preset_card:
@@ -489,7 +492,7 @@ components:
           hover: "@colors.primary"
           active: "@colors.gray-dark"
       label:
-        ref: "@text.body"
+        ref: "@text.button"
         color:
           default: "@colors.gray-light"
           hover: "@colors.primary"
@@ -801,6 +804,7 @@ components:
       label:
         font: "@text.metadata.font"
         color: "@colors.cyan"
+        formatting: "uppercase"
     options:
       ref: "@components.button.default"
       frame:
