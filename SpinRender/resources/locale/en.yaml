@@ -175,7 +175,7 @@ locale:
         icon_ref: "glyphs.settings"
       about:
         label: ""
-        icon_ref: "glyphs.help"
+        icon_ref: "glyphs.info"
       save_preset:
         label: "+ PRESET"
         icon_ref: "glyphs.plus"
