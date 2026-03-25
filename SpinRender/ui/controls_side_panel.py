@@ -172,7 +172,11 @@ class ControlsSidePanel(wx.Panel):
         # 1. Re-apply all registered text styles globally
         reapply_text_styles()
 
-        # 2. Update Dividers
+        # 2. Update preset row container (PresetCard.on_paint clears to parent bg)
+        if hasattr(self, '_preset_row'):
+            self._preset_row.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
+
+        # 3. Update Dividers
         for attr in ['div2', 'div3']:
             if hasattr(self, attr):
                 getattr(self, attr).SetBackgroundColour(_theme.color("dividers.default.color"))
@@ -195,15 +199,15 @@ class ControlsSidePanel(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(create_section_label(panel, _locale.get("sections.presets", "LOOP PRESETS"), id="presets"), 0, wx.EXPAND | wx.BOTTOM, 8)
 
-        preset_row = wx.Panel(panel)
-        preset_row.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
+        self._preset_row = wx.Panel(panel)
+        self._preset_row.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
         preset_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        
+
         preset_ids = ["hero", "spin", "flip", "custom"]
         self.preset_buttons = {}
         for i, pid in enumerate(preset_ids):
             # PresetCard handles label/icon lookup internally via ID-driven mapping
-            btn = PresetCard(preset_row, id=f"card{i+1}", size=(90, 64), section='presets')
+            btn = PresetCard(self._preset_row, id=f"card{i+1}", size=(90, 64), section='presets')
             btn.Bind(wx.EVT_BUTTON, lambda e, p=pid: self.main_panel.on_preset_change(p))
             if self.settings.preset == pid:
                 btn.SetSelected(True)
@@ -213,8 +217,8 @@ class ControlsSidePanel(wx.Panel):
                 flags |= wx.RIGHT
             preset_sizer.Add(btn, 1, flags, 8)
 
-        preset_row.SetSizerAndFit(preset_sizer)
-        sizer.Add(preset_row, 0, wx.EXPAND)
+        self._preset_row.SetSizerAndFit(preset_sizer)
+        sizer.Add(self._preset_row, 0, wx.EXPAND)
         panel.SetSizerAndFit(sizer)
         return panel
 
