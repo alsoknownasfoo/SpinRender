@@ -65,13 +65,13 @@ def reapply_text_styles() -> None:
             style = getattr(TextStyles, style_name)
             formatted = style.format_text(original_label)
             widget.SetFont(style.create_font())
-            color = _theme.color(color_token) if color_token else style.color
+            color = _resolve_text_foreground(style_name, color_token)
             widget.SetForegroundColour(color)
             _apply_link_suffix_label(
                 widget,
                 formatted,
                 link_suffix_arrow,
-                link_suffix_color_token
+                link_suffix_color_token,
             )
             live.append((
                 ref,
@@ -102,11 +102,36 @@ def _resolve_text_style(text: str, style_name: str):
     return style.format_text(text), style
 
 
+def _resolve_text_foreground(
+    style_name: str,
+    color_token: Optional[str] = None,
+    *,
+    hovered: bool = False,
+    pressed: bool = False,
+    enabled: bool = True,
+):
+    """Resolve text color using state-aware theme tokens."""
+    token = color_token or TextStyles._ALIASES.get(style_name, style_name)
+    return _theme.color(token, hovered=hovered, pressed=pressed, enabled=enabled)
+
+
+def _find_registered_text(widget: wx.StaticText):
+    """Return registry metadata for a styled text widget, if available."""
+    for entry in _text_registry:
+        if entry[0]() == widget:
+            return entry
+    return None
+
+
 def _apply_link_suffix_label(
     text_widget: wx.StaticText,
     formatted_text: str,
     link_suffix_arrow: bool,
     link_suffix_color_token: Optional[str],
+    *,
+    hovered: bool = False,
+    pressed: bool = False,
+    enabled: bool = True,
 ) -> None:
     """Apply text label and optional colored external-link arrow suffix."""
     if not link_suffix_arrow:
@@ -118,7 +143,12 @@ def _apply_link_suffix_label(
         text_widget.SetLabel(f"{formatted_text} {suffix}")
         return
 
-    suffix_color = _theme.color(link_suffix_color_token)
+    suffix_color = _theme.color(
+        link_suffix_color_token,
+        hovered=hovered,
+        pressed=pressed,
+        enabled=enabled,
+    )
     color_hex = suffix_color.GetAsString(wx.C2S_HTML_SYNTAX)
     markup = (
         f"{html.escape(formatted_text)} "
@@ -207,7 +237,7 @@ def create_text(parent: wx.Window, label: str, style_name: str,
     formatted, style = _resolve_text_style(label, style_name)
     txt = wx.StaticText(parent, label=formatted, **kwargs)
     txt.SetFont(style.create_font())
-    color = _theme.color(color_token) if color_token else style.color
+    color = _resolve_text_foreground(style_name, color_token)
     txt.SetForegroundColour(color)
     _apply_link_suffix_label(
         txt,
@@ -304,6 +334,120 @@ def update_text(widget: wx.StaticText, label: str) -> None:
     if not found:
         # Fallback if widget not in registry (though it should be if created via create_text)
         widget.SetLabel(label)
+
+
+def set_text_widget_state(
+    widget: wx.StaticText,
+    style_name: Optional[str] = None,
+    label: Optional[str] = None,
+    *,
+    color_token: Optional[str] = None,
+    hovered: bool = False,
+    pressed: bool = False,
+    enabled: bool = True,
+    link_suffix_arrow: Optional[bool] = None,
+    link_suffix_color_token: Optional[str] = None,
+) -> None:
+    """Apply a state-aware text color to a styled text widget."""
+    registered = _find_registered_text(widget)
+    if registered:
+        _, reg_style_name, reg_label, reg_color_token, reg_link_suffix_arrow, reg_suffix_color_token = registered
+        style_name = style_name or reg_style_name
+        label = reg_label if label is None else label
+        color_token = color_token or reg_color_token
+        if link_suffix_arrow is None:
+            link_suffix_arrow = reg_link_suffix_arrow
+        if link_suffix_color_token is None:
+            link_suffix_color_token = reg_suffix_color_token
+
+    if style_name is None:
+        raise ValueError("style_name is required for unregistered text widgets")
+
+    if label is None:
+        label = widget.GetLabel()
+
+    formatted, _ = _resolve_text_style(label, style_name)
+    widget.SetForegroundColour(
+        _resolve_text_foreground(
+            style_name,
+            color_token,
+            hovered=hovered,
+            pressed=pressed,
+            enabled=enabled,
+        )
+    )
+    _apply_link_suffix_label(
+        widget,
+        formatted,
+        bool(link_suffix_arrow),
+        link_suffix_color_token,
+        hovered=hovered,
+        pressed=pressed,
+        enabled=enabled,
+    )
+    if hasattr(widget, "Refresh"):
+        widget.Refresh()
+
+
+def bind_hover_text_group(
+    bindings: list[dict],
+    *,
+    click_handler=None,
+    click_event=wx.EVT_LEFT_DOWN,
+) -> None:
+    """Bind a shared hover state across one or more clickable text widgets."""
+
+    def _pointer_inside_group() -> bool:
+        get_mouse_position = getattr(wx, "GetMousePosition", None)
+        if get_mouse_position is None:
+            return False
+        mouse_pos = get_mouse_position()
+        for binding in bindings:
+            widget = binding["widget"]
+            rect_getter = getattr(widget, "GetScreenRect", None)
+            if rect_getter is None:
+                continue
+            rect = rect_getter()
+            if rect and hasattr(rect, "Contains") and rect.Contains(mouse_pos):
+                return True
+        return False
+
+    def _apply_state(hovered: bool) -> None:
+        for binding in bindings:
+            widget = binding["widget"]
+            style_name = binding.get("style_name")
+            color_token = binding.get("color_token")
+            if style_name is None and color_token is None and _find_registered_text(widget) is None:
+                continue
+            set_text_widget_state(
+                widget,
+                style_name,
+                binding.get("label"),
+                color_token=color_token,
+                hovered=hovered,
+                link_suffix_arrow=binding.get("link_suffix_arrow"),
+                link_suffix_color_token=binding.get("link_suffix_color_token"),
+            )
+
+    def _on_enter(event):
+        _apply_state(True)
+        event.Skip()
+
+    def _on_leave(event):
+        if _pointer_inside_group():
+            event.Skip()
+            return
+        _apply_state(False)
+        event.Skip()
+
+    for binding in bindings:
+        widget = binding["widget"]
+        widget.Bind(wx.EVT_ENTER_WINDOW, _on_enter)
+        widget.Bind(wx.EVT_LEAVE_WINDOW, _on_leave)
+        if click_handler:
+            widget.Bind(click_event, click_handler)
+            if hasattr(widget, "SetCursor"):
+                widget.SetCursor(wx.Cursor(wx.CURSOR_HAND))
 
 
 # ---------------------------------------------------------------------------

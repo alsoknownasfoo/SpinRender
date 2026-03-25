@@ -13,7 +13,13 @@ from .custom_controls import (
     CustomButton, CustomInput, CustomListView, 
     EVT_LIST_ITEM_SELECTED, EVT_LIST_ITEM_DELETED
 )
-from .helpers import create_text, load_svg, load_svg_markup, replace_svg_fill
+from .helpers import (
+    bind_hover_text_group,
+    create_text,
+    load_svg,
+    load_svg_markup,
+    replace_svg_fill,
+)
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
 from SpinRender.foundation.icons import STATUS_ICONS
@@ -467,19 +473,38 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         link_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         info_icon = create_text(link_row, _theme.glyph("info"), "icon", color_token="colors.gray-light")
-        info_icon.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         link_sizer.Add(info_icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         
         see_txt = create_text(link_row, _locale.get("dialog.advanced.see", "See "), "dialog_description")
         link_sizer.Add(see_txt, 0, wx.ALIGN_CENTER_VERTICAL)
 
-        link_txt = create_text(link_row, _locale.get("dialog.advanced.docs_link", "kicad-cli render options"), "dialog_description")
-        link_txt.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        link_txt = create_text(
+            link_row,
+            _locale.get("dialog.advanced.docs_link", "kicad-cli render options"),
+            "dialog_description",
+            color_token="layout.dialogs.options.body.links",
+        )
         link_sizer.Add(link_txt, 0, wx.ALIGN_CENTER_VERTICAL)
         
         url = "https://docs.kicad.org/master/en/cli/cli.html#pcb_render"
-        info_icon.Bind(wx.EVT_LEFT_DOWN, lambda e: webbrowser.open(url))
-        link_txt.Bind(wx.EVT_LEFT_DOWN, lambda e: webbrowser.open(url))
+        bind_hover_text_group(
+            [
+                {"widget": link_row},
+                {"widget": info_icon, "style_name": "icon", "label": _theme.glyph("info"), "color_token": "colors.gray-light"},
+                {
+                    "widget": see_txt,
+                    "style_name": "dialog_description",
+                    "label": _locale.get("dialog.advanced.see", "See "),
+                },
+                {
+                    "widget": link_txt,
+                    "style_name": "dialog_description",
+                    "label": _locale.get("dialog.advanced.docs_link", "kicad-cli render options"),
+                    "color_token": "layout.dialogs.options.body.links",
+                },
+            ],
+            click_handler=lambda e: webbrowser.open(url),
+        )
         
         link_row.SetSizer(link_sizer)
         padding_lg = _theme._resolve("typography.spacing.lg") or 24
@@ -515,8 +540,10 @@ class AdvancedOptionsDialog(BaseStyledDialog):
             "dialog_link",
             link_suffix_arrow=True,
         )
-        open_logs_txt.SetCursor(wx.Cursor(wx.CURSOR_HAND))
-        open_logs_txt.Bind(wx.EVT_LEFT_DOWN, lambda e: SpinLogger.open_logs_folder())
+        bind_hover_text_group(
+            [{"widget": open_logs_txt}],
+            click_handler=lambda e: SpinLogger.open_logs_folder(),
+        )
         content_sizer.Add(open_logs_txt, 0, wx.BOTTOM, 12)
 
         content.SetSizer(content_sizer)
@@ -1160,18 +1187,25 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         lbl = create_text(row, label, "about_link_label")
         sizer.Add(lbl, 0, wx.ALIGN_CENTER_VERTICAL)
 
-        clickable = [row, icon, lbl]
         if show_arrow:
             arrow = create_text(row, "↗", "about_link_arrow")
             sizer.Add(arrow, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)
-            clickable.append(arrow)
 
         if row_min_height is not None:
             row.SetMinSize((-1, row_min_height))
         row.SetSizer(sizer)
-        for widget in clickable:
-            widget.Bind(wx.EVT_LEFT_UP, lambda e, u=url: webbrowser.open(u))
-            widget.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        hover_bindings = [
+            {"widget": row},
+            {"widget": icon, "style_name": "about_link_icon", "label": _theme.glyph(icon_glyph) or ""},
+            {"widget": lbl, "style_name": "about_link_label", "label": label},
+        ]
+        if show_arrow:
+            hover_bindings.append({"widget": arrow, "style_name": "about_link_arrow", "label": "↗"})
+        bind_hover_text_group(
+            hover_bindings,
+            click_handler=lambda e, u=url: webbrowser.open(u),
+            click_event=wx.EVT_LEFT_UP,
+        )
         return row
 
     # ─── section builders ──────────────────────────────────────────────────

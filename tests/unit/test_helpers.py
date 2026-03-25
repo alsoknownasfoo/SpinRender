@@ -42,6 +42,8 @@ class FakeStaticText:
     def __init__(self, parent, label, **kwargs):
         self.parent = parent
         self.label = label
+        self.markup_label = None
+        self.screen_rect = FakeRect(0, 0, 0, 0)
         self._font = None
         self._fg_color = None
         self._bindings = {}
@@ -61,6 +63,14 @@ class FakeStaticText:
     def GetLabel(self):
         return self.label
 
+    def SetLabel(self, label):
+        self.label = label
+        self.markup_label = None
+
+    def SetLabelMarkup(self, markup):
+        self.markup_label = markup
+        return True
+
     def Bind(self, event_type, handler):
         if event_type not in self._bindings:
             self._bindings[event_type] = []
@@ -71,6 +81,26 @@ class FakeStaticText:
 
     def GetParent(self):
         return self.parent
+
+    def Refresh(self):
+        pass
+
+    def GetScreenRect(self):
+        return self.screen_rect
+
+
+class FakeRect:
+    """Minimal rectangle double for hover hit-testing."""
+
+    def __init__(self, x, y, width, height):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+
+    def Contains(self, point):
+        px, py = point
+        return self.x <= px < self.x + self.width and self.y <= py < self.y + self.height
 
 
 # Event constants
@@ -89,6 +119,8 @@ def patch_wx():
         wx._original_Panel = wx.Panel
     if '_original_StaticText' not in wx.__dict__:
         wx._original_StaticText = wx.StaticText
+    if '_original_GetMousePosition' not in wx.__dict__:
+        wx._original_GetMousePosition = getattr(wx, "GetMousePosition", None)
 
     # Apply patches
     wx.Panel = FakePanel
@@ -96,6 +128,7 @@ def patch_wx():
     wx.EVT_ENTER_WINDOW = EVT_ENTER_WINDOW
     wx.EVT_LEAVE_WINDOW = EVT_LEAVE_WINDOW
     wx.EVT_LEFT_DOWN = EVT_LEFT_DOWN
+    wx.GetMousePosition = lambda: (-1, -1)
 
     yield
 
@@ -104,6 +137,12 @@ def patch_wx():
         wx.Panel = wx.__dict__['_original_Panel']
     if '_original_StaticText' in wx.__dict__:
         wx.StaticText = wx.__dict__['_original_StaticText']
+    if '_original_GetMousePosition' in wx.__dict__:
+        original_get_mouse_position = wx.__dict__['_original_GetMousePosition']
+        if original_get_mouse_position is None:
+            delattr(wx, "GetMousePosition")
+        else:
+            wx.GetMousePosition = original_get_mouse_position
 
 
 @pytest.fixture
@@ -243,6 +282,94 @@ class TestBindMouseEvents:
         helpers.bind_mouse_events(parent, hover_handler=hover, click_handler=click)
         # Should bind exactly two events
         assert parent.Bind.call_count == 2
+
+
+class TestTextHoverState:
+    """Test state-aware hover helpers for styled text."""
+
+    def test_set_text_widget_state_uses_registered_style_token(self, helpers_module):
+        """Hover state should resolve through the widget's registered text style."""
+        helpers, theme = helpers_module
+        parent = MagicMock()
+        text = helpers.create_text(parent, "Open logs folder", "dialog_link")
+
+        helpers.set_text_widget_state(text, hovered=True)
+
+        fg = text.GetForegroundColor()
+        expected = theme.color("layout.dialogs.options.body.links", hovered=True)
+        assert fg.Red() == expected.Red()
+        assert fg.Green() == expected.Green()
+        assert fg.Blue() == expected.Blue()
+
+    def test_set_text_widget_state_updates_link_suffix_markup(self, helpers_module):
+        """Hovering a suffix-arrow link should re-render the arrow with the hovered suffix color."""
+        helpers, theme = helpers_module
+        parent = MagicMock()
+        text = helpers.create_text(parent, "Open logs folder", "dialog_link", link_suffix_arrow=True)
+
+        helpers.set_text_widget_state(text, hovered=True)
+
+        suffix_color = theme.color("colors.primary", hovered=True).GetAsString()
+        assert text.markup_label is not None
+        assert suffix_color in text.markup_label
+        assert "\u2197" in text.markup_label
+
+    def test_bind_hover_text_group_applies_override_color_token(self, helpers_module):
+        """Hover group bindings should update text using the provided override token."""
+        helpers, theme = helpers_module
+        parent = MagicMock()
+        text = helpers.create_text(parent, "kicad-cli render options", "dialog_description")
+        event = MagicMock()
+
+        helpers.bind_hover_text_group(
+            [
+                {
+                    "widget": text,
+                    "style_name": "dialog_description",
+                    "label": "kicad-cli render options",
+                    "color_token": "layout.dialogs.options.body.links",
+                }
+            ],
+            click_handler=MagicMock(),
+        )
+
+        bindings = text.GetBindings()
+        bindings[EVT_ENTER_WINDOW][0](event)
+
+        fg = text.GetForegroundColor()
+        expected = theme.color("layout.dialogs.options.body.links", hovered=True)
+        assert fg.Red() == expected.Red()
+        assert fg.Green() == expected.Green()
+        assert fg.Blue() == expected.Blue()
+        event.Skip.assert_called_once_with()
+
+    def test_bind_hover_text_group_keeps_hover_while_pointer_stays_in_group(self, helpers_module):
+        """Leaving one widget should not clear hover if the pointer is still over a sibling."""
+        helpers, theme = helpers_module
+        parent = MagicMock()
+        first = helpers.create_text(parent, "Open logs folder", "dialog_link")
+        second = helpers.create_text(parent, "More details", "dialog_link")
+        first.screen_rect = FakeRect(0, 0, 10, 10)
+        second.screen_rect = FakeRect(20, 0, 10, 10)
+        enter_event = MagicMock()
+        leave_event = MagicMock()
+
+        import wx
+        wx.GetMousePosition = lambda: (25, 5)
+
+        helpers.bind_hover_text_group(
+            [{"widget": first}, {"widget": second}],
+            click_handler=MagicMock(),
+        )
+
+        bindings = first.GetBindings()
+        bindings[EVT_ENTER_WINDOW][0](enter_event)
+        hovered = theme.color("layout.dialogs.options.body.links", hovered=True)
+        assert first.GetForegroundColor().GetAsString() == hovered.GetAsString()
+
+        bindings[EVT_LEAVE_WINDOW][0](leave_event)
+        assert first.GetForegroundColor().GetAsString() == hovered.GetAsString()
+        leave_event.Skip.assert_called_once_with()
 
 
 class TestApplyDisabledState:

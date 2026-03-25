@@ -431,6 +431,18 @@ class TestThemeColorStates:
         for c in states:
             assert 0 <= c.Red() <= 255
 
+    def test_dialog_links_define_distinct_hover_state(self):
+        """Dialog link text should resolve to a dedicated hover color."""
+        states = self.theme.color_states("layout.dialogs.options.body.links")
+        assert len(states) == 4
+        assert states[0].GetAsString() != states[1].GetAsString()
+
+    def test_about_link_label_defines_distinct_hover_state(self):
+        """About dialog link labels should resolve to a dedicated hover color."""
+        states = self.theme.color_states("layout.dialogs.about.body.link_label")
+        assert len(states) == 4
+        assert states[0].GetAsString() != states[1].GetAsString()
+
 
 class TestThemeV2Features:
     """Test theme-specific features: glyphs, text roles, scales.
