@@ -1105,7 +1105,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
 
         cs.Add(self._padded_section(content, self._build_version_section,  16, 16, 16, 16), 0, wx.EXPAND)
         cs.Add(self._padded_section(content, self._build_author_ai_section, 16, 16, 16, 16), 0, wx.EXPAND)
-        cs.Add(self._padded_section(content, self._build_links_section,     16, 16, 16, 16), 0, wx.EXPAND)
+        cs.Add(self._padded_section(content, self._build_links_section,     16, 16, 64, 16), 0, wx.EXPAND)
         cs.Add(self._padded_section(content, self._build_license_section,   16, 16, 16, 16, outer_bg="colors.gray-black", show_divider=False), 0, wx.EXPAND)
 
         content.SetSizer(cs)
