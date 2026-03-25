@@ -8,7 +8,6 @@ import logging
 
 logger = logging.getLogger("SpinRender")
 
-# Import theme module for centralized colors
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
 _theme = Theme.current()

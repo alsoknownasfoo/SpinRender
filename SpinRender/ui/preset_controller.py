@@ -277,7 +277,6 @@ class PresetController:
                     self.preset_buttons['custom'].SetLabel(_locale.get("component.preset_card.card4.label", "SELECT CUSTOM"))
 
         self.preview.update_preview_overlay()
-        # self.check_preset_match(manual_change=False)
 
     def on_save_preset(self, event=None):
         """Handle Save Preset button click: open dialog and save."""

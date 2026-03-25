@@ -223,21 +223,3 @@ def validate_theme_schema(theme_data: dict) -> List[str]:
 
     return errors
 
-
-def validate_theme_resolution(theme_instance) -> List[str]:
-    """
-    Validate that all semantic color references in a Theme instance resolve correctly.
-
-    Args:
-        theme_instance: A Theme object (from core.theme.Theme)
-
-    Returns:
-        List of errors (empty if all references resolve)
-    """
-    errors = []
-
-    # If using YAML-based theme, this would traverse all component tokens
-    # and attempt resolution. For current simple theme module, we already have
-    # validate_all_tokens() which covers the same ground.
-
-    return errors

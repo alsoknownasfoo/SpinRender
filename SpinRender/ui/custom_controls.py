@@ -10,7 +10,7 @@ import re
 from pathlib import Path
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
-from .text_styles import TextStyle, TextStyles
+from .text_styles import TextStyles
 from .helpers import bind_mouse_events, create_text, prepare_styled_text, draw_styled_text
 from .events import ParameterInteractionEvent
 

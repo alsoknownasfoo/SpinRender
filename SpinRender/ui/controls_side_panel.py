@@ -498,36 +498,6 @@ class ControlsSidePanel(wx.Panel):
         panel.SetSizerAndFit(sizer)
         return panel
 
-    def create_export_section(self, parent):
-        """Create the advanced, close, and render buttons (DEPRECATED - use create_footer_panel)."""
-        panel = wx.Panel(parent)
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.AddStretchSpacer()
-        arow = wx.Panel(panel)
-        asizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        # Fetch labels and icon references from locale for export row
-        # Use explicit theme token for button gaps (not calculated)
-        button_gap = _theme._resolve("layout.main.leftpanel.export.gap") or 8
-
-        self.adv_btn = CustomButton(arow, id="options", size=(36, 36), section='export')
-        self.adv_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_advanced_options)
-        asizer.Add(self.adv_btn, 0, wx.RIGHT, button_gap)
-
-        self.can_btn = CustomButton(arow, id="close", size=(110, 36), section='export')
-        self.can_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_cancel)
-        asizer.Add(self.can_btn, 0, wx.RIGHT, button_gap)
-
-        self.render_btn = CustomButton(arow, id="render", section='export')
-        self.render_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_render)
-        asizer.Add(self.render_btn, 1, wx.EXPAND)
-
-        arow.SetSizerAndFit(asizer)
-        self.export_row_sizer = asizer
-        sizer.Add(arow, 0, wx.EXPAND)
-        panel.SetSizerAndFit(sizer)
-        return panel
-
     def create_footer_panel(self, parent):
         """Create the persistent footer panel with action buttons."""
         # Create footer container with distinct styling

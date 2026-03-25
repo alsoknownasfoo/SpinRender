@@ -16,7 +16,6 @@ from .custom_controls import (
 from .helpers import create_text, load_svg, load_svg_markup, replace_svg_fill
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
-from SpinRender.foundation.fonts import JETBRAINS_MONO, MDI_FONT_FAMILY, INTER
 from SpinRender.foundation.icons import STATUS_ICONS
 
 _theme = Theme.current()
