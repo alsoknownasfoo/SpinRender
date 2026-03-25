@@ -22,13 +22,16 @@ class StatusBar(wx.Panel):
         # State - import Locale for status messages
         from SpinRender.core.locale import Locale
         _locale = Locale.current()
-        self._msg = TextStyles.status.format_text(_locale.get("component.status.ready", "Ready"))
+        self._msg = None
         self._fg_override = None
         self._prog = 0.0
         self._bar_color_override = None
 
         # Bind paint handler
         self.Bind(wx.EVT_PAINT, self._on_paint)
+
+        # Initialize to ready state with proper green color
+        self.reset()
 
     def _on_paint(self, event):
         """Paint the status bar with message and progress bar."""
@@ -84,7 +87,9 @@ class StatusBar(wx.Panel):
     def reset(self):
         """Reset to ready state."""
         from SpinRender.core.locale import Locale
-        self.set_status(msg=Locale.current().get("component.status.ready", "Ready"), progress=0.0)
+        _locale = Locale.current()
+        ready_color = _theme.color("layout.main.status.ready.label.color")
+        self.set_status(_locale.get("component.status.ready", "Ready"), fg_color=ready_color, progress=0.0, bar_color=ready_color)
 
     def set_error(self, msg: str):
         """Set error state."""

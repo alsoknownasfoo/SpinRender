@@ -662,19 +662,17 @@ class CustomButton(wx.Panel):
             stripped = str(self.icon).replace('mdi-', '')
             icon_char = _theme.glyph(stripped) or str(self.icon)
 
+        label_token = f"{token}.label"
         text_lines = []
         text_line_sizes = []
         text_w, text_h = 0, 0
         line_gap = 0
         if self.label and len(self.label) > 0:
-            font_obj = _theme.font("button")
-            gfx_font = gc.CreateFont(font_obj, final_text)
-            gc.SetFont(gfx_font)
             text_lines = str(self.label).split("\n")
             if len(text_lines) == 0:
                 text_lines = [""]
-            for line in text_lines:
-                lw, lh = gc.GetTextExtent(line)
+            for raw_line in text_lines:
+                _, lw, lh = prepare_styled_text(gc, raw_line, label_token, final_text)
                 text_line_sizes.append((lw, lh))
                 text_w = max(text_w, lw)
                 text_h += lh
@@ -710,12 +708,11 @@ class CustomButton(wx.Panel):
                 gc.DrawText(icon_char, icon_x, icon_y)
 
         if has_text:
-            gc.SetFont(gc.CreateFont(_theme.font("button"), final_text))
             text_x = start_x + iw + gap
             text_y = (height - text_h) / 2
-            for idx, line in enumerate(text_lines):
+            for idx, raw_line in enumerate(text_lines):
                 _, lh = text_line_sizes[idx]
-                gc.DrawText(line, text_x, text_y)
+                draw_styled_text(gc, raw_line, label_token, text_x, text_y, final_text)
                 text_y += lh + line_gap
 
     def on_mouse_down(self, event):
@@ -790,17 +787,21 @@ class PresetCard(wx.Panel):
 
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
+        # Clear buffer to parent background so transparent card bg shows correctly
+        parent_bg = self.GetParent().GetBackgroundColour()
+        dc.SetBackground(wx.Brush(parent_bg))
+        dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
 
         width, height = self.GetSize()
         enabled = self.IsEnabled()
-        
+
         # Theme token mapping
         token = f"components.preset_card.{self.style_id}" if self.style_id else "components.preset_card.default"
         if not _theme.has_token(token):
             token = "components.preset_card.default"
-            
+
         bg = _theme.color(f"{token}.frame.bg", self.hovered, self.selected, enabled)
         border = _theme.color(f"{token}.frame.border.color", self.hovered, self.selected, enabled) if _theme.has_token(f"{token}.frame.border.color") else None
         
@@ -1235,13 +1236,18 @@ class CustomColorPicker(wx.Panel):
 
     def _get_rects(self):
         w, h = self.GetSize()
-        rects, x = {}, 12
-        for i in range(len(self.PRESETS)): rects[f'preset_{i}'] = wx.Rect(x, 10, 28, 28); x += 38
-        rects['divider'], x = x, x + 10
-        # Expand custom hit area to include text below (28x40 total)
-        rects['custom'], x = wx.Rect(x, 10, 28, 40), x + 42
-        # Top-align to match swatches (y=10)
-        rects['hex'] = wx.Rect(x, 10, 100, 28)
+        rects, x = {}, 2  # Start at 2px to account for border offset
+        # Each preset: 28px wide + 10px gap (spacing between swatches)
+        for i in range(len(self.PRESETS)):
+            rects[f'preset_{i}'] = wx.Rect(x, 10, 28, 28)
+            x += 38  # 28 + 10
+        # Divider with 3px padding on each side (6px total: 2 for left of divider, 1 for right of last swatch border, 3 to custom)
+        rects['divider'], x = x, x + 3
+        # Custom swatch (larger hit area for label) - right edge should align with resolution dropdown
+        rects['custom'], x = wx.Rect(x, 10, 28, 40), x + 35  # Account for divider + padding + swatch width + 3px right padding
+        # Hex input left-aligned with resolution dropdown (cols are 50/50 split, so dropdown starts at w//2)
+        hex_x = w // 2
+        rects['hex'] = wx.Rect(hex_x, 10, w - hex_x - 2, 28)
         return rects
 
     def on_paint(self, event):
@@ -1470,9 +1476,13 @@ class CustomListView(scrolled.ScrolledPanel):
         dc.SetBackground(wx.Brush(bg))
         dc.Clear()
 
-    def AddItem(self, label, icon=None, data=None, gap=8):
+    def AddItem(self, label, icon=None, data=None, gap=None):
         item = CustomListItem(self, label=label, icon=icon, data=data, id=self.style_id)
-        self.main_sizer.Add(item, 0, wx.EXPAND | wx.BOTTOM, gap)
+        # Use theme padding if not specified (layout.main.leftpanel.control.between_items or default)
+        from SpinRender.core.theme import Theme
+        _theme = Theme.current()
+        item_gap = gap if gap is not None else (_theme._resolve("layout.main.leftpanel.control.between_items") or 10)
+        self.main_sizer.Add(item, 0, wx.EXPAND | wx.BOTTOM, item_gap)
         self.Layout()
         self.SetupScrolling(scroll_x=False, scroll_y=True)
         return item

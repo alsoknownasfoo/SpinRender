@@ -65,6 +65,7 @@ class ControlsSidePanel(wx.Panel):
 
         # Get uniform padding from theme
         padding = _theme._parse_padding(_theme._resolve("layout.main.leftpanel.padding") or 16)['left']
+        self.padding = padding  # Store for use in sub-layouts
 
         # Header (always visible at top)
         self.header_panel = self.create_header(main_container)
@@ -195,6 +196,7 @@ class ControlsSidePanel(wx.Panel):
         sizer.Add(create_section_label(panel, _locale.get("sections.presets", "LOOP PRESETS"), id="presets"), 0, wx.EXPAND | wx.BOTTOM, 8)
 
         preset_row = wx.Panel(panel)
+        preset_row.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
         preset_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         preset_ids = ["hero", "spin", "flip", "custom"]
@@ -226,8 +228,8 @@ class ControlsSidePanel(wx.Panel):
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
         header_sizer.Add(create_section_label(header, _locale.get("sections.parameters", "PARAMETERS"), id="parameters"), 1, wx.ALIGN_CENTER_VERTICAL)
         
-        # Save Preset Button - simplified id syntax
-        self.save_btn = CustomButton(header, id="save_preset", size=(120, 28), section='parameters')
+        # Save Preset Button - use themed component definition
+        self.save_btn = CustomButton(header, id="save_preset", size=(100, 24), section='parameters')
         self.save_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_save_preset)
         header_sizer.Add(self.save_btn, 0, wx.ALIGN_CENTER_VERTICAL)
         header.SetSizerAndFit(header_sizer)
@@ -248,37 +250,40 @@ class ControlsSidePanel(wx.Panel):
         self.rot_heading = create_text(panel, _locale.get("parameters.rotation_heading", "ROTATION SETTINGS"), "subheader")
         sizer.Add(self.rot_heading, 0, wx.BOTTOM, 6)
 
+        # Helper text immediately below subheader
+        self.rot_desc = create_text(panel, _locale.get("parameters.rotation_desc", "BOARD: ORIENT ON SPINDLE | SPIN: ORIENT THE SPINDLE ITSELF"), "description")
+        sizer.Add(self.rot_desc, 0, wx.BOTTOM, 10)
+
         # Fetch icon_ref from locale for each axis. Colors are ID-driven.
         row1 = self.create_axis_control(
-            panel, "BOARD TILT", self.settings.board_tilt, 
+            panel, "BOARD TILT", self.settings.board_tilt,
             _locale.get("parameters.board_tilt.icon_ref", "axis-x"),
             -90, 90, locale_key="parameters.board_tilt.label", id="primary"
         )
         sizer.Add(row1, 0, wx.EXPAND | wx.BOTTOM, 4)
-        
+
         row2 = self.create_axis_control(
-            panel, "BOARD ROLL", self.settings.board_roll, 
+            panel, "BOARD ROLL", self.settings.board_roll,
             _locale.get("parameters.board_roll.icon_ref", "axis-y"),
             -180, 180, locale_key="parameters.board_roll.label", id="secondary"
         )
         sizer.Add(row2, 0, wx.EXPAND | wx.BOTTOM, 4)
-        
+
         row3 = self.create_axis_control(
-            panel, "SPIN TILT", self.settings.spin_tilt, 
+            panel, "SPIN TILT", self.settings.spin_tilt,
             _locale.get("parameters.spin_tilt.icon_ref", "axis-y-rot"),
             -90, 90, locale_key="parameters.spin_tilt.label", id="tertiary"
         )
         sizer.Add(row3, 0, wx.EXPAND | wx.BOTTOM, 4)
-        
+
         row4 = self.create_axis_control(
-            panel, "SPIN HEADING", self.settings.spin_heading, 
+            panel, "SPIN HEADING", self.settings.spin_heading,
             _locale.get("parameters.spin_heading.icon_ref", "axis-z-rot"),
             -180, 180, locale_key="parameters.spin_heading.label", id="quaternary"
         )
         sizer.Add(row4, 0, wx.EXPAND | wx.BOTTOM, 4)
 
-        self.rot_desc = create_text(panel, _locale.get("parameters.rotation_desc", "BOARD: ORIENT ON SPINDLE | SPIN: ORIENT THE SPINDLE ITSELF"), "leftpanel_description")
-        sizer.Add(self.rot_desc, 0, wx.TOP | wx.BOTTOM, 10)
+
         panel.SetSizerAndFit(sizer)
         return panel
 
@@ -286,11 +291,14 @@ class ControlsSidePanel(wx.Panel):
         """Create a labeled slider + numeric input row."""
         row = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        label_part = wx.Panel(row, size=(130, -1))
+
+        # Build label content first to measure its width
+        label_part = wx.Panel(row)
         lp_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
         # icon_name is now a glyph name (e.g., 'axis-x-arrow'), call theme.glyph()
         icon_char = _theme.glyph(icon_name)
-        
+
         # Get axis color token from theme if it exists, otherwise fall back to primary
         axis_token = f"components.slider.{id}.nub.color"
         resolved_token = axis_token if _theme.has_token(axis_token) else "colors.primary"
@@ -304,12 +312,25 @@ class ControlsSidePanel(wx.Panel):
         lbl = create_text(label_part, f"{resolved_label}:", "label", color_token=resolved_token)
         self._registry.add(lbl, section='parameters')
         lp_sizer.Add(lbl, 0, wx.ALIGN_CENTER_VERTICAL)
+
         label_part.SetSizer(lp_sizer)
+        # Calculate the width needed for all axis labels to have consistent width
+        label_width = label_part.GetBestSize().x
+        # If we've already stored a max label width from previous axis controls, use that
+        if not hasattr(self, '_max_axis_label_width'):
+            self._max_axis_label_width = label_width
+        else:
+            # Update max if this label is wider
+            self._max_axis_label_width = max(self._max_axis_label_width, label_width)
+        # Apply the consistent width to all axis labels
+        label_part.SetMinSize((self._max_axis_label_width, -1))
+
         sizer.Add(label_part, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
 
         slider = CustomSlider(row, value=def_val, min_val=min_val, max_val=max_val, size=(-1, 18), id=id, section='parameters')
         sizer.Add(slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
 
+        # Numeric input with themed size (use component definition)
         inp = create_numeric_input(row, f"{def_val:.2f}", "°", editable=True, min_val=min_val, max_val=max_val, id="axis", section='parameters')
         sizer.Add(inp, 0, wx.ALIGN_CENTER_VERTICAL)
 
@@ -326,26 +347,26 @@ class ControlsSidePanel(wx.Panel):
         self.period_heading = create_text(panel, _locale.get("parameters.period.label", "ROTATION PERIOD"), "subheader")
         sizer.Add(self.period_heading, 0, wx.BOTTOM, 6)
 
+        p_val = self.settings.period
+        self.period_meta_row = wx.Panel(panel)
+        meta_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.period_desc = create_text(self.period_meta_row, _locale.get("parameters.period.desc", "SPEED OF 360° SPIN"), "description")
+        meta_sizer.Add(self.period_desc, 0, wx.ALIGN_CENTER_VERTICAL)
+        meta_sizer.AddStretchSpacer()
+        self.frame_count = create_text(self.period_meta_row, f"{int(p_val * 30)} f", "description")
+        meta_sizer.Add(self.frame_count, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 8)
+        self.period_meta_row.SetSizerAndFit(meta_sizer)
+        sizer.Add(self.period_meta_row, 0, wx.EXPAND | wx.BOTTOM, 10)
 
         crow = wx.Panel(panel)
         csizer = wx.BoxSizer(wx.HORIZONTAL)
-        p_val = self.settings.period
         self.period_slider = CustomSlider(crow, value=p_val, min_val=0.1, max_val=30, size=(-1, 18), id="default", section='parameters')
         csizer.Add(self.period_slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
         unit = _locale.get("parameters.period.unit", "sec")
         self.period_input = create_numeric_input(crow, f"{p_val:.1f}", unit, editable=True, min_val=0.1, max_val=30, id="speed", section='parameters')
         csizer.Add(self.period_input, 0, wx.ALIGN_CENTER_VERTICAL)
         crow.SetSizerAndFit(csizer)
-        sizer.Add(crow, 0, wx.EXPAND | wx.BOTTOM, 6)
-
-        mrow = wx.Panel(panel)
-        msizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.period_desc = create_text(mrow, _locale.get("parameters.period.desc", "SPEED OF 360° SPIN"), "leftpanel_description")
-        msizer.Add(self.period_desc, 1, wx.TOP | wx.BOTTOM, 10)
-        self.frame_count = create_text(mrow, f"{int(p_val * 30)} f", "leftpanel_description")
-        msizer.Add(self.frame_count, 0, wx.TOP | wx.BOTTOM, 10)
-        mrow.SetSizerAndFit(msizer)
-        sizer.Add(mrow, 0, wx.EXPAND)
+        sizer.Add(crow, 0, wx.EXPAND)
         panel.SetSizerAndFit(sizer)
         return panel
 
@@ -356,15 +377,18 @@ class ControlsSidePanel(wx.Panel):
         self.dir_heading = create_text(panel, _locale.get("parameters.direction.label", "DIRECTION"), "subheader")
         sizer.Add(self.dir_heading, 0, wx.BOTTOM, 6)
 
-        
+        # Helper text immediately below subheader
+        self.dir_desc = create_text(panel, _locale.get("parameters.direction.desc", "Rotation direction"), "description")
+        sizer.Add(self.dir_desc, 0, wx.BOTTOM, 10)
+
         # Fetch labels and icon refs from locale
         dir_options = [
-            {'label': _locale.get("parameters.direction.options.ccw.label", "CCW"), 
+            {'label': _locale.get("parameters.direction.options.ccw.label", "CCW"),
              'icon': _locale.get("parameters.direction.options.ccw.icon_ref", "glyphs.ccw")},
-            {'label': _locale.get("parameters.direction.options.cw.label", "CW"), 
+            {'label': _locale.get("parameters.direction.options.cw.label", "CW"),
              'icon': _locale.get("parameters.direction.options.cw.icon_ref", "glyphs.cw")}
         ]
-        
+
         self.dir_toggle = CustomToggleButton(panel, options=dir_options, size=(210, 32), id="direction", section='parameters')
         initial_idx = 1 if self.settings.direction == 'cw' else 0
         self.dir_toggle.SetSelection(initial_idx)
@@ -379,31 +403,32 @@ class ControlsSidePanel(wx.Panel):
         self.light_heading = create_text(panel, _locale.get("parameters.lighting.label", "LIGHTING"), "subheader")
         sizer.Add(self.light_heading, 0, wx.BOTTOM, 6)
 
-        
+        # Helper text immediately below subheader
+        self.light_hint = create_text(panel, _locale.get("parameters.lighting_hint", "SELECT WORKSPACE TO USE KICAD 3D VIEWER SETTINGS"), "description")
+        sizer.Add(self.light_hint, 0, wx.BOTTOM, 10)
+
         # Fetch labels and icon refs from locale
         self.light_options = [
-            {'id': 'studio', 
-             'label': _locale.get("parameters.lighting.options.studio.label", "STUDIO"), 
+            {'id': 'studio',
+             'label': _locale.get("parameters.lighting.options.studio.label", "STUDIO"),
              'icon': _locale.get("parameters.lighting.options.studio.icon_ref", "glyphs.sun")},
-            {'id': 'dramatic', 
-             'label': _locale.get("parameters.lighting.options.dramatic.label", "DRAMATIC"), 
+            {'id': 'dramatic',
+             'label': _locale.get("parameters.lighting.options.dramatic.label", "DRAMATIC"),
              'icon': _locale.get("parameters.lighting.options.dramatic.icon_ref", "glyphs.bolt")},
-            {'id': 'soft', 
-             'label': _locale.get("parameters.lighting.options.soft.label", "SOFT"), 
+            {'id': 'soft',
+             'label': _locale.get("parameters.lighting.options.soft.label", "SOFT"),
              'icon': _locale.get("parameters.lighting.options.soft.icon_ref", "glyphs.cloud")},
-            {'id': 'workspace', 
-             'label': _locale.get("parameters.lighting.options.workspace.label", "WORKSPACE"), 
+            {'id': 'workspace',
+             'label': _locale.get("parameters.lighting.options.workspace.label", "WORKSPACE"),
              'icon': _locale.get("parameters.lighting.options.workspace.icon_ref", "glyphs.edit")}
         ]
-        
+
         self.light_toggle = CustomToggleButton(panel, options=self.light_options, size=(320, 32), id="lighting", section='parameters')
         current_light = self.settings.lighting
         initial_idx = next((i for i, opt in enumerate(self.light_options) if opt['id'] == current_light), 0)
         self.light_toggle.SetSelection(initial_idx)
         sizer.Add(self.light_toggle, 0, wx.EXPAND)
 
-        self.light_hint = create_text(panel, _locale.get("parameters.lighting_hint", "SELECT WORKSPACE TO USE KICAD 3D VIEWER SETTINGS"), "leftpanel_description")
-        sizer.Add(self.light_hint, 0, wx.TOP | wx.BOTTOM, 10)
 
         panel.SetSizerAndFit(sizer)
         return panel
@@ -474,17 +499,16 @@ class ControlsSidePanel(wx.Panel):
         asizer = wx.BoxSizer(wx.HORIZONTAL)
 
         # Fetch labels and icon references from locale for export row
+        # Use explicit theme token for button gaps (not calculated)
+        button_gap = _theme._resolve("layout.main.leftpanel.export.gap") or 8
+
         self.adv_btn = CustomButton(arow, id="options", size=(36, 36), section='export')
         self.adv_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_advanced_options)
-        asizer.Add(self.adv_btn, 0, wx.RIGHT, 4)
+        asizer.Add(self.adv_btn, 0, wx.RIGHT, button_gap)
 
-        self.about_btn = CustomButton(arow, id="about", size=(36, 36), section='export')
-        self.about_btn.Bind(wx.EVT_BUTTON, self.on_about)
-        asizer.Add(self.about_btn, 0, wx.RIGHT, 8)
-
-        self.can_btn = CustomButton(arow, id="exit", size=(110, 36), section='export')
+        self.can_btn = CustomButton(arow, id="close", size=(110, 36), section='export')
         self.can_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_cancel)
-        asizer.Add(self.can_btn, 0, wx.RIGHT, 8)
+        asizer.Add(self.can_btn, 0, wx.RIGHT, button_gap)
 
         self.render_btn = CustomButton(arow, id="render", section='export')
         self.render_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_render)
@@ -528,7 +552,7 @@ class ControlsSidePanel(wx.Panel):
         btn_sizer.Add(self.about_btn, 0, wx.RIGHT, 8)
 
         # Cancel/Exit button
-        self.can_btn = CustomButton(btn_row, id="close", size=(110, 36), section='footer')
+        self.can_btn = CustomButton(btn_row, id="exit", size=(110, 36), section='footer')
         self.can_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_cancel)
         btn_sizer.Add(self.can_btn, 0, wx.RIGHT, 8)
 

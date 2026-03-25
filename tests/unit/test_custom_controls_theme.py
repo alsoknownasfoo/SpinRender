@@ -4,6 +4,7 @@ Unit tests for custom_controls.py theme integration.
 
 Tests that all custom controls use theme tokens and no hardcoded colors exist.
 """
+from unittest.mock import MagicMock
 import pytest
 import wx
 
@@ -64,6 +65,45 @@ class TestV2ThemeTokenIntegration:
         """CustomButton should use components.button.* tokens."""
         from SpinRender.ui.custom_controls import CustomButton
         assert CustomButton is not None
+
+    def test_custom_button_routes_save_preset_labels_through_styled_helpers(self, monkeypatch):
+        """CustomButton should measure and draw save_preset labels through styled helpers."""
+        import SpinRender.ui.custom_controls as cc
+
+        helper_calls = {"prepare": [], "draw": []}
+        gc = MagicMock()
+        gc.CreateFont.return_value = MagicMock()
+        gc.GetTextExtent.return_value = (48, 12)
+
+        class GraphicsContextFactory:
+            @staticmethod
+            def Create(dc):
+                return gc
+
+        def fake_prepare(gc_obj, text, style_name, color=None):
+            helper_calls["prepare"].append((text, style_name, color))
+            return text.upper(), 48, 12
+
+        def fake_draw(gc_obj, text, style_name, x, y, color=None):
+            helper_calls["draw"].append((text, style_name, color))
+            return text.upper(), 48, 12
+
+        monkeypatch.setattr(cc.wx, "AutoBufferedPaintDC", lambda window: MagicMock())
+        monkeypatch.setattr(cc.wx, "GraphicsContext", GraphicsContextFactory)
+        monkeypatch.setattr(cc, "prepare_styled_text", fake_prepare)
+        monkeypatch.setattr(cc, "draw_styled_text", fake_draw)
+
+        button = cc.CustomButton(MagicMock(), id="save_preset", size=(100, 24))
+        button._size = (100, 24)
+        button.IsEnabled = lambda: True
+        button.on_paint(None)
+
+        assert helper_calls["prepare"]
+        assert helper_calls["draw"]
+        assert helper_calls["prepare"][0][0] == "+ Preset"
+        assert helper_calls["prepare"][0][1] == "components.button.save_preset.label"
+        assert helper_calls["draw"][0][0] == "+ Preset"
+        assert helper_calls["draw"][0][1] == "components.button.save_preset.label"
 
     def test_preset_card_uses_v2_tokens(self):
         """PresetCard should use components.preset_card.default tokens."""

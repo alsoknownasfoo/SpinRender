@@ -7,7 +7,7 @@ This directory contains example preset configurations that demonstrate different
 ### Method 1: Import via UI
 
 1. Open SpinRender in KiCad
-2. In the Rotation Settings section, click **SELECT CUSTOM..**
+2. In the Rotation Settings section, click **SELECT CUSTOM**
 3. Browse to this `examples/presets/` directory
 4. Select the preset JSON file you want to use
 
@@ -27,7 +27,7 @@ mkdir %USERPROFILE%\.spinrender\presets
 copy examples\presets\*.json %USERPROFILE%\.spinrender\presets\
 ```
 
-Then access them via the **SELECT CUSTOM..** button in SpinRender.
+Then access them via the **SELECT CUSTOM** button in SpinRender.
 
 ### Method 3: Project-Local Presets
 

@@ -245,7 +245,7 @@ class PreviewPanel(wx.Panel):
             # Check if preset_buttons exist and have a label override
             if hasattr(self, 'preset_buttons') and preset_id in self.preset_buttons:
                 btn_label = self.preset_buttons[preset_id].label
-                if btn_label and btn_label != "SELECT CUSTOM..":
+                if btn_label and btn_label != "SELECT CUSTOM":
                     label = btn_label
             update_text(self.ov_top_left, label)
         else:

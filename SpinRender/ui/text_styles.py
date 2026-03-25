@@ -82,7 +82,9 @@ class TextStyles:
         "version": "layout.main.header.subtitle",
         "header": "layout.main.leftpanel.headers",
         "subheader": "layout.main.leftpanel.subheaders",
-        # "metadata": "layout.main.leftpanel.body",
+        "metadata": "layout.main.leftpanel.body",
+        "description": "layout.main.leftpanel.descriptions",
+
         "icon": "icon",
         "label": "label",
 
@@ -102,6 +104,7 @@ class TextStyles:
 
         # Button styles
         "closepreview": "components.button.closepreview.label",
+        "save_preset": "components.button.save_preset.label",
 
         # Dialog styles
         "dialog_description": "layout.dialogs.default.body.description",

@@ -3,7 +3,9 @@
 import pytest
 import wx
 from SpinRender.core.theme import Theme
+from SpinRender.core.locale import Locale
 _theme = Theme.current()
+_locale = Locale.current()
 
 from SpinRender.ui.text_styles import TextStyle, TextStyles
 
@@ -251,6 +253,15 @@ class TestTextStyles:
         assert style.size == 18  # title uses lg, not xl
         assert style.weight == 700
         assert style.formatting == "uppercase"
+
+    def test_save_preset_token_formats_locale_label_uppercase(self):
+        """save_preset should resolve to uppercase formatting for the actual button label."""
+        style = TextStyles.save_preset
+        assert style.family == _theme.font_family("mono")
+        assert style.size == 11
+        assert style.weight == 600
+        assert style.formatting == "uppercase"
+        assert style.format_text(_locale.get("component.button.save_preset.label")) == "+ PRESET"
 
     def test_icon_token(self):
         """Test icon uses MDI font at 14px (text.icon: typography.scale.md)."""

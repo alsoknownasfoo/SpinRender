@@ -26,8 +26,12 @@ class TestStatusBar:
         assert status_bar is not None
         assert status_bar._msg == "READY"  # Locale default
         assert status_bar._prog == 0.0
-        assert status_bar._fg_override is None
-        assert status_bar._bar_color_override is None
+        # reset() now sets fg_override to the green "complete" color
+        assert status_bar._fg_override is not None
+        assert status_bar._fg_override.Red() == _theme.color("components.status.complete.label.color").Red()
+        assert status_bar._fg_override.Green() == _theme.color("components.status.complete.label.color").Green()
+        assert status_bar._fg_override.Blue() == _theme.color("components.status.complete.label.color").Blue()
+        assert status_bar._bar_color_override == status_bar._fg_override
 
     def test_set_status_updates_message(self, status_bar):
         status_bar.set_status("TESTING")
@@ -62,9 +66,14 @@ class TestStatusBar:
         status_bar.reset()
         assert status_bar._msg == "READY"
         assert status_bar._prog == 0.0
-        # reset() clears overrides by calling set_status without color arguments
-        assert status_bar._fg_override is None
-        assert status_bar._bar_color_override is None
+        # reset() sets overrides to green "complete" color for ready state
+        done_color = _theme.color("components.status.complete.label.color")
+        assert status_bar._fg_override.Red() == done_color.Red()
+        assert status_bar._fg_override.Green() == done_color.Green()
+        assert status_bar._fg_override.Blue() == done_color.Blue()
+        assert status_bar._bar_color_override.Red() == done_color.Red()
+        assert status_bar._bar_color_override.Green() == done_color.Green()
+        assert status_bar._bar_color_override.Blue() == done_color.Blue()
 
     def test_set_error_sets_error_state(self, status_bar):
         error_color = _theme.color("components.status.error.label.color")

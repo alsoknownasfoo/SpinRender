@@ -36,7 +36,7 @@ locale:
         label: "FLIP"
         icon_ref: "glyphs.preset-flip"
       card4:
-        label: "SELECT CUSTOM..."
+        label: "SELECT CUSTOM"
         icon_ref: "glyphs.preset-custom"
 
     # ─────────────────────────────────────────────────────────────

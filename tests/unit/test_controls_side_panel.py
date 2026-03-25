@@ -4,6 +4,7 @@ Unit tests for ControlsSidePanel component.
 
 Tests the extracted left sidebar UI construction and control creation.
 """
+import inspect
 import pytest
 from unittest.mock import MagicMock
 
@@ -144,6 +145,16 @@ class TestControlsSidePanel:
         assert hasattr(panel, 'period_slider')
         assert hasattr(panel, 'period_input')
         assert hasattr(panel, 'frame_count')
+        assert hasattr(panel, 'period_meta_row')
+
+    def test_period_meta_row_places_frame_count_inline_with_description(self):
+        """Rotation period metadata row should keep description and frame count together."""
+        source = inspect.getsource(ControlsSidePanel.create_period_control)
+        assert 'self.period_meta_row = wx.Panel(panel)' in source
+        assert 'meta_sizer = wx.BoxSizer(wx.HORIZONTAL)' in source
+        assert 'meta_sizer.Add(self.period_desc, 0, wx.ALIGN_CENTER_VERTICAL)' in source
+        assert 'meta_sizer.AddStretchSpacer()' in source
+        assert 'meta_sizer.Add(self.frame_count, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 8)' in source
 
     def test_direction_control_created(self, wx_mock, mock_parent):
         """Test that direction toggle is created."""

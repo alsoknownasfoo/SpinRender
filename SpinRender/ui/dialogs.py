@@ -480,7 +480,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         
         link_row.SetSizer(link_sizer)
         padding_lg = _theme._resolve("typography.spacing.lg") or 24
-        content_sizer.Add(link_row, 0, wx.EXPAND | wx.BOTTOM, padding_lg)
+        content_sizer.Add(link_row, 0, wx.ALIGN_RIGHT | wx.BOTTOM, padding_lg)
 
         # 3. LOGGING section
         content_sizer.Add(self.create_section_label(content, _locale.get("dialog.advanced.section_logging", "SYSTEM LOGGING")), 0, wx.EXPAND | wx.BOTTOM, 12)

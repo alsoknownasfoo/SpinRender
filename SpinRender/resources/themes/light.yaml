@@ -805,6 +805,11 @@ components:
       ref: "@components.button.ok"
     save:
       ref: "@components.button.ok"
+    save_preset:
+      ref: "@components.button.default"
+      frame:
+        width: 100
+        height: 24
 
   scrollbar:
     track:
