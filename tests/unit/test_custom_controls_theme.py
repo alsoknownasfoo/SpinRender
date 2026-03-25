@@ -281,3 +281,66 @@ class TestComponentTokenPathResolution:
         """custom_controls should import prepare_styled_text."""
         import SpinRender.ui.custom_controls as cc
         assert hasattr(cc, 'prepare_styled_text')
+
+
+class TestCustomButtonMouseOutBehavior:
+    """Tests for mouse down/out: releasing outside the button must not fire the action."""
+
+    def _make_button(self):
+        import SpinRender.ui.custom_controls as cc
+        return cc.CustomButton(MagicMock(), label="Test")
+
+    def test_mouse_up_inside_fires_action(self):
+        """Action fires when mouse is released inside button bounds."""
+        btn = self._make_button()
+        rect_mock = MagicMock()
+        rect_mock.Contains.return_value = True
+        btn.GetClientRect = MagicMock(return_value=rect_mock)
+
+        btn.pressed = True  # simulate mouse-down state
+
+        event_handler = MagicMock()
+        btn.GetEventHandler = MagicMock(return_value=event_handler)
+        btn.on_mouse_up(MagicMock())
+
+        assert btn.pressed is False
+        event_handler.ProcessEvent.assert_called_once()
+
+    def test_mouse_up_outside_does_not_fire_action(self):
+        """Action must NOT fire when mouse is released outside button bounds."""
+        btn = self._make_button()
+        rect_mock = MagicMock()
+        rect_mock.Contains.return_value = False
+        btn.GetClientRect = MagicMock(return_value=rect_mock)
+
+        btn.pressed = True  # simulate mouse-down state
+
+        event_handler = MagicMock()
+        btn.GetEventHandler = MagicMock(return_value=event_handler)
+        btn.on_mouse_up(MagicMock())
+
+        assert btn.pressed is False
+        event_handler.ProcessEvent.assert_not_called()
+
+    def test_mouse_up_clears_hovered_when_leave_did_not_fire(self):
+        """Mouse up should clear hovered so the button doesn't stay visually 'hot'."""
+        btn = self._make_button()
+        rect_mock = MagicMock()
+        rect_mock.Contains.return_value = False
+        btn.GetClientRect = MagicMock(return_value=rect_mock)
+
+        btn.hovered = True  # simulate: leave never fired
+        btn.pressed = True  # simulate mouse-down state
+        btn.on_mouse_up(MagicMock())
+
+        assert btn.hovered is False
+
+    def test_mouse_up_without_prior_down_is_noop(self):
+        """If pressed was never set, mouse up should be a no-op."""
+        btn = self._make_button()
+        event_handler = MagicMock()
+        btn.GetEventHandler = MagicMock(return_value=event_handler)
+
+        btn.on_mouse_up(MagicMock())  # pressed is False by default
+
+        event_handler.ProcessEvent.assert_not_called()

@@ -721,9 +721,12 @@ class CustomButton(wx.Panel):
             self.pressed = True; self.Refresh(); self.Update()
     def on_mouse_up(self, event):
         if self.pressed:
-            self.pressed = False; self.Refresh(); self.Update()
-            evt = wx.PyCommandEvent(wx.EVT_BUTTON.typeId, self.GetId())
-            self.GetEventHandler().ProcessEvent(evt)
+            self.pressed = False
+            self.hovered = False
+            self.Refresh(); self.Update()
+            if self.GetClientRect().Contains(event.GetPosition()):
+                evt = wx.PyCommandEvent(wx.EVT_BUTTON.typeId, self.GetId())
+                self.GetEventHandler().ProcessEvent(evt)
     def on_enter(self, event):
         if self.IsEnabled(): self.hovered = True; self.Refresh(); self.Update()
     def on_leave(self, event): self.hovered = False; self.pressed = False; self.Refresh(); self.Update()
