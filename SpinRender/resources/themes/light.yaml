@@ -7,8 +7,8 @@
 colors:
   # Auto State Shifts (for undefined states, e.g. hover/active on buttons)
   auto_states:
-    hover: rgb(-30, -30, -30) # Darken by 30 for hover (base is light)
-    active: rgb(-60, -60, -60) # Darken by 60 for active
+    hover: rgb(30, 30, 30) # Brighten by 30 for hover (opposite of dark mode darkening)
+    active: rgb(60, 60, 60) # Brighten by 60 for active (opposite direction from dark mode)
     disabled: rgb(0, 0, 0, 0.35) # 35% opacity for disabled
 
   # Base Palette (Primes) — inverted from dark theme

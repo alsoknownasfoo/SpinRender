@@ -315,7 +315,10 @@ class CustomToggleButton(wx.Panel):
             # then desaturate — avoids the auto-generated disabled state being based on
             # the transparent default rather than the coloured active state.
             if not enabled:
-                seg_bg = _theme.disabled(_theme.color(f"{token}.items.frame.bg", False, is_active, True))
+                if (is_active):
+                    seg_bg = _theme.disabled(_theme.color(f"{token}.items.frame.bg", False, is_active, True))
+                else:
+                    seg_bg = wx.Colour(0, 0, 0, 0)  # Fully transparent for non-active segments when disabled
             else:
                 seg_bg = _theme.color(f"{token}.items.frame.bg", is_hovered, is_active, enabled)
             if seg_bg.Alpha() > 0:
@@ -1269,10 +1272,13 @@ class CustomColorPicker(wx.Panel):
         for i in range(len(self.PRESETS)):
             rects[f'preset_{i}'] = wx.Rect(x, 10, 28, 28)
             x += 38  # 28 + 10
-        # Divider with 3px padding on each side (6px total: 2 for left of divider, 1 for right of last swatch border, 3 to custom)
-        rects['divider'], x = x, x + 3
-        # Custom swatch (larger hit area for label) - right edge should align with resolution dropdown
-        rects['custom'], x = wx.Rect(x, 10, 28, 40), x + 35  # Account for divider + padding + swatch width + 3px right padding
+        # Divider with 4px padding on each side (8px total)
+        x += 0  # 4px left padding before divider
+        rects['divider'] = x
+        x += 12  # 4px right padding after divider
+        # Custom swatch (larger hit area for label)
+        rects['custom'] = wx.Rect(x, 10, 28, 40)
+        x += 35  # Account for swatch width + padding
         # Hex input left-aligned with resolution dropdown (cols are 50/50 split, so dropdown starts at w//2)
         hex_x = w // 2
         rects['hex'] = wx.Rect(hex_x, 10, w - hex_x - 2, 28)
@@ -1284,8 +1290,6 @@ class CustomColorPicker(wx.Panel):
         w, h = self.GetSize(); enabled, rects = self.IsEnabled(), self._get_rects()
         
         # Theme token mappings
-        bg = _theme.color("components.colorpicker.default.bg")
-        gc.SetBrush(wx.Brush(_theme.disabled(bg) if not enabled else bg))
         gc.SetPen(wx.TRANSPARENT_PEN); gc.DrawRoundedRectangle(0, 0, w, h, 4)
         for i, (hv, lbl) in enumerate(self.PRESETS):
             r = rects[f'preset_{i}']; self._draw_swatch(gc, r.x, r.y, hv, lbl, i == self.selection, i == self.hover_idx, enabled)

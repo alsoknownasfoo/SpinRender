@@ -84,6 +84,9 @@ class Theme:
             cls.load()
         return cls._instance
 
+    def is_light(self) -> bool:
+        return type(self)._loaded_name == "light"
+
     def has_token(self, path: str) -> bool:
         """Check if a token path exists, following refs and merging inheritance."""
         try:
@@ -168,17 +171,24 @@ class Theme:
         Priority: Disabled > Pressed > Hovered > Normal.
         """
         import wx
-        states = self.color_states(token)
+        raw = self._resolve_color_raw(token)
+        if raw is None or raw == "#FF00FF":
+            logger.error(f"Theme: Color token '{token}' not found.")
+            pink = self._parse_color("#FF00FF")
+            states = [pink] * 4
+            defined_states = [pink, None, None, None]
+        else:
+            defined_states, _ = self._extract_defined_states(raw, token)
+            states, _ = self._fill_missing_states(defined_states.copy())
         
         final_color = states[0]
         state_name = "normal"
 
         if not enabled:
             state_name = "disabled"
-            if len(states) > 3 and states[3]:
+            if len(defined_states) > 3 and defined_states[3] is not None:
                 final_color = states[3]
             else:
-                # If no explicit disabled state, desaturate the state that would be active
                 base_for_disabled = states[2] if (pressed and len(states) > 2) else states[0]
                 final_color = self.disabled(base_for_disabled)
         elif pressed:
@@ -196,16 +206,20 @@ class Theme:
             
         return final_color
 
-    def color_states(self, token: str, states: int = 4) -> list['wx.Colour']:
-        """Resolve a color token to [normal, hover, active, disabled] states."""
-        import wx
+    def _resolve_color_raw(self, token: str) -> Any:
         raw = self._resolve(token)
-        
-        # Fallback for style roles (e.g. "icon", "label") that aren't at root
+
         if raw is None or raw == "#FF00FF":
             style_raw = self._resolve(f"text.{token}")
             if isinstance(style_raw, dict):
                 raw = style_raw
+
+        return raw
+
+    def color_states(self, token: str, states: int = 4) -> list['wx.Colour']:
+        """Resolve a color token to [normal, hover, active, disabled] states."""
+        import wx
+        raw = self._resolve_color_raw(token)
 
         if raw is None or raw == "#FF00FF":
             logger.error(f"Theme: Color token '{token}' not found.")
@@ -270,15 +284,23 @@ class Theme:
             
         base = colors[0]
         gen_count = 0
-        # 1. Fill Hover (Index 1)
+        
+        # Track whether hover was explicitly provided before we fill it
+        hover_was_defined = colors[1] is not None
+        
+        # 1. Fill Hover (Index 1) — always derived from default color
         if not colors[1]:
             colors[1] = self._apply_auto_shift(base, "hover")
             gen_count += 1
-        # 2. Fill Active (Index 2)
+        
+        # 2. Fill Active (Index 2) — derive from hover if hover was explicitly defined
         if not colors[2]:
-            colors[2] = self._apply_auto_shift(base, "active")
+            active_base = colors[1] if hover_was_defined else base
+            colors[2] = self._apply_auto_shift(active_base, "active")
             gen_count += 1
-        # 3. Fill Disabled (Index 3)
+        
+        # 3. Fill Disabled (Index 3) — derive from default color.
+        # Active-derived disabled is decided in color() when the control is actually pressed.
         if not colors[3]:
             colors[3] = self._apply_auto_shift(base, "disabled")
             gen_count += 1
@@ -296,32 +318,34 @@ class Theme:
 
         try:
             parts = [float(p) for p in re.findall(r"[-?\d.]+", delta_raw)]
-            if state == "disabled" and len(parts) >= 4:
-                alpha = int(parts[3] * 255) if parts[3] <= 1.0 else int(parts[3])
-                # Desaturate using weighted luminance (0.299R + 0.587G + 0.114B)
-                gray = int(0.299 * base_color.Red() + 0.587 * base_color.Green() + 0.114 * base_color.Blue())
-                return wx.Colour(gray, gray, gray, alpha)
+            if state == "disabled":
+                return self.disabled(base_color)
 
             r = max(0, min(255, int(base_color.Red() + (parts[0] if len(parts) > 0 else 0))))
             g = max(0, min(255, int(base_color.Green() + (parts[1] if len(parts) > 1 else 0))))
             b = max(0, min(255, int(base_color.Blue() + (parts[2] if len(parts) > 2 else 0))))
             a = int(parts[3] * 255) if len(parts) >= 4 else base_color.Alpha()
-            
-            if state == "disabled":
-                gray = int(0.299 * r + 0.587 * g + 0.114 * b)
-                return wx.Colour(gray, gray, gray, a)
-                
+
             return wx.Colour(r, g, b, a)
         except:
             return base_color
+
+    def _disabled_alpha(self) -> int:
+        delta_raw = self._resolve("colors.auto_states.disabled")
+        if isinstance(delta_raw, str):
+            parts = [float(p) for p in re.findall(r"[-?\d.]+", delta_raw)]
+            if len(parts) >= 4:
+                return int(parts[3] * 255) if parts[3] <= 1.0 else int(parts[3])
+        return 89 if self.is_light() else 128
 
     def disabled(self, color) -> 'wx.Colour':
         import wx
         if isinstance(color, wx.Colour):
             # Desaturate using weighted luminance (0.299R + 0.587G + 0.114B)
             gray = int(0.299 * color.Red() + 0.587 * color.Green() + 0.114 * color.Blue())
-            # Half alpha (128)
-            return wx.Colour(gray, gray, gray, 128)
+            if self.is_light():
+                gray = min(255, int(gray + ((255 - gray) * 0.25)))
+            return wx.Colour(gray, gray, gray, self._disabled_alpha())
         return self._parse_color("#FF00FF")
 
     def _parse_color(self, value: str) -> 'wx.Colour':

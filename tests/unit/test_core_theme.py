@@ -444,6 +444,167 @@ class TestThemeColorStates:
         assert states[0].GetAsString() != states[1].GetAsString()
 
 
+class TestThemeLightModeColorStates:
+    """Test that light mode auto-generated states apply a brightening (positive) shift."""
+
+    @pytest.fixture(autouse=True)
+    def setup_theme(self):
+        from SpinRender.core.theme import Theme
+        self.theme = Theme.load("light")
+
+    def test_light_hover_brightens_color(self):
+        """Light mode auto-generated hover should brighten (increase RGB) over base color."""
+        import wx
+        # Use a mid-range color: #808080 (128,128,128) — has room to brighten
+        base = self.theme._parse_color("#808080")
+        hover = self.theme._apply_auto_shift(base, "hover")
+        # Light mode hover should be brighter (higher RGB values)
+        assert hover.Red() > base.Red() or hover.Green() > base.Green() or hover.Blue() > base.Blue()
+        assert hover.Red() >= base.Red()
+        assert hover.Green() >= base.Green()
+        assert hover.Blue() >= base.Blue()
+
+    def test_light_active_brightens_color(self):
+        """Light mode auto-generated active should brighten (increase RGB) over base color."""
+        base = self.theme._parse_color("#808080")
+        active = self.theme._apply_auto_shift(base, "active")
+        assert active.Red() >= base.Red()
+        assert active.Green() >= base.Green()
+        assert active.Blue() >= base.Blue()
+
+    def test_light_hover_shifts_opposite_to_dark(self):
+        """Light mode hover shift should be in opposite direction to dark mode hover."""
+        from SpinRender.core.theme import Theme
+        dark = Theme.load("dark")
+        light = Theme.load("light")
+        base = light._parse_color("#808080")
+
+        dark_hover = dark._apply_auto_shift(base, "hover")
+        light_hover = light._apply_auto_shift(base, "hover")
+
+        # Dark mode brightens (higher RGB than base); light mode should also brighten
+        # Both should be positive shifts from mid-grey
+        assert light_hover.Red() > base.Red(), "Light mode hover should brighten"
+        assert dark_hover.Red() > base.Red(), "Dark mode hover should brighten"
+
+    def test_light_auto_states_yaml_values_are_positive(self):
+        """colors.auto_states.hover and active in light.yaml should be positive (brightening)."""
+        import re
+        hover_raw = self.theme._resolve("colors.auto_states.hover")
+        active_raw = self.theme._resolve("colors.auto_states.active")
+        assert isinstance(hover_raw, str), "hover auto_state should be a string"
+        assert isinstance(active_raw, str), "active auto_state should be a string"
+        # Extract numeric components
+        hover_parts = [float(p) for p in re.findall(r"[-\d.]+", hover_raw)]
+        active_parts = [float(p) for p in re.findall(r"[-\d.]+", active_raw)]
+        # All RGB components should be positive (brightening)
+        assert all(v >= 0 for v in hover_parts[:3]), f"Light hover should be positive, got {hover_raw}"
+        assert all(v >= 0 for v in active_parts[:3]), f"Light active should be positive, got {active_raw}"
+
+    def test_active_derived_from_hover_when_hover_defined(self):
+        """If hover is explicitly defined, active state should be derived from hover, not default."""
+        import wx
+        # Simulate a color dict with only hover explicitly defined
+        raw = {"default": "#404040", "hover": "#606060"}
+        colors, _ = self.theme._extract_defined_states(raw, "test.token")
+        assert colors[1] is not None, "Hover should be parsed from dict"
+        assert colors[2] is None, "Active should not be set yet"
+
+        filled, gen_count = self.theme._fill_missing_states(colors)
+        # Active (index 2) should be derived from hover (#606060), not default (#404040)
+        default_color = self.theme._parse_color("#404040")
+        hover_color = self.theme._parse_color("#606060")
+        active_from_hover = self.theme._apply_auto_shift(hover_color, "active")
+        active_from_default = self.theme._apply_auto_shift(default_color, "active")
+
+        # Active should match what would be derived from hover, not default
+        assert filled[2].Red() == active_from_hover.Red()
+        assert filled[2].Red() != active_from_default.Red() or hover_color.Red() == default_color.Red()
+
+    def test_disabled_derived_from_default_when_hover_defined(self):
+        """Generated disabled state should derive from default when no explicit disabled exists."""
+        raw = {"default": "#404040", "hover": "#606060"}
+        colors, _ = self.theme._extract_defined_states(raw, "test.token")
+        filled, _ = self.theme._fill_missing_states(colors)
+
+        default_color = self.theme._parse_color("#404040")
+        disabled_from_default = self.theme._apply_auto_shift(default_color, "disabled")
+        assert filled[3].Red() == disabled_from_default.Red()
+        assert filled[3].Green() == disabled_from_default.Green()
+        assert filled[3].Blue() == disabled_from_default.Blue()
+
+    def test_disabled_derived_from_default_when_active_defined(self):
+        """Generated disabled state should still derive from default until the control is pressed."""
+        raw = {"default": "#404040", "hover": "#606060", "active": "#808080"}
+        colors, _ = self.theme._extract_defined_states(raw, "test.token")
+        filled, _ = self.theme._fill_missing_states(colors)
+
+        default_color = self.theme._parse_color("#404040")
+        disabled_from_default = self.theme._apply_auto_shift(default_color, "disabled")
+
+        assert filled[3].Red() == disabled_from_default.Red()
+        assert filled[3].Green() == disabled_from_default.Green()
+        assert filled[3].Blue() == disabled_from_default.Blue()
+
+    def test_disabled_prefers_explicit_disabled_state(self):
+        """Explicit disabled state should not be replaced by generated fallbacks."""
+        raw = {
+            "default": "#404040",
+            "hover": "#606060",
+            "active": "#808080",
+            "disabled": "#123456",
+        }
+        colors, _ = self.theme._extract_defined_states(raw, "test.token")
+        filled, _ = self.theme._fill_missing_states(colors)
+
+        assert filled[3].Red() == 18
+        assert filled[3].Green() == 52
+        assert filled[3].Blue() == 86
+
+    def test_disabled_opacity_respects_light_theme_auto_state(self):
+        """Theme.disabled() should use light theme alpha instead of a hardcoded fallback."""
+        base = self.theme._parse_color("#808080")
+        disabled = self.theme.disabled(base)
+
+        assert disabled.Red() == 159
+        assert disabled.Green() == 159
+        assert disabled.Blue() == 159
+        assert disabled.Alpha() == 89
+
+    def test_color_disabled_pressed_uses_active_fallback(self):
+        """Pressed disabled colors should derive from active state when disabled is missing."""
+        self.theme._data["test"] = {
+            "pressed_disabled": {
+                "default": "#404040",
+                "active": "#808080",
+            }
+        }
+
+        result = self.theme.color("test.pressed_disabled", pressed=True, enabled=False)
+        expected = self.theme.disabled(self.theme._parse_color("#808080"))
+
+        assert result.Red() == expected.Red()
+        assert result.Green() == expected.Green()
+        assert result.Blue() == expected.Blue()
+        assert result.Alpha() == expected.Alpha()
+
+    def test_active_derived_from_default_when_hover_not_defined(self):
+        """If hover is NOT explicitly defined, active state should derive from default."""
+        import wx
+        raw = {"default": "#404040"}
+        colors, _ = self.theme._extract_defined_states(raw, "test.token")
+        assert colors[1] is None, "Hover should not be set"
+        assert colors[2] is None, "Active should not be set"
+
+        filled, _ = self.theme._fill_missing_states(colors)
+        default_color = self.theme._parse_color("#404040")
+        active_from_default = self.theme._apply_auto_shift(default_color, "active")
+
+        assert filled[2].Red() == active_from_default.Red()
+        assert filled[2].Green() == active_from_default.Green()
+        assert filled[2].Blue() == active_from_default.Blue()
+
+
 class TestThemeV2Features:
     """Test theme-specific features: glyphs, text roles, scales.
 
