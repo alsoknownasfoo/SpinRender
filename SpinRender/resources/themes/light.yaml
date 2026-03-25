@@ -488,7 +488,7 @@ layout:
       ref: "@layout.dialogs.default"
       frame:
         width: 480
-        height: 408
+        height: 456
       body:
         section_label:
           color: "@colors.primary"
