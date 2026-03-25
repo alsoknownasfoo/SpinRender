@@ -114,6 +114,14 @@ class TextStyles:
         # Left panel styles
         "leftpanel_description": "layout.main.leftpanel.descriptions",
 
+        # About dialog styles
+        "about_section_label":   "layout.dialogs.about.body.section_label",
+        "about_version_badge":   "layout.dialogs.about.body.version_badge",
+        "about_license_tagline": "layout.dialogs.about.body.license_tagline",
+        "about_link_label":      "layout.dialogs.about.body.link_label",
+        "about_link_arrow":      "layout.dialogs.about.body.link_arrow",
+        "about_link_icon":       "layout.dialogs.about.body.link_icon",
+
         # Legacy/helper aliases
         "label_sm": "layout.main.leftpanel.headers",
         "label_xs": "layout.main.leftpanel.body",

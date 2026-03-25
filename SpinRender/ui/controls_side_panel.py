@@ -18,7 +18,7 @@ from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
 _theme = Theme.current()
 _locale = Locale.current()
-from .helpers import create_section_label, create_numeric_input, create_text, reapply_text_styles
+from .helpers import create_section_label, create_numeric_input, create_text, reapply_text_styles, load_svg
 
 
 class ControlsSidePanel(wx.Panel):
@@ -476,7 +476,11 @@ class ControlsSidePanel(wx.Panel):
         # Fetch labels and icon references from locale for export row
         self.adv_btn = CustomButton(arow, id="options", size=(36, 36), section='export')
         self.adv_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_advanced_options)
-        asizer.Add(self.adv_btn, 0, wx.RIGHT, 8)
+        asizer.Add(self.adv_btn, 0, wx.RIGHT, 4)
+
+        self.about_btn = CustomButton(arow, id="about", size=(36, 36), section='export')
+        self.about_btn.Bind(wx.EVT_BUTTON, self.on_about)
+        asizer.Add(self.about_btn, 0, wx.RIGHT, 8)
 
         self.can_btn = CustomButton(arow, id="exit", size=(110, 36), section='export')
         self.can_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_cancel)
@@ -539,24 +543,20 @@ class ControlsSidePanel(wx.Panel):
         return footer
 
 
-# Need to define SVGLogoPanel since it's used in create_header
+    def on_about(self, event):
+        from .dialogs import AboutSpinRenderDialog
+        dlg = AboutSpinRenderDialog(self.main_panel)
+        dlg.ShowModal()
+        dlg.Destroy()
+        self.main_panel.restore_plugin_focus()
+
+
 class SVGLogoPanel(wx.Panel):
     """Panel that renders the SpinRender SVG logo."""
     def __init__(self, parent, size=(58, 58)):
         super().__init__(parent, size=size)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
-        plugin_dir = Path(__file__).parent.parent
-        svg_path = plugin_dir / "resources" / "logo.svg"
-        if not svg_path.exists():
-            svg_path = plugin_dir.parent / "res" / "logo.svg"
-        self.svg_image = None
-        if svg_path.exists():
-            try:
-                self.svg_image = wx.svg.SVGimage.CreateFromFile(str(svg_path))
-            except Exception as e:
-                import logging
-                logger = logging.getLogger("SpinRender")
-                logger.error(f"Failed to load SVG: {e}", exc_info=True)
+        self.svg_image = load_svg(Path(__file__).parent.parent / "resources" / "icons" / "logo.svg")
         self.Bind(wx.EVT_PAINT, self.on_paint)
 
     def on_paint(self, event):

@@ -4,6 +4,7 @@ Tests for dialog layout token integration.
 
 Verify that dialogs use layout.dialogs tokens instead of hardcoded values.
 """
+import inspect
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -101,11 +102,69 @@ class TestDialogSubclassesUseLayout:
         """RecallPresetDialog must use CustomListView with id='custompresets'."""
         from SpinRender.ui.dialogs import RecallPresetDialog
         from SpinRender.ui.custom_controls import CustomListView
-        import inspect
 
         source = inspect.getsource(RecallPresetDialog.build_ui)
         assert "CustomListView" in source
         assert "id=\"custompresets\"" in source or "id='custompresets'" in source
+
+    def test_about_dialog_uses_height_autosize_and_parent_centering(self):
+        """AboutSpinRenderDialog should autosize height from content and center on its parent."""
+        from SpinRender.ui.dialogs import AboutSpinRenderDialog
+
+        source = inspect.getsource(AboutSpinRenderDialog.__init__)
+        assert "layout.dialogs.about.frame.height" in source
+        assert 'super().__init__(parent, "SPINRENDER", (w, h))' in source
+        assert "self.autosize_dialog_height(max_height=h)" in source
+        assert "self.center_over_parent()" in source
+
+    def test_about_sections_match_version_vertical_padding(self):
+        """Author, links, and license sections should reuse the version section top/bottom padding."""
+        from SpinRender.ui.dialogs import AboutSpinRenderDialog
+
+        source = inspect.getsource(AboutSpinRenderDialog.build_ui)
+        assert 'self._padded_section(content, self._build_version_section,  16, 16, 16, 16)' in source
+        assert 'self._padded_section(content, self._build_author_ai_section, 16, 16, 16, 16)' in source
+        assert 'self._padded_section(content, self._build_links_section,     16, 16, 16, 16)' in source
+        assert 'self._padded_section(content, self._build_license_section,   16, 16, 16, 16, outer_bg="colors.gray-black", show_divider=False)' in source
+
+    def test_base_dialog_exposes_modal_layout_helpers(self):
+        """BaseStyledDialog should expose shared helpers for modal sizing and centering."""
+        source = inspect.getsource(BaseStyledDialog)
+        assert "def autosize_dialog_height" in source
+        assert "max_height=None" in source
+        assert "def center_over_parent" in source
+
+    def test_about_dialog_uses_icon_spinner_progress(self):
+        """AboutSpinRenderDialog should animate update progress by rotating the resting icon."""
+        from SpinRender.ui.dialogs import AboutSpinRenderDialog
+
+        source = inspect.getsource(AboutSpinRenderDialog)
+        assert "self._update_rotation = 0" in source
+        assert "self._closing = False" in source
+        assert "def _update_progress_label" in source
+        assert 'self.upd_btn.SetIcon("cw")' in source
+        assert "self.upd_btn.SetIconRotation(self._update_rotation)" in source
+        assert "self._update_timer.Start(75)" in source
+        assert 'self.upd_btn.SetLabel(f"CHECKING' not in source
+        assert "def _stop_update_timer" in source
+        assert "def _on_destroy" in source
+
+    def test_about_license_copy_is_vertically_centered(self):
+        """About license copy should be vertically centered against the donate button row."""
+        from SpinRender.ui.dialogs import AboutSpinRenderDialog
+
+        source = inspect.getsource(AboutSpinRenderDialog._build_license_section)
+        assert "copy_wrap.SetMinSize((-1, card_h))" in source
+        assert "copy_sizer.AddStretchSpacer()" in source
+
+    def test_custom_button_supports_icon_rotation(self):
+        """CustomButton should support rotating the same icon without changing glyph or size."""
+        from SpinRender.ui.custom_controls import CustomButton
+
+        source = inspect.getsource(CustomButton)
+        assert "self.icon_rotation_degrees = 0" in source
+        assert "gc.Rotate(_math.radians(self.icon_rotation_degrees))" in source
+        assert "def SetIconRotation(self, degrees)" in source
 
 
 class TestNoManualTextStylesInDialogs:
@@ -240,3 +299,31 @@ class TestCreateFooterHelper:
         assert "btn2_prop=prop2" in source
         assert 'layout.dialogs.addpreset.controls.gap' in source
         assert 'gap=footer_gap' in source
+
+
+class TestDialogFocusRestorePatterns:
+    """Modal callers should restore plugin focus after closing dialogs."""
+
+    def test_main_panel_restores_focus_after_advanced_options(self):
+        """SpinRenderPanel should restore focus after the advanced options modal closes."""
+        source = Path("SpinRender/ui/main_panel.py").read_text()
+        assert "def restore_plugin_focus(self):" in source
+        assert "self.restore_plugin_focus()" in source
+        assert "pf.Raise()" in source
+        assert "self.SetFocus()" in source
+
+    def test_about_dialog_reuses_main_panel_focus_restore(self):
+        """ControlsSidePanel should open About with the main panel as parent and restore focus."""
+        from SpinRender.ui.controls_side_panel import ControlsSidePanel
+
+        dialog = MagicMock()
+        with patch("SpinRender.ui.dialogs.AboutSpinRenderDialog", return_value=dialog) as dialog_cls:
+            panel = ControlsSidePanel.__new__(ControlsSidePanel)
+            panel.main_panel = MagicMock()
+
+            ControlsSidePanel.on_about(panel, None)
+
+        dialog_cls.assert_called_once_with(panel.main_panel)
+        dialog.ShowModal.assert_called_once_with()
+        dialog.Destroy.assert_called_once_with()
+        panel.main_panel.restore_plugin_focus.assert_called_once_with()

@@ -1,4 +1,4 @@
-# SpinRender Theme — Dark (Default)
+  # SpinRender Theme — Dark (Default)
 # Note: STYLING ONLY. All text/icon content is in locale_en.yaml.
 
 # ─────────────────────────────────────────────────────────────────
@@ -58,6 +58,19 @@ colors:
   ok:          "@colors.green"
   warning:     "@colors.orange"
   error:       "@colors.red"
+
+  # Brand Colors (External Services — used in About dialog)
+  brand:
+    github-sponsors: "#ea4aaa"
+    kofi:            "#29ABE0"
+    kofi-base:       "#C8A27A"
+    ai:
+      claude:        "#d97757"
+      gemini:        "#3186FF"
+      chatgpt:       "#12a37f"
+      copilot:       "#7c3aed"
+      stepfun:       "#068cff"
+      unknown:       "#888888"
 
 # ─────────────────────────────────────────────────────────────────
 # 2. RADIUS (Rounding Scale)
@@ -289,6 +302,7 @@ glyphs:
   info:          "\U000F02FD"
   alert:         "\U000F0CF0"
   plus:          "\U000F0130"
+  help:          "\U000F02D6"
   
   # Controls
   cw:            "\U000F0453"
@@ -317,6 +331,20 @@ glyphs:
   preset-flip:   "\U000F0D98"
   preset-custom: "\U000F166B"
   
+  # About dialog
+  github:        "\U000F02A4"
+  heart:         "\U000F02D1"
+  web:           "\U000F059F"
+  tag:           "\U000F04F6"
+  help-circle:   "\U000F02D7"
+  release:       "\U000F04F9"
+  discussions:   "\U000F0361"
+  issues:        "\U000F00E4"
+  readme:        "\U000F14F7"
+  file:          "\U000F0FC3"
+  notices:       "\U000F03D7"
+  coffee:        "\U000F0176"
+
   # Navigation
   chevron-down:  "\U000F0140"
   chevron-up:    "\U000F0143"
@@ -428,7 +456,7 @@ layout:
       controls: None
     addpreset:
       ref: "@layout.dialogs.default"
-      frame: 
+      frame:
         width: 300
         height: 180
       controls:
@@ -438,6 +466,51 @@ layout:
         button2:
           ref: "@components.button.cancel"
           width: "50%"
+    about:
+      ref: "@layout.dialogs.default"
+      frame:
+        width: 480
+        height: 408
+      body:
+        section_label:
+          color: "@colors.primary"
+          formatting: "uppercase"
+          font:
+            typeface: "@typography.families.mono"
+            size: "@typography.scale.sm"
+            weight: "@typography.weights.bold"
+        version_badge:
+          color: "@colors.primary"
+          formatting: "uppercase"
+          font:
+            typeface: "@typography.families.mono"
+            size: "@typography.scale.sm"
+            weight: "@typography.weights.bold"
+        license_tagline:
+          color: "@colors.gray-light"
+          formatting: "uppercase"
+          font:
+            typeface: "@typography.families.mono"
+            size: "@typography.scale.sm"
+            weight: "@typography.weights.bold"
+        link_label:
+          color: "@colors.gray-medium"
+          font:
+            typeface: "@typography.families.mono"
+            size: "@typography.scale.base"
+            weight: "@typography.weights.normal"
+        link_arrow:
+          color: "@colors.primary"
+          font:
+            typeface: "@typography.families.mono"
+            size: "@typography.scale.base"
+            weight: "@typography.weights.normal"
+        link_icon:
+          color: "@colors.gray-medium"
+          font:
+            typeface: "@typography.families.icon"
+            size: "@typography.scale.base"
+            weight: "@typography.weights.normal"
 
 # ─────────────────────────────────────────────────────────────────
 # 9. COMPONENT DEFINITIONS (Atomic UI Components)
@@ -817,6 +890,63 @@ components:
         color:
           default: "@colors.gray-light"
           hover: "@colors.gray-dark"
+    about:
+      ref: "@components.button.default"
+      frame:
+        padding:
+          horizontal: 0
+        bg:
+          default: "@colors.transparent"
+          hover: "@colors.primary"
+      label:
+        color:
+          default: "@colors.gray-light"
+          hover: "@colors.gray-dark"
+    check-updates:
+      ref: "@components.button.default"
+      frame:
+        bg: "@colors.primary"
+        border:
+          color: "@colors.transparent"
+      label:
+        ref: "@text.button"
+        color: "@colors.gray-dark"
+    donate:
+      ref: "@components.button.default"
+      frame:
+        bg:
+          default: "rgba(234, 74, 170, 0.16)"
+          hover: "@colors.brand.github-sponsors"
+          active: "@colors.brand.github-sponsors"
+        border:
+          color:
+            default: "@colors.transparent"
+            hover: "@colors.transparent"
+            active: "@colors.transparent"
+      label:
+        ref: "@text.button"
+        color:
+          default: "@colors.brand.github-sponsors"
+          hover: "@colors.gray-dark"
+          active: "@colors.gray-dark"
+    kofi:
+      ref: "@components.button.default"
+      frame:
+        bg:
+          default: "rgba(200, 162, 122, 0.16)"
+          hover: "rgba(200, 162, 122, 1.0)"
+          active: "@colors.brand.kofi"
+        border:
+          color:
+            default: "@colors.transparent"
+            hover: "@colors.transparent"
+            active: "@colors.transparent"
+      label:
+        ref: "@text.button"
+        color:
+          default: "@colors.brand.kofi-base"
+          hover: "@colors.gray-dark"
+          active: "@colors.gray-dark"
     browse:
       ref: "@components.button.default"
     exit:

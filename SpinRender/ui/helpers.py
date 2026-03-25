@@ -2,10 +2,18 @@
 Shared helper functions for unified component construction.
 """
 import html
+import logging
+import re
 import weakref
+from pathlib import Path
 from typing import Optional
+
 import wx
+import wx.svg
+
 from SpinRender.core.theme import Theme
+
+_logger = logging.getLogger("SpinRender")
 _theme = Theme.current()
 from .text_styles import TextStyle, TextStyles
 
@@ -118,6 +126,59 @@ def _apply_link_suffix_label(
     )
     if not text_widget.SetLabelMarkup(markup):
         text_widget.SetLabel(f"{formatted_text} {suffix}")
+
+
+def load_svg(svg_path: Path) -> Optional[object]:
+    """Load an SVG file. Returns wx.svg.SVGimage or None on failure/missing."""
+    if not svg_path.exists():
+        return None
+    try:
+        return wx.svg.SVGimage.CreateFromFile(str(svg_path))
+    except Exception as e:
+        _logger.error("Failed to load SVG %s: %s", svg_path, e, exc_info=True)
+        return None
+
+
+def load_svg_markup(svg_markup: str) -> Optional[object]:
+    """Load an SVG image from in-memory XML markup.
+
+    wxPython documentation confirms SVG images can be created from an in-memory
+    buffer, but the exact factory name differs across bindings. Probe the
+    available APIs at runtime and return None if none are supported.
+    """
+    svg_bytes = svg_markup.encode("utf-8")
+    candidates = (
+        ("CreateFromBytes", lambda: wx.svg.SVGimage.CreateFromBytes(svg_bytes)),
+        ("CreateFromBuffer", lambda: wx.svg.SVGimage.CreateFromBuffer(svg_bytes)),
+        ("CreateFromData", lambda: wx.svg.SVGimage.CreateFromData(svg_bytes)),
+    )
+
+    for name, factory in candidates:
+        if hasattr(wx.svg.SVGimage, name):
+            try:
+                return factory()
+            except Exception as e:  # pragma: no cover
+                _logger.debug("SVG markup loader %s failed: %s", name, e, exc_info=True)
+
+    try:
+        return wx.svg.SVGimage(svg_bytes)  # type: ignore[call-arg]
+    except Exception as e:
+        _logger.warning("Failed to load SVG markup from memory: %s", e, exc_info=True)
+        return None
+
+
+def replace_svg_fill(svg_markup: str, fill_color: str) -> str:
+    """Replace non-`none` SVG fill attributes with the provided color.
+
+    This keeps container-level `fill="none"` declarations intact while forcing
+    visible paths to use a theme color.
+    """
+    return re.sub(
+        r'fill="(?!none\b)[^"]+"',
+        f'fill="{fill_color}"',
+        svg_markup,
+        flags=re.IGNORECASE,
+    )
 
 
 def create_text(parent: wx.Window, label: str, style_name: str,

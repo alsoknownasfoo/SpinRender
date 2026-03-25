@@ -5,8 +5,15 @@ Pytest configuration and fixtures for SpinRender tests.
 This module provides mocking for wxPython to enable headless testing.
 """
 import sys
+from pathlib import Path
 from unittest.mock import MagicMock
 import pytest
+
+# Ensure the project root is on sys.path so SpinRender is importable
+# regardless of how pytest is invoked (editable install not required).
+_PROJECT_ROOT = str(Path(__file__).parent.parent)
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
 
 
 class ColorMock:

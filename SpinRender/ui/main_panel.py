@@ -431,9 +431,13 @@ class SpinRenderPanel(wx.Panel):
 
         dlg.Destroy()
         self.preview.update_preview_overlay()
+        self.restore_plugin_focus()
+
+    def restore_plugin_focus(self):
         pf = self.GetTopLevelParent()
         if pf:
             pf.Raise()
+        self.SetFocus()
 
     def on_cancel(self, event):
         if self.render_controller.is_rendering():

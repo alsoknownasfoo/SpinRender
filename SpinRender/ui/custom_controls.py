@@ -609,6 +609,7 @@ class CustomButton(wx.Panel):
             label = _locale.get("components.button.default.label", "BUTTON")
 
         self.label, self.icon, self.icon_font_family = str(label), icon, icon_font_family
+        self.icon_rotation_degrees = 0
         self.hovered, self.pressed = False, False
 
         _p = self.GetParent()
@@ -661,23 +662,61 @@ class CustomButton(wx.Panel):
             stripped = str(self.icon).replace('mdi-', '')
             icon_char = _theme.glyph(stripped) or str(self.icon)
 
-        formatted, tw, th = None, 0, 0
+        text_lines = []
+        text_line_sizes = []
+        text_w, text_h = 0, 0
+        line_gap = 0
         if self.label and len(self.label) > 0:
-            formatted, tw, th = prepare_styled_text(gc, self.label, f"{token}.label", final_text)
+            font_obj = _theme.font("button")
+            gfx_font = gc.CreateFont(font_obj, final_text)
+            gc.SetFont(gfx_font)
+            text_lines = str(self.label).split("\n")
+            if len(text_lines) == 0:
+                text_lines = [""]
+            for line in text_lines:
+                lw, lh = gc.GetTextExtent(line)
+                text_line_sizes.append((lw, lh))
+                text_w = max(text_w, lw)
+                text_h += lh
+            if len(text_lines) > 1:
+                line_gap = 1
+                text_h += line_gap * (len(text_lines) - 1)
 
         iw, ih = 0, 0
         if icon_char:
-            _, iw, ih = prepare_styled_text(gc, icon_char, f"{token}.icon", final_icon_color)
+            icon_font_obj = _theme.font("icon")
+            if self.icon_font_family:
+                icon_font_obj.SetFaceName(self.icon_font_family)
+            icon_gfx_font = gc.CreateFont(icon_font_obj, final_icon_color)
+            gc.SetFont(icon_gfx_font)
+            iw, ih = gc.GetTextExtent(icon_char)
 
-        gap = 10 if (icon_char and formatted) else 0
-        total_w = iw + gap + tw
+        has_text = len(text_lines) > 0
+        gap = 10 if (icon_char and has_text) else 0
+        total_w = iw + gap + text_w
         start_x = (width - total_w) / 2
 
         if icon_char:
-            draw_styled_text(gc, icon_char, f"{token}.icon", start_x, (height - ih) / 2, final_icon_color)
+            gc.SetFont(icon_gfx_font)
+            icon_x = start_x
+            icon_y = (height - ih) / 2
+            if self.icon_rotation_degrees:
+                gc.PushState()
+                gc.Translate(icon_x + (iw / 2), icon_y + (ih / 2))
+                gc.Rotate(math.radians(self.icon_rotation_degrees))
+                gc.DrawText(icon_char, -(iw / 2), -(ih / 2))
+                gc.PopState()
+            else:
+                gc.DrawText(icon_char, icon_x, icon_y)
 
-        if formatted:
-            draw_styled_text(gc, self.label, f"{token}.label", start_x + iw + gap, (height - th) / 2, final_text)
+        if has_text:
+            gc.SetFont(gc.CreateFont(_theme.font("button"), final_text))
+            text_x = start_x + iw + gap
+            text_y = (height - text_h) / 2
+            for idx, line in enumerate(text_lines):
+                _, lh = text_line_sizes[idx]
+                gc.DrawText(line, text_x, text_y)
+                text_y += lh + line_gap
 
     def on_mouse_down(self, event):
         if self.IsEnabled():
@@ -693,6 +732,7 @@ class CustomButton(wx.Panel):
     def on_leave(self, event): self.hovered = False; self.pressed = False; self.Refresh(); self.Update()
     def SetLabel(self, label): self.label = str(label); self.Refresh(); self.Update()
     def SetIcon(self, icon): self.icon = icon; self.Refresh(); self.Update()
+    def SetIconRotation(self, degrees): self.icon_rotation_degrees = degrees % 360; self.Refresh(); self.Update()
     def SetStyle(self, style_id, update_content=True):
         """Update style_id and optionally refresh label/icon from locale."""
         self.style_id = style_id
@@ -1446,40 +1486,3 @@ class CustomListView(scrolled.ScrolledPanel):
 EVT_LIST_ITEM_SELECTED = wx.PyEventBinder(wx.NewEventType(), 1)
 EVT_LIST_ITEM_DELETED = wx.PyEventBinder(wx.NewEventType(), 1)
 EVT_COLOURPICKER_CHANGED = wx.PyEventBinder(wx.NewEventType(), 1)
-
-
-class SVGLogoPanel(wx.Panel):
-
-    """Panel that renders the SpinRender SVG logo."""
-    def __init__(self, parent, size=(58, 58)):
-        super().__init__(parent, size=size)
-        self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
-        plugin_dir = Path(__file__).parent.parent
-        svg_path = plugin_dir / "resources" / "logo.svg"
-        if not svg_path.exists():
-            svg_path = plugin_dir.parent / "res" / "logo.svg"
-        self.svg_image = None
-        if svg_path.exists():
-            try:
-                self.svg_image = wx.svg.SVGimage.CreateFromFile(str(svg_path))
-            except Exception as e:
-                import logging
-                logger = logging.getLogger("SpinRender")
-                logger.error(f"Failed to load SVG: {e}", exc_info=True)
-        self.Bind(wx.EVT_PAINT, self.on_paint)
-
-    def on_paint(self, event):
-        dc = wx.AutoBufferedPaintDC(self)
-        gc = wx.GraphicsContext.Create(dc)
-        if not gc:
-            return
-        width, height = self.GetSize()
-        gc.SetBrush(wx.TRANSPARENT_BRUSH)
-        gc.SetPen(wx.TRANSPARENT_PEN)
-        gc.DrawRectangle(0, 0, width, height)
-        if self.svg_image:
-            try:
-                self.svg_image.RenderToGC(gc, 1.0)
-            except Exception:
-                gc.SetBrush(wx.Brush(_theme.color("colors.primary")))
-                gc.DrawRectangle(0, 0, width, height)

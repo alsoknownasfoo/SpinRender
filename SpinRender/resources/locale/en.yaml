@@ -9,7 +9,7 @@ locale:
     component.main.header:
       title: "SPINRENDER"
       subtitle: "0.9.0-alpha"
-      logo_id: "res/logo.svg"
+      logo_id: "resources/logo.svg"
 
     # ─────────────────────────────────────────────────────────────
     # DIALOG TITLES
@@ -22,6 +22,42 @@ locale:
         title: "SAVE PRESET"
       recall_preset:
         title: "SELECT CUSTOM PRESET"
+      about:
+        title: "ABOUT SPINRENDER"
+        version_prefix: "v"
+        author_prefix: "by "
+        author: "alsoknownasfoo"
+        repo_url: "https://github.com/alsoknownasfoo/SpinRender"
+        repo_label: "/alsoknownasfoo/SpinRender"
+        issues_url: "https://github.com/alsoknownasfoo/SpinRender/issues/new"
+        issues_label: "Report an issue"
+        discussions_url: "https://github.com/alsoknownasfoo/SpinRender/discussions"
+        discussions_label: "Ask a question"
+        readme_url: "https://github.com/alsoknownasfoo/SpinRender/blob/main/README.md"
+        readme_label: "Help & documentation"
+        releases_url: "https://github.com/alsoknownasfoo/SpinRender/releases"
+        releases_label: "Release notes"
+        license_label: "LICENSE"
+        license_text: "OPEN SOURCE · FREE FOR PERSONAL USE"
+        notices_label: "Open source notices"
+        gpl_label: "GPLv3 License"
+        gpl_url: "https://github.com/alsoknownasfoo/SpinRender/blob/main/LICENSE"
+        cc_label: "CC BY-NC 4.0"
+        cc_url: "https://creativecommons.org/licenses/by-nc/4.0/"
+        sponsor_url: "https://github.com/sponsors/alsoknownasfoo"
+        sponsor_label: "Support this project — GitHub Sponsors"
+        kofi_url: "https://ko-fi.com/alsoknownasfoo"
+        kofi_label: "KO-FI"
+        built_with_label: "BUILT WITH"
+        resources_label: "RESOURCES"
+        check_updates: "CHECK FOR UPDATES"
+        check_updates_progress: "CHECKING..."
+        check_updates_done: "UP TO DATE"
+        check_updates_available: "UPDATE AVAILABLE"
+        check_updates_simulated: "(simulated — repo not yet public)"
+        license_tagline: "OPEN SOURCE · FREE FOR PERSONAL USE"
+        release_notes_label: "RELEASE NOTES"
+        sponsor_btn: "SPONSOR"
 
     # ─────────────────────────────────────────────────────────────
     # PRESET CARDS
@@ -137,6 +173,9 @@ locale:
       options:
         label: ""
         icon_ref: "glyphs.settings"
+      about:
+        label: ""
+        icon_ref: "glyphs.help"
       save_preset:
         label: "+ PRESET"
         icon_ref: "glyphs.plus"
