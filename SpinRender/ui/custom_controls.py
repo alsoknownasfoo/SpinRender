@@ -1466,7 +1466,12 @@ class CustomListView(scrolled.ScrolledPanel):
         self.style_id = id
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.SetupScrolling(scroll_x=False, scroll_y=True)
-        
+
+        token = f"components.list.{self.style_id}"
+        if not _theme.has_token(token):
+            token = "components.list.default"
+        self.token = token
+
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.main_sizer)
         
@@ -1474,8 +1479,7 @@ class CustomListView(scrolled.ScrolledPanel):
 
     def on_paint(self, event):
         dc = wx.PaintDC(self)
-        # Just clear background with theme color
-        bg = _theme.color("colors.gray-dark")
+        bg = _theme.color(f"{self.token}.container.frame.bg")
         dc.SetBackground(wx.Brush(bg))
         dc.Clear()
 
@@ -1484,7 +1488,7 @@ class CustomListView(scrolled.ScrolledPanel):
         # Use theme padding if not specified (layout.main.leftpanel.control.between_items or default)
         from SpinRender.core.theme import Theme
         _theme = Theme.current()
-        item_gap = gap if gap is not None else (_theme._resolve("layout.main.leftpanel.control.between_items") or 10)
+        item_gap = gap if gap is not None else int(_theme._resolve("layout.main.leftpanel.control.between_items") or 10)
         self.main_sizer.Add(item, 0, wx.EXPAND | wx.BOTTOM, item_gap)
         self.Layout()
         self.SetupScrolling(scroll_x=False, scroll_y=True)

@@ -1072,5 +1072,8 @@ components:
         delete:  { icon: { ref: "glyphs.trash" }, color: "@colors.warning" }
         confirm: { icon: { ref: "glyphs.save" },  color: "@colors.ok"      }
         cancel:  { icon: { ref: "glyphs.close" }, color: "@colors.warning" }
+      container:
+        frame:
+          bg: "@colors.gray-dark"
     custompresets:
       ref: "@components.list.default"
