@@ -836,9 +836,9 @@ components:
         innerborder:
           size: 1
           color:
-            default: "@colors.black"
+            default: "@colors.gray-black"
             hover: "@colors.primary"
-            active: "@colors.black"
+            active: "@colors.gray-black"
         border:
           size: 2
           color:
