@@ -269,7 +269,7 @@ text:
       size: "@typography.scale.base"
       weight: "@typography.weights.bold"
   dropdown:
-    color: "@colors.secondary"
+    color: "@colors.gray-light"
     formatting: "uppercase"
     font:
       typeface: "@typography.families.mono"
@@ -737,19 +737,19 @@ components:
           bg:
             default: "@colors.transparent"
             hover: "@colors.transparent"
-            active: "@colors.primary"
+            active: "#008D9D"  # cyan #0097A7 darkened -10 for readability
         icon:
           ref: "@text.icon"
           color:
             default: "@colors.gray-light"
             hover: "@colors.primary"
-            active: "@colors.gray-dark" # selected — white on primary bg
+            active: "@colors.black"  # black icon on cyan active bg
         label:
           ref: "@text.label"
           color:
             default: "@colors.gray-light"
             hover: "@colors.primary"
-            active: "@colors.black" # selected — ensure dark text on primary bg
+            active: "@colors.black"  # black text on cyan active bg
     direction:
       ref: "@components.toggle.default"
     lighting:
@@ -759,18 +759,18 @@ components:
           bg:
             default: "@colors.transparent"
             hover: "@colors.transparent"
-            active: "@colors.yellow"
+            active: "#EF9E1B"  # yellow #F9A825 darkened -10 for readability
         label:
           ref: "@text.label"
           color:
             default: "@colors.gray-light"
             hover: "@colors.cyan"
-            active: "@colors.gray-dark"
+            active: "@colors.black"  # black text on yellow active bg
         icon:
           color:
             default: "@colors.gray-light"
             hover: "@colors.cyan"
-            active: "@colors.gray-dark"
+            active: "@colors.black"  # black icon on yellow active bg
     logging: "@components.toggle.default"
 
   dropdown:
@@ -790,7 +790,7 @@ components:
       label: # main module text font and color
         font: "@text.numeric.font" # Use numeric font like axis inputs
         color:
-          default: "@text.numeric.color"  # Match axis input color (yellow/secondary)
+          default: "@colors.gray-light"  # Match axis input field color
           hover: "@colors.primary"
       icon: # main module chevron color
         ref: "@text.icon"
@@ -853,7 +853,7 @@ components:
         height: 36
         bg:
           default: "@colors.gray-div"
-          hover: "@colors.cyan"
+          hover: "#008D9D"  # cyan #0097A7 darkened -10 for readability
           active: "@colors.cyan-50"
         border:
           size: "@borders.subtle.size"
@@ -872,7 +872,7 @@ components:
         ref: "@text.button"
         color:
           default: "@colors.gray-light"
-          hover: "@colors.gray-dark"
+          hover: "@colors.black"  # black text on cyan hover bg
           active: "@colors.primary"
       gap: "@typography.spacing.base"
     cancel:
@@ -880,7 +880,7 @@ components:
     ok:
       ref: "@components.button.default"
       frame:
-        bg: "@colors.primary"
+        bg: "#008D9D"  # cyan #0097A7 darkened -10 for readability
       label:
         ref: "@text.button"
         color: "@colors.black"
@@ -889,8 +889,8 @@ components:
       frame:
         bg:
           default: "@colors.transparent"
-          hover: "@colors.red"
-          active: "@colors.red"
+          hover: "#BC1E1E"  # red #C62828 darkened -10 for readability
+          active: "#BC1E1E"  # red #C62828 darkened -10 for readability
         border:
           size: 1
           color: "@colors.transparent"
@@ -910,13 +910,13 @@ components:
       frame:
         bg:
           default: "@colors.gray-div"
-          hover: "@colors.cyan"
+          hover: "#008D9D"  # cyan #0097A7 darkened -10 for readability
           active: "@colors.cyan-20"
       label:
         ref: "@text.button"
         color:
           default: "@colors.gray-white"
-          hover: "@colors.gray-dark"
+          hover: "@colors.black"  # black text on cyan hover bg
           active: "@colors.cyan"
         padding:
           horizontal: 0
@@ -926,7 +926,7 @@ components:
       ref: "@components.button.default"
       frame:
         bg:
-          default: "@colors.primary"
+          default: "#008D9D"  # cyan #0097A7 darkened -10 for readability
           disabled: "@colors.transparent"
         border:
           color:
@@ -935,7 +935,7 @@ components:
       label:
         ref: "@text.button"
         color:
-          default: "@colors.black"
+          default: "@colors.black"  # black text on cyan bg
           disabled: "@colors.cyan-50"
     donate:
       ref: "@components.button.default"
@@ -980,12 +980,12 @@ components:
       frame:
         bg:
           default: "@colors.gray-div"
-          hover: "@colors.error"
+          hover: "#BC1E1E"  # red #C62828 darkened -10 for readability
           active: "@colors.red-20"
       label:
         ref: "@text.button"
         color:
-          default: "@colors.white"
+          default: "@colors.gray-white"  # match options/about default text color
     render:
       ref: "@components.button.ok"
     save:

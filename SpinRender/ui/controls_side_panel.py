@@ -169,6 +169,9 @@ class ControlsSidePanel(wx.Panel):
             footer_bg = _theme.color("layout.main.leftpanel.bg") or _theme.color("colors.secondary")
             self.footer_panel.SetBackgroundColour(footer_bg)
 
+        if hasattr(self, 'preset_row'):
+            self.preset_row.SetBackgroundColour(_theme.TRANSPARENT)
+
         # 1. Re-apply all registered text styles globally
         reapply_text_styles()
 
@@ -196,7 +199,8 @@ class ControlsSidePanel(wx.Panel):
         sizer.Add(create_section_label(panel, _locale.get("sections.presets", "LOOP PRESETS"), id="presets"), 0, wx.EXPAND | wx.BOTTOM, 8)
 
         preset_row = wx.Panel(panel)
-        preset_row.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
+        self.preset_row = preset_row
+        preset_row.SetBackgroundColour(_theme.TRANSPARENT)
         preset_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         preset_ids = ["hero", "spin", "flip", "custom"]
