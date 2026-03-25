@@ -50,6 +50,14 @@ colors:
   purple-20:   "#221535"
   pink-20:     "#300D33"
 
+  cyan-50:        "#00BCD466"
+  yellow-50:      "#FFD60066"
+  green-50:       "#4CAF5066"
+  orange-50:      "#FF6B3566"
+  red-50:         "#FF3B3066"
+  purple-50:      "#AA6BFF66"
+  pink-50:       "#F240FF66"
+
   # Semantic Roles (Theme)
   primary:     "@colors.cyan"
   secondary:   "@colors.yellow"
@@ -344,6 +352,7 @@ glyphs:
   file:          "\U000F0FC3"
   notices:       "\U000F03D7"
   coffee:        "\U000F0176"
+  gift:          "\U000F0E44"
 
   # Navigation
   chevron-down:  "\U000F0140"
@@ -493,6 +502,8 @@ layout:
             typeface: "@typography.families.mono"
             size: "@typography.scale.sm"
             weight: "@typography.weights.bold"
+        gift_icon:
+          color: "@colors.orange"
         link_label:
           color: "@colors.gray-medium"
           font:
@@ -905,12 +916,18 @@ components:
     check-updates:
       ref: "@components.button.default"
       frame:
-        bg: "@colors.primary"
+        bg: 
+          default: "@colors.primary"
+          disabled: "@colors.transparent"
         border:
-          color: "@colors.transparent"
+          color:
+            default: "@colors.transparent"
+            disabled: "@colors.cyan-50"
       label:
         ref: "@text.button"
-        color: "@colors.gray-dark"
+        color:
+          default: "@colors.gray-dark"
+          disabled: "@colors.cyan-50"
     donate:
       ref: "@components.button.default"
       frame:

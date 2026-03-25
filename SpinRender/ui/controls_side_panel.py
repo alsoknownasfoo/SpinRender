@@ -520,7 +520,12 @@ class ControlsSidePanel(wx.Panel):
         # Options button (small icon button)
         self.adv_btn = CustomButton(btn_row, id="options", size=(36, 36), section='footer')
         self.adv_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_advanced_options)
-        btn_sizer.Add(self.adv_btn, 0, wx.RIGHT, 8)
+        btn_sizer.Add(self.adv_btn, 0, wx.RIGHT, 4)
+
+        # About button (help-circle icon)
+        self.about_btn = CustomButton(btn_row, id="about", size=(36, 36), section='footer')
+        self.about_btn.Bind(wx.EVT_BUTTON, self.on_about)
+        btn_sizer.Add(self.about_btn, 0, wx.RIGHT, 8)
 
         # Cancel/Exit button
         self.can_btn = CustomButton(btn_row, id="close", size=(110, 36), section='footer')

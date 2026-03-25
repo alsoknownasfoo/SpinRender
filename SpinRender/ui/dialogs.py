@@ -1397,13 +1397,27 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         copy_wrap.SetMinSize((-1, card_h))
         copy_sizer = wx.BoxSizer(wx.VERTICAL)
         copy_sizer.AddStretchSpacer()
+
+        copy_row = wx.Panel(copy_wrap)
+        copy_row.SetBackgroundColour(_theme.color("colors.gray-black"))
+        copy_row_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        gift_icon = create_text(
+            copy_row,
+            _theme.glyph("gift") or "\U000F02A1",
+            "icon",
+            color_token="layout.dialogs.about.body.gift_icon.color",
+        )
+        copy_row_sizer.Add(gift_icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, copy_wrap.FromDIP(16))
         copy_lbl = create_text(
-            copy_wrap,
+            copy_row,
             _locale.get("dialog.about.license_tagline", "Free for personal use\nTip if you love!"),
             "about_link_label",
             color_token="colors.gray-medium",
         )
-        copy_sizer.Add(copy_lbl, 0, wx.ALIGN_CENTER_VERTICAL)
+        copy_row_sizer.Add(copy_lbl, 0, wx.ALIGN_CENTER_VERTICAL)
+        copy_row.SetSizer(copy_row_sizer)
+
+        copy_sizer.Add(copy_row, 0, wx.ALIGN_CENTER_VERTICAL)
         copy_sizer.AddStretchSpacer()
         copy_wrap.SetSizer(copy_sizer)
 
