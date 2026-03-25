@@ -1470,9 +1470,9 @@ class CustomListView(scrolled.ScrolledPanel):
         dc.SetBackground(wx.Brush(bg))
         dc.Clear()
 
-    def AddItem(self, label, icon=None, data=None):
+    def AddItem(self, label, icon=None, data=None, gap=8):
         item = CustomListItem(self, label=label, icon=icon, data=data, id=self.style_id)
-        self.main_sizer.Add(item, 0, wx.EXPAND | wx.BOTTOM, 4)
+        self.main_sizer.Add(item, 0, wx.EXPAND | wx.BOTTOM, gap)
         self.Layout()
         self.SetupScrolling(scroll_x=False, scroll_y=True)
         return item
