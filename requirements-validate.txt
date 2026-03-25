@@ -1,9 +1,0 @@
-# Dependencies for theme validation tools
-pyyaml>=5.0
-
-# Optional: ruamel.yaml provides better YAML preservation (comments, formatting)
-# Useful if you want to preserve YAML file structure during auto-fixes
-ruamel.yaml>=0.17
-
-# Note: The theme validator will work without PyYAML for the default dark theme
-# by using built-in fallback data. Custom themes require PyYAML.

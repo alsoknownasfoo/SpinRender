@@ -1,4 +1,5 @@
 .DS_Store
+.gitignore
 
 # Python
 __pycache__/
@@ -9,13 +10,15 @@ __pycache__/
 # IDE & Editor
 .vscode/
 .claude/
+.github/
+.worktrees/
 
 # Testing & Coverage
 .coverage
 htmlcov/
 .pytest_cache/
 SpinRender/logs/
-
+/
 # Hardware (KiCad)
 *.kicad_pcb
 SpinRender/resources/kicad_config/10.0/3d_viewer.json
@@ -40,3 +43,10 @@ openspec/
 # Theme validator generated files
 tests/theme_token_inventory.json
 *.baseline.json
+
+# Personal development
+.res/
+.TODO.md
+SpinRender.zip
+tools/
+tests/
