@@ -18,7 +18,7 @@ __pycache__/
 htmlcov/
 .pytest_cache/
 SpinRender/logs/
-/
+
 # Hardware (KiCad)
 *.kicad_pcb
 SpinRender/resources/kicad_config/10.0/3d_viewer.json
