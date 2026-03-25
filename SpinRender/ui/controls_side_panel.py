@@ -186,13 +186,16 @@ class ControlsSidePanel(wx.Panel):
 
         # Note: div1 (header divider) and footer_divider handled in parent container
 
-        # Refresh all components recursively to trigger their internal on_paint lookups
-        def refresh_recursive(window):
+        # Propagate reapply_theme() to child controls that support geometry updates,
+        # then refresh all components to trigger their internal on_paint lookups.
+        def reapply_recursive(window):
+            if window is not self and hasattr(window, 'reapply_theme') and callable(window.reapply_theme):
+                window.reapply_theme()
             window.Refresh()
             for child in window.GetChildren():
-                refresh_recursive(child)
+                reapply_recursive(child)
 
-        refresh_recursive(self)
+        reapply_recursive(self)
         self.Update()
 
     def create_preset_section(self, parent):

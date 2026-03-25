@@ -1032,7 +1032,7 @@ class CustomInput(wx.Panel):
     def on_enter(self, event): self.hovered = True; self.Refresh(); self.Update()
     def on_leave(self, event): self.hovered = False; self.Refresh(); self.Update()
 
-    def on_size(self, event):
+    def _relayout(self):
         w, h = self.GetSize()
         # Area calculation
         px = 12
@@ -1061,6 +1061,15 @@ class CustomInput(wx.Panel):
             ph = self.text_ctrl.GetBestSize().y - 4 # Add vertical padding
             self.text_ctrl.SetSize(pw, ph)
             self.text_ctrl.SetPosition((px, (h - ph) / 2))
+
+    def reapply_theme(self):
+        if self.chip:
+            self.chip.reapply_theme()
+        self._relayout()
+        self.Refresh()
+
+    def on_size(self, event):
+        self._relayout()
         self.Refresh(); event.Skip()
 
     def on_paint(self, event):
@@ -1155,13 +1164,29 @@ class ProjectFolderChip(wx.Panel):
     Small orange chip for "PROJECT FOLDER" prefix
     """
     def __init__(self, parent):
+        super().__init__(parent, size=wx.DefaultSize)
+        self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
+        self.Bind(wx.EVT_PAINT, self.on_paint)
+        # Apply correct initial size using the shared helper
+        initial_size = self._compute_size()
+        self.SetMinSize(initial_size)
+        self.SetSize(initial_size)
+
+    def _compute_size(self):
         font = _theme.font("components.badge.label")
         height = _theme.size("components.badge.frame.height")
         pad_h = _theme.size("components.badge.frame.padding.horizontal")
-        temp_dc = wx.ScreenDC(); temp_dc.SetFont(font)
-        tw, th = temp_dc.GetTextExtent("PROJECT FOLDER")
-        super().__init__(parent, size=(tw + pad_h * 2, height))
-        self.SetBackgroundStyle(wx.BG_STYLE_PAINT); self.Bind(wx.EVT_PAINT, self.on_paint)
+        temp_dc = wx.ScreenDC()
+        temp_dc.SetFont(font)
+        tw, _ = temp_dc.GetTextExtent("PROJECT FOLDER")
+        return wx.Size(tw + pad_h * 2, height)
+
+    def reapply_theme(self):
+        new_size = self._compute_size()
+        self.InvalidateBestSize()
+        self.SetMinSize(new_size)
+        self.SetSize(new_size)
+        self.Refresh()
 
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
