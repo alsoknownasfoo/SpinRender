@@ -103,6 +103,10 @@ class BaseStyledDialog(wx.Dialog):
         self.main_container.SetBackgroundColour(_theme.color("colors.gray-dark"))
         if hasattr(self, '_dialog_header'):
             self._dialog_header.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        if hasattr(self, '_header_line'):
+            self._header_line.SetBackgroundColour(_theme.color("dividers.default.color"))
+        if hasattr(self, '_footer_divider'):
+            self._footer_divider.SetBackgroundColour(_theme.color("borders.default.color"))
         # Refresh all children — custom controls query _theme in their on_paint handlers
         self._refresh_recursive(self)
         self.Refresh()
@@ -196,9 +200,9 @@ class BaseStyledDialog(wx.Dialog):
         footer = wx.Panel(self.main_container)
         outer_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        divider = wx.Panel(footer, size=(-1, 1))
-        divider.SetBackgroundColour(_theme.color("borders.default.color"))
-        outer_sizer.Add(divider, 0, wx.EXPAND)
+        self._footer_divider = wx.Panel(footer, size=(-1, 1))
+        self._footer_divider.SetBackgroundColour(_theme.color("borders.default.color"))
+        outer_sizer.Add(self._footer_divider, 0, wx.EXPAND)
 
         # Determine proportions and if we need a left stretch
         if btn1_prop is None or btn2_prop is None:
@@ -278,9 +282,9 @@ class FilenameEntryDialog(BaseStyledDialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(self.create_header(_locale.get("dialog.filename.header", "Enter base filename"), show_close=False), 0, wx.EXPAND)
 
-        line = wx.Panel(self.main_container, size=(-1, 1))
-        line.SetBackgroundColour(_theme.color("dividers.default.color"))
-        main_sizer.Add(line, 0, wx.EXPAND)
+        self._header_line = wx.Panel(self.main_container, size=(-1, 1))
+        self._header_line.SetBackgroundColour(_theme.color("dividers.default.color"))
+        main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
         content = wx.Panel(self.main_container)
         content_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -378,9 +382,9 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         main_sizer.Add(self.create_header(_locale.get("dialog.advanced.header", "Advanced options"), show_close=False), 0, wx.EXPAND)
 
         # Border separator
-        line = wx.Panel(self.main_container, size=(-1, 1))
-        line.SetBackgroundColour(_theme.color("dividers.default.color"))
-        main_sizer.Add(line, 0, wx.EXPAND)
+        self._header_line = wx.Panel(self.main_container, size=(-1, 1))
+        self._header_line.SetBackgroundColour(_theme.color("dividers.default.color"))
+        main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
         # Content
         content = wx.Panel(self.main_container)
@@ -662,8 +666,9 @@ class SavePresetDialog(BaseStyledDialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         # Header without close button as requested
         main_sizer.Add(self.create_header(_locale.get("dialog.preset.save.header", "Save preset"), show_close=False), 0, wx.EXPAND)
-        line = wx.Panel(self.main_container, size=(-1, 1)); line.SetBackgroundColour(_theme.color("dividers.default.color"))
-        main_sizer.Add(line, 0, wx.EXPAND)
+        self._header_line = wx.Panel(self.main_container, size=(-1, 1))
+        self._header_line.SetBackgroundColour(_theme.color("dividers.default.color"))
+        main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
         content = wx.Panel(self.main_container)
         content_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -754,8 +759,9 @@ class RecallPresetDialog(BaseStyledDialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         header = self.create_header(_locale.get("dialog.preset.recall.header", "Select custom preset"))
         main_sizer.Add(header, 0, wx.EXPAND)
-        line = wx.Panel(self.main_container, size=(-1, 1)); line.SetBackgroundColour(_theme.color("dividers.default.color"))
-        main_sizer.Add(line, 0, wx.EXPAND)
+        self._header_line = wx.Panel(self.main_container, size=(-1, 1))
+        self._header_line.SetBackgroundColour(_theme.color("dividers.default.color"))
+        main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
         self.list_view = CustomListView(self.main_container, id="custompresets")
         self.list_view.Bind(EVT_LIST_ITEM_SELECTED, self.on_list_select)
@@ -1095,9 +1101,9 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(self.create_header("SPINRENDER"), 0, wx.EXPAND)
 
-        line = wx.Panel(self.main_container, size=(-1, 1))
-        line.SetBackgroundColour(_theme.color("dividers.default.color"))
-        main_sizer.Add(line, 0, wx.EXPAND)
+        self._header_line = wx.Panel(self.main_container, size=(-1, 1))
+        self._header_line.SetBackgroundColour(_theme.color("dividers.default.color"))
+        main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
         content = wx.Panel(self.main_container)
         content.SetBackgroundColour(_theme.color("colors.gray-dark"))

@@ -72,9 +72,9 @@ class ControlsSidePanel(wx.Panel):
         main_sizer.Add(self.header_panel, 0, wx.EXPAND)
 
         # Divider after header
-        header_divider = wx.Panel(main_container, size=(-1, 1))
-        header_divider.SetBackgroundColour(_theme.color("dividers.default.color"))
-        main_sizer.Add(header_divider, 0, wx.EXPAND)
+        self._header_divider = wx.Panel(main_container, size=(-1, 1))
+        self._header_divider.SetBackgroundColour(_theme.color("dividers.default.color"))
+        main_sizer.Add(self._header_divider, 0, wx.EXPAND)
 
         # Scrollable content area (presets, parameters, output)
         self.scrolled_panel = scrolled.ScrolledPanel(main_container, size=(400, -1))
@@ -114,9 +114,9 @@ class ControlsSidePanel(wx.Panel):
         main_sizer.Add(self.scrolled_panel, 1, wx.EXPAND)
 
         # Divider before footer (distinctive separator)
-        footer_divider = wx.Panel(main_container, size=(-1, 1))
-        footer_divider.SetBackgroundColour(_theme.color("dividers.default.color"))
-        main_sizer.Add(footer_divider, 0, wx.EXPAND)
+        self._footer_divider = wx.Panel(main_container, size=(-1, 1))
+        self._footer_divider.SetBackgroundColour(_theme.color("dividers.default.color"))
+        main_sizer.Add(self._footer_divider, 0, wx.EXPAND)
 
         # Persistent footer with action buttons
         self.footer_panel = self.create_footer_panel(main_container)
@@ -180,11 +180,9 @@ class ControlsSidePanel(wx.Panel):
             self._preset_row.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
 
         # 3. Update Dividers
-        for attr in ['div2', 'div3']:
+        for attr in ['_header_divider', '_footer_divider', 'div2', 'div3']:
             if hasattr(self, attr):
                 getattr(self, attr).SetBackgroundColour(_theme.color("dividers.default.color"))
-
-        # Note: div1 (header divider) and footer_divider handled in parent container
 
         # Propagate reapply_theme() to child controls that support geometry updates,
         # then refresh all components to trigger their internal on_paint lookups.
