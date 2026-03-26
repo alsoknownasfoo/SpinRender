@@ -257,6 +257,7 @@ class ControlsSidePanel(wx.Panel):
         """Create all rotation axis controls."""
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.AddSpacer(10)
         self.rot_heading = create_text(panel, _locale.get("parameters.rotation_heading", "ROTATION SETTINGS"), "subheader")
         sizer.Add(self.rot_heading, 0, wx.BOTTOM, 6)
 
@@ -309,6 +310,7 @@ class ControlsSidePanel(wx.Panel):
         """Create a labeled slider + numeric input row."""
         row = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.AddSpacer(10)
 
         # Build label content first to measure its width
         label_part = wx.Panel(row)
@@ -378,6 +380,7 @@ class ControlsSidePanel(wx.Panel):
 
         crow = wx.Panel(panel)
         csizer = wx.BoxSizer(wx.HORIZONTAL)
+        csizer.AddSpacer(10)
         self.period_slider = CustomSlider(crow, value=p_val, min_val=0.1, max_val=30, size=(-1, 18), id="default", section='parameters')
         csizer.Add(self.period_slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
         unit = _locale.get("parameters.period.unit", "sec")
@@ -407,10 +410,15 @@ class ControlsSidePanel(wx.Panel):
              'icon': _locale.get("parameters.direction.options.cw.icon_ref", "glyphs.cw")}
         ]
 
+        csizer = wx.BoxSizer(wx.HORIZONTAL)
+        csizer.AddSpacer(10)
+
         self.dir_toggle = CustomToggleButton(panel, options=dir_options, size=(210, 32), id="direction", section='parameters')
         initial_idx = 1 if self.settings.direction == 'cw' else 0
         self.dir_toggle.SetSelection(initial_idx)
-        sizer.Add(self.dir_toggle, 0)
+        csizer.Add(self.dir_toggle, 0, wx.EXPAND)
+
+        sizer.Add(csizer, 0, wx.EXPAND)
         panel.SetSizerAndFit(sizer)
         return panel
 
@@ -418,6 +426,7 @@ class ControlsSidePanel(wx.Panel):
         """Create the lighting preset toggle."""
         panel = wx.Panel(parent)
         sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.AddSpacer(10)
         self.light_heading = create_text(panel, _locale.get("parameters.lighting.label", "LIGHTING"), "subheader")
         sizer.Add(self.light_heading, 0, wx.BOTTOM, 6)
 
@@ -441,12 +450,14 @@ class ControlsSidePanel(wx.Panel):
              'icon': _locale.get("parameters.lighting.options.workspace.icon_ref", "glyphs.edit")}
         ]
 
+        csizer = wx.BoxSizer(wx.HORIZONTAL)
+        csizer.AddSpacer(10)
         self.light_toggle = CustomToggleButton(panel, options=self.light_options, size=(320, 32), id="lighting", section='parameters')
         current_light = self.settings.lighting
         initial_idx = next((i for i, opt in enumerate(self.light_options) if opt['id'] == current_light), 0)
         self.light_toggle.SetSelection(initial_idx)
-        sizer.Add(self.light_toggle, 0, wx.EXPAND)
-
+        csizer.Add(self.light_toggle, 1, wx.EXPAND)
+        sizer.Add(csizer, 0, wx.EXPAND)
 
         panel.SetSizerAndFit(sizer)
         return panel
@@ -463,6 +474,7 @@ class ControlsSidePanel(wx.Panel):
         cols_sizer = wx.BoxSizer(wx.HORIZONTAL)
         f_col = wx.Panel(cols_panel)
         f_sizer = wx.BoxSizer(wx.VERTICAL)
+        f_sizer.AddSpacer(10)
         self.format_heading = create_text(f_col, _locale.get("parameters.format.label", "FORMAT"), "subheader")
         f_sizer.Add(self.format_heading, 0, wx.BOTTOM, 6)
 
@@ -478,6 +490,7 @@ class ControlsSidePanel(wx.Panel):
 
         r_col = wx.Panel(cols_panel)
         r_sizer = wx.BoxSizer(wx.VERTICAL)
+        r_sizer.AddSpacer(10)
         self.res_heading = create_text(r_col, _locale.get("parameters.resolution.label", "RESOLUTION"), "subheader")
         r_sizer.Add(self.res_heading, 0, wx.BOTTOM, 6)
 
@@ -496,6 +509,7 @@ class ControlsSidePanel(wx.Panel):
         # Row 2: Background Color
         bg_col = wx.Panel(panel)
         bg_vsizer = wx.BoxSizer(wx.VERTICAL)
+        bg_vsizer.AddSpacer(10)
         self.bg_heading = create_text(bg_col, _locale.get("parameters.bg_color.label", "BACKGROUND COLOR"), "subheader")
         bg_vsizer.Add(self.bg_heading, 0, wx.BOTTOM, 6)
 

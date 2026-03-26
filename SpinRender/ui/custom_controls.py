@@ -1157,6 +1157,12 @@ class CustomInput(wx.Panel):
         else:
             self.text_ctrl.ChangeValue(v)
         self.Refresh()
+    def Enable(self, enable=True):
+        super().Enable(enable)
+        self.text_ctrl.Enable(enable)
+        if self.chip: self.chip.Enable(enable)
+        self.Refresh()
+
     def SetEditable(self, e): self.text_ctrl.SetEditable(e); self.Enable(e); self.Refresh()
     def SetPath(self, p, in_project=False):
         self.text_ctrl.ChangeValue(p); self.show_chip = in_project
@@ -1201,12 +1207,13 @@ class ProjectFolderChip(wx.Panel):
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
         w, h = self.GetSize()
+        enabled = self.IsEnabled()
         radius = _theme.size("components.badge.frame.radius")
-        gc.SetBrush(wx.Brush(_theme.color("components.badge.frame.bg")))
+        gc.SetBrush(wx.Brush(_theme.color("components.badge.frame.bg", enabled=enabled)))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRoundedRectangle(0, 0, w, h, radius)
         label_text = _locale.get("component.badge.label", "PROJECT FOLDER")
-        badge_color = _theme.color("components.badge.label.color")
+        badge_color = _theme.color("components.badge.label.color", enabled=enabled)
         _, tw, th = prepare_styled_text(gc, label_text, "components.badge.label", badge_color)
         draw_styled_text(gc, label_text, "components.badge.label", (w - tw) / 2, (h - th) / 2, badge_color)
 
@@ -1284,9 +1291,9 @@ class CustomColorPicker(wx.Panel):
         # Custom swatch (larger hit area for label)
         rects['custom'] = wx.Rect(x, 10, 28, 40)
         x += 35  # Account for swatch width + padding
-        # Hex input left-aligned with resolution dropdown (cols are 50/50 split, so dropdown starts at w//2)
+        # Hex input field fixed to 100px width, right-aligned
         hex_x = w // 2
-        rects['hex'] = wx.Rect(hex_x, 10, w - hex_x - 2, 28)
+        rects['hex'] = wx.Rect(hex_x, 7, hex_x/2, 32)
         return rects
 
     def on_paint(self, event):

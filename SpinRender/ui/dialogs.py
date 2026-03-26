@@ -411,7 +411,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
             {'id': 'light',  'label': 'LIGHT',  'icon': 'sun'},
             {'id': 'system', 'label': 'SYSTEM', 'icon': 'computer'},
         ]
-        self.theme_toggle = CustomToggleButton(theme_row, options=self.theme_opts, size=(240, 28), id="direction")
+        self.theme_toggle = CustomToggleButton(theme_row, options=self.theme_opts, size=(300, 36), id="thememode")
         curr_mode = getattr(self.settings, 'theme_mode', 'system')
         mode_idx = next((i for i, o in enumerate(self.theme_opts) if o['id'] == curr_mode), 2)
         self.theme_toggle.SetSelection(mode_idx)
@@ -432,7 +432,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         auto_sizer.Add(auto_desc, 1, wx.ALIGN_CENTER_VERTICAL)
         
         from .custom_controls import CustomToggleButton
-        self.auto_toggle = CustomToggleButton(auto_row, id="direction", size=(100, 28)) # Reuse toggle style
+        self.auto_toggle = CustomToggleButton(auto_row, id="autooutputpath", size=(200, 36)) # Reuse toggle style
         self.auto_toggle.SetValue(self.settings.output_auto)
         self.auto_toggle.Bind(wx.EVT_TOGGLEBUTTON, self.on_auto_toggle)
         auto_sizer.Add(self.auto_toggle, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -447,7 +447,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         self.path_display = CustomInput(path_input_row, size=(-1, 36), id="path")
         path_input_sizer.Add(self.path_display, 1, wx.RIGHT, 8)
         
-        self.browse_btn = CustomButton(path_input_row, id="browse", size=(110, 36))
+        self.browse_btn = CustomButton(path_input_row, id="browse", size=(100, 36))
         self.browse_btn.Bind(wx.EVT_BUTTON, self.on_browse)
         path_input_sizer.Add(self.browse_btn, 0)
         
@@ -455,25 +455,17 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         content_sizer.Add(path_input_row, 0, wx.EXPAND | wx.BOTTOM, 20)
 
         # 2. PARAMETER OVERRIDES section
-        content_sizer.Add(self.create_section_label(content, _locale.get("dialog.advanced.parameter_overrides_label", "PARAMETER OVERRIDES")), 0, wx.EXPAND | wx.BOTTOM, 12)
-        
-        self.override_input = CustomInput(
-            content,
-            value=getattr(self.settings, 'cli_overrides', ''),
-            placeholder=_locale.get("dialog.advanced.overrides_placeholder", ""),
-            multiline=True,
-            size=(-1, 80),
-            id="parameters",
-            allow_empty=True
-        )
-        content_sizer.Add(self.override_input, 1, wx.EXPAND | wx.BOTTOM, 8)
+        overrides_header_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        overrides_header_sizer.Add(self.create_section_label(content, _locale.get("dialog.advanced.parameter_overrides_label", "PARAMETER OVERRIDES")), 0, wx.ALIGN_CENTER_VERTICAL)
+        overrides_header_sizer.AddStretchSpacer(1)
         
         # Helper link simulation
         link_row = wx.Panel(content)
         link_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         info_icon = create_text(link_row, _theme.glyph("info"), "icon", color_token="colors.gray-light")
-        link_sizer.Add(info_icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        link_sizer.Add(info_icon, 0, wx.ALIGN_CENTER_VERTICAL)
+        link_sizer.AddSpacer(6)
         
         see_txt = create_text(link_row, _locale.get("dialog.advanced.see", "See "), "dialog_description")
         link_sizer.Add(see_txt, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -483,6 +475,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
             _locale.get("dialog.advanced.docs_link", "kicad-cli render options"),
             "dialog_description",
             color_token="layout.dialogs.options.body.links",
+            link_suffix_arrow=True
         )
         link_sizer.Add(link_txt, 0, wx.ALIGN_CENTER_VERTICAL)
         
@@ -507,32 +500,26 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         )
         
         link_row.SetSizer(link_sizer)
+        overrides_header_sizer.Add(link_row, 0, wx.ALIGN_CENTER_VERTICAL)
+        content_sizer.Add(overrides_header_sizer, 0, wx.EXPAND | wx.BOTTOM, 12)
+        
+        self.override_input = CustomInput(
+            content,
+            value=getattr(self.settings, 'cli_overrides', ''),
+            placeholder=_locale.get("dialog.advanced.overrides_placeholder", ""),
+            multiline=True,
+            size=(-1, 80),
+            id="parameters",
+            allow_empty=True
+        )
         padding_lg = _theme._resolve("typography.spacing.lg") or 24
-        content_sizer.Add(link_row, 0, wx.ALIGN_RIGHT | wx.BOTTOM, padding_lg)
+        content_sizer.Add(self.override_input, 1, wx.EXPAND | wx.BOTTOM, padding_lg)
 
         # 3. LOGGING section
-        content_sizer.Add(self.create_section_label(content, _locale.get("dialog.advanced.section_logging", "SYSTEM LOGGING")), 0, wx.EXPAND | wx.BOTTOM, 12)
+        logging_header_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        logging_header_sizer.Add(self.create_section_label(content, _locale.get("dialog.advanced.section_logging", "SYSTEM LOGGING")), 0, wx.ALIGN_CENTER_VERTICAL)
+        logging_header_sizer.AddStretchSpacer(1)
         
-        log_row = wx.Panel(content)
-        log_hsizer = wx.BoxSizer(wx.HORIZONTAL)
-        
-        self.log_opts = [
-            {'id': 'off', 'label': _locale.get("system.controls.toggle_off", "OFF")},
-            {'id': 'info', 'label': _locale.get("system.controls.toggle_info", "INFO")},
-            {'id': 'debug', 'label': _locale.get("system.controls.toggle_debug", "DEBUG")}
-        ]
-        self.log_toggle = CustomToggleButton(log_row, options=self.log_opts, size=(240, 28), id="direction")
-        curr_lvl = getattr(self.settings, 'logging_level', 'info')
-        lvl_idx = next((i for i, o in enumerate(self.log_opts) if o['id'] == curr_lvl), 1)
-        self.log_toggle.SetSelection(lvl_idx)
-        log_hsizer.Add(self.log_toggle, 0, wx.ALIGN_CENTER_VERTICAL)
-        
-        log_row.SetSizer(log_hsizer)
-        content_sizer.Add(log_row, 0, wx.EXPAND | wx.BOTTOM, 12)
-        
-        log_info = create_text(content, _locale.get("parameters.log_info", "Logs are kept for 30 days. Useful for troubleshooting render failures."), "dialog_description")
-        content_sizer.Add(log_info, 0, wx.EXPAND | wx.BOTTOM, 8)
-
         from SpinRender.utils.logger import SpinLogger
         open_logs_txt = create_text(
             content,
@@ -544,7 +531,29 @@ class AdvancedOptionsDialog(BaseStyledDialog):
             [{"widget": open_logs_txt}],
             click_handler=lambda e: SpinLogger.open_logs_folder(),
         )
-        content_sizer.Add(open_logs_txt, 0, wx.BOTTOM, 12)
+        logging_header_sizer.Add(open_logs_txt, 0, wx.ALIGN_CENTER_VERTICAL)
+        content_sizer.Add(logging_header_sizer, 0, wx.EXPAND | wx.BOTTOM, 12)
+        
+        log_row = wx.Panel(content)
+        log_hsizer = wx.BoxSizer(wx.HORIZONTAL)
+        
+        log_info = create_text(log_row, _locale.get("parameters.log_info", "Logs are kept for 30 days. Useful for troubleshooting render failures."), "dialog_description", style=wx.ST_NO_AUTORESIZE)
+        log_info.Wrap(220) # Wrap to leave space for the 330px toggle in 600px dialog
+        log_hsizer.Add(log_info, 1, wx.ALIGN_TOP | wx.TOP, 4)
+        
+        self.log_opts = [
+            {'id': 'off', 'label': _locale.get("system.controls.toggle_off", "OFF"), 'icon': 'close'},
+            {'id': 'info', 'label': _locale.get("system.controls.toggle_info", "INFO"), 'icon': 'info'},
+            {'id': 'debug', 'label': _locale.get("system.controls.toggle_debug", "DEBUG"), 'icon': 'bolt'}
+        ]
+        self.log_toggle = CustomToggleButton(log_row, options=self.log_opts, size=(300, 36), id="loglevel")
+        curr_lvl = getattr(self.settings, 'logging_level', 'info')
+        lvl_idx = next((i for i, o in enumerate(self.log_opts) if o['id'] == curr_lvl), 1)
+        self.log_toggle.SetSelection(lvl_idx)
+        log_hsizer.Add(self.log_toggle, 0, wx.ALIGN_TOP)
+        
+        log_row.SetSizer(log_hsizer)
+        content_sizer.Add(log_row, 0, wx.EXPAND | wx.BOTTOM, 12)
 
         content.SetSizer(content_sizer)
         padding_lg = _theme._resolve("typography.spacing.lg") or 24

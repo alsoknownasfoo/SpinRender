@@ -31,7 +31,7 @@ locale:
         title: "Advanced options"
         overrides_placeholder: "e.g. --color-theme=theme"
         parameter_overrides_label: "Parameter overrides"
-        see: "See "
+        see: " See "
         docs_link: "kicad-cli render options"
         section_output: "Output path"
         section_overrides: "Parameter overrides"
@@ -165,7 +165,7 @@ locale:
         icon_ref: ~  #"glyphs.plus"
       browse:
         label: "Browse"
-        icon_ref: "glyphs.folder"
+        icon_ref: None
       exit:
         label: "Exit"
         icon_ref: "glyphs.exit-action"

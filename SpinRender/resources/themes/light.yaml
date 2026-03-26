@@ -477,7 +477,7 @@ layout:
     options:
       ref: "@layout.dialogs.default"
       frame:
-        width: 600
+        width: 610
         height: 640
       body:
         links: "@text.links"
@@ -631,7 +631,7 @@ components:
       frame:
         height: 32 # height of field
         bg: # bg of field
-          default: "@colors.gray-black"
+          default: "@colors.gray-dark"
           hover: "@colors.cyan-20"
         radius: "@radius.md" # border radius of field
         border: # border of field
@@ -694,7 +694,7 @@ components:
       frame:
         height: 84
         bg:
-          default: "@colors.gray-black"
+          default: "@colors.gray-dark"
           hover: "@colors.cyan-20"
     hex:
       ref: "@components.input.default"

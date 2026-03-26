@@ -474,7 +474,7 @@ layout:
     options:
       ref: "@layout.dialogs.default"
       frame:
-        width: 600
+        width: 610
         height: 640
       body:
         links: "@text.links"
@@ -582,7 +582,7 @@ components:
         width: 90
         height: 64
         bg:
-          default: "@colors.transparent"
+          default: "@colors.gray-div"
           hover: "@colors.cyan-80"
           active: "@colors.primary"
         border: 
@@ -628,7 +628,7 @@ components:
       frame: 
         height: 32 # height of field
         bg: # bg of field
-          default: "@colors.gray-dark"
+          default: "@colors.gray-black"
           hover: "@colors.cyan-20"
         radius: "@radius.md" # border radius of field
         border: # border of field
@@ -661,7 +661,7 @@ components:
       frame:
         height: 36
         bg:
-          default: "@colors.gray-dark"
+          default: "@colors.gray-black"
           hover: "@colors.cyan-20"
       color: 
         default: "@colors.gray-white"
@@ -691,7 +691,7 @@ components:
       frame:
         height: 84
         bg:
-          default: "@colors.gray-dark"
+          default: "@colors.gray-black"
           hover: "@colors.cyan-20"
     hex:
       ref: "@components.input.default"
