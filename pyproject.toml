@@ -1,7 +1,8 @@
 [project]
 name = "SpinRender"
-version = "0.9.0-alpha"
+version = "0.95-beta"
 description = "KiCad plugin for generating animated PCB renders"
+license = {text = "GPLv3"}
 requires-python = ">=3.8"
 dependencies = [
     "PyYAML>=6.0",

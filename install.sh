@@ -78,7 +78,7 @@ find_kicad_python() {
 
 # Header with precise 56-character content width
 echo -e "${CYAN}┌────────────────────────────────────────────────────────┐${NC}"
-echo -e "${CYAN}│${BOLD}  SPINRENDER // PLUGIN_INSTALL // v0.9.0-ALPHA          ${NC}${CYAN}│${NC}"
+echo -e "${CYAN}│${BOLD}  SPINRENDER // PLUGIN_INSTALL // v0.95-beta            ${NC}${CYAN}│${NC}"
 echo -e "${CYAN}└────────────────────────────────────────────────────────┘${NC}"
 echo
 

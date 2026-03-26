@@ -6955,7 +6955,7 @@
                           "textGrowth": "fixed-width-height",
                           "width": 86,
                           "height": 312.9752960205079,
-                          "content": "MIT License ↗",
+                          "content": "GPLv3 License ↗",
                           "fontFamily": "JetBrains Mono",
                           "fontSize": 11,
                           "fontWeight": "normal"
@@ -8493,7 +8493,7 @@
                                       "name": "discussText",
                                       "rotation": 0.222431746855439,
                                       "fill": "$text-secondary",
-                                      "content": "MIT License",
+                                      "content": "GPLv3 License",
                                       "fontFamily": "JetBrains Mono",
                                       "fontSize": 10,
                                       "fontWeight": "normal"
