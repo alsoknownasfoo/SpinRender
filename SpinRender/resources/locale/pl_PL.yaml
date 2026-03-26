@@ -1,13 +1,10 @@
-# SpinRender Localization — English (US)
+# SpinRender Localization — Polish (PL)
 # Maps content (labels, icons) to component identifiers.
 #
 # Schema Version: v2
-#
-# All strings stored in base case. Uppercase styling is applied via theme's
-# text.formatting="uppercase" (e.g., in dark.yaml), not here.
 
 locale:
-  en_US:
+  pl_PL:
     # ─────────────────────────────────────────────────────────────
     # 1. COMPONENT CONTENT
     # ─────────────────────────────────────────────────────────────
@@ -21,43 +18,43 @@ locale:
     # PRESET CARDS
     component.preset_card:
       card1:
-        label: "Hero"
+        label: "Bohater"
         icon_ref: "glyphs.preset-hero"
       card2:
-        label: "Spin"
+        label: "Obrót"
         icon_ref: "glyphs.preset-spin"
       card3:
-        label: "Flip"
+        label: "Przerzut"
         icon_ref: "glyphs.preset-flip"
       card4:
-        label: "Select custom"
+        label: "Własny"
         icon_ref: "glyphs.preset-custom"
 
     # BUTTONS
     component.button:
       render:
-        label: "Render"
+        label: "Renderuj"
         icon_ref: "glyphs.render-action"
       stop:
-        label: "Stop"
+        label: "Zatrzymaj"
         icon_ref: "glyphs.stop"
       cancel:
-        label: "Cancel"
+        label: "Anuluj"
         icon_ref: "glyphs.close"
       ok:
-        label: "Ok"
+        label: "OK"
         icon_ref: "glyphs.save"
       save:
-        label: "Save"
+        label: "Zapisz"
         icon_ref: "glyphs.save"
       overwrite:
-        label: "Overwrite"
+        label: "Nadpisz"
         icon_ref: "glyphs.alert"
       close:
-        label: "Close"
+        label: "Zamknij"
         icon_ref: "glyphs.close"
       closepreview:
-        label: "Close preview"
+        label: "Zamknij podgląd"
         icon_ref: "glyphs.close"
       options:
         label: ""
@@ -69,10 +66,10 @@ locale:
         label: "Preset"
         icon_ref: "glyphs.plus"
       browse:
-        label: "Browse"
+        label: "Przeglądaj"
         icon_ref: "glyphs.folder"
       exit:
-        label: "Exit"
+        label: "Wyjdź"
         icon_ref: "glyphs.exit-action"
       trash:
         label: ""
@@ -80,18 +77,18 @@ locale:
 
     # STATUS MESSAGES
     component.status:
-      ready: "Ready"
-      rendering: "Rendering frame {current}/{total}"
-      complete: "Render complete"
-      stopped: "Render stopped"
-      stopping: "Stopping render..."
-      error: "Error: {message}"
-      no_presets: "No saved presets found."
-      preparing: "Preparing render..."
+      ready: "Gotowe"
+      rendering: "Renderowanie klatki {current}/{total}"
+      complete: "Renderowanie ukończone"
+      stopped: "Renderowanie zatrzymane"
+      stopping: "Zatrzymywanie..."
+      error: "Błąd: {message}"
+      no_presets: "Nie znaleziono zapisanych presetów."
+      preparing: "Przygotowywanie renderowania..."
 
     # BADGES
     component.badge:
-      label: "Project folder"
+      label: "Folder projektu"
 
     # ─────────────────────────────────────────────────────────────
     # 2. GLOBAL UI STRINGS
@@ -100,59 +97,60 @@ locale:
     # DIALOGS
     dialog:
       advanced:
-        title: "Advanced options"
-        header: "Advanced options"
-        theme_desc: "Interface theme."
-        overrides_placeholder: "e.g. --color-theme=theme"
-        parameter_overrides_label: "Parameter overrides"
-        see: " See "
-        docs_link: "kicad-cli render options"
-        section_output: "Output path"
-        section_overrides: "Parameter overrides"
-        section_logging: "System logging"
+        title: "Opcje zaawansowane"
+        header: "Opcje zaawansowane"
+        theme_desc: "Motyw interfejsu."
+        overrides_placeholder: "np. --color-theme=theme"
+        parameter_overrides_label: "Nadpisanie parametrów"
+        see: " Zobacz "
+        docs_link: "opcje renderowania kicad-cli"
+        section_output: "Ścieżka wyjściowa"
+        section_overrides: "Nadpisanie parametrów"
+        section_logging: "Logi systemowe"
       save_preset:
-        title: "Save preset"
-        header: "Save preset"
-        placeholder: "PRESET_NAME"
+        title: "Zapisz preset"
+        header: "Zapisz preset"
+        placeholder: "NAZWA_PRESETU"
       recall_preset:
-        title: "Select custom preset"
-        header: "Select custom preset"
+        title: "Wybierz preset"
+        header: "Wybierz własny preset"
       filename:
-        title: "Enter base filename"
-        header: "Enter base filename"
-        helper: "Frames are saved as name_00001.png, name_00002.png, …"
-      render_error: "Render error"
-      preparing: "Preparing render..."
+        title: "Nazwa pliku"
+        header: "Wprowadź nazwę bazową"
+        helper: "Klatki zapisywane jako nazwa_00001.png, nazwa_00002.png, …"
+      render_error: "Błąd renderowania"
+      preparing: "Przygotowywanie..."
       about:
-        title: "About SpinRender"
-        check_updates:           "Check for updates"
-        check_updates_progress:  "Checking..."
-        check_updates_done:      "Up to date"
-        check_updates_available: "Update available"
+        title: "O SpinRender"
+        check_updates:           "Sprawdź aktualizacje"
+        check_updates_progress:  "Sprawdzanie..."
+        check_updates_done:      "Aktualny"
+        check_updates_available: "Aktualizacja dostępna"
         check_updates_simulated: "(Sim)"
-        release_notes_label:     "Release notes"
+        release_notes_label:     "Informacje o wydaniu"
         releases_url:            "https://github.com/alsoknownasfoo/SpinRender/releases"
-        section_author:          "Author"
+        section_author:          "Autor"
         author_github_label:     "alsoknownasfoo"
         author_github_url:       "https://github.com/alsoknownasfoo"
         author_website_label:    "alsoknownasfoo.com"
         author_website_url:      "https://alsoknownasfoo.com"
-        section_supported_by:    "Supported by"
-        license_tagline:         "Free for personal use\nTip if you love!"
+        section_supported_by:    "Wspierane przez"
+        license_tagline:         "Darmowy do użytku osobistego
+Doceniasz? Wspomóż!"
         github_sponsors_label:   "GitHub Sponsors"
         kofi_label:              "Ko-fi"
-        section_links:           "Links"
-        discussions_label:       "Ask a question"
+        section_links:           "Linki"
+        discussions_label:       "Zadaj pytanie"
         repo_label:              "/alsoknownasfoo/SpinRender"
-        issues_label:            "Report an issue"
-        readme_label:            "Help + documentation"
+        issues_label:            "Zgłoś problem"
+        readme_label:            "Pomoc + dokumentacja"
         repo_url:                "https://github.com/alsoknownasfoo/SpinRender"
-        section_license:         "License"
-        gpl_label:               "GPLv3 License"
+        section_license:         "Licencja"
+        gpl_label:               "Licencja GPLv3"
         gpl_url:                 "https://github.com/alsoknownasfoo/SpinRender/blob/main/LICENSE"
         cc_label:                "CC BY-NC 4.0"
         cc_url:                  "https://creativecommons.org/licenses/by-nc/4.0/"
-        notices_label:           "Open source notices"
+        notices_label:           "Informacje open source"
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
@@ -165,91 +163,94 @@ locale:
 
     # DIRECTORY DIALOGS
     dir_dialog:
-      select_output_folder: "Select output folder"
-      select_output_directory: "Select output directory"
+      select_output_folder: "Wybierz folder"
+      select_output_directory: "Wybierz katalog wyjściowy"
 
     # SECTIONS (Side-panel headers)
     sections:
-      presets: "Loop presets"
-      parameters: "Parameters"
-      output: "Output settings"
+      presets: "Presety pętli"
+      parameters: "Parametry"
+      output: "Ustawienia wyjściowe"
 
+    # ─────────────────────────────────────────────────────────────
+    # 3. PARAMETERS & OUTPUT
+    # ─────────────────────────────────────────────────────────────
 
     # PARAMETERS (Sliders & Inputs)
     parameters:
       appearance:
-        label: "Appearance"
-      rotation_heading: "Rotation settings"
-      rotation_desc: "Board: orient on spindle | Spin: orient the spindle itself"
-      lighting_hint: "Select workspace to use KiCad 3D viewer settings"
-      system_logging: "System logging"
-      log_info: "Logs are kept for 30 days. Useful for troubleshooting render failures."
-      open_logs: "Open logs folder"
+        label: "Wygląd"
+      rotation_heading: "Ustawienia obrotu"
+      rotation_desc: "Płytka: orientacja na wrzecionie | Obrót: orientacja wrzeciona"
+      lighting_hint: "Wybierz obszar roboczy dla ustawień KiCad"
+      system_logging: "Logi systemowe"
+      log_info: "Logi są trzymane przez 30 dni. Pomocne przy błędach."
+      open_logs: "Otwórz folder logów"
       output_path:
-        label: "Output path"
+        label: "Ścieżka wyjściowa"
 
       board_tilt:
-        label: "Board tilt"
-        desc: "Tilt the board relative to the camera"
+        label: "Nachylenie płytki"
+        desc: "Nachylenie płytki względem kamery"
         icon_ref: "glyphs.axis-x"
         unit: "°"
       board_roll:
-        label: "Board roll"
-        desc: "Rotate the board around its center"
+        label: "Obrót płytki"
+        desc: "Obrót płytki wokół własnego centrum"
         icon_ref: "glyphs.axis-y"
         unit: "°"
       spin_tilt:
-        label: "Spin tilt"
-        desc: "Tilt the entire spinning spindle"
+        label: "Nachylenie wrzeciona"
+        desc: "Nachylenie całej osi obrotu"
         icon_ref: "glyphs.axis-y-rot"
         unit: "°"
       spin_heading:
-        label: "Spin heading"
-        desc: "Rotate the camera around the board"
+        label: "Kierunek obrotu"
+        desc: "Obrót kamery wokół płytki"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
       period:
-        label: "Rotation period"
-        desc: "Duration of a full 360° rotation"
-        unit: "sec"
+        label: "Okres obrotu"
+        desc: "Czas pełnego obrotu 360°"
+        unit: "sek"
       direction:
-        label: "Direction"
-        desc: "Rotation orientation (Clockwise or Counter-Clockwise)"
+        label: "Kierunek"
+        desc: "Orientacja obrotu (zgodnie lub przeciwnie do zegara)"
         options:
-          cw:  { label: "CW",  icon_ref: "glyphs.cw" }
-          ccw: { label: "CCW", icon_ref: "glyphs.ccw" }
+          cw:  { label: "Prawoskr.", icon_ref: "glyphs.cw" }
+          ccw: { label: "Lewoskr.",  icon_ref: "glyphs.ccw" }
       lighting:
-        label: "Lighting"
-        desc: "Pre-defined light environments"
+        label: "Oświetlenie"
+        desc: "Zdefiniowane schematy światła"
         options:
           studio:    { label: "Studio",    icon_ref: "glyphs.sun" }
-          dramatic:  { label: "Dramatic",  icon_ref: "glyphs.bolt" }
-          soft:      { label: "Soft",      icon_ref: "glyphs.cloud" }
-          workspace: { label: "Workspace", icon_ref: "glyphs.edit" }
+          dramatic:  { label: "Dramat.",   icon_ref: "glyphs.bolt" }
+          soft:      { label: "Miękkie",   icon_ref: "glyphs.cloud" }
+          workspace: { label: "Roboczy",   icon_ref: "glyphs.edit" }
 
     # OUTPUT SETTINGS
     output:
-      auto_desc: "Automatically save to time-stamped directories."
+      auto_desc: "Automatyczny zapis w folderach z datą."
       format:
         label: "Format"
-        desc: "Video or image sequence format"
-        options: ["MP4 (H.264)", "GIF", "PNG Sequence"]
+        desc: "Wideo lub sekwencja obrazów"
+        options: ["MP4 (H.264)", "GIF", "Sekwencja PNG"]
       resolution:
-        label: "Resolution"
-        desc: "Output dimensions and aspect ratio"
-        options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
+        label: "Rozdzielczość"
+        desc: "Wymiary i proporcje"
+        options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Kwadrat)"]
       bg_color:
-        label: "Background color"
-        desc: "Solid color for transparent areas"
+        label: "Kolor tła"
+        desc: "Kolor dla obszarów przezroczystych"
 
     # ─────────────────────────────────────────────────────────────
     # 4. VIEWPORT
     # ─────────────────────────────────────────────────────────────
     viewport:
       mode:
-        wireframe: "Wireframe"
-        shaded: "Shaded"
-        both: "Both"
+        wireframe: "Szkielet"
+        shaded: "Cieniowanie"
+        both: "Oba"
 
     # ─────────────────────────────────────────────────────────────
     # 5. SYSTEM & FALLBACKS
@@ -257,26 +258,26 @@ locale:
 
     # SYSTEM CONTROLS
     system.controls:
-      toggle_off: "Off"
-      toggle_on: "On"
+      toggle_off: "Wył"
+      toggle_on: "Wł"
       toggle_info: "Info"
       toggle_debug: "Debug"
-      dropdown_placeholder: "Select option"
-      section_default: "Section"
+      dropdown_placeholder: "Wybierz opcję"
+      section_default: "Sekcja"
 
     # COMPONENT DEFAULTS
     components:
       dropdown:
         default:
-          label: "Select option"
+          label: "Wybierz"
       button:
         default:
-          label: "Button"
+          label: "Przycisk"
       preset_card:
         default:
           label: "Preset"
       section:
         default:
-          label: "Section"
+          label: "Sekcja"
       badge:
-        label: "Project folder"
+        label: "Folder projektu"

@@ -1,13 +1,10 @@
-# SpinRender Localization — English (US)
+# SpinRender Localization — Italian (IT)
 # Maps content (labels, icons) to component identifiers.
 #
 # Schema Version: v2
-#
-# All strings stored in base case. Uppercase styling is applied via theme's
-# text.formatting="uppercase" (e.g., in dark.yaml), not here.
 
 locale:
-  en_US:
+  it_IT:
     # ─────────────────────────────────────────────────────────────
     # 1. COMPONENT CONTENT
     # ─────────────────────────────────────────────────────────────
@@ -24,13 +21,13 @@ locale:
         label: "Hero"
         icon_ref: "glyphs.preset-hero"
       card2:
-        label: "Spin"
+        label: "Rotazione"
         icon_ref: "glyphs.preset-spin"
       card3:
-        label: "Flip"
+        label: "Ribalta"
         icon_ref: "glyphs.preset-flip"
       card4:
-        label: "Select custom"
+        label: "Pers. sel."
         icon_ref: "glyphs.preset-custom"
 
     # BUTTONS
@@ -39,25 +36,25 @@ locale:
         label: "Render"
         icon_ref: "glyphs.render-action"
       stop:
-        label: "Stop"
+        label: "Ferma"
         icon_ref: "glyphs.stop"
       cancel:
-        label: "Cancel"
+        label: "Annulla"
         icon_ref: "glyphs.close"
       ok:
-        label: "Ok"
+        label: "OK"
         icon_ref: "glyphs.save"
       save:
-        label: "Save"
+        label: "Salva"
         icon_ref: "glyphs.save"
       overwrite:
-        label: "Overwrite"
+        label: "Sovrascr."
         icon_ref: "glyphs.alert"
       close:
-        label: "Close"
+        label: "Chiudi"
         icon_ref: "glyphs.close"
       closepreview:
-        label: "Close preview"
+        label: "Chiudi prev"
         icon_ref: "glyphs.close"
       options:
         label: ""
@@ -69,10 +66,10 @@ locale:
         label: "Preset"
         icon_ref: "glyphs.plus"
       browse:
-        label: "Browse"
+        label: "Sfoglia"
         icon_ref: "glyphs.folder"
       exit:
-        label: "Exit"
+        label: "Esci"
         icon_ref: "glyphs.exit-action"
       trash:
         label: ""
@@ -80,18 +77,18 @@ locale:
 
     # STATUS MESSAGES
     component.status:
-      ready: "Ready"
-      rendering: "Rendering frame {current}/{total}"
-      complete: "Render complete"
-      stopped: "Render stopped"
-      stopping: "Stopping render..."
-      error: "Error: {message}"
-      no_presets: "No saved presets found."
-      preparing: "Preparing render..."
+      ready: "Pronto"
+      rendering: "Render fotogramma {current}/{total}"
+      complete: "Render completato"
+      stopped: "Render fermato"
+      stopping: "Fermando render..."
+      error: "Errore: {message}"
+      no_presets: "Nessun preset trovato."
+      preparing: "Preparazione render..."
 
     # BADGES
     component.badge:
-      label: "Project folder"
+      label: "Cartella progetto"
 
     # ─────────────────────────────────────────────────────────────
     # 2. GLOBAL UI STRINGS
@@ -100,59 +97,60 @@ locale:
     # DIALOGS
     dialog:
       advanced:
-        title: "Advanced options"
-        header: "Advanced options"
-        theme_desc: "Interface theme."
-        overrides_placeholder: "e.g. --color-theme=theme"
-        parameter_overrides_label: "Parameter overrides"
-        see: " See "
-        docs_link: "kicad-cli render options"
-        section_output: "Output path"
-        section_overrides: "Parameter overrides"
-        section_logging: "System logging"
+        title: "Opzioni avanzate"
+        header: "Opzioni avanzate"
+        theme_desc: "Tema interfaccia."
+        overrides_placeholder: "es. --color-theme=theme"
+        parameter_overrides_label: "Sostituzioni parametri"
+        see: " Vedi "
+        docs_link: "opzioni kicad-cli render"
+        section_output: "Percorso uscita"
+        section_overrides: "Sostituzioni parametri"
+        section_logging: "Log di sistema"
       save_preset:
-        title: "Save preset"
-        header: "Save preset"
-        placeholder: "PRESET_NAME"
+        title: "Salva preset"
+        header: "Salva preset"
+        placeholder: "NOME_PRESET"
       recall_preset:
-        title: "Select custom preset"
-        header: "Select custom preset"
+        title: "Seleziona preset"
+        header: "Seleziona preset"
       filename:
-        title: "Enter base filename"
-        header: "Enter base filename"
-        helper: "Frames are saved as name_00001.png, name_00002.png, …"
-      render_error: "Render error"
-      preparing: "Preparing render..."
+        title: "Nome file base"
+        header: "Nome file base"
+        helper: "I fotogrammi saranno salvati come nome_00001.png, nome_00002.png, …"
+      render_error: "Errore rendering"
+      preparing: "Preparazione render..."
       about:
-        title: "About SpinRender"
-        check_updates:           "Check for updates"
-        check_updates_progress:  "Checking..."
-        check_updates_done:      "Up to date"
-        check_updates_available: "Update available"
+        title: "Su SpinRender"
+        check_updates:           "Cerca aggiornamenti"
+        check_updates_progress:  "Ricerca..."
+        check_updates_done:      "Aggiornato"
+        check_updates_available: "Aggiorn. dispon."
         check_updates_simulated: "(Sim)"
-        release_notes_label:     "Release notes"
+        release_notes_label:     "Note di rilascio"
         releases_url:            "https://github.com/alsoknownasfoo/SpinRender/releases"
-        section_author:          "Author"
+        section_author:          "Autore"
         author_github_label:     "alsoknownasfoo"
         author_github_url:       "https://github.com/alsoknownasfoo"
         author_website_label:    "alsoknownasfoo.com"
         author_website_url:      "https://alsoknownasfoo.com"
-        section_supported_by:    "Supported by"
-        license_tagline:         "Free for personal use\nTip if you love!"
+        section_supported_by:    "Supportato da"
+        license_tagline:         "Gratis per uso personale
+Fai una donazione!"
         github_sponsors_label:   "GitHub Sponsors"
         kofi_label:              "Ko-fi"
-        section_links:           "Links"
-        discussions_label:       "Ask a question"
+        section_links:           "Link"
+        discussions_label:       "Fai una domanda"
         repo_label:              "/alsoknownasfoo/SpinRender"
-        issues_label:            "Report an issue"
-        readme_label:            "Help + documentation"
+        issues_label:            "Segnala un bug"
+        readme_label:            "Aiuto + documentazione"
         repo_url:                "https://github.com/alsoknownasfoo/SpinRender"
-        section_license:         "License"
-        gpl_label:               "GPLv3 License"
+        section_license:         "Licenza"
+        gpl_label:               "Licenza GPLv3"
         gpl_url:                 "https://github.com/alsoknownasfoo/SpinRender/blob/main/LICENSE"
         cc_label:                "CC BY-NC 4.0"
         cc_url:                  "https://creativecommons.org/licenses/by-nc/4.0/"
-        notices_label:           "Open source notices"
+        notices_label:           "Note open source"
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
@@ -165,82 +163,85 @@ locale:
 
     # DIRECTORY DIALOGS
     dir_dialog:
-      select_output_folder: "Select output folder"
-      select_output_directory: "Select output directory"
+      select_output_folder: "Scegli cartella uscita"
+      select_output_directory: "Scegli directory uscita"
 
     # SECTIONS (Side-panel headers)
     sections:
-      presets: "Loop presets"
-      parameters: "Parameters"
-      output: "Output settings"
+      presets: "Preset loop"
+      parameters: "Parametri"
+      output: "Impostazioni uscita"
 
+    # ─────────────────────────────────────────────────────────────
+    # 3. PARAMETERS & OUTPUT
+    # ─────────────────────────────────────────────────────────────
 
     # PARAMETERS (Sliders & Inputs)
     parameters:
       appearance:
-        label: "Appearance"
-      rotation_heading: "Rotation settings"
-      rotation_desc: "Board: orient on spindle | Spin: orient the spindle itself"
-      lighting_hint: "Select workspace to use KiCad 3D viewer settings"
-      system_logging: "System logging"
-      log_info: "Logs are kept for 30 days. Useful for troubleshooting render failures."
-      open_logs: "Open logs folder"
+        label: "Aspetto"
+      rotation_heading: "Rotazione"
+      rotation_desc: "Scheda: orienta su asse | Giro: ruota l'asse"
+      lighting_hint: "Usa spazio lavoro per impostazioni KiCad"
+      system_logging: "Log di sistema"
+      log_info: "I log sono conservati 30 giorni. Utili per errori."
+      open_logs: "Apri cartella log"
       output_path:
-        label: "Output path"
+        label: "Percorso uscita"
 
       board_tilt:
-        label: "Board tilt"
-        desc: "Tilt the board relative to the camera"
+        label: "Inclinaz. scheda"
+        desc: "Inclina la scheda rispetto alla camera"
         icon_ref: "glyphs.axis-x"
         unit: "°"
       board_roll:
-        label: "Board roll"
-        desc: "Rotate the board around its center"
+        label: "Rullio scheda"
+        desc: "Ruota la scheda sul proprio centro"
         icon_ref: "glyphs.axis-y"
         unit: "°"
       spin_tilt:
-        label: "Spin tilt"
-        desc: "Tilt the entire spinning spindle"
+        label: "Inclinaz. asse"
+        desc: "Inclina l'intero asse di rotazione"
         icon_ref: "glyphs.axis-y-rot"
         unit: "°"
       spin_heading:
-        label: "Spin heading"
-        desc: "Rotate the camera around the board"
+        label: "Direzione asse"
+        desc: "Ruota la camera attorno alla scheda"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
       period:
-        label: "Rotation period"
-        desc: "Duration of a full 360° rotation"
+        label: "Periodo rotazione"
+        desc: "Durata di un giro completo (360°)"
         unit: "sec"
       direction:
-        label: "Direction"
-        desc: "Rotation orientation (Clockwise or Counter-Clockwise)"
+        label: "Direzione"
+        desc: "Senso di rotazione (orario o antiorario)"
         options:
-          cw:  { label: "CW",  icon_ref: "glyphs.cw" }
-          ccw: { label: "CCW", icon_ref: "glyphs.ccw" }
+          cw:  { label: "OR",  icon_ref: "glyphs.cw" }
+          ccw: { label: "ANT", icon_ref: "glyphs.ccw" }
       lighting:
-        label: "Lighting"
-        desc: "Pre-defined light environments"
+        label: "Illuminazione"
+        desc: "Ambienti predefiniti"
         options:
-          studio:    { label: "Studio",    icon_ref: "glyphs.sun" }
-          dramatic:  { label: "Dramatic",  icon_ref: "glyphs.bolt" }
-          soft:      { label: "Soft",      icon_ref: "glyphs.cloud" }
-          workspace: { label: "Workspace", icon_ref: "glyphs.edit" }
+          studio:    { label: "Studio",   icon_ref: "glyphs.sun" }
+          dramatic:  { label: "Drammat.", icon_ref: "glyphs.bolt" }
+          soft:      { label: "Soft",     icon_ref: "glyphs.cloud" }
+          workspace: { label: "Spazio",   icon_ref: "glyphs.edit" }
 
     # OUTPUT SETTINGS
     output:
-      auto_desc: "Automatically save to time-stamped directories."
+      auto_desc: "Salvataggio auto in cartelle datate."
       format:
-        label: "Format"
-        desc: "Video or image sequence format"
-        options: ["MP4 (H.264)", "GIF", "PNG Sequence"]
+        label: "Formato"
+        desc: "Video o sequenza immagini"
+        options: ["MP4 (H.264)", "GIF", "Sequenza PNG"]
       resolution:
-        label: "Resolution"
-        desc: "Output dimensions and aspect ratio"
-        options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
+        label: "Risoluzione"
+        desc: "Dimensioni e proporzioni"
+        options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Quadrato)"]
       bg_color:
-        label: "Background color"
-        desc: "Solid color for transparent areas"
+        label: "Colore sfondo"
+        desc: "Colore solido per aree trasparenti"
 
     # ─────────────────────────────────────────────────────────────
     # 4. VIEWPORT
@@ -248,8 +249,8 @@ locale:
     viewport:
       mode:
         wireframe: "Wireframe"
-        shaded: "Shaded"
-        both: "Both"
+        shaded: "Ombreggiato"
+        both: "Entrambi"
 
     # ─────────────────────────────────────────────────────────────
     # 5. SYSTEM & FALLBACKS
@@ -261,22 +262,22 @@ locale:
       toggle_on: "On"
       toggle_info: "Info"
       toggle_debug: "Debug"
-      dropdown_placeholder: "Select option"
-      section_default: "Section"
+      dropdown_placeholder: "Seleziona opzione"
+      section_default: "Sezione"
 
     # COMPONENT DEFAULTS
     components:
       dropdown:
         default:
-          label: "Select option"
+          label: "Scegli"
       button:
         default:
-          label: "Button"
+          label: "Pulsante"
       preset_card:
         default:
           label: "Preset"
       section:
         default:
-          label: "Section"
+          label: "Sezione"
       badge:
-        label: "Project folder"
+        label: "Cartella progetto"

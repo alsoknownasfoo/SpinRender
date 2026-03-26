@@ -1,13 +1,10 @@
-# SpinRender Localization — English (US)
+# SpinRender Localization — Chinese Traditional (TW)
 # Maps content (labels, icons) to component identifiers.
 #
 # Schema Version: v2
-#
-# All strings stored in base case. Uppercase styling is applied via theme's
-# text.formatting="uppercase" (e.g., in dark.yaml), not here.
 
 locale:
-  en_US:
+  zh_TW:
     # ─────────────────────────────────────────────────────────────
     # 1. COMPONENT CONTENT
     # ─────────────────────────────────────────────────────────────
@@ -21,43 +18,43 @@ locale:
     # PRESET CARDS
     component.preset_card:
       card1:
-        label: "Hero"
+        label: "展示"
         icon_ref: "glyphs.preset-hero"
       card2:
-        label: "Spin"
+        label: "旋轉"
         icon_ref: "glyphs.preset-spin"
       card3:
-        label: "Flip"
+        label: "翻轉"
         icon_ref: "glyphs.preset-flip"
       card4:
-        label: "Select custom"
+        label: "自定義"
         icon_ref: "glyphs.preset-custom"
 
     # BUTTONS
     component.button:
       render:
-        label: "Render"
+        label: "渲染"
         icon_ref: "glyphs.render-action"
       stop:
-        label: "Stop"
+        label: "停止"
         icon_ref: "glyphs.stop"
       cancel:
-        label: "Cancel"
+        label: "取消"
         icon_ref: "glyphs.close"
       ok:
-        label: "Ok"
+        label: "確定"
         icon_ref: "glyphs.save"
       save:
-        label: "Save"
+        label: "儲存"
         icon_ref: "glyphs.save"
       overwrite:
-        label: "Overwrite"
+        label: "覆寫"
         icon_ref: "glyphs.alert"
       close:
-        label: "Close"
+        label: "關閉"
         icon_ref: "glyphs.close"
       closepreview:
-        label: "Close preview"
+        label: "關閉預覽"
         icon_ref: "glyphs.close"
       options:
         label: ""
@@ -66,13 +63,13 @@ locale:
         label: ""
         icon_ref: "glyphs.info"
       save_preset:
-        label: "Preset"
+        label: "預設"
         icon_ref: "glyphs.plus"
       browse:
-        label: "Browse"
+        label: "瀏覽"
         icon_ref: "glyphs.folder"
       exit:
-        label: "Exit"
+        label: "退出"
         icon_ref: "glyphs.exit-action"
       trash:
         label: ""
@@ -80,18 +77,18 @@ locale:
 
     # STATUS MESSAGES
     component.status:
-      ready: "Ready"
-      rendering: "Rendering frame {current}/{total}"
-      complete: "Render complete"
-      stopped: "Render stopped"
-      stopping: "Stopping render..."
-      error: "Error: {message}"
-      no_presets: "No saved presets found."
-      preparing: "Preparing render..."
+      ready: "就緒"
+      rendering: "正在渲染第 {current}/{total} 幀"
+      complete: "渲染完成"
+      stopped: "渲染已停止"
+      stopping: "正在停止渲染..."
+      error: "錯誤: {message}"
+      no_presets: "未找到儲存的預設。"
+      preparing: "正在準備渲染..."
 
     # BADGES
     component.badge:
-      label: "Project folder"
+      label: "專案資料夾"
 
     # ─────────────────────────────────────────────────────────────
     # 2. GLOBAL UI STRINGS
@@ -100,59 +97,60 @@ locale:
     # DIALOGS
     dialog:
       advanced:
-        title: "Advanced options"
-        header: "Advanced options"
-        theme_desc: "Interface theme."
-        overrides_placeholder: "e.g. --color-theme=theme"
-        parameter_overrides_label: "Parameter overrides"
-        see: " See "
-        docs_link: "kicad-cli render options"
-        section_output: "Output path"
-        section_overrides: "Parameter overrides"
-        section_logging: "System logging"
+        title: "進階選項"
+        header: "進階選項"
+        theme_desc: "介面主題。"
+        overrides_placeholder: "例如 --color-theme=theme"
+        parameter_overrides_label: "參數覆寫"
+        see: " 查看 "
+        docs_link: "kicad-cli 渲染選項"
+        section_output: "輸出路徑"
+        section_overrides: "參數覆寫"
+        section_logging: "系統日誌"
       save_preset:
-        title: "Save preset"
-        header: "Save preset"
-        placeholder: "PRESET_NAME"
+        title: "儲存預設"
+        header: "儲存預設"
+        placeholder: "預設名稱"
       recall_preset:
-        title: "Select custom preset"
-        header: "Select custom preset"
+        title: "選擇自定義預設"
+        header: "選擇自定義預設"
       filename:
-        title: "Enter base filename"
-        header: "Enter base filename"
-        helper: "Frames are saved as name_00001.png, name_00002.png, …"
-      render_error: "Render error"
-      preparing: "Preparing render..."
+        title: "輸入基本檔名"
+        header: "輸入基本檔名"
+        helper: "幀將儲存為 name_00001.png, name_00002.png, …"
+      render_error: "渲染錯誤"
+      preparing: "正在準備渲染..."
       about:
-        title: "About SpinRender"
-        check_updates:           "Check for updates"
-        check_updates_progress:  "Checking..."
-        check_updates_done:      "Up to date"
-        check_updates_available: "Update available"
-        check_updates_simulated: "(Sim)"
-        release_notes_label:     "Release notes"
+        title: "關於 SpinRender"
+        check_updates:           "檢查更新"
+        check_updates_progress:  "正在檢查..."
+        check_updates_done:      "已是最新"
+        check_updates_available: "有可用更新"
+        check_updates_simulated: "(模擬)"
+        release_notes_label:     "發行說明"
         releases_url:            "https://github.com/alsoknownasfoo/SpinRender/releases"
-        section_author:          "Author"
+        section_author:          "作者"
         author_github_label:     "alsoknownasfoo"
         author_github_url:       "https://github.com/alsoknownasfoo"
         author_website_label:    "alsoknownasfoo.com"
         author_website_url:      "https://alsoknownasfoo.com"
-        section_supported_by:    "Supported by"
-        license_tagline:         "Free for personal use\nTip if you love!"
+        section_supported_by:    "贊助支持"
+        license_tagline:         "個人免費使用
+喜愛請支持！"
         github_sponsors_label:   "GitHub Sponsors"
         kofi_label:              "Ko-fi"
-        section_links:           "Links"
-        discussions_label:       "Ask a question"
+        section_links:           "連結"
+        discussions_label:       "提問"
         repo_label:              "/alsoknownasfoo/SpinRender"
-        issues_label:            "Report an issue"
-        readme_label:            "Help + documentation"
+        issues_label:            "回報問題"
+        readme_label:            "幫助與文件"
         repo_url:                "https://github.com/alsoknownasfoo/SpinRender"
-        section_license:         "License"
-        gpl_label:               "GPLv3 License"
+        section_license:         "授權"
+        gpl_label:               "GPLv3 授權"
         gpl_url:                 "https://github.com/alsoknownasfoo/SpinRender/blob/main/LICENSE"
         cc_label:                "CC BY-NC 4.0"
         cc_url:                  "https://creativecommons.org/licenses/by-nc/4.0/"
-        notices_label:           "Open source notices"
+        notices_label:           "開源聲明"
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
@@ -165,91 +163,94 @@ locale:
 
     # DIRECTORY DIALOGS
     dir_dialog:
-      select_output_folder: "Select output folder"
-      select_output_directory: "Select output directory"
+      select_output_folder: "選擇輸出資料夾"
+      select_output_directory: "選擇輸出目錄"
 
     # SECTIONS (Side-panel headers)
     sections:
-      presets: "Loop presets"
-      parameters: "Parameters"
-      output: "Output settings"
+      presets: "循環預設"
+      parameters: "參數設置"
+      output: "輸出設置"
 
+    # ─────────────────────────────────────────────────────────────
+    # 3. PARAMETERS & OUTPUT
+    # ─────────────────────────────────────────────────────────────
 
     # PARAMETERS (Sliders & Inputs)
     parameters:
       appearance:
-        label: "Appearance"
-      rotation_heading: "Rotation settings"
-      rotation_desc: "Board: orient on spindle | Spin: orient the spindle itself"
-      lighting_hint: "Select workspace to use KiCad 3D viewer settings"
-      system_logging: "System logging"
-      log_info: "Logs are kept for 30 days. Useful for troubleshooting render failures."
-      open_logs: "Open logs folder"
+        label: "外觀"
+      rotation_heading: "旋轉設置"
+      rotation_desc: "電路板：繞主軸定位 | 旋轉：定位主軸本身"
+      lighting_hint: "選擇工作區以使用 KiCad 3D 檢視器設置"
+      system_logging: "系統日誌"
+      log_info: "日誌保留30天，用於排除渲染故障。"
+      open_logs: "開啟日誌資料夾"
       output_path:
-        label: "Output path"
+        label: "輸出路徑"
 
       board_tilt:
-        label: "Board tilt"
-        desc: "Tilt the board relative to the camera"
+        label: "電路板傾斜"
+        desc: "電路板相對於攝像機的傾斜度"
         icon_ref: "glyphs.axis-x"
         unit: "°"
       board_roll:
-        label: "Board roll"
-        desc: "Rotate the board around its center"
+        label: "電路板滾動"
+        desc: "電路板繞中心旋轉"
         icon_ref: "glyphs.axis-y"
         unit: "°"
       spin_tilt:
-        label: "Spin tilt"
-        desc: "Tilt the entire spinning spindle"
+        label: "旋轉傾斜"
+        desc: "傾斜整個旋轉軸"
         icon_ref: "glyphs.axis-y-rot"
         unit: "°"
       spin_heading:
-        label: "Spin heading"
-        desc: "Rotate the camera around the board"
+        label: "旋轉航向"
+        desc: "攝像機繞電路板旋轉"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
       period:
-        label: "Rotation period"
-        desc: "Duration of a full 360° rotation"
-        unit: "sec"
+        label: "旋轉週期"
+        desc: "完成360°旋轉所需時間"
+        unit: "秒"
       direction:
-        label: "Direction"
-        desc: "Rotation orientation (Clockwise or Counter-Clockwise)"
+        label: "方向"
+        desc: "旋轉方向（順時針或逆時針）"
         options:
-          cw:  { label: "CW",  icon_ref: "glyphs.cw" }
-          ccw: { label: "CCW", icon_ref: "glyphs.ccw" }
+          cw:  { label: "順時針", icon_ref: "glyphs.cw" }
+          ccw: { label: "逆時針", icon_ref: "glyphs.ccw" }
       lighting:
-        label: "Lighting"
-        desc: "Pre-defined light environments"
+        label: "燈光"
+        desc: "預設光照環境"
         options:
-          studio:    { label: "Studio",    icon_ref: "glyphs.sun" }
-          dramatic:  { label: "Dramatic",  icon_ref: "glyphs.bolt" }
-          soft:      { label: "Soft",      icon_ref: "glyphs.cloud" }
-          workspace: { label: "Workspace", icon_ref: "glyphs.edit" }
+          studio:    { label: "影棚", icon_ref: "glyphs.sun" }
+          dramatic:  { label: "戲劇", icon_ref: "glyphs.bolt" }
+          soft:      { label: "柔和", icon_ref: "glyphs.cloud" }
+          workspace: { label: "工作區", icon_ref: "glyphs.edit" }
 
     # OUTPUT SETTINGS
     output:
-      auto_desc: "Automatically save to time-stamped directories."
+      auto_desc: "自動儲存到帶時間戳記的目錄。"
       format:
-        label: "Format"
-        desc: "Video or image sequence format"
-        options: ["MP4 (H.264)", "GIF", "PNG Sequence"]
+        label: "格式"
+        desc: "影片或圖像序列格式"
+        options: ["MP4 (H.264)", "GIF", "PNG 序列"]
       resolution:
-        label: "Resolution"
-        desc: "Output dimensions and aspect ratio"
-        options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
+        label: "解析度"
+        desc: "輸出尺寸和寬高比"
+        options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (方形)"]
       bg_color:
-        label: "Background color"
-        desc: "Solid color for transparent areas"
+        label: "背景顏色"
+        desc: "透明區域填充色"
 
     # ─────────────────────────────────────────────────────────────
     # 4. VIEWPORT
     # ─────────────────────────────────────────────────────────────
     viewport:
       mode:
-        wireframe: "Wireframe"
-        shaded: "Shaded"
-        both: "Both"
+        wireframe: "線框"
+        shaded: "著色"
+        both: "兩者"
 
     # ─────────────────────────────────────────────────────────────
     # 5. SYSTEM & FALLBACKS
@@ -257,26 +258,26 @@ locale:
 
     # SYSTEM CONTROLS
     system.controls:
-      toggle_off: "Off"
-      toggle_on: "On"
-      toggle_info: "Info"
-      toggle_debug: "Debug"
-      dropdown_placeholder: "Select option"
-      section_default: "Section"
+      toggle_off: "關閉"
+      toggle_on: "開啟"
+      toggle_info: "資訊"
+      toggle_debug: "除錯"
+      dropdown_placeholder: "請選擇選項"
+      section_default: "部分"
 
     # COMPONENT DEFAULTS
     components:
       dropdown:
         default:
-          label: "Select option"
+          label: "選擇選項"
       button:
         default:
-          label: "Button"
+          label: "按鈕"
       preset_card:
         default:
-          label: "Preset"
+          label: "預設"
       section:
         default:
-          label: "Section"
+          label: "部分"
       badge:
-        label: "Project folder"
+        label: "專案資料夾"

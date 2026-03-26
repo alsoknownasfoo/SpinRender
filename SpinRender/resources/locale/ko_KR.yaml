@@ -1,0 +1,283 @@
+# SpinRender Localization — Korean (KR)
+# Maps content (labels, icons) to component identifiers.
+#
+# Schema Version: v2
+
+locale:
+  ko_KR:
+    # ─────────────────────────────────────────────────────────────
+    # 1. COMPONENT CONTENT
+    # ─────────────────────────────────────────────────────────────
+
+    # APP HEADER
+    component.main.header:
+      title: "SpinRender"
+      subtitle: "0.9.0-alpha"
+      logo_id: "resources/icons/logo.svg"
+
+    # PRESET CARDS
+    component.preset_card:
+      card1:
+        label: "히어로"
+        icon_ref: "glyphs.preset-hero"
+      card2:
+        label: "회전"
+        icon_ref: "glyphs.preset-spin"
+      card3:
+        label: "플립"
+        icon_ref: "glyphs.preset-flip"
+      card4:
+        label: "커스텀 선택"
+        icon_ref: "glyphs.preset-custom"
+
+    # BUTTONS
+    component.button:
+      render:
+        label: "렌더링"
+        icon_ref: "glyphs.render-action"
+      stop:
+        label: "중지"
+        icon_ref: "glyphs.stop"
+      cancel:
+        label: "취소"
+        icon_ref: "glyphs.close"
+      ok:
+        label: "확인"
+        icon_ref: "glyphs.save"
+      save:
+        label: "저장"
+        icon_ref: "glyphs.save"
+      overwrite:
+        label: "덮어쓰기"
+        icon_ref: "glyphs.alert"
+      close:
+        label: "닫기"
+        icon_ref: "glyphs.close"
+      closepreview:
+        label: "미리보기 닫기"
+        icon_ref: "glyphs.close"
+      options:
+        label: ""
+        icon_ref: "glyphs.settings"
+      about:
+        label: ""
+        icon_ref: "glyphs.info"
+      save_preset:
+        label: "프리셋"
+        icon_ref: "glyphs.plus"
+      browse:
+        label: "찾아보기"
+        icon_ref: "glyphs.folder"
+      exit:
+        label: "종료"
+        icon_ref: "glyphs.exit-action"
+      trash:
+        label: ""
+        icon_ref: "glyphs.trash"
+
+    # STATUS MESSAGES
+    component.status:
+      ready: "준비 완료"
+      rendering: "{current}/{total} 프레임 렌더링 중"
+      complete: "렌더링 완료"
+      stopped: "렌더링 중지됨"
+      stopping: "중지 중..."
+      error: "오류: {message}"
+      no_presets: "저장된 프리셋이 없습니다."
+      preparing: "렌더링 준비 중..."
+
+    # BADGES
+    component.badge:
+      label: "프로젝트 폴더"
+
+    # ─────────────────────────────────────────────────────────────
+    # 2. GLOBAL UI STRINGS
+    # ─────────────────────────────────────────────────────────────
+
+    # DIALOGS
+    dialog:
+      advanced:
+        title: "고급 옵션"
+        header: "고급 옵션"
+        theme_desc: "인터페이스 테마."
+        overrides_placeholder: "예: --color-theme=theme"
+        parameter_overrides_label: "파라미터 덮어쓰기"
+        see: " "
+        docs_link: "kicad-cli 렌더링 옵션"
+        section_output: "출력 경로"
+        section_overrides: "파라미터 덮어쓰기"
+        section_logging: "시스템 로그"
+      save_preset:
+        title: "프리셋 저장"
+        header: "프리셋 저장"
+        placeholder: "프리셋_이름"
+      recall_preset:
+        title: "커스텀 프리셋 선택"
+        header: "커스텀 프리셋 선택"
+      filename:
+        title: "기본 파일명 입력"
+        header: "기본 파일명 입력"
+        helper: "프레임은 name_00001.png, name_00002.png...로 저장됩니다"
+      render_error: "렌더링 오류"
+      preparing: "준비 중..."
+      about:
+        title: "SpinRender 정보"
+        check_updates:           "업데이트 확인"
+        check_updates_progress:  "확인 중..."
+        check_updates_done:      "최신 상태"
+        check_updates_available: "업데이트 가능"
+        check_updates_simulated: "(Sim)"
+        release_notes_label:     "릴리스 노트"
+        releases_url:            "https://github.com/alsoknownasfoo/SpinRender/releases"
+        section_author:          "제작자"
+        author_github_label:     "alsoknownasfoo"
+        author_github_url:       "https://github.com/alsoknownasfoo"
+        author_website_label:    "alsoknownasfoo.com"
+        author_website_url:      "https://alsoknownasfoo.com"
+        section_supported_by:    "지원"
+        license_tagline:         "개인용 무료
+응원해 주세요!"
+        github_sponsors_label:   "GitHub Sponsors"
+        kofi_label:              "Ko-fi"
+        section_links:           "링크"
+        discussions_label:       "질문하기"
+        repo_label:              "/alsoknownasfoo/SpinRender"
+        issues_label:            "문제 보고"
+        readme_label:            "도움말 + 문서"
+        repo_url:                "https://github.com/alsoknownasfoo/SpinRender"
+        section_license:         "라이선스"
+        gpl_label:               "GPLv3 라이선스"
+        gpl_url:                 "https://github.com/alsoknownasfoo/SpinRender/blob/main/LICENSE"
+        cc_label:                "CC BY-NC 4.0"
+        cc_url:                  "https://creativecommons.org/licenses/by-nc/4.0/"
+        notices_label:           "오픈 소스 고지"
+        notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
+        github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
+        kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        ai:
+          claude_url:            "https://claude.ai/"
+          gemini_url:            "https://gemini.google.com/"
+          chatgpt_url:           "https://chatgpt.com/"
+          copilot_url:           "https://github.com/features/copilot"
+          stepfun_url:           "https://stepfun.ai/chats/new"
+
+    # DIRECTORY DIALOGS
+    dir_dialog:
+      select_output_folder: "출력 폴더 선택"
+      select_output_directory: "출력 디렉토리 선택"
+
+    # SECTIONS (Side-panel headers)
+    sections:
+      presets: "루프 프리셋"
+      parameters: "파라미터"
+      output: "출력 설정"
+
+    # ─────────────────────────────────────────────────────────────
+    # 3. PARAMETERS & OUTPUT
+    # ─────────────────────────────────────────────────────────────
+
+    # PARAMETERS (Sliders & Inputs)
+    parameters:
+      appearance:
+        label: "외형"
+      rotation_heading: "회전 설정"
+      rotation_desc: "보드: 축 기준 정렬 | 회전: 회전축 자체 정렬"
+      lighting_hint: "KiCad 3D 뷰어 설정을 사용하려면 워크스페이스 선택"
+      system_logging: "시스템 로그"
+      log_info: "로그는 30일간 보관됩니다. 오류 해결에 유용합니다."
+      open_logs: "로그 폴더 열기"
+      output_path:
+        label: "출력 경로"
+
+      board_tilt:
+        label: "보드 기울기"
+        desc: "카메라 대비 보드 경사"
+        icon_ref: "glyphs.axis-x"
+        unit: "°"
+      board_roll:
+        label: "보드 회전"
+        desc: "중심 기준 보드 회전"
+        icon_ref: "glyphs.axis-y"
+        unit: "°"
+      spin_tilt:
+        label: "회전 기울기"
+        desc: "전체 회전축 경사"
+        icon_ref: "glyphs.axis-y-rot"
+        unit: "°"
+      spin_heading:
+        label: "회전 방향"
+        desc: "보드 주변 카메라 회전"
+        icon_ref: "glyphs.axis-z-rot"
+        unit: "°"
+      period:
+        label: "회전 주기"
+        desc: "360도 회전 소요 시간"
+        unit: "초"
+      direction:
+        label: "방향"
+        desc: "회전 방향 (시계 또는 반시계)"
+        options:
+          cw:  { label: "시계", icon_ref: "glyphs.cw" }
+          ccw: { label: "반시계", icon_ref: "glyphs.ccw" }
+      lighting:
+        label: "조명"
+        desc: "사전 정의된 조명 환경"
+        options:
+          studio:    { label: "스튜디오", icon_ref: "glyphs.sun" }
+          dramatic:  { label: "드라마틱", icon_ref: "glyphs.bolt" }
+          soft:      { label: "소프트", icon_ref: "glyphs.cloud" }
+          workspace: { label: "워크스페이스", icon_ref: "glyphs.edit" }
+
+    # OUTPUT SETTINGS
+    output:
+      auto_desc: "타임스탬프 폴더에 자동 저장."
+      format:
+        label: "형식"
+        desc: "비디오 또는 이미지 시퀀스"
+        options: ["MP4 (H.264)", "GIF", "PNG 시퀀스"]
+      resolution:
+        label: "해상도"
+        desc: "출력 크기 및 가로세로비"
+        options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (정사각형)"]
+      bg_color:
+        label: "배경 색상"
+        desc: "투명 영역 배경색"
+
+    # ─────────────────────────────────────────────────────────────
+    # 4. VIEWPORT
+    # ─────────────────────────────────────────────────────────────
+    viewport:
+      mode:
+        wireframe: "와이어프레임"
+        shaded: "셰이딩"
+        both: "둘 다"
+
+    # ─────────────────────────────────────────────────────────────
+    # 5. SYSTEM & FALLBACKS
+    # ─────────────────────────────────────────────────────────────
+
+    # SYSTEM CONTROLS
+    system.controls:
+      toggle_off: "꺼짐"
+      toggle_on: "켜짐"
+      toggle_info: "정보"
+      toggle_debug: "디버그"
+      dropdown_placeholder: "옵션 선택"
+      section_default: "섹션"
+
+    # COMPONENT DEFAULTS
+    components:
+      dropdown:
+        default:
+          label: "선택"
+      button:
+        default:
+          label: "버튼"
+      preset_card:
+        default:
+          label: "프리셋"
+      section:
+        default:
+          label: "섹션"
+      badge:
+        label: "프로젝트 폴더"

@@ -1,13 +1,10 @@
-# SpinRender Localization — English (US)
+# SpinRender Localization — Turkish (TR)
 # Maps content (labels, icons) to component identifiers.
 #
 # Schema Version: v2
-#
-# All strings stored in base case. Uppercase styling is applied via theme's
-# text.formatting="uppercase" (e.g., in dark.yaml), not here.
 
 locale:
-  en_US:
+  tr_TR:
     # ─────────────────────────────────────────────────────────────
     # 1. COMPONENT CONTENT
     # ─────────────────────────────────────────────────────────────
@@ -21,43 +18,43 @@ locale:
     # PRESET CARDS
     component.preset_card:
       card1:
-        label: "Hero"
+        label: "Ana"
         icon_ref: "glyphs.preset-hero"
       card2:
-        label: "Spin"
+        label: "Döndür"
         icon_ref: "glyphs.preset-spin"
       card3:
-        label: "Flip"
+        label: "Çevir"
         icon_ref: "glyphs.preset-flip"
       card4:
-        label: "Select custom"
+        label: "Özel seç"
         icon_ref: "glyphs.preset-custom"
 
     # BUTTONS
     component.button:
       render:
-        label: "Render"
+        label: "Renderla"
         icon_ref: "glyphs.render-action"
       stop:
-        label: "Stop"
+        label: "Durdur"
         icon_ref: "glyphs.stop"
       cancel:
-        label: "Cancel"
+        label: "İptal"
         icon_ref: "glyphs.close"
       ok:
-        label: "Ok"
+        label: "Tamam"
         icon_ref: "glyphs.save"
       save:
-        label: "Save"
+        label: "Kaydet"
         icon_ref: "glyphs.save"
       overwrite:
-        label: "Overwrite"
+        label: "Üstüne yaz"
         icon_ref: "glyphs.alert"
       close:
-        label: "Close"
+        label: "Kapat"
         icon_ref: "glyphs.close"
       closepreview:
-        label: "Close preview"
+        label: "Önizlemeyi kapat"
         icon_ref: "glyphs.close"
       options:
         label: ""
@@ -66,13 +63,13 @@ locale:
         label: ""
         icon_ref: "glyphs.info"
       save_preset:
-        label: "Preset"
+        label: "Hazır Ayar"
         icon_ref: "glyphs.plus"
       browse:
-        label: "Browse"
+        label: "Gözat"
         icon_ref: "glyphs.folder"
       exit:
-        label: "Exit"
+        label: "Çıkış"
         icon_ref: "glyphs.exit-action"
       trash:
         label: ""
@@ -80,18 +77,18 @@ locale:
 
     # STATUS MESSAGES
     component.status:
-      ready: "Ready"
-      rendering: "Rendering frame {current}/{total}"
-      complete: "Render complete"
-      stopped: "Render stopped"
-      stopping: "Stopping render..."
-      error: "Error: {message}"
-      no_presets: "No saved presets found."
-      preparing: "Preparing render..."
+      ready: "Hazır"
+      rendering: "Kare renderlanıyor {current}/{total}"
+      complete: "Render tamamlandı"
+      stopped: "Render durduruldu"
+      stopping: "Render durduruluyor..."
+      error: "Hata: {message}"
+      no_presets: "Kayıtlı hazır ayar bulunamadı."
+      preparing: "Render hazırlanıyor..."
 
     # BADGES
     component.badge:
-      label: "Project folder"
+      label: "Proje klasörü"
 
     # ─────────────────────────────────────────────────────────────
     # 2. GLOBAL UI STRINGS
@@ -100,59 +97,60 @@ locale:
     # DIALOGS
     dialog:
       advanced:
-        title: "Advanced options"
-        header: "Advanced options"
-        theme_desc: "Interface theme."
-        overrides_placeholder: "e.g. --color-theme=theme"
-        parameter_overrides_label: "Parameter overrides"
-        see: " See "
-        docs_link: "kicad-cli render options"
-        section_output: "Output path"
-        section_overrides: "Parameter overrides"
-        section_logging: "System logging"
+        title: "Gelişmiş"
+        header: "Gelişmiş seçenekler"
+        theme_desc: "Arayüz teması."
+        overrides_placeholder: "örn: --color-theme=theme"
+        parameter_overrides_label: "Parametreleri geçersiz kıl"
+        see: " Bakınız: "
+        docs_link: "kicad-cli render seçenekleri"
+        section_output: "Çıktı yolu"
+        section_overrides: "Parametreleri geçersiz kıl"
+        section_logging: "Sistem günlüğü"
       save_preset:
-        title: "Save preset"
-        header: "Save preset"
-        placeholder: "PRESET_NAME"
+        title: "Ayarı kaydet"
+        header: "Hazır ayarı kaydet"
+        placeholder: "AYAR_ADI"
       recall_preset:
-        title: "Select custom preset"
-        header: "Select custom preset"
+        title: "Özel ayar seç"
+        header: "Özel hazır ayar seç"
       filename:
-        title: "Enter base filename"
-        header: "Enter base filename"
-        helper: "Frames are saved as name_00001.png, name_00002.png, …"
-      render_error: "Render error"
-      preparing: "Preparing render..."
+        title: "Dosya adı"
+        header: "Temel dosya adını girin"
+        helper: "Kareler ad_00001.png, ad_00002.png... olarak kaydedilir"
+      render_error: "Render hatası"
+      preparing: "Hazırlanıyor..."
       about:
-        title: "About SpinRender"
-        check_updates:           "Check for updates"
-        check_updates_progress:  "Checking..."
-        check_updates_done:      "Up to date"
-        check_updates_available: "Update available"
+        title: "SpinRender Hakkında"
+        check_updates:           "Güncellemeleri denetle"
+        check_updates_progress:  "Denetleniyor..."
+        check_updates_done:      "Güncel"
+        check_updates_available: "Güncelleme var"
         check_updates_simulated: "(Sim)"
-        release_notes_label:     "Release notes"
+        release_notes_label:     "Sürüm notları"
         releases_url:            "https://github.com/alsoknownasfoo/SpinRender/releases"
-        section_author:          "Author"
+        section_author:          "Yazar"
         author_github_label:     "alsoknownasfoo"
         author_github_url:       "https://github.com/alsoknownasfoo"
         author_website_label:    "alsoknownasfoo.com"
         author_website_url:      "https://alsoknownasfoo.com"
-        section_supported_by:    "Supported by"
-        license_tagline:         "Free for personal use\nTip if you love!"
+        section_supported_by:    "Destekleyen"
+        license_tagline:         "Kişisel kullanım için ücretsiz
+Sevdiyseniz bağış yapın!"
         github_sponsors_label:   "GitHub Sponsors"
         kofi_label:              "Ko-fi"
-        section_links:           "Links"
-        discussions_label:       "Ask a question"
+        section_links:           "Bağlantılar"
+        discussions_label:       "Soru sor"
         repo_label:              "/alsoknownasfoo/SpinRender"
-        issues_label:            "Report an issue"
-        readme_label:            "Help + documentation"
+        issues_label:            "Hata bildir"
+        readme_label:            "Yardım + dokümantasyon"
         repo_url:                "https://github.com/alsoknownasfoo/SpinRender"
-        section_license:         "License"
-        gpl_label:               "GPLv3 License"
+        section_license:         "Lisans"
+        gpl_label:               "GPLv3 Lisansı"
         gpl_url:                 "https://github.com/alsoknownasfoo/SpinRender/blob/main/LICENSE"
         cc_label:                "CC BY-NC 4.0"
         cc_url:                  "https://creativecommons.org/licenses/by-nc/4.0/"
-        notices_label:           "Open source notices"
+        notices_label:           "Açık kaynak bildirimleri"
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
@@ -165,91 +163,94 @@ locale:
 
     # DIRECTORY DIALOGS
     dir_dialog:
-      select_output_folder: "Select output folder"
-      select_output_directory: "Select output directory"
+      select_output_folder: "Klasör seç"
+      select_output_directory: "Çıktı dizini seç"
 
     # SECTIONS (Side-panel headers)
     sections:
-      presets: "Loop presets"
-      parameters: "Parameters"
-      output: "Output settings"
+      presets: "Döngü ayarları"
+      parameters: "Parametreler"
+      output: "Çıktı ayarları"
 
+    # ─────────────────────────────────────────────────────────────
+    # 3. PARAMETERS & OUTPUT
+    # ─────────────────────────────────────────────────────────────
 
     # PARAMETERS (Sliders & Inputs)
     parameters:
       appearance:
-        label: "Appearance"
-      rotation_heading: "Rotation settings"
-      rotation_desc: "Board: orient on spindle | Spin: orient the spindle itself"
-      lighting_hint: "Select workspace to use KiCad 3D viewer settings"
-      system_logging: "System logging"
-      log_info: "Logs are kept for 30 days. Useful for troubleshooting render failures."
-      open_logs: "Open logs folder"
+        label: "Görünüm"
+      rotation_heading: "Rotasyon ayarları"
+      rotation_desc: "Kart: mil üzerinde | Döndür: milin kendisi"
+      lighting_hint: "KiCad ayarları için çalışma alanını seçin"
+      system_logging: "Sistem günlüğü"
+      log_info: "Günlükler 30 gün tutulur. Render hataları için yararlıdır."
+      open_logs: "Günlük klasörünü aç"
       output_path:
-        label: "Output path"
+        label: "Çıktı yolu"
 
       board_tilt:
-        label: "Board tilt"
-        desc: "Tilt the board relative to the camera"
+        label: "Kart eğimi"
+        desc: "Kartın kameraya göre eğimi"
         icon_ref: "glyphs.axis-x"
         unit: "°"
       board_roll:
-        label: "Board roll"
-        desc: "Rotate the board around its center"
+        label: "Kart yuvarlanması"
+        desc: "Kartın merkezi etrafında dönmesi"
         icon_ref: "glyphs.axis-y"
         unit: "°"
       spin_tilt:
-        label: "Spin tilt"
-        desc: "Tilt the entire spinning spindle"
+        label: "Mil eğimi"
+        desc: "Tüm rotasyon milinin eğimi"
         icon_ref: "glyphs.axis-y-rot"
         unit: "°"
       spin_heading:
-        label: "Spin heading"
-        desc: "Rotate the camera around the board"
+        label: "Mil yönü"
+        desc: "Kameranın kart etrafında dönmesi"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
       period:
-        label: "Rotation period"
-        desc: "Duration of a full 360° rotation"
-        unit: "sec"
+        label: "Rotasyon süresi"
+        desc: "Tam bir 360° dönüş süresi"
+        unit: "sn"
       direction:
-        label: "Direction"
-        desc: "Rotation orientation (Clockwise or Counter-Clockwise)"
+        label: "Yön"
+        desc: "Dönüş yönü (Saat yönü veya tersi)"
         options:
-          cw:  { label: "CW",  icon_ref: "glyphs.cw" }
-          ccw: { label: "CCW", icon_ref: "glyphs.ccw" }
+          cw:  { label: "SY", icon_ref: "glyphs.cw" }
+          ccw: { label: "SYT", icon_ref: "glyphs.ccw" }
       lighting:
-        label: "Lighting"
-        desc: "Pre-defined light environments"
+        label: "Aydınlatma"
+        desc: "Hazır ışık ortamları"
         options:
-          studio:    { label: "Studio",    icon_ref: "glyphs.sun" }
-          dramatic:  { label: "Dramatic",  icon_ref: "glyphs.bolt" }
-          soft:      { label: "Soft",      icon_ref: "glyphs.cloud" }
-          workspace: { label: "Workspace", icon_ref: "glyphs.edit" }
+          studio:    { label: "Stüdyo",    icon_ref: "glyphs.sun" }
+          dramatic:  { label: "Dramatik",  icon_ref: "glyphs.bolt" }
+          soft:      { label: "Yumuşak",   icon_ref: "glyphs.cloud" }
+          workspace: { label: "Çalışma",   icon_ref: "glyphs.edit" }
 
     # OUTPUT SETTINGS
     output:
-      auto_desc: "Automatically save to time-stamped directories."
+      auto_desc: "Tarihli klasörlere otomatik kaydet."
       format:
         label: "Format"
-        desc: "Video or image sequence format"
-        options: ["MP4 (H.264)", "GIF", "PNG Sequence"]
+        desc: "Video veya görüntü dizisi"
+        options: ["MP4 (H.264)", "GIF", "PNG Dizisi"]
       resolution:
-        label: "Resolution"
-        desc: "Output dimensions and aspect ratio"
-        options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
+        label: "Çözünürlük"
+        desc: "Çıktı boyutları ve en-boy oranı"
+        options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Kare)"]
       bg_color:
-        label: "Background color"
-        desc: "Solid color for transparent areas"
+        label: "Arka plan rengi"
+        desc: "Şeffaf alanlar için dolgu rengi"
 
     # ─────────────────────────────────────────────────────────────
     # 4. VIEWPORT
     # ─────────────────────────────────────────────────────────────
     viewport:
       mode:
-        wireframe: "Wireframe"
-        shaded: "Shaded"
-        both: "Both"
+        wireframe: "Tel kafes"
+        shaded: "Gölgeli"
+        both: "Her ikisi"
 
     # ─────────────────────────────────────────────────────────────
     # 5. SYSTEM & FALLBACKS
@@ -257,26 +258,26 @@ locale:
 
     # SYSTEM CONTROLS
     system.controls:
-      toggle_off: "Off"
-      toggle_on: "On"
-      toggle_info: "Info"
-      toggle_debug: "Debug"
-      dropdown_placeholder: "Select option"
-      section_default: "Section"
+      toggle_off: "Kapalı"
+      toggle_on: "Açık"
+      toggle_info: "Bilgi"
+      toggle_debug: "Hata ayıkla"
+      dropdown_placeholder: "Seçenek seçin"
+      section_default: "Bölüm"
 
     # COMPONENT DEFAULTS
     components:
       dropdown:
         default:
-          label: "Select option"
+          label: "Seç"
       button:
         default:
-          label: "Button"
+          label: "Düğme"
       preset_card:
         default:
-          label: "Preset"
+          label: "Ayar"
       section:
         default:
-          label: "Section"
+          label: "Bölüm"
       badge:
-        label: "Project folder"
+        label: "Proje klasörü"
