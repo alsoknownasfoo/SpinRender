@@ -1,200 +1,92 @@
-# SpinRender - KiCad PCB Animation Rendering Plugin
+# <img src="SpinRender/resources/icon.png" width="48" height="48" valign="middle"> SpinRender
 
-**Version:** 0.9.0-alpha
+**Bit-precise 3D spinning animations for your KiCad PCBs.**
 
-SpinRender is a KiCad plugin that makes it easy to generate beautiful animated PCB renders directly from your KiCad projects. Create professional showcase videos, GIFs, and image sequences with just a few clicks.
+SpinRender is a KiCad-CLI-based engine designed to generate high-fidelity, social-media-ready 3D loops of your circuit boards. By bypassing the standard GUI renderer, it achieves floating-point rotational precision and utilizes a 'Tilted Loop' logic to ensure seamless 360° revolutions without the gimbal lock or jitter common in manual screen recordings.
 
-## Features
+---
 
-- 🎬 **Three Export Formats**: MP4 (H.264), GIF, or PNG sequences
-- 🎨 **Built-in Presets**: Hero Orbit, Top Sweep, and Angle Reveal camera loops
-- 💡 **Lighting Presets**: Studio, Dramatic, Soft, and None lighting configurations
-- ⚡ **Real-time 3D Preview**: OpenGL-accelerated preview with actual PCB geometry and lighting
-- 🎯 **Tilted Loop Model**: Intuitive controls for view tilt, rotation period, and direction
-- 💾 **Custom Presets**: Save and recall your favorite render settings
-- 🔧 **Advanced Options**: Full control over output paths and kicad-cli parameters
+## 🎥 The Hero Loop
+![The Hero Loop](res/hero_loop.gif)
+*1080p 60fps render of a complex PCB performing a perfect Tilted Loop.*
 
-## Requirements
+---
 
-### Core Dependencies
+## 💎 Key Features
 
-- **KiCad 8+** (with kicad-cli)
-- **ffmpeg** (for video/GIF export)
-- **Python 3.8+** (typically bundled with KiCad)
-- **wxPython** (typically bundled with KiCad)
+| Feature | Description |
+| :--- | :--- |
+| **🎯 Floating-Point Precision** | Supports 0.0001° rotational increments for ultra-smooth motion. |
+| **🔄 Tilted Loop Logic** | Specialized math to ensure perfect 360° loops with organic camera paths. |
+| **💡 Studio Lighting** | High-contrast presets (Studio, Dramatic, Soft) for professional results. |
+| **⚡ CLI-First Workflow** | Leverages `kicad-cli` for headless, reproducible rendering pipelines. |
+| **🎨 Modern UI** | A teal-and-yellow high-contrast interface designed for efficiency. |
 
-SpinRender will automatically check for dependencies on first launch and offer to install missing components.
+---
 
-### Optional: 3D Preview Enhancement
+## 🛠️ Installation
 
-For full OpenGL-accelerated 3D preview with real-time PCB rendering:
+### 1. Requirements
+- **KiCad 8.0 or 9.0** (with `kicad-cli` in your PATH).
+- **FFmpeg** (Required for MP4 and high-quality GIF assembly).
+- **Python 3.10+** (The version bundled with your KiCad installation).
 
+### 2. Plugin Setup
+1. Download the latest release or clone this repository into your KiCad plugins folder:
+   - **macOS:** `~/Library/Preferences/kicad/8.0/scripting/plugins`
+   - **Windows:** `%APPDATA%\kicad\8.0\scripting\plugins`
+   - **Linux:** `~/.local/share/kicad/8.0/scripting/plugins`
+2. Open KiCad PCB Editor.
+3. Click the **SpinRender** icon in the top toolbar or find it under `Tools > External Plugins`.
+
+---
+
+## 🚀 Usage
+
+### Quick Start (GUI)
+1. Open your `.kicad_pcb` file.
+2. Launch **SpinRender**.
+3. Select the **'Hero Reveal'** preset.
+4. Hit **Render**. Your animation will be saved to the `/Renders` folder next to your PCB file.
+
+### The 'Tilted Loop' Parameters
+SpinRender uses a Universal-Joint model to define the camera path:
+
+| Parameter | Function | Typical Value |
+| :--- | :--- | :--- |
+| **View Tilt** | The static elevation of the camera. | 15° - 30° |
+| **Spin Tilt** | The angle of the rotation axis relative to the board normal. | 90° (Edge-on) |
+| **Period** | Duration of one full 360° revolution. | 10.0s |
+| **Easing** | Motion interpolation (Linear for loops, Bezier for reveals). | Linear |
+
+### CLI Override Example
+For power users, you can pass raw `kicad-cli` flags through the **CLI Overrides** field:
 ```bash
-pip install -r requirements_preview.txt
+--raytracing --samples 128 --no-floor --post-processing
 ```
 
-This installs:
-- **PyOpenGL** - Hardware-accelerated 3D rendering
-- **trimesh** - GLB file mesh loading
-- **numpy** - Numerical operations
+---
 
-Without these packages, SpinRender will use a lightweight wireframe preview instead.
+## 📸 Media Recommendations for Creators
 
-## Installation
+To best showcase your hardware, we recommend producing the following assets:
 
-### Method 1: Automatic Installation (Recommended)
+1. **The "Hero Loop":** A 1080p 60fps GIF of a complex PCB (lots of vias and components) doing one full "Tilted Loop" revolution.
+2. **The "UI Close-up":** A sharp screenshot of the SpinRender dialog box showing the teal/yellow high-contrast theme.
+3. **The "Step-Comparison":** A split-screen GIF showing the difference between a 5-degree jump (jittery) and SpinRender's floating-point 0.5-degree jump (silky smooth).
+4. **Lighting Showcase:** A side-by-side of 'Studio' (clear, technical) vs 'Dramatic' (heavy shadows, mood lighting).
 
-Run the installation script from the repository directory:
+---
 
-**macOS/Linux:**
-```bash
-./install.sh
-```
+## 🤝 Community & Contributing
 
-**Windows:**
-```cmd
-install.bat
-```
+Hardware geeks, welcome! Whether you're a KiCad wizard or a Python pro, we value your input.
+- **Bug Reports:** Open an issue with your `.kicad_pcb` (if possible) and KiCad version.
+- **Feature Requests:** We're currently exploring multi-board support and custom shader injection.
 
-The script will:
-- Copy the plugin to `~/Documents/KiCad/9.0/3rdparty/plugins/SpinRender`
-- Check for existing installations and prompt before overwriting
-- Verify the installation completed successfully
+### License
+SpinRender is released under the **MIT License**. See `LICENSE` for details.
 
-### Method 2: Manual Installation
+---
 
-1. Download or clone this repository
-2. Copy the `SpinRender` directory to your KiCad plugins directory:
-   - **All platforms**: `~/Documents/KiCad/9.0/3rdparty/plugins/`
-   - (Windows: `%USERPROFILE%\Documents\KiCad\9.0\3rdparty\plugins\`)
-
-3. Restart KiCad
-
-### Method 3: Plugin Manager (Coming Soon)
-
-SpinRender will be available through the KiCad Plugin and Content Manager in a future release.
-
-## Usage
-
-### Quick Start
-
-1. Open your PCB in KiCad PCB Editor
-2. Click the SpinRender toolbar button or go to **Tools → External Plugins → SpinRender**
-3. Choose a loop preset (Hero Orbit, Top Sweep, or Angle Reveal) from the available presets
-4. Adjust rotation settings (tilt, period, direction) as desired
-5. Select a lighting preset
-6. Choose output format (MP4, GIF, or PNG Sequence) and resolution
-7. Click **RENDER**
-
-Your animation will be saved to a timestamped directory in `Renders/` next to your board file.
-
-### Loop Presets
-
-- **Hero Orbit**: 45° tilted rotating view, perfect for showcasing the entire board
-- **Top Sweep**: Flat overhead rotation, ideal for layout overviews
-- **Angle Reveal**: 30° angle rotation, great for demonstrating board depth
-
-### Rotation Settings
-
-- **View Tilt (θ)**: Inclination from flat (0°) to edge-on (90°)
-- **Rotation Period**: How many seconds for one complete 360° revolution
-- **Easing Profile**: Currently linear (additional easing curves coming soon)
-- **Direction**: CW (clockwise) or CCW (counter-clockwise) rotation
-
-### Lighting Presets
-
-- **Studio**: Balanced three-point lighting for professional look
-- **Dramatic**: High-contrast directional lighting with strong shadows
-- **Soft**: Diffused low-shadow ambient lighting
-- **None**: No additional lighting (useful for custom setups)
-
-### Output Formats
-
-- **MP4 (H.264)**: High-quality video at 30fps, compatible with all platforms
-- **GIF**: Animated GIF with optimized palette
-- **PNG Sequence**: Individual frames for post-processing or custom assembly
-
-### Advanced Options
-
-Click the **ADVANCED** button to access:
-
-- **Output Path**: Override automatic timestamped directory creation
-- **Parameter Overrides**: Pass custom flags directly to kicad-cli render
-
-### Saving Custom Presets
-
-1. Configure your desired rotation, lighting, and other settings
-2. Click **+ SAVE PRESET** in the Rotation Settings section
-3. Enter a name for your preset
-4. Your preset is saved and can be loaded via the "SELECT CUSTOM.." button
-
-## How It Works
-
-SpinRender uses the tilted-loop model to generate smooth camera animations:
-
-1. **Frame Generation**: For each frame, SpinRender calls `kicad-cli pcb render` with calculated rotation parameters
-2. **Assembly**: Frames are assembled into the final output using ffmpeg
-3. **Preview**: The wireframe preview gives real-time feedback as you adjust parameters
-
-All rendering respects the quirks documented in `docs/KICAD_CLI_RENDER_NOTES.md` for maximum compatibility.
-
-## Troubleshooting
-
-### "kicad-cli not found"
-
-Ensure KiCad 8+ is installed and `kicad-cli` is in your PATH. On macOS, you may need to add:
-```bash
-export PATH="/Applications/KiCad/KiCad.app/Contents/MacOS:$PATH"
-```
-
-### "ffmpeg not found"
-
-Install ffmpeg:
-- **macOS**: `brew install ffmpeg`
-- **Linux**: `sudo apt-get install ffmpeg`
-- **Windows**: Download from [ffmpeg.org](https://ffmpeg.org/download.html)
-
-### Render fails with "Unknown argument" error
-
-This is likely due to negative vector values in rotation parameters. SpinRender sanitizes these automatically, but if using custom CLI overrides, ensure all vector components are positive or properly formatted.
-
-### Preview shows wireframe instead of PCB model
-
-If you see a simple wireframe box instead of your actual PCB:
-
-1. Install the optional 3D preview dependencies: `pip install -r requirements_preview.txt`
-2. Restart KiCad
-3. The preview will now show your actual PCB geometry with lighting and shading
-
-The preview automatically exports your PCB to GLB format in the background. You'll see "GLB MODEL READY" when the export completes.
-
-## Roadmap
-
-- [x] **3D Preview**: Real-time OpenGL preview with actual PCB geometry *(v0.9.0)*
-- [ ] **Non-linear Easing**: Bezier curves for ease-in, ease-out, ease-in-out
-- [ ] **Exploded View**: Animate board layer separation
-- [ ] **Component Highlights**: Spotlight specific components during animation
-- [ ] **Batch Rendering**: Process multiple boards with the same settings
-- [ ] **Preset Packs**: Downloadable preset collections for different use cases
-
-## Contributing
-
-Contributions welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-## License
-
-MIT License - see [LICENSE](LICENSE) for details
-
-## Credits
-
-Built with:
-- [KiCad](https://www.kicad.org/) - PCB design software
-- [ffmpeg](https://ffmpeg.org/) - Video processing
-- [wxPython](https://www.wxpython.org/) - GUI framework
-- [Pencil](https://pencil.dev/) - UI design tool
-
-## Support
-
-- 📖 [Documentation](docs/)
-- 🐛 [Issue Tracker](https://github.com/yourusername/SpinRender/issues)
-- 💬 [Discussions](https://github.com/yourusername/SpinRender/discussions)
+*Designed for engineers who care about how their work is seen.*
