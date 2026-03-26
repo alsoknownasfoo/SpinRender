@@ -221,7 +221,7 @@ locale:
       cc_label:                "CC BY-NC 4.0"
       cc_url:                  "https://creativecommons.org/licenses/by-nc/4.0/"
       notices_label:           "Open source notices"
-      notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/NOTICES.md"
+      notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
 
       github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
       kofi_url:                "https://ko-fi.com/alsoknownasfoo"
