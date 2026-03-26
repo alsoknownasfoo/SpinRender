@@ -2,7 +2,7 @@
 SpinRender - KiCad Plugin for PCB Animation Rendering
 Version: 0.95-beta
 Author: Foo Hoang
-License: MIT
+License: GPLv3
 """
 
 # DO NOT import heavy plugin modules at package import time.

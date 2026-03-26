@@ -183,7 +183,8 @@ Contributions welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guideli
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details
+- **Code**: [GPLv3 License](LICENSE)
+- **Assets**: [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) - Free for personal use, tip if you love!
 
 ## Credits
 
