@@ -52,11 +52,7 @@ No information was lost - everything important has been either:
 ## How to Update Documentation
 
 ### Updating CODEMAPS
-After significant code changes, run:
-```bash
-/update-codemaps
-```
-This will regenerate all architecture reference files.
+CODEMAPS are generated manually as needed for documentation purposes. If updates are required, contact the project maintainer or regenerate using the internal documentation generator.
 
 ### Updating Reference Specs
 Theme and locale schema changes should be made directly in:
@@ -92,4 +88,4 @@ If you find gaps in the current documentation:
 
 ---
 
-**Last Updated**: 2026-03-21
+**Last Updated**: 2026-03-25

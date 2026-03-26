@@ -1,61 +1,55 @@
-<!-- Generated: 2026-03-21 | Files scanned: 29 Python files | Token estimate: ~700 -->
+# Data Models, Configuration & Settings
 
-# Data Models & Configuration
+<!-- Generated: 2026-03-25 | Files scanned: 30 Python modules | Token estimate: ~600 -->
 
 ## Core Data Structures
 
-### RenderSettings (`SpinRender/core/settings.py`)
+### RenderSettings (`SpinRender/core/settings.py:100`)
 
 **Purpose**: Serializable configuration for a single render
 
-**Fields**:
+**Fields** (dataclass):
 ```python
 @dataclass
 class RenderSettings:
-    # Resolution
-    width: int = 1920
-    height: int = 1080
-
-    # Camera
-    orbit_speed: float = 1.0
-    elevation: float = 30.0
-    distance: float = 100.0
-
-    # Lighting
-    ambient: float = 0.3
-    diffuse: float = 0.7
-    specular: float = 0.5
-    light_color: str = "#ffffff"
-
-    # Material Colors
-    board_color: str = "#2d5a27"
-    solder_color: str = "#ffb347"
-    copper_color: str = "#b87333"
-    silkscreen_color: str = "#e0e0e0"
+    # Camera orientation (degrees)
+    board_tilt: float = 0.0          # -90 to +90
+    board_roll: float = -45.0        # -180 to +180
+    spin_tilt: float = 90.0          # -90 to +90
+    spin_heading: float = 90.0       # -180 to +180
 
     # Animation
-    fps: int = 30
-    duration: float = 10.0  # seconds
-    total_frames: int = 300  # computed: fps * duration
+    period: float = 10.0             # seconds, 3-30
+    easing: str = 'linear'           # linear, ease_in, ease_out, etc.
+    direction: str = 'ccw'           # cw or ccw
+
+    # Lighting preset
+    lighting: str = 'studio'         # studio, custom, etc.
 
     # Output
-    format: str = "mp4"  # or "gif"
-    output_path: Optional[str] = None
+    format: str = 'mp4'              # mp4, gif
+    resolution: str = '1920x1080'    # WxH
+    bg_color: str = '#000000'        # hex color
+    output_auto: bool = True         # auto-path from board
+    output_path: str = ''            # manual override
+    render_mode: str = 'both'        # wireframe, shaded, both
+
+    # Advanced
+    cli_overrides: str = ''          # extra Blender args
+    logging_level: str = 'info'      # debug, info, warning, error
+    theme_mode: str = 'system'       # dark, light, system
 ```
 
-**Serialization**:
-- `to_dict()` → JSON-compatible dict
-- `from_dict(d: dict)` → RenderSettings
-- `validate()` → list of error strings
+**Validation** (`__post_init__`):
+- `board_tilt`: -90 ≤ value ≤ 90
+- `board_roll`: -180 ≤ value ≤ 180
+- `spin_tilt`: -90 ≤ value ≤ 90
+- `spin_heading`: -180 ≤ value ≤ 180
+- `period`: > 0 (3-30 typical)
 
-**Validation Rules**:
-- `width`, `height`: 320-4096
-- `orbit_speed`: 0.1-10.0
-- `elevation`: -90 to 90
-- `distance`: 10.0-500.0
-- `ambient`, `diffuse`, `specular`: 0.0-1.0
-- `fps`: 24-60
-- `duration`: 3.0-30.0
+**Serialization**:
+- `to_dict() → dict` - all fields as JSON-compatible dict
+- `from_dict(d: dict) → RenderSettings` - construct from dict (ignores extra keys)
 
 ---
 
@@ -63,176 +57,341 @@ class RenderSettings:
 
 **Source**: YAML files (`resources/themes/*.yaml`)
 
-**Schema** (high-level):
+**Structure** (high-level):
 ```yaml
 name: "Dark"                   # Theme display name
-version: 2                    # Theme schema version
-description: "Dark theme"     # Human description
+version: 2                     # Theme schema version (optional)
+description: "Dark theme"      # Human description
 
 colors:
-  primary: "#ff5500"          # Direct hex
-  secondary: "ref: colors.accent"
-  background: "func: darken(colors.surface, 0.1)"
-  hover: "mix(colors.bg, colors.fg, 0.05)"
-  surface: "#1e1e1e"
-  text:
-    primary: "#ffffff"
-    secondary: "ref: colors.text.disabled"
-    disabled: "func: alpha(colors.text.primary, 0.5)"
+  auto_states:
+    hover: rgb(60, 60, 60)      # Lighten for hover in dark mode
+    active: rgb(-60, -60, -60)  # Darken for active
+    disabled: rgb(0, 0, 0, 0.5) # 50% opacity
+
+  # Base palette (raw values)
+  gray-black:  "#0D0D0D"
+  gray-dark:   "#121212"
+  gray-div:    "#1A1A1A"
+  gray-border: "#222222"
+  gray-medium: "#444444"
+  gray-light:  "#646464"
+  gray-text:   "#777777"
+  gray-white:  "#E0E0E0"
+
+  # Accent colors
+  cyan:   "#00BCD4"
+  yellow: "#FFD600"
+  green:  "#4CAF50"
+  orange: "#FF6B35"
+  red:    "#FF3B30"
+  purple: "#AA6BFF"
+  pink:   "#F240FF"
+
+  # Tint variants (opacity-based)
+  cyan-10:  "rgba(0, 188, 212, 0.1)"
+  cyan-20:  "rgba(0, 188, 212, 0.2)"
+  cyan-50:  "rgba(0, 188, 212, 0.5)"
+  cyan-80:  "rgba(0, 188, 212, 0.8)"
+  # ... similar for other accents
+
+  # Semantic aliases
+  primary:     "@colors.cyan"
+  secondary:   "@colors.yellow"
+  tertiary:    "@colors.purple"
+  quaternary:  "@colors.pink"
+  ok:          "@colors.green"
+  warning:     "@colors.orange"
+  error:       "@colors.red"
+
+  # Brand colors (external services)
+  brand:
+    github-sponsors: "#ea4aaa"
+    kofi:            "#29ABE0"
+    ai:
+      claude:  "#d97757"
+      gemini:  "#3186FF"
+      chatgpt: "#12a37f"
+      copilot: "#7c3aed"
+
+radius:
+  none: 0
+  sm:   4
+  md:   6
+  lg:   8
+  full: 9999
+
+borders:
+  width:
+    none:   0
+    thin:   1
+    medium: 2
+  roles:
+    default:  { size: "@borders.width.thin", color: "@colors.gray-border" }
+    subtle:   { size: "@borders.width.thin", color: "@colors.gray-border" }
+    button:   { size: "@borders.width.thin", color: "@colors.gray-medium" }
+    focus:    { size: "@borders.width.thin", color: "@colors.primary" }
+    strong:   { size: "@borders.width.medium", color: "@colors.primary" }
+
+dividers:
+  width:
+    thin: 1
+    medium: 2
+  default:
+    size: "@dividers.width.thin"
+    color: "@colors.gray-div"
 
 typography:
-  heading:
-    family: "Oswald"
-    size: 24
-    weight: "bold"
-  body:
-    family: "JetBrainsMono"
-    size: 12
-    weight: "normal"
-  caption:
-    family: "JetBrainsMono"
-    size: 10
-    weight: "normal"
+  families:
+    mono:    "JetBrains Mono"
+    display: "Oswald"
+    icon:    "Material Design Icons"
+
+  weights:
+    hairline: 100
+    thin:     200
+    light:    300
+    normal:   400
+    medium:   500
+    semibold: 600
+    bold:     700
+    extrabold: 800
+    black:    900
+
+  scale:
+    xs: 7
+    sm: 9
+    base: 11
+    md: 14
+    lg: 18
+    xl: 24
+    icon: 16
+    icon-lg: 20
+
+  spacing:
+    none: 0
+    xs: 4
+    sm: 6
+    base: 10
+    md: 16
+    lg: 24
+
+text:
+  title:
+    color: "@colors.gray-white"
+    formatting: "uppercase"
+    font:
+      typeface: "@typography.families.display"
+      size: "@typography.scale.lg"
+      weight: "@typography.weights.bold"
+  # ... 20+ more text roles (subtitle, header, body, button, label, etc.)
+
+glyphs:
+  render-action: "\U000F0A1C"
+  settings:      "\U000F0493"
+  trash:         "\U000F0A7A"
+  # ... 50+ icon glyph mappings
 
 layout:
-  spacing:
-    small: 8
-    medium: 16
-    large: 24
-  border:
-    radius: 4
-    width: 1
+  main:
+    frame:   { bg: "@colors.gray-black", radius: "@radius.none" }
+    header:  { bg: "@colors.gray-black", title: "@text.title", subtitle: "@text.subtitle" }
+    leftpanel:
+      width: 450
+      headers: "@text.header"
+      body: "@text.body"
+      padding: 16
+      control:
+        heading_gap: "@typography.spacing.sm"
+        description_gap: "@typography.spacing.xs"
+        between_items: "@typography.spacing.base"
+      border: "@borders.default"
+    divider: { bg: "@dividers.default.color", size: 1 }
+    rightpanel:
+      bg: "@colors.black"
+      title: "@text.title"
+    status: "@components.status"
 
-  control:
-    padding: 12
-    min_height: 32
+  dialogs:
+    default:
+      frame: { width: 600, height: 500, bg: "@colors.gray-dark", radius: "@radius.md" }
+      header: { bg: "@colors.gray-black", border: "@borders.default", height: 48 }
+      body: { padding: { all: "@typography.spacing.lg" }, text: "@text.body" }
+      # ... more dialog layouts
 
-  panel:
-    padding: 16
-    gap: 8
+components:
+  # Reusable UI component specifications
+  preset_card:
+    default:
+      frame: { width: 90, height: 64, bg: { default: "@colors.gray-div", hover: "@colors.cyan-80" }, radius: "@radius.lg" }
+      icon:  { ref: "@text.icon_lg", color: { default: "@colors.gray-light", hover: "@colors.gray-dark" } }
+      label: { ref: "@text.button", color: { default: "@colors.gray-light", hover: "@colors.gray-dark" } }
 
-icons:
-  delete: "delete"           # Icon font glyph name
-  play: "play"
-  pause: "pause"
-  add: "plus"
+  input:
+    default:
+      frame: { height: 32, bg: "@colors.gray-black", radius: "@radius.md" }
+      label: { ref: "@text.numeric" }
+      color: { default: "@colors.gray-light", hover: "@colors.primary" }
+    path:
+      ref: "@components.input.default"
+      frame: { height: 36 }
+      icon: { ref: "glyphs.folder", color: "@colors.primary" }
 
-actions:
-  render:
-    bg: "ref: colors.primary"
-    hover: "func: lighten(colors.primary, 0.1)"
-  cancel:
-    bg: "#ff4444"
+  slider:
+    default:
+      track: { frame: { height: 8, radius: "@radius.sm" }, color: "@colors.gray-border" }
+      nub:   { width: 1, height: 14, color: "@colors.primary" }
+      # ... variants: primary (yellow), secondary (orange), etc.
+
+  button:
+    default:
+      frame: { height: 36, bg: { default: "@colors.gray-div", hover: "#00B2CA" }, radius: "@radius.md" }
+      label: { ref: "@text.button", color: { default: "@colors.gray-light", hover: "@colors.black" } }
+    ok:
+      ref: "@components.button.default"
+      frame: { bg: "#00B2CA" }
+      label: { color: "@colors.black" }
+    # ... variants: cancel, close, render, options, about, etc.
+
+  toggle:
+    default:
+      frame: { height: 32, radius: "@radius.md", bg: "@colors.gray-div" }
+      items:
+        frame: { bg: { default: "transparent", hover: "@colors.primary", active: "@colors.primary" } }
+        icon:  { ref: "@text.icon", color: { default: "@colors.gray-light", hover: "@colors.gray-dark" } }
+        label: { ref: "@text.label", color: { default: "@colors.gray-light", hover: "@colors.gray-dark" } }
+
+  dropdown:
+    default:
+      frame: { height: 32, bg: "transparent", radius: "@radius.md" }
+      label: { font: "@text.numeric.font", color: "@colors.gray-light" }
+      icon:  { ref: "@text.icon", color: "@colors.gray-light" }
+      menu:
+        frame: { bg: "@colors.gray-dark", radius: "@radius.md" }
+        items: { bg: "transparent", hover: "@colors.cyan-20", active: "@colors.primary" }
+
+  colorpicker:
+    default:
+      bg: "transparent"
+      border: "@borders.subtle"
+      label: { font: { typeface: "mono", size: "sm", weight: "semibold" }, color: "@colors.gray-light" }
+      items:
+        innerborder: { size: 1, color: { default: "@colors.gray-black", hover: "@colors.red" } }
+        border:       { size: 2, color: "@colors.gray-border" }
+
+  status:
+    default:  { bg: "@colors.gray-black", label: { ref: "@text.status", color: "@colors.gray-white" } }
+    ready:    { bg: "@colors.gray-black", label: { ref: "@text.status", color: "@colors.ok" } }
+    progress: { bg: "@colors.primary", label: { ref: "@text.status", color: "@colors.gray-black" } }
+    complete: { bg: "@colors.gray-black", label: { ref: "@text.status", color: "@colors.ok" } }
+    error:    { bg: "@colors.gray-black", label: { ref: "@text.status", color: "@colors.error" } }
+
+  scrollbar:
+    track:   { frame: { bg: "transparent" } }
+    thumb:   { frame: { bg: "@colors.gray-medium", radius: "full" } }
 ```
 
 **Token Resolution**:
-1. Direct: `"#rrggbb"` or `"rgb(r,g,b)"`
-2. Reference: `"ref: path.to.token"`
-3. Function: `"func: darken(color, 0.1)"`
-4. Composition: `"mix(a, b, 0.5)"`
+Theme supports:
+1. Direct: `"#rrggbb"`, `"rgba(r,g,b,a)"`, `"white"` (named color)
+2. Reference: `"@colors.primary"` or `"ref: colors.primary"`
+3. Function: `"func: darken(colors.bg, 0.1)"`
+4. Composition: `"mix(colors.bg, colors.fg, 0.5)"`
 
-**Supported Functions**:
-- `darken(color, factor: 0-1)`
-- `lighten(color, factor: 0-1)`
-- `alpha(color, opacity: 0-1)`
-- `saturate(color, factor)`
-- `desaturate(color, factor)`
-- `mix(a, b, ratio: 0-1)`
-- `contrast(color)` - return black or white
+**Resolved by**: `Theme._resolve(path)` with circular reference detection and parent inheritance.
 
 ---
 
-### Preset Storage Format
+## Preset Storage Format
 
-**Directory Layout**:
+### Directory Layout
 ```
-~/.spinrender/presets/           (global)
-  camera_loop.json
-  high_quality.json
-  xxx.kicad_pcb/.spinrender/    (project)
-    preset1.json
-    preset2.json
+~/.spinrender/presets/           (global presets)
+  hero.json
+  spin.json
+  flip.json
+
+{board_dir}/.spinrender/         (project presets)
+  custom_shots.json
+  lighting_test.json
 ```
 
-**JSON Structure**:
+### JSON Structure
 ```json
 {
-  "name": "camera_loop",
+  "name": "hero",
   "created_at": "2026-03-20T14:30:00Z",
+  "is_global": false,
   "settings": {
-    "width": 1920,
-    "height": 1080,
-    "orbit_speed": 1.5,
-    "elevation": 30.0,
-    "distance": 100.0,
-    "ambient": 0.3,
-    "diffuse": 0.7,
-    "specular": 0.5,
-    "light_color": "#ffffff",
-    "board_color": "#2d5a27",
-    "solder_color": "#ffb347",
-    "copper_color": "#b87333",
-    "silkscreen_color": "#e0e0e0",
-    "fps": 30,
-    "duration": 10.0,
-    "format": "mp4"
-  },
-  "thumbnail": "presets/thumbnail.png"  # optional cached thumbnail
+    "board_tilt": 0.0,
+    "board_roll": -45.0,
+    "spin_tilt": 90.0,
+    "spin_heading": 90.0,
+    "period": 10.0,
+    "easing": "linear",
+    "direction": "ccw",
+    "lighting": "studio",
+    "format": "mp4",
+    "resolution": "1920x1080",
+    "bg_color": "#000000",
+    "output_auto": true,
+    "output_path": "",
+    "render_mode": "both",
+    "logging_level": "info",
+    "theme_mode": "system"
+  }
 }
 ```
 
-**Schema Version**: `settings` is flat RenderSettings fields (v1)
+**Schema Version**: Implicit v1 (flat RenderSettings fields)
+**Backwards Compat**: `RenderSettings.from_dict()` ignores extra keys.
 
 ---
 
-### Locale Strings
+## Locale Strings
 
-**Source**: `resources/locale/{lang}.yaml`
-
-**Structure**:
-```yaml
-# Menus
-menu:
-  file: "File"
-  edit: "Edit"
-  view: "View"
-  render: "Render"
-  presets: "Presets"
-  help: "Help"
-
-# Menu items
-menu.file.open_board: "Open Board..."
-menu.file.exit: "Exit"
-menu.presets.save: "Save Preset..."
-menu.presets.manage: "Manage Presets..."
-
-# Dialogs
-dialog:
-  title:
-    preset_save: "Save Preset"
-    preset_manage: "Manage Presets"
-    advanced: "Advanced Options"
-  button:
-    ok: "OK"
-    cancel: "Cancel"
-    save: "Save"
-    delete: "Delete"
-    load: "Load"
-
-# Status messages
-status:
-  ready: "Ready"
-  rendering: "Rendering frame {current}/{total}"
-  complete: "Render complete: {filename}"
-  error: "Error: {message}"
-
-# Tooltips
-tooltip:
-  resolution_width: "Output width in pixels"
-  render_button: "Start rendering animation"
+### Locale Files
+```
+SpinRender/resources/locale/
+├── en.yaml        # Base English strings
+├── en_US.yaml     # US English (formats, variants)
+└── en_US_COMPLETE.yaml  # Generated full locale (all keys)
 ```
 
-**Interpolation**: `_locale.get("status.rendering", current=12, total=60)`
+### YAML Structure
+```yaml
+locale:
+  en:
+    component:
+      button:
+        render:
+          label: "RENDER"
+          icon_ref: "render-action"
+        stop:
+          label: "STOP"
+          icon_ref: "stop"
+      status:
+        ready: "Ready"
+        preparing: "Preparing render..."
+        rendering: "Rendering frame {current}/{total}"
+        complete: "RENDER COMPLETE"
+        error: "Error: {message}"
+        stopped: "Render stopped"
+    dialog:
+      title:
+        preset_save: "Save Preset"
+        advanced: "Advanced Options"
+        about: "About SpinRender"
+      button:
+        ok: "OK"
+        cancel: "Cancel"
+        save: "Save"
+    # ... 100+ more keys
+```
+
+**Interpolation**: `_locale.get("component.status.rendering", current=12, total=60)` → `"Rendering frame 12/60"`
+
+**Fallback**: If key missing, returns `"???" + key` for visibility.
 
 ---
 
@@ -240,7 +399,18 @@ tooltip:
 
 ### Action Plugin JSON (v9.0 and v10.0)
 
-**Example** (`resources/kicad_config/10.0/pcbnew.json`):
+**Location**: `SpinRender/resources/kicad_config/{version}/`
+
+**Files per version** (7 total):
+- `kicad.json` - Main PCB editor (pcbnew)
+- `3d_viewer.json` - 3D viewer toolbar
+- `eeschema.json` - Schematic editor
+- `fpedit.json` - Footprint editor
+- `pcbnew.json` - PCB editor (legacy, v9 only)
+- `cvpcb.json` - Footprint assigner
+- `kicad_common.json` - Shared config
+
+**Example** (`10.0/pcbnew.json`):
 ```json
 {
   "action_id": "SpinRender:Render",
@@ -260,39 +430,47 @@ tooltip:
 **Fields**:
 - `action_id`: Unique ID (namespace:action)
 - `action_name`: Display name in menus
-- `icon`: Relative path to icon file
-- `class`: Python class name to instantiate
+- `icon`: Relative path to icon file (in plugin directory)
+- `class`: Python class name to instantiate (`SpinRenderPlugin`)
 - `shortcut`: Optional keyboard shortcut
 - `tooltip`: Hover tooltip
-- `menu_item`: Show in menu bar
+- `menu_item`: Show in menu bar (true/false)
 - `menu_path`: Menu hierarchy (e.g., "Tools/Render")
-- `toolbar`: Show in toolbar
-- `toolbar_id`: Toolbar group
-- `visibility`: "always", "pcbnew", etc.
+- `toolbar`: Show in toolbar (true/false)
+- `toolbar_id`: Toolbar group identifier
+- `visibility`: "always", "pcbnew", "footprint_editor", etc.
 
 **Version Differences**:
-- KiCad 9.0: Uses `"kicad.json"` for main app
-- KiCad 10.0: Updated schema with `toolbar_id`, `visibility`
+- KiCad 9.0: Uses `"kicad.json"` for main app; `"pcbnew.json"` is primary
+- KiCad 10.0: Updated schema with `toolbar_id`, `visibility`; unified under `pcbnew.json`
 
 ---
 
 ## Board Loader Data Flow
 
-**Input**: `.kicad_pcb` file path
+**Input**: `.kicad_pcb` file path (from KiCad API)
 
 **Process**:
 1. Parse KiCad PCB using `pcbnew` API
-2. Extract 3D model references (3D models in footprints)
+   - Get board object: `board = pcbnew.GetBoard()`
+   - Traverse footprints: `board.GetFootprints()`
+2. For each footprint, extract 3D model references (`Get3DModel()`)
 3. For each 3D model:
-   - Load STEP/STL/OBJ via `trimesh.load()`
-   - Transform to board position (apply footprint transform)
-   - Merge into single scene
-4. Build `trimesh.Scene` with all board meshes
+   - Resolve model path (STEP/STL/OBJ/WRL)
+   - Load via `trimesh.load(path)`
+   - Apply footprint transform (position, rotation)
+   - Merge into single `trimesh.Scene`
+4. Build final `trimesh.Scene` with all board meshes
 5. Provide to `GLPreviewRenderer` for OpenGL display
 
 **Caching**:
-- Board geometry cached in memory (per session)
+- Board geometry cached in memory (per session, in `GLPreviewRenderer.scene`)
 - Thumbnails cached on disk (`~/.spinrender/cache/thumbnails/`)
+
+**Performance**:
+- Large STEP files: 2-5s initial load
+- Subsequent loads: cached meshes → instant
+- Consider: progressive loading for future (LOD)
 
 ---
 
@@ -301,36 +479,36 @@ tooltip:
 **Location**: `~/.spinrender/cache/thumbnails/`
 
 **Naming**: `{preset_hash}.png`
-
-**Hash**: SHA256 of (preset_name + RenderSettings JSON)
+- Hash = SHA256(preset_name + RenderSettings JSON sorted keys)
 
 **Generation**:
-- On preset save: render single frame at 200x150
-- Save PNG to thumb cache
-- Associate with preset
+- On preset save: render single frame at 200×150
+- Save PNG to thumb cache (quality 80)
+- Associate with preset via hash lookup
 
 **Invalidation**:
-- If thumbnail missing → regenerate
-- If preset settings changed → new hash, new thumbnail
+- If thumbnail missing → regenerate on demand
+- If preset settings changed → new hash, new file
+- Old thumbnails evicted via LRU (optional cleanup)
 
 ---
 
-## Settings Persistence
+## Settings Persistence (UI State)
 
-**UI State** (not presets):
-- Last used board path: `~/.spinrender/last_board.json`
-- Window geometry: `~/.spinrender/window_geometry.json`
-- Last selected preset: `~/.spinrender/last_preset.json`
-- Theme preference: `"dark"` or `"light"` → `~/.spinrender/theme.json`
+**Non-preset UI state** (between sessions):
 
-**Format**: JSON with single key-value pairs
+| Setting | Path | Format |
+|---------|------|--------|
+| Last board | `~/.spinrender/last_board.json` | `{ "path": "/.../board.kicad_pcb" }` |
+| Window geometry | `~/.spinrender/window_geometry.json` | `{ "x": 100, "y": 100, "w": 1200, "h": 800 }` |
+| Last preset | `~/.spinrender/last_preset.json` | `{ "name": "hero", "is_global": true }` |
+| Theme preference | `~/.spinrender/theme.json` | `{ "mode": "dark" }` |
 
-Example:
-```json
-{ "theme": "dark" }
-{ "last_board": "/path/to/board.kicad_pcb" }
-{ "geometry": { "x": 100, "y": 100, "w": 1200, "h": 800 } }
-```
+**Format**: Single-key JSON files for easy merge.
+
+**Loading**:
+- On startup: `SpinRenderPanel.__init__()` reads these files
+- Overrides default settings if files exist
 
 ---
 
@@ -338,9 +516,9 @@ Example:
 
 ```
 ┌─────────────────────────────────────────────┐
-│  CLI Arguments / Environment Variables     │
+│  CLI Arguments / Environment Variables     │  (highest priority)
 └─────────────────┬───────────────────────────┘
-                  ↓ (highest priority)
+                  ↓
 ┌─────────────────────────────────────────────┐
 │  Session Settings (in-memory RenderSettings)│
 └─────────────────┬───────────────────────────┘
@@ -355,46 +533,53 @@ Example:
 ```
 
 **Overlay Rules**:
-- CLI args override everything
-- Loaded preset fills session settings
-- If no preset → defaults used
-- Changes in UI update session settings only
-- Save to preset writes current session state
+- CLI args override everything (parsed in `main_panel` if present)
+- Loaded preset fills session settings on recall
+- If no preset recalled → defaults used
+- UI changes update session settings only
+- Save to preset writes current session state to JSON
+- `save_settings()` writes `last_used_settings.json` (non-preset)
 
 ---
 
-## Migrations & Versioning
+## Schema Versioning & Migrations
 
-**Theme Schema Versioning**:
+### Theme Schema Versioning
 - Theme YAML may include `version: 2`
 - If missing → assume v1
-- Migration on load? No, validation fails instead
+- Migration: None - validation fails if incompatible
+- Strategy: Add new keys as optional; maintain backward-compatible resolution
 
-**Preset Schema Versioning**:
-- Preset JSON may include `"schema_version": 1`
+### Preset Schema Versioning
+- Preset JSON may include `"schema_version": 1` (optional)
 - Backward compatibility: `RenderSettings.from_dict()` ignores extra fields
-- Forward compatibility: Newer app should work with old presets (missing fields → defaults)
+- Forward compatibility: Newer app works with old presets (missing fields → defaults)
+- Migration: Not needed; additive changes only
 
-**KiCad Config Versioning**:
-- Separate directories: `9.0/` and `10.0/`
-- Plugin loads correct config based on detected KiCad version
-- No migration needed, both coexist
+### KiCad Config Versioning
+- Separate directories: `resources/kicad_config/9.0/` and `10.0/`
+- Plugin auto-detects KiCad version at runtime
+  - `import pcbnew; version = pcbnew.GetMajorVersion()`
+- Loads matching config files
+- No migration; both versions coexist
 
 ---
 
 ## Validation Rules
 
-### Theme Validation (`validation.py`)
+### Theme Validation (`validation.py:250`)
 
 **Checks**:
 1. **Required sections**: `colors`, `typography`, `layout`
-2. **Color format**: Hex or function/reference
-3. **Circular references**: Detect `A → B → A`
-4. **Missing references**: `ref: colors.missing` must exist
-5. **Function syntax**: `func: name(args)` with valid name
-6. **Type checking**: colors are strings, layout are numeric
+2. **Color format**: Hex `#rrggbb` or `rgba(r,g,b,a)` or reference `@path`
+3. **Circular references**: Detect A → B → A in token graph
+4. **Missing references**: `ref: colors.missing` must exist somewhere
+5. **Function syntax**: `func: name(args)` with valid function name
+6. **Type checking**: colors are strings, layout/spacing are numeric
 
-**Output**: `ValidationReport` with errors, warnings, infos
+**Output**: `ValidationReport` with `errors`, `warnings`, `infos`
+
+**CLI**: `python -m SpinRender.validation path/to/theme.yaml`
 
 ---
 
@@ -403,30 +588,53 @@ Example:
 **Method**: `RenderSettings.validate() → list[str]`
 
 **Ranges**:
-- 320 ≤ width, height ≤ 4096
-- 0.1 ≤ orbit_speed ≤ 10.0
-- -90 ≤ elevation ≤ 90
-- 10.0 ≤ distance ≤ 500.0
-- 0.0 ≤ lighting ≤ 1.0
-- 24 ≤ fps ≤ 60
-- 3.0 ≤ duration ≤ 30.0
+- `board_tilt`, `spin_tilt`: -90 to +90
+- `board_roll`, `spin_heading`: -180 to +180
+- `period`: 3.0 to 30.0 seconds
+- `resolution`: parse `WxH` → 320 ≤ W,H ≤ 4096
+- `format`: one of `"mp4"`, `"gif"`
+- `bg_color`: hex color regex `^#[0-9a-fA-F]{6}$`
 
-**Color Format**: Hex regex `^#[0-9a-fA-F]{6}$`
+**UI Enforcement**: Sliders bound to ranges; invalid values clamped.
+
+---
+
+### Preset Name Validation
+
+**Rules**:
+- Sanitized: lowercase alphanumeric + underscores only
+- Max length: 64 characters
+- Reserved names: `"hero"`, `"spin"`, `"flip"` (built-in, read-only)
+
+**Enforcement**: `PresetManager._sanitize_name(name)` strips invalid chars.
 
 ---
 
 ## Performance Considerations
 
 **YAML Loading**:
-- Lazy with caching: Theme only reloads if mtime changed
-- `_resolved_cache` memoizes token resolution
+- Lazy with mtime-based caching
+- `Theme._resolved_cache` memoizes token resolution per session
+- Cache cleared on `Theme.reload()`
 
 **Preset I/O**:
-- JSON serialization (fast)
-- Filenames sanitized (lowercase, alphanumeric only)
-- Thumbnails PNG-compressed (quality 80)
+- JSON serialization (fast, builtin)
+- Filename sanitization (lowercase, underscores)
+- Thumbnail PNG compression (quality 80)
 
 **Board Loading**:
-- trimesh caches loaded meshes in memory
-- Large STEP files may take 2-5 seconds on first load
-- Consider progressive loading for future
+- `trimesh` caches loaded meshes in memory (`scene_cache`)
+- Large STEP files may take 2-5 seconds on first load (disk + parsing)
+- Subsequent loads: instant (from trimesh cache)
+- Consider: background loading thread for future
+
+**Rendering**:
+- Blender runs as separate subprocess (no GIL contention)
+- Progress reported via stdout pipe (frame count)
+- UI updates via `wx.CallAfter()` (thread-safe)
+- Preview frames: PNG → `wx.Image` → `wx.Bitmap` (GPU upload)
+
+**Hot-Reload**:
+- Theme: file mtime check every 1s (timer)
+- Locale: same mechanism
+- Mtime check cheap (stat syscall); full reapply ~10ms for 40 controls

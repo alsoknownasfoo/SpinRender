@@ -174,9 +174,6 @@ locale:
       parameters: "Parameters"
       output: "Output settings"
 
-    # ─────────────────────────────────────────────────────────────
-    # 3. PARAMETERS & OUTPUT
-    # ─────────────────────────────────────────────────────────────
 
     # PARAMETERS (Sliders & Inputs)
     parameters:

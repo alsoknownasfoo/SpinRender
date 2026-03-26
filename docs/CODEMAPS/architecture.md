@@ -1,196 +1,193 @@
-<!-- Generated: 2026-03-21 | Files scanned: 29 Python files | Token estimate: ~750 -->
-
 # SpinRender Architecture
 
-## Project Overview
+<!-- Generated: 2026-03-25 | Files scanned: 30 Python modules | Token estimate: ~600 -->
 
-**Type**: KiCad Action Plugin (wxPython GUI Application)
-**Language**: Python 3.8+
-**Purpose**: Generate animated PCB renders with camera loops and lighting presets
-**Entry Point**: `SpinRender/spinrender_plugin.py` (SpinRenderPlugin class)
+## Project Type
 
-## System Structure
+**KiCad 8/10 Action Plugin** — Desktop GUI application for generating animated PCB renders.
 
-```
-SpinRender/
-├── spinrender_plugin.py    # KiCad plugin entry point
-├── core/                   # Business logic & data models
-│   ├── theme.py           # Singleton theme manager (YAML tokens)
-│   ├── presets.py         # PresetManager (JSON presets)
-│   ├── preview.py         # GLPreviewRenderer (OpenGL viewport)
-│   ├── renderer.py        # Rendering engine (trimesh-based)
-│   ├── locale.py          # Internationalization (i18n)
-│   └── settings.py        # RenderSettings data class
-├── ui/                    # wxPython UI components
-│   ├── main_panel.py      # SpinRenderPanel (main frame)
-│   ├── preview_panel.py   # PreviewPanel (viewport + overlays)
-│   ├── controls_side_panel.py  # ControlsSidePanel (left sidebar)
-│   ├── custom_controls.py # Custom wx widgets (sliders, buttons, etc.)
-│   ├── dialogs.py         # RecallPresetDialog, AdvancedOptionsDialog
-│   ├── dependency_dialog.py  # DependencyChecker UI
-│   ├── preset_controller.py  # Preset load/save/delete logic
-│   ├── parameter_controller.py  # Parameter ↔ UI binding
-│   ├── text_styles.py     # TextStyle singleton (font management)
-│   ├── validation.py      # Theme validation utilities
-│   └── helpers.py         # UI helper functions
-├── resources/
-│   ├── themes/            # YAML theme files (dark.yaml, light.yaml)
-│   ├── locale/            # Translation files (en.yaml, en_US.yaml)
-│   ├── kicad_config/      # KiCad config JSONs (9.0/, 10.0/)
-│   └── fonts/             # Variable fonts (JetBrainsMono, Oswald, MDI)
-└── utils/
-    └── logger.py          # SpinLogger initialization
-```
+**Tech Stack**:
+- Python 3 (KiCad's embedded Python)
+- wxPython 6 (GUI framework)
+- PyYAML (theme/locale configuration)
+- trimesh + OpenGL (3D rendering)
+- subprocess (external Blender communication)
 
-## Plugin Lifecycle
+## High-Level Architecture
 
 ```
-1. KiCad loads plugin → pcbnew.ActionPluginRegistry()
-2. Plugin defaults() called → metadata registration
-3. User clicks toolbar button → SpinRenderPlugin.Run()
-4. DependencyChecker.check_and_prompt() → validate wxPython, OpenGL, trimesh
-5. If SpinRenderFrame.active_instance exists → Raise() (singleton pattern)
-6. Else → Create SpinRenderFrame (main window)
-7. Main window initialization:
-   - Load Theme singleton from YAML
-   - Load Locale singleton
-   - Initialize RenderSettings
-   - Build UI panels (Preview, Controls, Status Bar)
-8. Event loop starts → user interaction
+┌─────────────────────────────────────────────────────────────┐
+│                    KiCad 8/10 (pcbnew)                      │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  SpinRenderPlugin (spinrender_plugin.py)             │  │
+│  │  - Registers as ActionPlugin                         │  │
+│  │  - Creates SpinRenderFrame on Run()                  │  │
+│  │  - Theme/Locale hot-reload watcher                   │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│              SpinRender Package (Pure Python)              │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  ui/ (15 modules)                                     │  │
+│  │  • main_panel.py — Root container                   │  │
+│  │  • controls_side_panel.py — Parameter controls      │  │
+│  │  • preview_panel.py — 3D viewport                   │  │
+│  │  • dialogs.py — Modal dialogs (options, presets)    │  │
+│  │  • custom_controls.py — Themed wx controls (1629l)  │  │
+│  │  • status_bar.py — Render progress                  │  │
+│  │  • registry.py — Control registry for bulk ops      │  │
+│  │  • events.py — Custom wx events                      │  │
+│  └──────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  core/ (7 modules)                                    │  │
+│  │  • theme.py — YAML design token singleton (532l)    │  │
+│  │  • locale.py — YAML localization singleton (170l)   │  │
+│  │  • settings.py — RenderSettings dataclass           │  │
+│  │  • presets.py — PresetManager (JSON persistence)    │  │
+│  │  • render_controller.py — Async render orchestration│  │
+│  │  • renderer.py — Blender CLI wrapper (605l)         │  │
+│  │  • preview.py — OpenGL viewport rendering (884l)    │  │
+│  └──────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  foundation/ (2 modules)                              │  │
+│  │  • fonts.py — Font family loading                   │  │
+│  │  • icons.py — Icon font/glyph resolution            │  │
+│  └──────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  utils/ (2 modules)                                   │  │
+│  │  • logger.py — SpinLogger singleton                 │  │
+│  │  • check_dependencies.py — Dependency checker (289l)│  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│              External Dependencies                         │
+│  • Blender (CLI) — Actual 3D rendering engine            │
+│  • wxPython 6 — GUI widgets (bundled in KiCad)           │
+│  • PyYAML — Config parsing                               │
+│  • trimesh + PyOpenGL — 3D viewport                      │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## UI Component Hierarchy
+## Key Data Flows
 
+### 1. Startup Flow
 ```
-SpinRenderPanel (main_panel.py)
-├── top_panel (wx.Panel) - main horizontal container
-│   ├── ControlsSidePanel (controls_side_panel.py) [LEFT]
-│   │   └── ScrolledPanel with controls:
-│   │       ├── Header (preset info)
-│   │       ├── Resolution sliders
-│   │       ├── Lighting controls
-│   │       ├── Camera settings
-│   │       └── Output options
-│   │
-│   └── PreviewPanel (preview_panel.py) [RIGHT - expandable]
-│       ├── GLPreviewRenderer (OpenGL viewport)
-│       ├── Overlay widgets (top/bottom metadata)
-│       └── Render preview overlay (playback controls)
-│
-├── status_bar (StatusBar) - bottom status messages
-│
-└── Dialogs (modal)
-    ├── RecallPresetDialog (dialogs.py) - preset management
-    ├── AdvancedOptionsDialog (dialogs.py) - advanced settings
-    └── DependencyDialog (dependency_dialog.py) - installation UI
+SpinRenderPlugin.Run()
+  ├─ DependencyChecker.check_and_prompt()  (wxPython, PyYAML, Blender)
+  ├─ pcbnew.GetBoard()                     (KiCad API)
+  ├─ SpinRenderFrame(parent, board_path)
+  │     └─ SpinRenderPanel(board_path)
+  │           ├─ Load RenderSettings
+  │           ├─ Theme.load(mode)              (YAML → Theme singleton)
+  │           ├─ Locale.load("en_US")          (YAML → Locale singleton)
+  │           └─ build_ui()
+  └─ frame.Show()
 ```
 
-## Data Flow: Theme System
-
+### 2. Render Flow
 ```
-Theme.singleton
-   ↓ load(name=theme_name) from resources/themes/{name}.yaml
-   ↓ parse YAML into _data dict
-   ↓
-Theme.current().color("token.path") → wx.Colour
-   ↓resolve references (var, function references)
-   ↓apply transforms (darken, lighten, mix)
-   ↓return computed color
-```
-
-**Theme Token Resolution**:
-- Direct values: `colors.primary: #ff0000`
-- Variable references: `ref: colors.primary`
-- Function calls: `darken(colors.primary, 0.1)`
-- Compositions: `mix(colors.bg, colors.fg, 0.5)`
-
-## Data Flow: Preset System
-
-```
-PresetManager(board_path)
-   ↓
-Global: ~/.spinrender/presets/
-Project: {board_dir}/.spinrender/
-   ↓
-save_preset(name, settings, is_global=False)
-   ↓ serialize RenderSettings to JSON
-   ↓ write {safe_name}.json
-   ↓
-load_preset(name) → RenderSettings
-   ↓ read JSON
-   ↓ deserialize to RenderSettings object
+User clicks RENDER button
+  ├─ RenderController.start_render()
+  │     ├─ Generate camera path from settings
+  │     ├─ Build Blender CLI command
+  │     └─ subprocess.Popen([blender, ...])
+  │
+  ├─ Background process:
+  │     Blender renders frames → output folder
+  │
+  ├─ Progress callback (_update_progress_ui):
+  │     ├─ StatusBar.set_status(message, progress)
+  │     └─ PreviewPanel shows latest frame (bitmap)
+  │
+  └─ Completion callback (on_render_finished):
+        ├─ StatusBar.set_complete()
+        ├─ PreviewPanel.start_playback(frame_dir)
+        └─ Open output folder in file manager
 ```
 
-**Preset Categories**:
-- Global presets (user home directory)
-- Project presets (next to .kicad_pcb file)
-
-## External Dependencies
-
-| Library | Purpose | Version |
-|---------|---------|---------|
-| wxPython | GUI framework | ^4.0 |
-| PyOpenGL | OpenGL bindings | >=3.1.0 |
-| PyOpenGL-accelerate | Performance boost | >=3.1.0 |
-| trimesh | 3D mesh loading/processing | >=4.0.0 |
-| numpy | Numeric operations | >=1.24.0 |
-| PyYAML | Theme & locale YAML parsing | >=6.0 |
-| pyobjc-core (macOS) | macOS integrations | - |
-| pyobjc-framework-Cocoa (macOS) | Cocoa bindings | - |
-
-**KiCad Integration**:
-- Import: `import pcbnew`
-- Plugin type: `pcbnew.ActionPlugin`
-- Registration: KiCad's plugin manifest system
-- Configuration: `kicad.json`, `pcbnew.json` in resources/kicad_config/
-
-## Key Configuration Files
-
+### 3. Theme Hot-Reload
 ```
-SpinRender/resources/
-├── themes/
-│   ├── dark.yaml          # Complete dark theme token set
-│   └── light.yaml         # Complete light theme token set
-├── locale/
-│   ├── en.yaml            # Base English strings
-│   └── en_US.yaml         # US English variants
-├── kicad_config/
-│   ├── 10.0/              # KiCad 10.0 action configs (7 JSONs)
-│   └── 9.0/               # KiCad 9.0 action configs (7 JSONs)
-└── fonts/                  # 3 variable fonts for UI
+Timer thread (1s interval) in SpinRenderFrame
+  └─ Check theme YAML mtime
+      └─ If changed:
+            Theme.reload()
+            panel.reapply_theme()
+                  ├─ Update all wx.Colour lookups
+                  ├─ Refresh dividers, panels, buttons
+                  └─ Recursive Refresh() calls
 ```
 
-## Test Coverage
+## Extension Points
 
-- **Location**: `tests/unit/`
-- **Count**: 24 test files
-- **Coverage target**: 80%
-- **Framework**: pytest with coverage reporting
-- **Key test areas**:
-  - Theme validation (`test_validate_theme.py`, `test_core_theme.py`)
-  - UI theming (`test_*_theme.py`)
-  - Panel tests (`test_preview_panel.py`, `test_main_panel_theme.py`)
-  - Controls (`test_custom_controls_theme.py`, `test_controls_side_panel.py`)
-  - Dialogs (`test_dialogs_theme.py`, `test_dependency_dialog.py`)
-  - Locale (`test_locale.py`)
+### Adding New Controls
+1. **Define in `ui/controls_side_panel.py`**:
+   - Add widget to `build_*_section()` method
+   - Store reference in `self._registry.add(ctrl)`
+   - Expose via `self.<name>_ctl` attribute
 
-## Architecture Patterns
+2. **Bind in `ui/main_panel.py`**:
+   - Add to `param_controls` dict in `_init_preset_controller()`
+   - Bind event to `ParameterController` handler
 
-- **Singleton**: Theme, Locale, TextStyles (global state, one instance)
-- **MVC-ish**: Settings (Model) ↔ ParameterController (Controller) ↔ CustomControls (View)
-- **Lazy Loading**: OpenGL/trimesh imports deferred until after dependency check
-- **Hot-Reload**: Theme changes tracked via `_hotload_map` in ControlsSidePanel
-- **Singleton Frame**: Only one SpinRenderFrame allowed (Raise() if exists)
-- **Custom Controls**: Owner-drawn wx widgets for fine-grained theme control
+3. **Preset integration**:
+   - Add field to `RenderSettings` dataclass
+   - Update `PresetController` to read/write field
 
-## Current Development Branch
+### Adding New Themes
+1. Copy `resources/themes/dark.yaml` to `light.yaml` or create new
+2. Edit design tokens (colors, radius, typography)
+3. Theme auto-discovered by filename: `Theme.load("name")`
 
-`feat/theme-v2` - Theme system enhancements
+### Adding New Locales
+1. Copy `resources/locale/en_US.yaml` to `de_DE.yaml`, etc.
+2. Translate all `locale.<lang>` subtree values
+3. Locale auto-discovered: `Locale.load("de_DE")`
 
-Modified files (git status):
-- `SpinRender/core/presets.py`
-- `SpinRender/core/theme.py`
-- `SpinRender/resources/locale/*.yaml`
-- `SpinRender/resources/themes/dark.yaml`
-- `SpinRender/ui/*.py` (multiple)
-- `tests/unit/test_*.py` (multiple test updates)
+## File Organization Rationale
+
+**`ui/`** — All wx.Panel subclasses and dialog windows
+- Self-contained widget styling via `Theme.color()`
+- Event handling and layout grid
+
+**`core/`** — Business logic, no wx dependencies
+- Singleton managers (Theme, Locale)
+- Settings and presets persistence
+- Render orchestration (subprocess)
+- OpenGL viewport rendering
+
+**`foundation/`** — Asset abstractions
+- Font family resolution from YAML
+- Glyph/icon mapping from font chars
+
+**`resources/`** — Static assets
+- `themes/*.yaml` — Design token definitions
+- `locale/*.yaml` — UI text translations
+- `fonts/` — TTF files (JetBrains Mono, Oswald, MDI)
+- `kicad_config/` — KiCad 9.0/10.0 JSON configs
+- `icons/` — SVG logos
+
+**`utils/`** — Cross-cutting utilities
+- `logger.py` — Centralized logging setup
+- `check_dependencies.py` — Dependency validation
+
+## Design Patterns
+
+- **Singleton**: Theme, Locale, SpinLogger (one instance per process)
+- **Observer (implicit)**: Theme hot-reload via timer polling → panel.reapply_theme()
+- **Controller**: RenderController separates rendering logic from UI
+- **MVC-ish**: Settings (model) → UI controls (view) → ParameterController (controller)
+- **Factory**: `CustomButton`, `CustomSlider` create themed controls
+- **Registry**: `ControlRegistry` tracks UI controls for bulk enable/disable
+- **Hot-Reload**: Theme/Locale file watchers update UI in-place
+
+## Performance Considerations
+
+- **Theme lookups**: O(log N) deep path resolution with `_resolved_cache` memoization
+- **Hot-reload**: File mtime check every 1s; full re-theme ~10ms for 40 controls
+- **Rendering**: Non-blocking subprocess; UI updates via wx.CallAfter()
+- **Preview frames**: Loaded as wx.Bitmap from PNG; 60 FPS playback via wx.Timer
+- **Board loading**: trimesh caches meshes; large STEP files 2-5s initial load
