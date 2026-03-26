@@ -6,27 +6,28 @@
 # ─────────────────────────────────────────────────────────────────
 colors:
   # Auto State Shifts (for undefined states, e.g. hover/active on buttons)
+  # Values are relative adjustments (rgb offsets) or absolute overrides
   auto_states:
-    hover: rgb(30, 30, 30) # Brighten by 30 for hover (opposite of dark mode darkening)
-    active: rgb(60, 60, 60) # Brighten by 60 for active (opposite direction from dark mode)
+    hover: rgb(30, 30, 30)      # Brighten for hover in light mode
+    active: rgb(60, 60, 60)     # Brighten further for active in light mode
     disabled: rgb(0, 0, 0, 0.35) # 35% opacity for disabled
 
-  # Base Palette (Primes) — inverted from dark theme
-  gray-black:  "#F5F5F5"   # main app bg (was #0D0D0D)
-  gray-dark:   "#FFFFFF"   # dialog / card bg (was #121212)
-  gray-div:    "#EEEEEE"   # dividers (was #1A1A1A)
-  gray-border: "#E0E0E0"   # borders (was #222222)
-  gray-medium: "#555555"   # body text / headers (was #444444)
-  gray-light:  "#888888"   # secondary / label text (was #646464)
-  gray-text:   "#AAAAAA"   # placeholder / faint (was #777777)
-  gray-white:  "#1A1A1A"   # primary foreground text (was #E0E0E0)
+  # Base Palette (Primes) — Inverted from dark theme
+  gray-black:  "#F5F5F5"   # Main app background
+  gray-dark:   "#FFFFFF"   # Dialog / card background
+  gray-div:    "#EEEEEE"   # Dividers
+  gray-border: "#E0E0E0"   # Borders
+  gray-medium: "#555555"   # Body text / headers
+  gray-light:  "#888888"   # Secondary / label text
+  gray-text:   "#AAAAAA"   # Placeholder / faint text
+  gray-white:  "#1A1A1A"   # Primary foreground text
   white:       "#FFFFFF"
   white-68:    "rgba(255,255,255,0.68)"
   black:       "#000000"
   transparent: "rgba(0,0,0,0)"
   cyan-muted:  "rgba(0, 151, 167, 0.3)"
 
-  # Accent palette — slightly deepened for contrast on light backgrounds
+  # Accent Palette — Deepened for contrast on light backgrounds
   cyan:        "#0097A7"
   yellow:      "#F9A825"
   green:       "#388E3C"
@@ -35,7 +36,7 @@ colors:
   purple:      "#7B1FA2"
   pink:        "#AD1457"
 
-  # Light tint variants (hover backgrounds on white)
+  # Tint Variants (Opacity-based)
   cyan-10:     "rgba(0, 151, 167, 0.1)"
   cyan-20:     "rgba(0, 151, 167, 0.2)"
   cyan-50:     "rgba(0, 151, 167, 0.5)"
@@ -65,9 +66,7 @@ colors:
   pink-50:     "rgba(173, 20, 87, 0.5)"
   pink-80:     "rgba(173, 20, 87, 0.8)"
 
-
-
-  # Semantic Roles (Theme)
+  # Semantic Roles (Logic Aliases)
   primary:     "@colors.cyan"
   secondary:   "@colors.yellow"
   tertiary:    "@colors.purple"
@@ -76,7 +75,7 @@ colors:
   warning:     "@colors.orange"
   error:       "@colors.red"
 
-  # Brand Colors (External Services — used in About dialog)
+  # Brand Colors (External Services)
   brand:
     github-sponsors: "#ea4aaa"
     kofi:            "#29ABE0"
@@ -129,21 +128,21 @@ borders:
     color: "@colors.primary"
 
 # ─────────────────────────────────────────────────────────────────
-# 3a. DIVIDERS (Separator Lines)
+# 4. DIVIDERS (Separator Lines)
 # ─────────────────────────────────────────────────────────────────
 dividers:
   width:
-    thin:  1
+    thin:   1
     medium: 2
 
-  # Semantic Roles - Separator lines between UI sections
+  # Semantic Roles — Separator lines between UI sections
   # Lighter than borders to create visual contrast and hierarchy
   default:
     size: "@dividers.width.thin"
     color: "@colors.gray-div"
 
 # ─────────────────────────────────────────────────────────────────
-# 4. TYPOGRAPHY (Scales & Roles)
+# 5. TYPOGRAPHY (Scales & Roles)
 # ─────────────────────────────────────────────────────────────────
 typography:
   families:
@@ -181,7 +180,7 @@ typography:
     lg:   24
 
 # ─────────────────────────────────────────────────────────────────
-# 5. TEXT STYLES (Global Roles)
+# 6. TEXT STYLES (Global Typography Roles)
 # ─────────────────────────────────────────────────────────────────
 text:
   title:
@@ -305,7 +304,7 @@ text:
       weight: "@typography.weights.normal"
 
 # ─────────────────────────────────────────────────────────────────
-# 6. GLYPHS (Symbol Aliases)
+# 7. GLYPHS (Icon Library Aliases)
 # ─────────────────────────────────────────────────────────────────
 glyphs:
   # App Actions
@@ -332,12 +331,12 @@ glyphs:
   cloud:         "\U000F02F9"
   edit:          "\U000F0052"
 
-  # Status
+  # Status Indicators
   status-ok:     "\U000F05E0"
   status-error:  "\U000F0156"
   alert-octagram: "\U000F0767"
 
-  # Axis
+  # Axis Indicators
   axis-x:        "\U000F0D4C"
   axis-y:        "\U000F0D51"
   axis-y-rot:    "\U000F0D54"
@@ -349,7 +348,7 @@ glyphs:
   preset-flip:   "\U000F0D98"
   preset-custom: "\U000F166B"
 
-  # About dialog
+  # External Links & Badges
   github:        "\U000F02A4"
   heart:         "\U000F02D1"
   web:           "\U000F059F"
@@ -369,10 +368,10 @@ glyphs:
   chevron-up:    "\U000F0143"
 
 # ─────────────────────────────────────────────────────────────────
-# 7. VIEWPORT
+# 8. VIEWPORT (Renderer Environment)
 # ─────────────────────────────────────────────────────────────────
 viewport:
-  bg: "@colors.black" # keep viewport dark even in light mode
+  bg: "@colors.black" # Keep viewport dark even in light mode
   grid: "@colors.gray-medium"
   wireframe: null
   axes:
@@ -381,10 +380,10 @@ viewport:
     z: "@colors.cyan"
 
 # ─────────────────────────────────────────────────────────────────
-# 8. LAYOUT (Application Layout Definitions)
+# 9. LAYOUT (Core App Containers)
 # ─────────────────────────────────────────────────────────────────
 layout:
-  # Main application layout (left panel, right panel, header, etc.)
+  # Main application UI structure
   main:
     frame:
       bg: "@colors.gray-black"
@@ -428,7 +427,7 @@ layout:
           weight: "@typography.weights.normal"
     status: "@components.status"
 
-  # Modal dialog layouts
+  # Modal Dialog Definitions
   dialogs:
     default:
       frame:
@@ -554,8 +553,8 @@ layout:
             weight: "@typography.weights.normal"
 
 # ─────────────────────────────────────────────────────────────────
-# 9. COMPONENT DEFINITIONS (Atomic UI Components)
-# ─────────────────────────────────────────────────────────────────x
+# 10. COMPONENT DEFINITIONS (Atomic UI)
+# ─────────────────────────────────────────────────────────────────
 components:
   section_label:
     label:
@@ -618,9 +617,9 @@ components:
 
   input:
     default:
-      type: "text" # type can be text, numeric, or rich (for file paths with browse button)
-      editable: true # readonly bool
-      case: "none" # for text inputs, can be none, upper, or lower
+      type: "text" # text, numeric, or rich (for file paths with browse button)
+      editable: true 
+      case: "none" # none, upper, or lower
       icon_style:
         ref: "@text.icon"
       label: # unit suffix label (e.g. "°", "f")
@@ -629,24 +628,24 @@ components:
           default: "@colors.gray-light"
           hover: "@colors.primary"
       frame:
-        height: 32 # height of field
-        bg: # bg of field
+        height: 32 
+        bg: 
           default: "@colors.gray-dark"
           hover: "@colors.cyan-20"
-        radius: "@radius.md" # border radius of field
-        border: # border of field
-          size: 1 # border size
-          color: # border color
+        radius: "@radius.md" 
+        border: 
+          size: 1 
+          color: 
             default: "@borders.subtle.color"
             hover: "@colors.transparent"
             active: "@colors.primary"
-      color: # text color
+      color: 
         default: "@colors.gray-light"
         hover: "@colors.primary"
         active:  "@colors.primary"
-      font: "@text.numeric.font" # font
-      selection: "@colors.cyan-20" # highlight selection color
-      alignment: "center" # text alignment
+      font: "@text.numeric.font"
+      selection: "@colors.cyan-20"
+      alignment: "center"
       placeholder:
         color: "@colors.gray-medium"
       error:
@@ -746,7 +745,7 @@ components:
         radius: "@radius.md"
         bg:
           default: "@colors.gray-div"
-          hover: "@colors.cyan-20"  # cyan #0097A7 darkened -10 for readability
+          hover: "@colors.cyan-20" 
 
         border:
           size: "@borders.subtle.size"
@@ -758,7 +757,7 @@ components:
         frame:
           bg:
             default: "@colors.transparent"
-            hover: "#008D9D"
+            hover: "#008D9D"  # cyan deepened -10 for readability
             active: "#008D9D"
         icon:
           ref: "@text.icon"
@@ -796,49 +795,49 @@ components:
     logging: "@components.toggle.default"
 
   dropdown:
-    default: # default styles for all dropdowns, individual dropdowns can override specific properties
+    default: 
       frame:
-        height: 32 # main module height
+        height: 32
         bg:
-          default: "@colors.gray-dark" # main module bg
+          default: "@colors.gray-dark"
           hover: "@colors.cyan-20"
-        radius: "@radius.md" # main module radius
+        radius: "@radius.md"
         border:
           size: "@borders.width.thin"
           color:
             default: "@colors.gray-border"
             hover: "@colors.transparent"
-            active: "@colors.transparent" # main module while dropdown is open
-      label: # main module text font and color
-        font: "@text.numeric.font" # Use numeric font like axis inputs
+            active: "@colors.transparent"
+      label: 
+        font: "@text.numeric.font"
         color:
-          default: "@colors.gray-light"  # Match axis input field color
+          default: "@colors.gray-light"
           hover: "@colors.primary"
-      icon: # main module chevron color
+      icon: 
         ref: "@text.icon"
         color:
           default: "@colors.gray-light"
           hover: "@colors.primary"
-      menu: # popout menu container
+      menu: 
         frame:
-          bg: "@colors.gray-dark" # menu container bg
-          radius: "@radius.md" # menu container radius
-          border: "@borders.subtle" # menu container border
-        items: # menu item styles
+          bg: "@colors.gray-dark"
+          radius: "@radius.md"
+          border: "@borders.subtle"
+        items: 
           bg:
-            default: "@colors.transparent" # menu item bg
+            default: "@colors.transparent"
             hover: "@colors.cyan-20"
-            active: "@colors.primary" # selected state
-          radius: "@radius.md" # menu items have no border
+            active: "@colors.primary"
+          radius: "@radius.md"
           border: "@borders.none"
           label:
-            font: "@text.numeric.font" # Use numeric font in dropdown menu
+            font: "@text.numeric.font"
             color:
               default: "@colors.gray-white"
               hover: "@colors.primary"
-              active: "@colors.white" # white item text on primary bg
-    format: "@components.dropdown.default" # specific dropdown for output format selection
-    resolution: "@components.dropdown.default" # specific dropdown for output resolution selection
+              active: "@colors.white"
+    format: "@components.dropdown.default"
+    resolution: "@components.dropdown.default"
 
   colorpicker:
     default:
@@ -875,7 +874,7 @@ components:
         height: 36
         bg:
           default: "@colors.gray-div"
-          hover: "#008D9D"  # cyan #0097A7 darkened -10 for readability
+          hover: "#008D9D"  # cyan deepened -10 for readability
           active: "@colors.cyan-50"
         border:
           size: "@borders.subtle.size"
@@ -894,7 +893,7 @@ components:
         ref: "@text.button"
         color:
           default: "@colors.gray-light"
-          hover: "@colors.white"  # white text on cyan hover bg
+          hover: "@colors.white"
           active: "@colors.primary"
       gap: "@typography.spacing.base"
     cancel:
@@ -902,7 +901,7 @@ components:
     ok:
       ref: "@components.button.default"
       frame:
-        bg: "#008D9D"  # cyan #0097A7 darkened -10 for readability
+        bg: "#008D9D" 
       label:
         ref: "@text.button"
         color: "@colors.white"
@@ -911,8 +910,8 @@ components:
       frame:
         bg:
           default: "@colors.transparent"
-          hover: "#BC1E1E"  # red #C62828 darkened -10 for readability
-          active: "@colors.red-50"  # red #C62828 darkened -10 for readability
+          hover: "#BC1E1E"  # red deepened -10 for readability
+          active: "@colors.red-50"
         border:
           size: 1
           color: "@colors.transparent"
@@ -932,13 +931,13 @@ components:
       frame:
         bg:
           default: "@colors.gray-div"
-          hover: "#008D9D"  # cyan #0097A7 darkened -10 for readability
+          hover: "#008D9D" 
           active: "@colors.cyan-20"
       label:
         ref: "@text.button"
         color:
           default: "@colors.gray-white"
-          hover: "@colors.white"  # white text on cyan hover bg
+          hover: "@colors.white"
           active: "@colors.cyan"
         padding:
           horizontal: 0
@@ -948,7 +947,7 @@ components:
       ref: "@components.button.default"
       frame:
         bg:
-          default: "#008D9D"  # cyan #0097A7 darkened -10 for readability
+          default: "#008D9D" 
           disabled: "@colors.transparent"
         border:
           color:
@@ -957,7 +956,7 @@ components:
       label:
         ref: "@text.button"
         color:
-          default: "@colors.white"  # white text on cyan bg
+          default: "@colors.white"
           disabled: "@colors.cyan-50"
     donate:
       ref: "@components.button.default"
@@ -1002,12 +1001,12 @@ components:
       frame:
         bg:
           default: "@colors.gray-div"
-          hover: "#BC1E1E"  # red #C62828 darkened -10 for readability
+          hover: "#BC1E1E" 
           active: "@colors.red-20"
       label:
         ref: "@text.button"
         color:
-          default: "@colors.gray-white"  # match options/about default text color
+          default: "@colors.gray-white" 
           hover: "@colors.gray-black"
           active: "#BC1E1E"
     render:
