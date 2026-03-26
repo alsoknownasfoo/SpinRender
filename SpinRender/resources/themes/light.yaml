@@ -36,29 +36,36 @@ colors:
   pink:        "#AD1457"
 
   # Light tint variants (hover backgrounds on white)
-  cyan-10:     "#E6F8FA"
-  yellow-10:   "#FFFDE6"
-  green-10:    "#E8F5E9"
-  orange-10:   "#FBE9E7"
-  red-10:      "#FFEBEE"
-  purple-10:   "#F3E5F5"
-  pink-10:     "#FCE4EC"
+  cyan-10:     "rgba(0, 151, 167, 0.1)"
+  cyan-20:     "rgba(0, 151, 167, 0.2)"
+  cyan-50:     "rgba(0, 151, 167, 0.5)"
+  cyan-80:     "rgba(0, 151, 167, 0.8)"
+  yellow-10:   "rgba(249, 168, 37, 0.1)"
+  yellow-20:   "rgba(249, 168, 37, 0.2)"
+  yellow-50:   "rgba(249, 168, 37, 0.5)"
+  yellow-80:   "rgba(249, 168, 37, 0.8)"
+  green-10:    "rgba(56, 142, 60, 0.1)"
+  green-20:    "rgba(56, 142, 60, 0.2)"
+  green-50:    "rgba(56, 142, 60, 0.5)"
+  green-80:    "rgba(56, 142, 60, 0.8)"
+  orange-10:   "rgba(230, 74, 25, 0.1)"
+  orange-20:   "rgba(230, 74, 25, 0.2)"
+  orange-50:   "rgba(230, 74, 25, 0.5)"
+  orange-80:   "rgba(230, 74, 25, 0.8)"
+  red-10:      "rgba(198, 40, 40, 0.1)"
+  red-20:      "rgba(198, 40, 40, 0.2)"
+  red-50:      "rgba(198, 40, 40, 0.5)"
+  red-80:      "rgba(198, 40, 40, 0.8)"
+  purple-10:   "rgba(123, 31, 162, 0.1)"
+  purple-20:   "rgba(123, 31, 162, 0.2)"
+  purple-50:   "rgba(123, 31, 162, 0.5)"
+  purple-80:   "rgba(123, 31, 162, 0.8)"
+  pink-10:     "rgba(173, 20, 87, 0.1)"
+  pink-20:     "rgba(173, 20, 87, 0.2)"
+  pink-50:     "rgba(173, 20, 87, 0.5)"
+  pink-80:     "rgba(173, 20, 87, 0.8)"
 
-  cyan-20:     "#B2EBF2"
-  yellow-20:   "#FFF9C4"
-  green-20:    "#C8E6C9"
-  orange-20:   "#FFCCBC"
-  red-20:      "#FFCDD2"
-  purple-20:   "#E1BEE7"
-  pink-20:     "#F8BBD0"
 
-  cyan-50:        "#0097A766"
-  yellow-50:      "#F9A82566"
-  green-50:       "#388E3C66"
-  orange-50:      "#E64A1966"
-  red-50:         "#C6282866"
-  purple-50:      "#7B1FA266"
-  pink-50:        "#AD145766"
 
   # Semantic Roles (Theme)
   primary:     "@colors.cyan"
@@ -578,8 +585,8 @@ components:
         width: 90
         height: 64
         bg:
-          default: "@colors.transparent"
-          hover: "@colors.cyan-20"
+          default: "@colors.gray-div"
+          hover: "@colors.cyan-80"
           active: "@colors.primary"
         border:
           size: "@borders.subtle.size"
@@ -596,13 +603,13 @@ components:
         ref: "@text.icon_lg"
         color:
           default: "@colors.gray-light"
-          hover: "@colors.primary"
+          hover: "@colors.gray-dark"
           active: "@colors.gray-dark"
       label:
         ref: "@text.button"
         color:
           default: "@colors.gray-light"
-          hover: "@colors.primary"
+          hover: "@colors.gray-dark"
           active: "@colors.gray-dark"
     card1: "@components.preset_card.default"
     card2: "@components.preset_card.default"
@@ -739,7 +746,8 @@ components:
         radius: "@radius.md"
         bg:
           default: "@colors.gray-div"
-          hover: "@colors.cyan-20"
+          hover: "@colors.cyan-20"  # cyan #0097A7 darkened -10 for readability
+
         border:
           size: "@borders.subtle.size"
           color:
@@ -750,20 +758,20 @@ components:
         frame:
           bg:
             default: "@colors.transparent"
-            hover: "@colors.transparent"
-            active: "#008D9D"  # cyan #0097A7 darkened -10 for readability
+            hover: "#008D9D"
+            active: "#008D9D"
         icon:
           ref: "@text.icon"
           color:
             default: "@colors.gray-light"
-            hover: "@colors.primary"
-            active: "@colors.white"  # white icon on cyan active bg
+            hover: "@colors.gray-dark"
+            active: "@colors.gray-dark"
         label:
           ref: "@text.label"
           color:
             default: "@colors.gray-light"
-            hover: "@colors.primary"
-            active: "@colors.white"  # white text on cyan active bg
+            hover: "@colors.gray-dark"
+            active: "@colors.gray-dark"
     direction:
       ref: "@components.toggle.default"
     lighting:
@@ -772,19 +780,19 @@ components:
         frame:
           bg:
             default: "@colors.transparent"
-            hover: "@colors.transparent"
-            active: "#EF9E1B"  # yellow #F9A825 darkened -10 for readability
+            hover: "@colors.yellow-80" 
+            active: "@colors.yellow"
         label:
           ref: "@text.label"
           color:
             default: "@colors.gray-light"
-            hover: "@colors.cyan"
-            active: "@colors.white"  # white text on yellow active bg
+            hover: "@colors.gray-dark"
+            active: "@colors.gray-dark" 
         icon:
           color:
             default: "@colors.gray-light"
-            hover: "@colors.cyan"
-            active: "@colors.white"  # white icon on yellow active bg
+            hover: "@colors.gray-dark"
+            active: "@colors.gray-dark"
     logging: "@components.toggle.default"
 
   dropdown:
@@ -792,7 +800,7 @@ components:
       frame:
         height: 32 # main module height
         bg:
-          default: "@colors.transparent" # main module bg
+          default: "@colors.gray-dark" # main module bg
           hover: "@colors.cyan-20"
         radius: "@radius.md" # main module radius
         border:

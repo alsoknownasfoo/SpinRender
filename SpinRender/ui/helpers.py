@@ -504,19 +504,21 @@ def bind_mouse_events(widget: wx.Window,
         widget.Bind(wx.EVT_LEFT_DOWN, click_handler)
 
 
-def apply_disabled_state(widget: wx.Window, is_enabled: bool) -> None:
+def apply_disabled_state(widget: wx.Window, token: str, is_enabled: bool) -> None:
     """
     Apply disabled state visual effect to widget background.
 
-    Uses _theme.disabled() to apply 50% opacity to the current background color.
+    Resolves the disabled color through the token-based pipeline via
+    Theme.color(token, enabled=False), which checks for an explicit YAML
+    disabled state first before falling back to the luminance formula.
 
     Args:
         widget: wx.Window to modify
+        token: Theme color token for the widget's background
         is_enabled: True for normal state, False for disabled
     """
     if not is_enabled:
-        current_color = widget.GetBackgroundColor()
-        disabled_color = _theme.disabled(current_color)
+        disabled_color = _theme.color(token, enabled=False)
         widget.SetBackgroundColour(disabled_color)
 
 

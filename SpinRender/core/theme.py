@@ -330,22 +330,32 @@ class Theme:
         except:
             return base_color
 
-    def _disabled_alpha(self) -> int:
+    def _disabled_alpha(self, current_alpha: int) -> int:
+        """Apply percentage alpha drop based on current alpha and theme mode."""
         delta_raw = self._resolve("colors.auto_states.disabled")
         if isinstance(delta_raw, str):
             parts = [float(p) for p in re.findall(r"[-?\d.]+", delta_raw)]
             if len(parts) >= 4:
-                return int(parts[3] * 255) if parts[3] <= 1.0 else int(parts[3])
-        return 89 if self.is_light() else 128
+                # Use configured alpha percentage if available
+                alpha_percent = parts[3] if parts[3] <= 1.0 else (parts[3] / 255.0)
+                return int(current_alpha * alpha_percent)
+        
+        # Fallback: theme-based percentage
+        alpha_percent = 1 if self.is_light() else 0.75
+        return int(current_alpha * alpha_percent)
 
-    def disabled(self, color) -> 'wx.Colour':
+    def disabled(self, color: 'wx.Colour') -> 'wx.Colour':
         import wx
         if isinstance(color, wx.Colour):
+            if color.Alpha() == 0:
+                return color  # preserve intentional transparency
             # Desaturate using weighted luminance (0.299R + 0.587G + 0.114B)
             gray = int(0.299 * color.Red() + 0.587 * color.Green() + 0.114 * color.Blue())
             if self.is_light():
                 gray = min(255, int(gray + ((255 - gray) * 0.25)))
-            return wx.Colour(gray, gray, gray, self._disabled_alpha())
+            # Apply percentage alpha drop based on current alpha
+            new_alpha = self._disabled_alpha(color.Alpha())
+            return wx.Colour(gray, gray, gray, new_alpha)
         return self._parse_color("#FF00FF")
 
     def _parse_color(self, value: str) -> 'wx.Colour':

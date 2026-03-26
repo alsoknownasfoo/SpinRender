@@ -375,24 +375,23 @@ class TestTextHoverState:
 class TestApplyDisabledState:
     """Test apply_disabled_state helper."""
 
-    def test_applies_disabled_alpha_to_widget(self):
-        """Sets widget to 50% opacity when disabled."""
+    def test_applies_disabled_color_to_widget(self):
+        """Sets widget background to token-resolved disabled color when disabled."""
         widget = FakePanel(None)
         import SpinRender.core.theme as theme_mod
         theme = theme_mod.Theme.current()
-        original = theme.color("colors.cyan")
-        widget.SetBackgroundColour(original)
+        token = "colors.cyan"
+        widget.SetBackgroundColour(theme.color(token))
 
         import SpinRender.ui.helpers as helpers
-        helpers.apply_disabled_state(widget, is_enabled=False)
+        helpers.apply_disabled_state(widget, token, is_enabled=False)
 
         new_bg = widget.GetBackgroundColor()
-        # Should be a ColorMock with alpha=128
-        assert new_bg.Alpha() == 128
-        # RGB should be unchanged
-        assert new_bg.Red() == original.Red()
-        assert new_bg.Green() == original.Green()
-        assert new_bg.Blue() == original.Blue()
+        expected = theme.color(token, enabled=False)
+        assert new_bg.Red() == expected.Red()
+        assert new_bg.Green() == expected.Green()
+        assert new_bg.Blue() == expected.Blue()
+        assert new_bg.Alpha() == expected.Alpha()
 
     def test_restores_enabled_state(self):
         """Does not change color when is_enabled=True."""
@@ -403,7 +402,7 @@ class TestApplyDisabledState:
         widget.SetBackgroundColour(original)
 
         import SpinRender.ui.helpers as helpers
-        helpers.apply_disabled_state(widget, is_enabled=True)
+        helpers.apply_disabled_state(widget, "colors.cyan", is_enabled=True)
 
         # Should not have changed background
         new_bg = widget.GetBackgroundColor()

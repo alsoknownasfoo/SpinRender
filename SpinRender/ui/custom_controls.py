@@ -54,10 +54,6 @@ def ensure_fonts_loaded():
                     pass
 
 
-def _get_paint_color(color, enabled=True):
-    """Helper to apply alpha if component is disabled."""
-    return _theme.disabled(color) if not enabled else color
-
 
 def disable_mac_focus_ring(window):
     """
@@ -305,18 +301,18 @@ class CustomToggleButton(wx.Panel):
 
         # 2. Draw each segment
         for i, opt in enumerate(self.options):
-            is_active = (i == self.selection)
             is_hovered = (i == self.hover_index)
+            # When hovering a different segment, suppress the active appearance on non-hovered items
+            is_active = (i == self.selection) and (self.hover_index == -1 or is_hovered)
             
             x_offset = i * state_width
             
             # Resolve Segment Background
-            # When disabled, resolve the intended visual-state colour first (enabled=True),
-            # then desaturate — avoids the auto-generated disabled state being based on
-            # the transparent default rather than the coloured active state.
+            # When disabled and active, Theme.color() uses pressed (is_active) state as the
+            # base for the luminance formula, preserving the coloured active appearance.
             if not enabled:
-                if (is_active):
-                    seg_bg = _theme.disabled(_theme.color(f"{token}.items.frame.bg", False, is_active, True))
+                if is_active:
+                    seg_bg = _theme.color(f"{token}.items.frame.bg", False, is_active, enabled)
                 else:
                     seg_bg = wx.Colour(0, 0, 0, 0)  # Fully transparent for non-active segments when disabled
             else:
@@ -331,8 +327,8 @@ class CustomToggleButton(wx.Panel):
             icon_token = f"{token}.items.icon"
 
             if not enabled:
-                l_color = _theme.disabled(_theme.color(f"{label_token}.color", False, is_active, True))
-                i_color = _theme.disabled(_theme.color(f"{icon_token}.color", False, is_active, True))
+                l_color = _theme.color(f"{label_token}.color", False, is_active, enabled)
+                i_color = _theme.color(f"{icon_token}.color", False, is_active, enabled)
             else:
                 l_color = _theme.color(f"{label_token}.color", is_hovered, is_active, enabled)
                 i_color = _theme.color(f"{icon_token}.color", is_hovered, is_active, enabled)
@@ -1090,15 +1086,24 @@ class CustomInput(wx.Panel):
         self.text_ctrl.SetFont(font)
         
         if self.multiline:
-            # Hack to darken bg for multiline since wx.TextCtrl doesn't support transparent bg in multiline mode
-            shiftby = -10 if self.hovered else -1
-            bgcolor = _theme._shift_color(bg, shiftby)
+            # wx.TextCtrl doesn't support transparent bg in multiline mode.
+            # The normal-state frame bg is always solid — it's the base the frame is painted over.
+            # Hover states are semi-transparent overlays, so composite them over the solid base.
+            base_color = _theme.color(f"{self.token}.frame.bg", False, False, True)
+            a = bg.Alpha() / 255.0
+            bgcolor = wx.Colour(
+                int(bg.Red()   * a + base_color.Red()   * (1.0 - a)),
+                int(bg.Green() * a + base_color.Green() * (1.0 - a)),
+                int(bg.Blue()  * a + base_color.Blue()  * (1.0 - a)),
+            )
+
             self.text_ctrl.SetBackgroundColour(bgcolor)
             self.text_ctrl.SetDefaultStyle(wx.TextAttr(tc, bgcolor))
             # Re-apply per-character style so SetForegroundColour/SetDefaultStyle take effect
             # on existing text (SetDefaultStyle only affects future typed text in TE_RICH)
+            placeholder_color = _theme.disabled(_theme.color(f"{self.token}.color", False, False, True))
             if self._placeholder_active and self.placeholder:
-                self.text_ctrl.SetStyle(0, len(self.placeholder), wx.TextAttr(_theme.color(f"{self.token}.placeholder.color"), bgcolor))
+                self.text_ctrl.SetStyle(0, len(self.placeholder), wx.TextAttr(placeholder_color, bgcolor))
             else:
                 real_text = self.text_ctrl.GetValue()
                 if real_text:
@@ -1294,8 +1299,8 @@ class CustomColorPicker(wx.Panel):
         for i, (hv, lbl) in enumerate(self.PRESETS):
             r = rects[f'preset_{i}']; self._draw_swatch(gc, r.x, r.y, hv, lbl, i == self.selection, i == self.hover_idx, enabled)
         
-        border = _theme.color("borders.subtle.color")
-        gc.SetPen(wx.Pen(_theme.disabled(border) if not enabled else border, 1))
+        border = _theme.color("borders.subtle.color", hovered=False, pressed=False, enabled=enabled)
+        gc.SetPen(wx.Pen(border, 1))
         dx = rects['divider']; gc.StrokeLine(dx, 10, dx, h - 10)
         # Only pass the 28x28 box for drawing, but use larger rect for hit detection
         rc = rects['custom']; self._draw_swatch(gc, rc.x, rc.y, self.current_color, "CUSTOM", self.selection == -1, self.hover_idx == 4, enabled)
@@ -1312,7 +1317,14 @@ class CustomColorPicker(wx.Panel):
         ibc_token = f"{token}.items.innerborder.color"
         
         # 1. Background
-        gc.SetBrush(wx.Brush(_theme.disabled(sc) if not enabled else sc))
+        # sc is a user-supplied color value (not a theme token), so disabled state is
+        # computed inline using the same weighted-luminance formula as Theme.disabled().
+        if not enabled:
+            gray = int(0.299 * sc.Red() + 0.587 * sc.Green() + 0.114 * sc.Blue())
+            if _theme.is_light():
+                gray = min(255, int(gray + (255 - gray) * 0.25))
+            sc = wx.Colour(gray, gray, gray, _theme._disabled_alpha())
+        gc.SetBrush(wx.Brush(sc))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRoundedRectangle(x, y, 28, 28, 4)
         
