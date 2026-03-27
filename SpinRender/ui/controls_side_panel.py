@@ -139,7 +139,7 @@ class ControlsSidePanel(wx.Panel):
         self.header_title = create_text(header, _locale.get("component.main.header.title", "SPINRENDER"), "title")
         title_sizer.Add(self.header_title, 0)
 
-        self.header_subtitle = create_text(header, _locale.get("component.main.header.subtitle", "0.9 alpha"), "version")
+        self.header_subtitle = create_text(header, _locale.get("component.main.header.subtitle", "0.5.0-BETA"), "version")
         title_sizer.Add(self.header_subtitle, 0)
         sizer.Add(title_sizer, 0, wx.ALIGN_CENTER_VERTICAL)
 

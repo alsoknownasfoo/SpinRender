@@ -865,7 +865,7 @@ class _AiLogoPanel(wx.Panel):
         "gemini":  "https://gemini.google.com/",
         "chatgpt": "https://chatgpt.com/",
         "copilot":   "https://github.com/features/copilot",
-        "stepfun": "https://stepfun.ai/chats/new",
+        "stepfun": "https://stepfun.ai/",
     }
     _SVG_CACHE = {}  # class-level: name → wx.svg.SVGimage or None
 
@@ -1230,7 +1230,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         right.SetBackgroundColour(_theme.color("colors.gray-dark"))
         rs = wx.BoxSizer(wx.VERTICAL)
 
-        ver_raw = _locale.get("component.main.header.subtitle", "0.9 ALPHA")
+        ver_raw = _locale.get("component.main.header.subtitle", "0.5.0-BETA")
         meta_wrap = wx.Panel(right)
         meta_wrap.SetBackgroundColour(_theme.color("colors.gray-dark"))
         meta_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -1606,7 +1606,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         if self._closing:
             return
 
-        current = _locale.get("component.main.header.subtitle", "0.9.0-alpha")
+        current = _locale.get("component.main.header.subtitle", "0.5.0-beta")
 
         if simulated:
             note  = _locale.get("dialog.about.check_updates_simulated",

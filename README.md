@@ -1,92 +1,173 @@
-# <img src="SpinRender/resources/icon.png" width="48" height="48" valign="middle"> SpinRender
+# ![SPINRENDER](res/images/sr_logo.png)
 
-**Bit-precise 3D spinning animations for your KiCad PCBs.**
+#### **Easy hero animations for your nerdy KiCad PCBs**
 
-SpinRender is a KiCad-CLI-based engine designed to generate high-fidelity, social-media-ready 3D loops of your circuit boards. By bypassing the standard GUI renderer, it achieves floating-point rotational precision and utilizes a 'Tilted Loop' logic to ensure seamless 360° revolutions without the gimbal lock or jitter common in manual screen recordings.
+![Plugin Overview Screenshot](res/images/ui_overview-dark.gif)
 
----
+SpinRender is a KiCad 9+ plugin for generating high-fidelity, social-media-ready looping 3D renders of your circuit boards. 
 
-## 🎥 The Hero Loop
-![The Hero Loop](res/hero_loop.gif)
-*1080p 60fps render of a complex PCB performing a perfect Tilted Loop.*
+Use presets, or precisely control how your board rotates.
 
----
+Give your board dramatic lighting to add wow to your presentation or have it well lit and use it as a pseudo-3D reference model on your phone.
 
-## 💎 Key Features
+<table align="center" style="width:100%; table-layout:fixed; border-collapse:collapse;">
+   <tr>
+      <td style="width:33%; text-align:center; vertical-align:top; padding:0;">
+         <img src="res/images/sr_sample1.gif" alt="Sample Output 1" style="max-width:100%; min-width:180px; display:inline-block; margin:0; border:0; padding:0;" />
+      </td>
+      <td style="width:33%; text-align:center; vertical-align:top; padding:0;">
+         <img src="res/images/sr_sample2.gif" alt="Sample Output 2" style="max-width:100%; min-width:180px; display:inline-block; margin:0; border:0; padding:0;" />
+      </td>
+      <td style="width:33%; text-align:center; vertical-align:top; padding:0;">
+         <img src="res/images/sr_sample3.gif" alt="Sample Output 3" style="max-width:100%; min-width:180px; display:inline-block; margin:0; border:0; padding:0;" />
+      </td>
+   </tr>
+</table>
 
-| Feature | Description |
-| :--- | :--- |
-| **🎯 Floating-Point Precision** | Supports 0.0001° rotational increments for ultra-smooth motion. |
-| **🔄 Tilted Loop Logic** | Specialized math to ensure perfect 360° loops with organic camera paths. |
-| **💡 Studio Lighting** | High-contrast presets (Studio, Dramatic, Soft) for professional results. |
-| **⚡ CLI-First Workflow** | Leverages `kicad-cli` for headless, reproducible rendering pipelines. |
-| **🎨 Modern UI** | A teal-and-yellow high-contrast interface designed for efficiency. |
+## <span style="color:#00FFFF">Features</span>
+|||
+|---|---|
+| **Easy Button**     | Two-click, no-fuss, no-skills-required renders.|
+| **Spin Precision**  | Control the speed and direction of your spin to the 0.01°.|
+| **Flexible Staging**| Personalize the background and control how your board is lit.|
+| **Format Options**  | Export to an MP4 movie file, animated GIF, or lossless PNG sequence.|
 
----
+## <span style="color:#00FFFF">Installation</spam>
 
-## 🛠️ Installation
+#### Requirements
 
-### 1. Requirements
-- **KiCad 8.0 or 9.0** (with `kicad-cli` in your PATH).
-- **FFmpeg** (Required for MP4 and high-quality GIF assembly).
-- **Python 3.10+** (The version bundled with your KiCad installation).
+>**KiCad 9.0 or 10.0**
+>
+><details>
+>  <summary><strong>Fonts & Libraries</strong></summary>
+>
+>   SpinRender will attempt to download and install the following Python packages and fonts on first launch:
+>
+>   **Python Packages:**
+>   - `PyOpenGL`
+>   - `PyYAML`
+>   - `trimesh`
+>   - `numpy`
+>
+>   **Fonts:**
+>   - `JetBrains Mono`
+>   - `Material Design Icons`
+>   - `Oswald`
+>
+>   If you experience font rendering issues, ensure your system allows Python to access the internet, or manually install the recommended fonts listed above. For manual installation instructions, see the documentation.
+></details>
 
-### 2. Plugin Setup
-1. Download the latest release or clone this repository into your KiCad plugins folder:
-   - **macOS:** `~/Library/Preferences/kicad/8.0/scripting/plugins`
-   - **Windows:** `%APPDATA%\kicad\8.0\scripting\plugins`
-   - **Linux:** `~/.local/share/kicad/8.0/scripting/plugins`
-2. Open KiCad PCB Editor.
-3. Click the **SpinRender** icon in the top toolbar or find it under `Tools > External Plugins`.
+#### Setup
 
----
+><details>
+>   <summary><strong>Using PCM</strong> (Recommended)</summary>
+>
+>1. Start KiCad and click on <strong>Plugin and Content Manager</strong> in the project window.
+>2. Under <strong>Plugins</strong>, filter for <strong>SpinRender</strong>.
+>3. Click <strong>Install</strong>.
+>4. Click <strong>Apply Pending Changes</strong>.
+></details>
+>
+><details>
+>
+>   <summary><strong>Release Download</strong></summary>
+>
+>1. Download the latest release from <strong>Releases</strong>.
+>2. In PCB Editor, go to <code>Tools &gt; External Plugins &gt; Reveal Plugin Folder ..</code>
+>3. Unzip and drag the <strong>SpinRender</strong> folder into the revealed folder.
+></details>
+>
+><details>
+>   <summary><strong>Clone Repository</strong></summary>
+>
+>1. Run <code>git clone https://github.com/alsoknownasfoo/SpinRender</code>
+>2. Run the install script:
+>    - <strong>Windows:</strong> <code>install.bat</code>
+>    - <strong>macOS/Linux:</strong> <code>install.sh</code>
+></details>
 
-## 🚀 Usage
+#### Run
+>1. Restart KiCad and open PCB Editor
+>
+> ![SpinRender Icon](/SpinRender/resources/icons/logo.svg)
+>
+>2. Find the **SpinRender** icon in top toolbar or under `Tools > External Plugins`.
 
-### Quick Start (GUI)
-1. Open your `.kicad_pcb` file.
-2. Launch **SpinRender**.
-3. Select the **'Hero Reveal'** preset.
-4. Hit **Render**. Your animation will be saved to the `/Renders` folder next to your PCB file.
+## <span style="color:#00FFFF">Usage</span>
+**_Coming.._**
 
-### The 'Tilted Loop' Parameters
-SpinRender uses a Universal-Joint model to define the camera path:
+## <span style="color:#00FFFF">Troubleshooting</span>
+<details>
+   <summary><strong>Missing Toolbar Icon</strong></summary> 
 
-| Parameter | Function | Typical Value |
-| :--- | :--- | :--- |
-| **View Tilt** | The static elevation of the camera. | 15° - 30° |
-| **Spin Tilt** | The angle of the rotation axis relative to the board normal. | 90° (Edge-on) |
-| **Period** | Duration of one full 360° revolution. | 10.0s |
-| **Easing** | Motion interpolation (Linear for loops, Bezier for reveals). | Linear |
+   - Ensure you installed to the correct plugin folder for your KiCad version and platform.
 
-### CLI Override Example
-For power users, you can pass raw `kicad-cli` flags through the **CLI Overrides** field:
-```bash
---raytracing --samples 128 --no-floor --post-processing
-```
+   - Restart KiCad after installation.
 
----
+   - Check the plugin manager for errors or missing dependencies.
 
-## 📸 Media Recommendations for Creators
+</details>
+<details>
+   <summary><strong>Missing dependencies:</strong></summary> 
 
-To best showcase your hardware, we recommend producing the following assets:
+  * Open a terminal and run the manual install command above.
 
-1. **The "Hero Loop":** A 1080p 60fps GIF of a complex PCB (lots of vias and components) doing one full "Tilted Loop" revolution.
-2. **The "UI Close-up":** A sharp screenshot of the SpinRender dialog box showing the teal/yellow high-contrast theme.
-3. **The "Step-Comparison":** A split-screen GIF showing the difference between a 5-degree jump (jittery) and SpinRender's floating-point 0.5-degree jump (silky smooth).
-4. **Lighting Showcase:** A side-by-side of 'Studio' (clear, technical) vs 'Dramatic' (heavy shadows, mood lighting).
+  * Verify your Python version matches the one bundled with KiCad.
+</details>
 
----
+<details>
+   <summary><strong>Permission errors:</strong></summary> 
 
-## 🤝 Community & Contributing
+  - On macOS/Linux, you may need to run `chmod +x install.sh` before executing the install script.
 
-Hardware geeks, welcome! Whether you're a KiCad wizard or a Python pro, we value your input.
-- **Bug Reports:** Open an issue with your `.kicad_pcb` (if possible) and KiCad version.
-- **Feature Requests:** We're currently exploring multi-board support and custom shader injection.
+  - On Windows, run the installer as administrator if you encounter access issues.
+</details>
 
-### License
-SpinRender is released under the **MIT License**. See `LICENSE` for details.
+#### Still stuck?
+<sup>Open an issue on GitHub with your OS, KiCad version, and any error messages.</sup>
 
----
+## <span style="color:#00FFFF">Community & Contributing</span>
 
-*Designed for engineers who care about how their work is seen.*
+Built with support from:[^1]
+[^1]:So there might be some wonky code
+<p align="left">
+   <a href="https://claude.ai/" title="Claude">
+      <img src="SpinRender/resources/icons/claude.svg" alt="Claude" height="28" style="vertical-align:middle; margin:0 8px;">
+   </a>
+   <a href="https://gemini.google.com/" title="Gemini">
+      <img src="SpinRender/resources/icons/gemini.svg" alt="Gemini" height="28" style="vertical-align:middle; margin:0 8px;">
+   </a>
+   <a href="https://chatgpt.com/" title="ChatGPT">
+      <img src="SpinRender/resources/icons/chatgpt.svg" alt="ChatGPT" height="28" style="vertical-align:middle; margin:0 8px;">
+   </a>
+   <a href="https://github.com/features/copilot" title="Copilot">
+      <img src="SpinRender/resources/icons/copilot.svg" alt="Copilot" height="28" style="vertical-align:middle; margin:0 8px;">
+   </a>
+   <a href="https://stepfun.ai/" title="StepFun">
+      <img src="SpinRender/resources/icons/stepfun.svg" alt="StepFun" height="28" style="vertical-align:middle; margin:0 8px;">
+   </a>
+</p>
+
+All feedback and suggestions welcomed.
+
+*   **Bug Reports:** Open a GitHub issue.
+*   **Feature Requests:** Submit via GitHub discussions.
+
+## <span style="color:#00FFFF">License</span>
+
+SpinRender is released under the **GPLv3 License**. See `LICENSE` for details.
+
+## <span style="color:#00FFFF">Thank You!</span>
+_This plugin was designed for engineers who care about how their work is seen._
+
+Thanks for taking the time to check it out. I hope it proves to be useful for whatever your needs are.
+
+<p align="left">
+<a href="https://ko-fi.com/alsoknownasfoo">
+   <img src="https://img.shields.io/badge/Support_me_on-KO--FI-C8A27A?style=for-the-badge&logo=ko-fi&logoColor=white" height="30">
+</a>
+&nbsp;
+<a href="https://github.com/sponsors/alsoknownasfoo">
+   <img src="https://img.shields.io/badge/Sponsor_me_on-GITHUB-EA4AAA?style=for-the-badge&logo=github-sponsors&logoColor=white" height="30">
+</a>
+</p>
