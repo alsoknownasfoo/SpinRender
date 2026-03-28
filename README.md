@@ -10,29 +10,41 @@ Use presets, or precisely control how your board rotates.
 
 Give your board dramatic lighting to add wow to your presentation or have it well lit and use it as a pseudo-3D reference model on your phone.
 
-<table align="center" style="width:100%; table-layout:fixed; border-collapse:collapse;">
-   <tr>
-      <td style="width:33%; text-align:center; vertical-align:top; padding:0;">
-         <img src="res/images/sr_sample1.gif" alt="Sample Output 1" style="max-width:100%; min-width:180px; display:inline-block; margin:0; border:0; padding:0;" />
+<table align="center" style="width:100%; table-layout:fixed; border-collapse:collapse; border:none; padding:0; margin:0;">
+   <tr style="border:none">
+      <td style="width:33%; padding:0; margin:0; border:none;">
+         <img src="res/images/sr_sample1.gif" alt="Sample Output 1" style="max-width:100%; min-width:180px; display:block; margin:0; border:none; padding:0;" />
       </td>
-      <td style="width:33%; text-align:center; vertical-align:top; padding:0;">
-         <img src="res/images/sr_sample2.gif" alt="Sample Output 2" style="max-width:100%; min-width:180px; display:inline-block; margin:0; border:0; padding:0;" />
+      <td style="width:33%; padding:0; margin:0; border:none;">
+         <img src="res/images/sr_sample2.gif" alt="Sample Output 2" style="max-width:100%; min-width:180px; display:block; margin:0; border:none; padding:0;" />
       </td>
-      <td style="width:33%; text-align:center; vertical-align:top; padding:0;">
-         <img src="res/images/sr_sample3.gif" alt="Sample Output 3" style="max-width:100%; min-width:180px; display:inline-block; margin:0; border:0; padding:0;" />
+      <td style="width:33%; padding:0; margin:0; border:none;">
+         <img src="res/images/sr_sample3.gif" alt="Sample Output 3" style="max-width:100%; min-width:180px; display:block; margin:0; border:none; padding:0;" />
       </td>
    </tr>
 </table>
 
-## <span style="color:#00FFFF">Features</span>
-|||
-|---|---|
-| **Easy Button**     | Two-click, no-fuss, no-skills-required renders.|
-| **Spin Precision**  | Control the speed and direction of your spin to the 0.01°.|
-| **Flexible Staging**| Personalize the background and control how your board is lit.|
-| **Format Options**  | Export to an MP4 movie file, animated GIF, or lossless PNG sequence.|
+<h2 style="color:#00BCD4; border-bottom: none !important; padding-top: 20px;">Features</h2>
+<table style="width:100%; table-layout:fixed; border-collapse:collapse; border:none; padding:0; margin:0;">
+   <tr style="border:none">
+      <td style="width:30%; border:none;"><strong>Easy Button</strong></td>
+      <td style="border:none;">Two-click, no-fuss, no-skills-required renders.</td>
+   </tr>
+   <tr style="border:none">
+      <td style="width:30%; border:none;"><strong>Spin Precision</strong></td>
+      <td style="border:none;">Control the speed and direction of your spin to the 0.01°.</td>
+   </tr>
+   <tr style="border:none">
+      <td style="width:30%; border:none;"><strong>Flexible Staging</strong></td>
+      <td style="border:none;">Personalize the background and control how your board is lit.</td>
+   </tr>
+   <tr style="border:none">
+      <td style="width:30%; border:none;"><strong>Format Options</strong></td>
+      <td style="border:none;">Export to an MP4 movie file, animated GIF, or lossless PNG sequence.</td>
+   </tr>
+</table>
 
-## <span style="color:#00FFFF">Installation</spam>
+<h2 style="color:#00BCD4; border-bottom: none !important; padding-top: 20px;">Installation</h2>
 
 #### Requirements
 
@@ -58,7 +70,6 @@ Give your board dramatic lighting to add wow to your presentation or have it wel
 ></details>
 
 #### Setup
-
 ><details>
 >   <summary><strong>Using PCM</strong> (Recommended)</summary>
 >
@@ -93,10 +104,10 @@ Give your board dramatic lighting to add wow to your presentation or have it wel
 >
 >2. Find the **SpinRender** icon in top toolbar or under `Tools > External Plugins`.
 
-## <span style="color:#00FFFF">Usage</span>
-**_Coming.._**
+<h2 style="color:#00BCD4; border-bottom: none !important; padding-top: 20px;">Usage</h2>
+Coming..
 
-## <span style="color:#00FFFF">Troubleshooting</span>
+<h2 style="color:#00BCD4; border-bottom: none !important; padding-top: 20px;">Troubleshooting</h2>
 <details>
    <summary><strong>Missing Toolbar Icon</strong></summary> 
 
@@ -124,50 +135,71 @@ Give your board dramatic lighting to add wow to your presentation or have it wel
 </details>
 
 #### Still stuck?
-<sup>Open an issue on GitHub with your OS, KiCad version, and any error messages.</sup>
+Open an issue on GitHub with your OS, KiCad version, and any error messages.
 
-## <span style="color:#00FFFF">Community & Contributing</span>
+<h2 style="color:#00BCD4; border-bottom: none !important; padding-top: 20px;">Contributing</h2>
 
-Built with support from:[^1]
-[^1]:So there might be some wonky code
-<p align="left">
-   <a href="https://claude.ai/" title="Claude">
-      <img src="SpinRender/resources/icons/claude.svg" alt="Claude" height="28" style="vertical-align:middle; margin:0 8px;">
-   </a>
-   <a href="https://gemini.google.com/" title="Gemini">
-      <img src="SpinRender/resources/icons/gemini.svg" alt="Gemini" height="28" style="vertical-align:middle; margin:0 8px;">
-   </a>
-   <a href="https://chatgpt.com/" title="ChatGPT">
-      <img src="SpinRender/resources/icons/chatgpt.svg" alt="ChatGPT" height="28" style="vertical-align:middle; margin:0 8px;">
-   </a>
-   <a href="https://github.com/features/copilot" title="Copilot">
-      <img src="SpinRender/resources/icons/copilot.svg" alt="Copilot" height="28" style="vertical-align:middle; margin:0 8px;">
-   </a>
-   <a href="https://stepfun.ai/" title="StepFun">
-      <img src="SpinRender/resources/icons/stepfun.svg" alt="StepFun" height="28" style="vertical-align:middle; margin:0 8px;">
-   </a>
-</p>
+Built with support from: [^1]
+[^1]:So there might be some wonky code.
+<table>
+   <tr style="border: none;">
+      <td align="center" style="border: none;>
+         <a href="https://claude.ai/" title="Claude">
+            <img src="SpinRender/resources/icons/claude.svg" alt="Claude" height="28"><br>
+         </a>
+      </td>
+      <td align="center" style="border: none;>
+         <a href="https://gemini.google.com/" title="Gemini">
+            <img src="SpinRender/resources/icons/gemini.svg" alt="Gemini" height="28"><br>
+         </a>
+      </td>
+      <td align="center" style="border: none;>
+         <a href="https://chatgpt.com/" title="ChatGPT">
+            <img src="SpinRender/resources/icons/chatgpt.svg" alt="ChatGPT" height="28"><br>
+         </a>
+      </td>
+      <td align="center" style="border: none;>
+         <a href="https://github.com/features/copilot" title="Copilot">
+            <img src="SpinRender/resources/icons/copilot.svg" alt="Copilot" height="28"><br>
+         </a>
+      </td>
+      <td align="center" style="border: none;>
+         <a href="https://stepfun.ai/" title="StepFun">
+            <img src="SpinRender/resources/icons/stepfun.svg" alt="StepFun" height="28"><br>
+         </a>
+      </td>
+   </tr>
+</table>
 
-All feedback and suggestions welcomed.
+**Bug Reports:** Open a GitHub issue.  
+**Feature Requests:** Submit via GitHub discussions.
 
-*   **Bug Reports:** Open a GitHub issue.
-*   **Feature Requests:** Submit via GitHub discussions.
+_All feedback and suggestions welcomed!_
 
-## <span style="color:#00FFFF">License</span>
+<h2 style="color:#00BCD4; border-bottom: none !important; padding-top: 20px;">License</h2>
 
 SpinRender is released under the **GPLv3 License**. See `LICENSE` for details.
 
-## <span style="color:#00FFFF">Thank You!</span>
-_This plugin was designed for engineers who care about how their work is seen._
+<h2 style="color:#00BCD4; border-bottom: none !important; padding-top: 20px;">Thank You!</h2>
 
-Thanks for taking the time to check it out. I hope it proves to be useful for whatever your needs are.
+Thanks for taking the time to check this project.  
+I created it because I wanted a way to show people how beautiful PCB design can be.   
 
-<p align="left">
+Hopefully, it helps you do the same.  
+
+<table style="padding-top: 25px; table-layout:fixed; border-collapse:collapse; border: none">
+<tr style="padding:0; margin:0; border: none">
+<td style="padding:0; margin:0; border: none">
 <a href="https://ko-fi.com/alsoknownasfoo">
-   <img src="https://img.shields.io/badge/Support_me_on-KO--FI-C8A27A?style=for-the-badge&logo=ko-fi&logoColor=white" height="30">
+   <img src="https://img.shields.io/badge/Support_me_on-KO--FI-C8A27A?style=for-the-badge&logo=ko-fi&logoColor=white" height="24">
 </a>
-&nbsp;
+</td>
+<td style="width: 20px; padding:0; margin:0; border: none">
+</td>
+<td style="padding:0; margin:0; border: none">
 <a href="https://github.com/sponsors/alsoknownasfoo">
-   <img src="https://img.shields.io/badge/Sponsor_me_on-GITHUB-EA4AAA?style=for-the-badge&logo=github-sponsors&logoColor=white" height="30">
+   <img src="https://img.shields.io/badge/Sponsor_me_on-GITHUB-EA4AAA?style=for-the-badge&logo=github-sponsors&logoColor=white" height="24">
 </a>
-</p>
+</td>
+</tr>
+</table>
