@@ -116,7 +116,7 @@ locale:
         label: ""
         icon_ref: "glyphs.info"
       save_preset:
-        label: "Preset"
+        label: "Save Preset"
         icon_ref: "glyphs.plus"
       browse:
         label: "Browse"
