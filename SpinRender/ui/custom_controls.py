@@ -872,37 +872,35 @@ class SectionToggle(wx.Panel):
     glyph that reads "+" while collapsed and "-" while expanded. Sized to match
     the height of an adjacent section title for visual alignment.
     """
-    def __init__(self, parent, size=20, collapsed=True, on_toggle=None):
+    def __init__(self, parent, size=20, collapsed=True, on_toggle=None, y_nudge=0):
         side = int(size)
-        super().__init__(parent, size=(side, side))
+        self._side = side
+        self._y_nudge = int(y_nudge)
+        # Pad the widget vertically by 2*nudge and bottom-align the box so that,
+        # once vertically centered in the header, the box renders y_nudge px low.
+        super().__init__(parent, size=(side, side + 2 * self._y_nudge))
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.collapsed = bool(collapsed)
         self.on_toggle = on_toggle
+        # Hover is driven by the enclosing section header (so the whole title
+        # line highlights together), not by this widget on its own.
         self.hovered = False
         self.SetCursor(wx.Cursor(wx.CURSOR_HAND))
 
         self.Bind(wx.EVT_PAINT, self.on_paint)
-        bind_mouse_events(
-            self,
-            hover_handler=self.on_enter,
-            leave_handler=self.on_leave,
-            click_handler=self.on_click,
-        )
+        bind_mouse_events(self, click_handler=self.on_click)
 
     def set_collapsed(self, collapsed):
         self.collapsed = bool(collapsed)
         self.Refresh()
         self.Update()
 
-    def on_enter(self, event):
-        self.hovered = True
-        self.Refresh()
-        self.Update()
-
-    def on_leave(self, event):
-        self.hovered = False
-        self.Refresh()
-        self.Update()
+    def set_hovered(self, hovered):
+        hovered = bool(hovered)
+        if hovered != self.hovered:
+            self.hovered = hovered
+            self.Refresh()
+            self.Update()
 
     def on_click(self, event):
         self.collapsed = not self.collapsed
@@ -921,17 +919,22 @@ class SectionToggle(wx.Panel):
             return
 
         width, height = self.GetSize()
-        color_token = "colors.primary" if self.hovered else "borders.default.color"
+        # Match the section title color at rest; highlight on hover.
+        color_token = "colors.primary" if self.hovered else "layout.main.leftpanel.headers"
         color = _theme.color(color_token)
+
+        # Square box, bottom-aligned within the (taller) widget for the nudge.
+        box = self._side
+        y_off = height - box
 
         # Rounded-square stroke, inset by 1px so the stroke stays inside bounds.
         gc.SetBrush(wx.TRANSPARENT_BRUSH)
         gc.SetPen(wx.Pen(color, 1))
-        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 4)
+        gc.DrawRoundedRectangle(1, y_off + 1, box - 2, box - 2, 2)
 
         # Centered +/- drawn as vector strokes for crisp, equal spacing.
-        cx, cy = width / 2.0, height / 2.0
-        arm = max(3.0, min(width, height) * 0.25)
+        cx, cy = box / 2.0, y_off + box / 2.0
+        arm = max(3.0, box * 0.25)
         gc.SetPen(wx.Pen(color, 1.6))
         path = gc.CreatePath()
         # Horizontal bar (present for both "+" and "-").

@@ -18,7 +18,7 @@ from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
 _theme = Theme.current()
 _locale = Locale.current()
-from .helpers import create_section_label, create_numeric_input, create_text, reapply_text_styles, load_svg
+from .helpers import create_section_label, create_numeric_input, create_text, reapply_text_styles, load_svg, set_text_widget_state
 
 
 class ControlsSidePanel(wx.Panel):
@@ -259,22 +259,23 @@ class ControlsSidePanel(wx.Panel):
         header.SetBackgroundColour(_theme.TRANSPARENT)
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
         section_label = create_section_label(header, _locale.get("sections.parameters", "PARAMETERS"), id="parameters")
-        header_sizer.Add(section_label, 0, wx.ALIGN_CENTER_VERTICAL)
+
+        # Title, then the expand/collapse toggle to its RIGHT (12x12, 5px gap).
+        self._params_title = section_label
+        header_sizer.Add(section_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        self.params_toggle = SectionToggle(
+            header, size=12, y_nudge=1,
+            collapsed=self.settings.params_collapsed,
+            on_toggle=self.on_params_toggle,
+        )
+        header_sizer.Add(self.params_toggle, 0, wx.ALIGN_CENTER_VERTICAL)
         header_sizer.AddStretchSpacer()
 
         # Save Preset Button - use themed component definition
         self.save_btn = CustomButton(header, id="save_preset", size=(100, 24), section='parameters')
         self.save_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_save_preset)
-        header_sizer.Add(self.save_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        header_sizer.Add(self.save_btn, 0, wx.ALIGN_CENTER_VERTICAL)
 
-        # Expand/collapse toggle, sized square to match the title height.
-        title_h = max(section_label.GetBestSize().y, 18)
-        self.params_toggle = SectionToggle(
-            header, size=title_h,
-            collapsed=self.settings.params_collapsed,
-            on_toggle=self.on_params_toggle,
-        )
-        header_sizer.Add(self.params_toggle, 0, wx.ALIGN_CENTER_VERTICAL)
         header.SetSizerAndFit(header_sizer)
 
         # Whole header acts as a toggle hit area, except the save-preset button
@@ -282,6 +283,13 @@ class ControlsSidePanel(wx.Panel):
         self._bind_header_toggle(
             header, self._on_params_header_click,
             exclude={self.save_btn, self.params_toggle},
+        )
+        # Hovering anywhere on the line (minus the save button) highlights both
+        # the title and the toggle together.
+        self._bind_header_hover(
+            header,
+            lambda state: self._set_header_hover(self.params_toggle, self._params_title, state),
+            exclude={self.save_btn},
         )
 
         self._params_panel = panel
@@ -320,6 +328,57 @@ class ControlsSidePanel(wx.Panel):
             widget.SetCursor(wx.Cursor(wx.CURSOR_HAND))
         for child in widget.GetChildren():
             self._bind_header_toggle(child, handler, exclude)
+
+    def _bind_header_hover(self, root, on_change, exclude):
+        """Make the whole header (minus `exclude` subtrees) a shared hover zone.
+
+        Entering any target turns the section's hover on; leaving turns it off
+        only when the pointer has left every target (so moving between the title
+        and toggle doesn't flicker, and hovering the save button doesn't count).
+        """
+        targets = []
+
+        def collect(widget):
+            if widget in exclude:
+                return
+            targets.append(widget)
+            for child in widget.GetChildren():
+                collect(child)
+
+        collect(root)
+
+        def pointer_in_targets():
+            mouse_pos = wx.GetMousePosition()
+            for widget in targets:
+                rect = widget.GetScreenRect()
+                if rect and rect.Contains(mouse_pos):
+                    return True
+            return False
+
+        def on_enter(event):
+            on_change(True)
+            event.Skip()
+
+        def on_leave(event):
+            if not pointer_in_targets():
+                on_change(False)
+            event.Skip()
+
+        for widget in targets:
+            widget.Bind(wx.EVT_ENTER_WINDOW, on_enter)
+            widget.Bind(wx.EVT_LEAVE_WINDOW, on_leave)
+
+    def _set_header_hover(self, toggle, title_label, hovered):
+        """Apply the shared hover color to a section's toggle icon and title."""
+        # toggle.hovered tracks the section's current state; skip redundant work
+        # as the pointer moves between child widgets within the header.
+        if toggle.hovered == bool(hovered):
+            return
+        toggle.set_hovered(hovered)
+        set_text_widget_state(
+            title_label._txt,
+            color_token="colors.primary" if hovered else None,
+        )
 
     def _relayout_section(self, panel, sizer):
         """Reflow a collapsed/expanded section and the surrounding scroll area."""
@@ -597,22 +656,29 @@ class ControlsSidePanel(wx.Panel):
         header.SetBackgroundColour(_theme.TRANSPARENT)
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
         section_label = create_section_label(header, _locale.get("sections.output", "OUTPUT SETTINGS"), id="output")
-        header_sizer.Add(section_label, 0, wx.ALIGN_CENTER_VERTICAL)
-        header_sizer.AddStretchSpacer()
 
-        # Expand/collapse toggle, sized square to match the title height.
-        title_h = max(section_label.GetBestSize().y, 18)
+        # Title, then the expand/collapse toggle to its RIGHT (12x12, 5px gap).
+        self._output_title = section_label
+        header_sizer.Add(section_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         self.output_toggle = SectionToggle(
-            header, size=title_h,
+            header, size=12, y_nudge=1,
             collapsed=self.settings.output_collapsed,
             on_toggle=self.on_output_toggle,
         )
         header_sizer.Add(self.output_toggle, 0, wx.ALIGN_CENTER_VERTICAL)
+        header_sizer.AddStretchSpacer()
+
         header.SetSizerAndFit(header_sizer)
 
         # Whole header acts as a toggle hit area (the toggle keeps its own handler).
         self._bind_header_toggle(
             header, self._on_output_header_click, exclude={self.output_toggle}
+        )
+        # Hovering the line highlights both the title and the toggle together.
+        self._bind_header_hover(
+            header,
+            lambda state: self._set_header_hover(self.output_toggle, self._output_title, state),
+            exclude=set(),
         )
 
         self._output_panel = panel
