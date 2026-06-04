@@ -1414,7 +1414,7 @@ class CustomColorPicker(wx.Panel):
             gray = int(0.299 * sc.Red() + 0.587 * sc.Green() + 0.114 * sc.Blue())
             if _theme.is_light():
                 gray = min(255, int(gray + (255 - gray) * 0.25))
-            sc = wx.Colour(gray, gray, gray, _theme._disabled_alpha())
+            sc = wx.Colour(gray, gray, gray, _theme._disabled_alpha(sc.Alpha()))
         gc.SetBrush(wx.Brush(sc))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRoundedRectangle(x, y, 28, 28, 4)
