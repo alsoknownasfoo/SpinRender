@@ -49,15 +49,17 @@ class RenderController:
 
     def start_render(self, board_path: str, settings: RenderSettings,
                      progress_cb: Optional[Callable[[int, int, str, Optional[str]], None]] = None,
-                     complete_cb: Optional[Callable[[Any, Optional[str]], None]] = None):
+                     complete_cb: Optional[Callable[[Any, Optional[str]], None]] = None,
+                     source_board_path: Optional[str] = None):
         """
         Start render in background thread.
 
         Args:
-            board_path: Path to the KiCad PCB file
+            board_path: Path to the KiCad PCB file to render (may be a working copy)
             settings: RenderSettings with render parameters
             progress_cb: Called with (current, total, message, frame_path=None)
             complete_cb: Called with (result, error=None) on completion
+            source_board_path: Original board path used for output naming/location
         """
         if self._is_rendering:
             logger.warning("Render already in progress - ignoring start request")
@@ -72,7 +74,7 @@ class RenderController:
             try:
                 # Convert RenderSettings to dict for RenderEngine compatibility
                 settings_dict = settings.to_dict() if hasattr(settings, 'to_dict') else dict(settings)
-                self._engine = RenderEngine(board_path, settings_dict, progress_callback=self._on_internal_progress)
+                self._engine = RenderEngine(board_path, settings_dict, progress_callback=self._on_internal_progress, source_board_path=source_board_path)
                 result = self._engine.render()
                 if self._cancel_flag:
                     # Schedule temp dir cleanup on the UI thread via wx.CallAfter.

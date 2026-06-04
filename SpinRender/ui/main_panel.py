@@ -16,6 +16,7 @@ from .preview_panel import PreviewPanel
 
 # Import RenderSettings
 from SpinRender.core.settings import RenderSettings
+from SpinRender.core.board_workspace import BoardWorkspace
 from .preset_controller import PresetController
 from SpinRender.core.render_controller import RenderController
 from .controls_side_panel import ControlsSidePanel
@@ -57,9 +58,23 @@ class SpinRenderPanel(wx.Panel):
 
     def __init__(self, parent, board_path):
         super().__init__(parent)
+        # Original board path — kept as the project identity for preset storage,
+        # dialog board-name/output defaults, etc. Never rendered/edited directly.
         self.board_path = board_path
         self.board_dir = os.path.dirname(board_path)
-        
+
+        # Render and preview from a disposable working copy so board edits never
+        # touch the user's original file. Fall back to the original if the copy
+        # can't be made, so the plugin still works.
+        self.workspace = None
+        self.render_board_path = board_path
+        try:
+            self.workspace = BoardWorkspace(board_path)
+            self.render_board_path = self.workspace.board_path
+        except Exception as e:
+            logger.error(f"Failed to create board working copy; rendering from original: {e}", exc_info=True)
+        self.Bind(wx.EVT_WINDOW_DESTROY, self._on_panel_destroy)
+
         # Default settings
         self.settings = RenderSettings(
             preset='hero',
@@ -298,7 +313,7 @@ class SpinRenderPanel(wx.Panel):
         self.preview = PreviewPanel(
             parent,
             self.settings,
-            self.board_path,
+            self.render_board_path,
             on_close_callback=self.reset_status_bar
         )
 
@@ -456,6 +471,13 @@ class SpinRenderPanel(wx.Panel):
         if f:
             f.Close()
 
+    def _on_panel_destroy(self, event):
+        """Remove the disposable board working copy when the panel is destroyed."""
+        if event.GetEventObject() is self and self.workspace is not None:
+            self.workspace.cleanup()
+            self.workspace = None
+        event.Skip()
+
     def on_render(self, event):
         # Check if already rendering via controller
         if self.render_controller.is_rendering():
@@ -514,12 +536,14 @@ class SpinRenderPanel(wx.Panel):
 
         self.preview.update_preview_overlay()
 
-        # Delegate render orchestration to controller
+        # Delegate render orchestration to controller. Render geometry comes from
+        # the working copy; output is named/located from the original board.
         self.render_controller.start_render(
-            board_path=self.board_path,
+            board_path=self.render_board_path,
             settings=self.settings,
             progress_cb=self.on_render_progress,
-            complete_cb=self.on_render_finished
+            complete_cb=self.on_render_finished,
+            source_board_path=self.board_path
         )
 
     def on_render_progress(self, current, total, message, frame_path=None):

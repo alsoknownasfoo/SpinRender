@@ -227,17 +227,23 @@ class RenderEngine:
         }
     }
 
-    def __init__(self, board_path, settings, progress_callback=None):
+    def __init__(self, board_path, settings, progress_callback=None, source_board_path=None):
         """
         Initialize render engine
 
         Args:
-            board_path: Path to .kicad_pcb file
+            board_path: Path to the .kicad_pcb file to render geometry from
+                (may be a disposable working copy).
             settings: Dict of render settings
             progress_callback: Function(current, total, message)
+            source_board_path: Original board path used for output naming and
+                location. Defaults to board_path when not provided.
         """
         self.board_path = board_path
-        self.board_dir = os.path.dirname(board_path)
+        # Naming/output is based on the original board, not the working copy,
+        # so renders are named e.g. "my_board.mp4" (not "my_board.spinrender-tmp.mp4").
+        self.source_board_path = source_board_path or board_path
+        self.board_dir = os.path.dirname(self.source_board_path)
         self.settings = settings
         self.progress_callback = progress_callback
         self.canceled = False
@@ -590,7 +596,7 @@ class RenderEngine:
             output_base = self.settings.get('output_path', self.board_dir)
 
         format_type = self.settings.get('format', 'mp4')
-        board_name = os.path.splitext(os.path.basename(self.board_path))[0]
+        board_name = os.path.splitext(os.path.basename(self.source_board_path))[0]
 
         if format_type == 'png_sequence':
             if not self.settings.get('output_auto', True):
