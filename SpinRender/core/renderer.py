@@ -124,6 +124,20 @@ def find_command(cmd):
     return None
 
 
+def _start_text_process(cmd, env=None):
+    """Start a subprocess with explicit UTF-8 text decoding."""
+    return subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        stdin=subprocess.DEVNULL,
+        text=True,
+        encoding='utf-8',
+        errors='replace',
+        env=env,
+    )
+
+
 def _apply_overrides(cmd, override_str):
     """
     Remove any flags present in override_str from cmd, then return the
@@ -412,14 +426,7 @@ class RenderEngine:
             logger.debug(f"CLI CMD: {' '.join(cmd)}")
 
             try:
-                process = subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    stdin=subprocess.DEVNULL,
-                    text=True,
-                    env=env
-                )
+                process = _start_text_process(cmd, env=env)
 
                 stdout, _ = process.communicate(timeout=30)
                 if logger.isEnabledFor(logging.DEBUG):
@@ -475,8 +482,7 @@ class RenderEngine:
         logger.info(f"Assembling MP4: {output_path}")
         logger.debug(f"FFMPEG CMD: {' '.join(cmd)}")
         try:
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                       stdin=subprocess.DEVNULL, text=True)
+            process = _start_text_process(cmd)
             stdout, _ = process.communicate(timeout=300)
             if logger.isEnabledFor(logging.DEBUG):
                 for line in stdout.splitlines():
@@ -516,8 +522,7 @@ class RenderEngine:
 
         logger.debug(f"GIF PALETTE CMD: {' '.join(palette_cmd)}")
         try:
-            process = subprocess.Popen(palette_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                       stdin=subprocess.DEVNULL, text=True)
+            process = _start_text_process(palette_cmd)
             stdout, _ = process.communicate(timeout=60)
             if logger.isEnabledFor(logging.DEBUG):
                 for line in stdout.splitlines():
@@ -544,8 +549,7 @@ class RenderEngine:
         logger.info(f"Assembling GIF: {output_path}")
         logger.debug(f"GIF ASSY CMD: {' '.join(gif_cmd)}")
         try:
-            process = subprocess.Popen(gif_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                       stdin=subprocess.DEVNULL, text=True)
+            process = _start_text_process(gif_cmd)
             stdout, _ = process.communicate(timeout=300)
             if logger.isEnabledFor(logging.DEBUG):
                 for line in stdout.splitlines():
