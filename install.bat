@@ -168,6 +168,9 @@ if exist "!TARGET_DIR!" (
 )
 
 echo [i] DEPLOYING ASSETS TO: !TARGET_DIR!
+REM Clear read-only/hidden attributes before removal: a prior install may have
+REM left read-only files (e.g. resources\kicad_config\*) that block rmdir.
+if exist "!TARGET_DIR!" attrib -r -h "!TARGET_DIR!\*" /s /d >nul 2>&1
 if exist "!TARGET_DIR!" rmdir /s /q "!TARGET_DIR!"
 mkdir "!TARGET_DIR!"
 xcopy "%SOURCE_DIR%" "!TARGET_DIR!\" /E /I /H /Y >nul

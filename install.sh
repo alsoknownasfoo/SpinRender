@@ -202,6 +202,12 @@ deploy_to_path() {
     fi
 
     echo -e "${CYAN}[i] DEPLOYING ASSETS TO:${NC} ${TEAL}$TARGET_DIR${NC}"
+    # Restore write permissions before removal: a prior install may have left
+    # read-only dirs/files (e.g. resources/kicad_config/*), and rm can't delete
+    # entries inside a directory that lacks write permission.
+    if [ -d "$TARGET_DIR" ]; then
+        chmod -R u+w "$TARGET_DIR" 2>/dev/null || true
+    fi
     rm -rf "$TARGET_DIR"
     mkdir -p "$TARGET_DIR"
     # Clean Python bytecode from source to avoid stale .pyc files
