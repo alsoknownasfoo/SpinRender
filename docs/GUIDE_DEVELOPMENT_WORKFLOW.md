@@ -113,6 +113,26 @@ def test_renderer_calls_kicad_cli():
 
 ## Running Tests
 
+### Which Python Environment To Use
+
+SpinRender uses two different Python environments during development, and they serve different purposes.
+
+**Use a normal development environment for unit tests**:
+- Run `pytest` from a local venv or other dev Python.
+- This is the expected path for `tests/`.
+- `tests/conftest.py` mocks `wx` and `pcbnew`, so unit tests do not require KiCad to be running.
+
+**Use KiCad's bundled Python for runtime validation**:
+- Use the KiCad interpreter when you need to verify behavior against the real embedded plugin environment.
+- This is the right path for import/runtime checks involving `pcbnew`, plugin registration, or KiCad-specific packaging issues.
+- Do not assume `pytest` is installed in KiCad's embedded Python.
+
+### Recommended Split
+
+1. Write and run unit tests in a dev environment.
+2. Use KiCad's interpreter for targeted runtime validation when a bug depends on the real plugin host.
+3. If you want to run `pytest` inside KiCad's interpreter, install `pytest` into that interpreter explicitly first.
+
 ### All Tests with Coverage
 ```bash
 pytest --cov=SpinRender --cov-report=html --cov-report=term
@@ -126,6 +146,28 @@ pytest tests/unit/test_theme.py -v
 ### Single Test Function
 ```bash
 pytest tests/unit/test_theme.py::test_color_resolution -v
+```
+
+### Example: Dev Environment Test Commands
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+pip install pytest pytest-cov pytest-mock
+pytest tests/unit/test_settings.py -v
+```
+
+### Example: KiCad Runtime Validation
+Use KiCad's bundled Python executable directly for narrow checks against the real plugin environment.
+
+macOS example:
+```bash
+/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/3.9/bin/python3.9 -c "import pcbnew; print(pcbnew.__version__)"
+```
+
+If you need `pytest` inside the KiCad interpreter, install it there explicitly:
+```bash
+/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/3.9/bin/python3.9 -m pip install pytest pytest-cov pytest-mock
 ```
 
 ### Coverage Report

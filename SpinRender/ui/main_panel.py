@@ -108,7 +108,8 @@ class SpinRenderPanel(wx.Panel):
                               'period', 'direction', 'lighting', 'bg_color',
                               'render_mode', 'format', 'resolution', 'custom_resolutions',
                               'preset', 'logging_level', 'easing', 'output_auto', 'output_path',
-                              'cli_overrides', 'theme_mode']:
+                              'cli_overrides', 'theme_mode', 'params_collapsed',
+                              'output_collapsed']:
                     if hasattr(last_settings, field):
                         setattr(self.settings, field, getattr(last_settings, field))
 
