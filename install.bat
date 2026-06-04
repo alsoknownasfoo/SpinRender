@@ -1,6 +1,6 @@
 @echo off
 REM SpinRender Installation Script for Windows
-REM Installs the plugin to the most recent KiCad scripting/plugins directory found
+REM Installs the plugin to every KiCad scripting/plugins directory found
 
 setlocal EnableDelayedExpansion
 chcp 65001 >nul
@@ -83,48 +83,84 @@ if not exist "%SOURCE_DIR%" (
     exit /b 1
 )
 
-set TARGET_PATH=
+set FOUND_COUNT=0
 
 echo [i] SCANNING FOR KICAD ENVIRONMENTS...
 
 for %%v in (10.0 9.0 8.0 7.0) do (
-    if "!TARGET_PATH!"=="" (
+    set "FOUND_THIS_VER=false"
+    if "!FOUND_THIS_VER!"=="false" (
         if exist "!APPDATA!\kicad\%%v\scripting\plugins" (
-            set "TARGET_PATH=!APPDATA!\kicad\%%v\scripting\plugins"
-            echo     [OK] FOUND KICAD %%v @ !TARGET_PATH!
+            set "FOUND_THIS_VER=true"
+            set /a FOUND_COUNT+=1
+            set "FOUND_PATH_!FOUND_COUNT!=!APPDATA!\kicad\%%v\scripting\plugins"
+            echo     [OK] FOUND KICAD %%v @ !APPDATA!\kicad\%%v\scripting\plugins
         )
     )
-    
-    if "!TARGET_PATH!"=="" (
+    if "!FOUND_THIS_VER!"=="false" (
         if exist "!USERPROFILE!\Documents\KiCad\%%v\scripting\plugins" (
-            set "TARGET_PATH=!USERPROFILE!\Documents\KiCad\%%v\scripting\plugins"
-            echo     [OK] FOUND KICAD %%v @ !TARGET_PATH!
+            set "FOUND_THIS_VER=true"
+            set /a FOUND_COUNT+=1
+            set "FOUND_PATH_!FOUND_COUNT!=!USERPROFILE!\Documents\KiCad\%%v\scripting\plugins"
+            echo     [OK] FOUND KICAD %%v @ !USERPROFILE!\Documents\KiCad\%%v\scripting\plugins
         )
     )
-    
-    if "!TARGET_PATH!"=="" (
+    if "!FOUND_THIS_VER!"=="false" (
         if exist "!USERPROFILE!\Documents\KiCad\%%v\3rdparty\plugins" (
-            set "TARGET_PATH=!USERPROFILE!\Documents\KiCad\%%v\3rdparty\plugins"
-            echo     [OK] FOUND KICAD %%v @ !TARGET_PATH!
+            set "FOUND_THIS_VER=true"
+            set /a FOUND_COUNT+=1
+            set "FOUND_PATH_!FOUND_COUNT!=!USERPROFILE!\Documents\KiCad\%%v\3rdparty\plugins"
+            echo     [OK] FOUND KICAD %%v @ !USERPROFILE!\Documents\KiCad\%%v\3rdparty\plugins
         )
     )
 )
 
-if "!TARGET_PATH!"=="" (
+if !FOUND_COUNT! EQU 0 (
     echo [!] CRITICAL_ERROR: No valid KiCad plugin directories found.
     echo     Run KiCad at least once to initialize system paths.
     exit /b 1
 )
 
+echo.
+echo [i] INSTALLING TO ALL !FOUND_COUNT! KICAD ENVIRONMENT(S^) FOUND.
+
+set "DEPLOY_FAILED=false"
+for /l %%i in (1,1,!FOUND_COUNT!) do (
+    call :deploy_to_path "!FOUND_PATH_%%i!"
+)
+
+echo.
+echo [i] NEXT STEPS:
+echo     1. Restart KiCad if active
+echo     2. Locate SpinRender in the toolbar
+echo        or: Tools -^> External Plugins -^> SpinRender
+echo.
+
+if "!DEPLOY_FAILED!"=="true" (
+    echo [!] One or more deployments failed. Review output above.
+    exit /b 1
+)
+
+exit /b 0
+
+REM ----------------------------------------------------------------------
+REM Deploy the plugin to a single KiCad plugins directory.
+REM   %~1 = target plugins path
+REM Sets DEPLOY_FAILED=true on failure; skips (leaves intact) on user decline.
+:deploy_to_path
+set "TARGET_PATH=%~1"
 set "TARGET_DIR=!TARGET_PATH!\SpinRender"
+
+echo.
+echo [i] TARGET: !TARGET_DIR!
 
 if exist "!TARGET_DIR!" (
     if "!AUTO_YES!"=="false" (
         <nul set /p "=    ⚠ EXISTING_INSTALL_DETECTED: Overwrite? (y/n): "
         choice /c yn /n /m ""
         if errorlevel 2 (
-            echo [!] ABORTED: Installation cancelled by user.
-            exit /b 0
+            echo     [!] SKIPPED: Installation left untouched.
+            goto :eof
         )
     ) else (
         echo     ⚠ EXISTING_INSTALL_DETECTED: Overwritting.. (-y/--yes flag used^)
@@ -136,33 +172,26 @@ if exist "!TARGET_DIR!" rmdir /s /q "!TARGET_DIR!"
 mkdir "!TARGET_DIR!"
 xcopy "%SOURCE_DIR%" "!TARGET_DIR!\" /E /I /H /Y >nul
 
-if exist "!TARGET_DIR!\__init__.py" (
-    echo     ✓ DEPLOYMENT_COMPLETE: SpinRender is active.
-    
-    if "!LINK_THEME!"=="true" (
-        set "THEME_FILE=resources\themes\dark.yaml"
-        set "TARGET_THEME=!TARGET_DIR!\!THEME_FILE!"
-        set "SOURCE_THEME=%SOURCE_DIR%\!THEME_FILE!"
-        
-        if exist "!SOURCE_THEME!" (
-            echo     [i] LINKING THEME: !THEME_FILE!
-            if exist "!TARGET_THEME!" del "!TARGET_THEME!"
-            mklink "!TARGET_THEME!" "!SOURCE_THEME!" >nul
-            echo     ✓ Theme symlinked for live editing.
-        ) else (
-            echo     ⚠ LINK_THEME_WARNING: Source theme not found at !SOURCE_THEME!
-        )
-    )
-    
-    echo.
-    echo [i] NEXT STEPS:
-    echo     1. Restart KiCad if active
-    echo     2. Locate SpinRender in the toolbar
-    echo        or: Tools -^> External Plugins -^> SpinRender
-    echo.
-) else (
-    echo [!] DEPLOYMENT_FAILURE: Asset copy verify failed.
-    exit /b 1
+if not exist "!TARGET_DIR!\__init__.py" (
+    echo     [!] DEPLOYMENT_FAILURE: Asset copy verify failed.
+    set "DEPLOY_FAILED=true"
+    goto :eof
 )
 
-exit /b 0
+echo     ✓ DEPLOYMENT_COMPLETE: SpinRender is active.
+
+if "!LINK_THEME!"=="true" (
+    set "THEME_FILE=resources\themes\dark.yaml"
+    set "TARGET_THEME=!TARGET_DIR!\!THEME_FILE!"
+    set "SOURCE_THEME=%SOURCE_DIR%\!THEME_FILE!"
+
+    if exist "!SOURCE_THEME!" (
+        echo     [i] LINKING THEME: !THEME_FILE!
+        if exist "!TARGET_THEME!" del "!TARGET_THEME!"
+        mklink "!TARGET_THEME!" "!SOURCE_THEME!" >nul
+        echo     ✓ Theme symlinked for live editing.
+    ) else (
+        echo     ⚠ LINK_THEME_WARNING: Source theme not found at !SOURCE_THEME!
+    )
+)
+goto :eof
