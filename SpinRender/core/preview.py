@@ -386,7 +386,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
 
     def set_lighting(self, preset_id):
         """Sets OpenGL lights based on the actual values in RenderEngine.LIGHTING_PRESETS."""
-        from core.renderer import RenderEngine
+        from .renderer import RenderEngine
         self.SetCurrent(self.context)
         
         # Get preset values
