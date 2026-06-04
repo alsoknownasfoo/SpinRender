@@ -140,7 +140,7 @@ if [ ! -d "$SOURCE_DIR" ]; then
     exit 1
 fi
 
-TARGET_PATH=""
+declare -a FOUND_PATHS=()
 
 echo -e "${CYAN}[i] SCANNING FOR KICAD ENVIRONMENTS...${NC}"
 
@@ -157,15 +157,30 @@ for version in "${SEARCH_VERSIONS[@]}"; do
 
     for path in "${PATHS[@]}"; do
         if [ -d "$path" ]; then
-            TARGET_PATH="$path"
+            FOUND_PATHS+=("$path")
             echo -e "    ${GREEN}✓ FOUND KICAD $version${NC} ${DIM}@ $path${NC}"
-            break 2 # Found the best location, stop searching
+            break  # take first match per version
         fi
     done
 done
 
-if [ -n "$TARGET_PATH" ]; then
-    TARGET_DIR="$TARGET_PATH/SpinRender"
+if [ ${#FOUND_PATHS[@]} -eq 0 ]; then
+    echo -e "${RED}[!] CRITICAL_ERROR: No valid KiCad plugin directories found.${NC}"
+    echo -e "    ${DIM}Run KiCad at least once to initialize system paths.${NC}"
+    exit 1
+fi
+
+echo
+echo -e "${CYAN}[i] INSTALLING TO ALL ${#FOUND_PATHS[@]} KICAD ENVIRONMENT(S) FOUND.${NC}"
+
+# Deploy the plugin to a single KiCad plugins directory.
+# Returns 0 on success/skip, 1 on deployment failure.
+deploy_to_path() {
+    local TARGET_PATH="$1"
+    local TARGET_DIR="$TARGET_PATH/SpinRender"
+
+    echo
+    echo -e "${CYAN}[i] TARGET:${NC} ${TEAL}$TARGET_DIR${NC}"
 
     if [ -d "$TARGET_DIR" ]; then
         if [ "$AUTO_YES" = false ]; then
@@ -176,15 +191,14 @@ if [ -n "$TARGET_PATH" ]; then
                     [Yy]) echo "y"; break ;;
                     [Nn])
                         echo "n"
-                        echo -e "${RED}[!] ABORTED: Installation cancelled by user.${NC}"
-                        exit 0
+                        echo -e "    ${YELLOW}[!] SKIPPED: Installation left untouched.${NC}"
+                        return 0
                         ;;
                 esac
             done
         else
             echo -e "    ${YELLOW}⚠ EXISTING_INSTALL_DETECTED: Overwritting.. (-y/--yes flag used)${NC}"
         fi
-        rm -rf "$TARGET_DIR"
     fi
 
     echo -e "${CYAN}[i] DEPLOYING ASSETS TO:${NC} ${TEAL}$TARGET_DIR${NC}"
@@ -194,37 +208,46 @@ if [ -n "$TARGET_PATH" ]; then
     find "$SOURCE_DIR" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
     cp -R "$SOURCE_DIR/." "$TARGET_DIR/"
 
-    if [ -f "$TARGET_DIR/__init__.py" ]; then
-        echo -e "    ${GREEN}✓ DEPLOYMENT_COMPLETE: SpinRender is active.${NC}"
-        
-        # Handle theme linking if requested
-        if [ "$LINK_THEME" = true ]; then
-            THEME_FILE="resources/themes/dark.yaml"
-            TARGET_THEME="$TARGET_DIR/$THEME_FILE"
-            SOURCE_THEME="$SOURCE_DIR/$THEME_FILE"
-            
-            if [ -f "$SOURCE_THEME" ]; then
-                echo -e "    ${CYAN}[i] LINKING THEME: $THEME_FILE${NC}"
-                rm -f "$TARGET_THEME"
-                ln -s "$SOURCE_THEME" "$TARGET_THEME"
-                echo -e "    ${GREEN}✓ Theme symlinked for live editing.${NC}"
-            else
-                echo -e "    ${YELLOW}⚠ LINK_THEME_WARNING: Source theme not found at $SOURCE_THEME${NC}"
-            fi
-        fi
-
-        echo
-        echo -e "${CYAN}[i] NEXT STEPS:${NC}"
-        echo -e "    ${DIM}1. Restart KiCad if active${NC}"
-        echo -e "    ${DIM}2. Locate${NC} ${TEAL}SpinRender${NC} ${DIM}in the toolbar${NC}"
-        echo -e "       ${DIM}or: Tools → External Plugins → SpinRender${NC}"
-        echo
-    else
-        echo -e "${RED}[!] DEPLOYMENT_FAILURE: Asset copy verify failed.${NC}"
-        exit 1
+    if [ ! -f "$TARGET_DIR/__init__.py" ]; then
+        echo -e "    ${RED}[!] DEPLOYMENT_FAILURE: Asset copy verify failed.${NC}"
+        return 1
     fi
-else
-    echo -e "${RED}[!] CRITICAL_ERROR: No valid KiCad plugin directories found.${NC}"
-    echo -e "    ${DIM}Run KiCad at least once to initialize system paths.${NC}"
+
+    echo -e "    ${GREEN}✓ DEPLOYMENT_COMPLETE: SpinRender is active.${NC}"
+
+    # Handle theme linking if requested
+    if [ "$LINK_THEME" = true ]; then
+        local THEME_FILE="resources/themes/dark.yaml"
+        local TARGET_THEME="$TARGET_DIR/$THEME_FILE"
+        local SOURCE_THEME="$SOURCE_DIR/$THEME_FILE"
+
+        if [ -f "$SOURCE_THEME" ]; then
+            echo -e "    ${CYAN}[i] LINKING THEME: $THEME_FILE${NC}"
+            rm -f "$TARGET_THEME"
+            ln -s "$SOURCE_THEME" "$TARGET_THEME"
+            echo -e "    ${GREEN}✓ Theme symlinked for live editing.${NC}"
+        else
+            echo -e "    ${YELLOW}⚠ LINK_THEME_WARNING: Source theme not found at $SOURCE_THEME${NC}"
+        fi
+    fi
+
+    return 0
+}
+
+DEPLOY_FAILED=false
+for path in "${FOUND_PATHS[@]}"; do
+    deploy_to_path "$path" || DEPLOY_FAILED=true
+done
+
+echo
+echo -e "${CYAN}[i] NEXT STEPS:${NC}"
+echo -e "    ${DIM}1. Restart KiCad if active${NC}"
+echo -e "    ${DIM}2. Locate${NC} ${TEAL}SpinRender${NC} ${DIM}in the toolbar${NC}"
+echo -e "       ${DIM}or: Tools → External Plugins → SpinRender${NC}"
+echo
+
+if [ "$DEPLOY_FAILED" = true ]; then
+    echo -e "${RED}[!] One or more deployments failed. Review output above.${NC}"
     exit 1
 fi
+
