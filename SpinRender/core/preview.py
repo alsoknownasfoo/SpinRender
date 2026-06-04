@@ -46,8 +46,15 @@ class PCBModelLoader:
                 return False
             cmd = [kicad_cli, 'pcb', 'export', 'glb', '--fuse-shapes', '--grid-origin', '--no-dnp', '--subst-models', '--include-pads', '--include-silkscreen', board_path, '--output', output_path]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120, text=True)
-            return result.returncode == 0 and os.path.exists(output_path)
-        except Exception:
+            if result.returncode != 0:
+                logger.error(f"kicad-cli glb export failed (rc={result.returncode}): {(result.stderr or '').strip()[:500]}")
+                return False
+            if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
+                logger.error(f"kicad-cli reported success but output is missing/empty: {output_path}")
+                return False
+            return True
+        except Exception as e:
+            logger.error(f"GLB export exception: {e}", exc_info=True)
             return False
 
     @staticmethod
@@ -89,7 +96,8 @@ class PCBModelLoader:
                 mesh.apply_scale(1000.0)
                 
             return mesh
-        except Exception:
+        except Exception as e:
+            logger.error(f"GLB mesh load failed for {glb_path}: {e}", exc_info=True)
             return None
 
 
@@ -202,27 +210,47 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
                         except: pass
             except: pass
             
+            mesh = None
+
             # 2. Check if valid cache exists
-            if os.path.exists(glb_path):
+            if os.path.exists(glb_path) and os.path.getsize(glb_path) > 0:
                 logger.debug(f"Using cached GLB: {glb_path}")
-                mesh = PCBModelLoader.load_glb_mesh(glb_path)
-                if mesh:
-                    wx.CallAfter(self._set_mesh, mesh)
-                    return
+                mesh = self._load_mesh_with_retry(glb_path)
+                if mesh is None:
+                    # Cached file is unreadable; drop it so we re-export below.
+                    logger.warning("Cached GLB failed to load; re-exporting.")
+                    try:
+                        os.remove(glb_path)
+                    except OSError:
+                        pass
 
             # 3. Otherwise Export
-            logger.debug(f"Cache miss or invalid. Exporting GLB: {glb_path}")
-            if PCBModelLoader.export_glb(self.board_path, glb_path):
-                mesh = PCBModelLoader.load_glb_mesh(glb_path)
-                if mesh:
-                    wx.CallAfter(self._set_mesh, mesh)
-                else:
-                    wx.CallAfter(self._update_loading, None)
+            if mesh is None:
+                logger.debug(f"Cache miss or invalid. Exporting GLB: {glb_path}")
+                if PCBModelLoader.export_glb(self.board_path, glb_path):
+                    mesh = self._load_mesh_with_retry(glb_path)
+
+            if mesh is not None:
+                wx.CallAfter(self._set_mesh, mesh)
             else:
                 wx.CallAfter(self._update_loading, None)
         except Exception as e:
             logger.error(f"Sync Error: {e}", exc_info=True)
             wx.CallAfter(self._update_loading, None)
+
+    def _load_mesh_with_retry(self, glb_path, attempts=3, delay=0.25):
+        """Load a GLB, retrying briefly to ride out transient post-export read
+        races (the file is valid — a reopen always loads it — so a short retry
+        avoids dropping to the placeholder bounding box on first load)."""
+        for i in range(attempts):
+            if self._destroyed:
+                return None
+            mesh = PCBModelLoader.load_glb_mesh(glb_path)
+            if mesh is not None:
+                return mesh
+            if i < attempts - 1:
+                time.sleep(delay)
+        return None
 
     def _update_loading(self, state):
         self.loading_state = state
