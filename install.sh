@@ -19,18 +19,21 @@ NC='\033[0m' # No Color
 AUTO_YES=false
 REINSTALL_DEPS=false
 LINK_THEME=false
+UNINSTALL=false
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -y|--yes) AUTO_YES=true ;;
         --reinstall-deps) REINSTALL_DEPS=true ;;
         --link-theme) LINK_THEME=true ;;
+        -u|--uninstall) UNINSTALL=true ;;
         -h|--help)
             echo -e "${CYAN}SPINRENDER INSTALLER HELP${NC}"
             echo -e "${TEAL}Usage:${NC} ${DIM}./install.sh [options]${NC}"
             echo -e "${TEAL}Options:${NC}"
-            echo -e "  ${TEAL}-y, --yes${NC}    ${DIM}Automatically overwrite existing installation${NC}"
+            echo -e "  ${TEAL}-y, --yes${NC}    ${DIM}Automatically overwrite/remove without prompting${NC}"
             echo -e "  ${TEAL}--reinstall-deps${NC} ${DIM}Uninstall dependencies and fonts from KiCad Python before install${NC}"
             echo -e "  ${TEAL}--link-theme${NC} ${DIM}Create a symbolic link for dark.yaml (facilitates live theme editing)${NC}"
+            echo -e "  ${TEAL}-u, --uninstall${NC} ${DIM}Completely remove SpinRender from all KiCad environments${NC}"
             echo -e "  ${TEAL}-h, --help${NC}    ${DIM}Show this help message${NC}"
             exit 0
             ;;
@@ -76,11 +79,155 @@ find_kicad_python() {
     return 1
 }
 
+# Scan all KiCad environments and populate the global FOUND_PATHS array.
+# Exits with an error if no plugin directories are found.
+declare -a FOUND_PATHS=()
+scan_kicad_paths() {
+    FOUND_PATHS=()
+
+    echo -e "${CYAN}[i] SCANNING FOR KICAD ENVIRONMENTS...${NC}"
+
+    for version in "${SEARCH_VERSIONS[@]}"; do
+        # Define possible paths for this version
+        declare -a PATHS
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS
+            PATHS=("$HOME/Documents/KiCad/$version/scripting/plugins" "$HOME/Library/Preferences/kicad/$version/scripting/plugins" "$HOME/Documents/KiCad/$version/3rdparty/plugins")
+        else
+            # Linux
+            PATHS=("$HOME/.local/share/kicad/$version/scripting/plugins" "$HOME/.kicad/$version/scripting/plugins")
+        fi
+
+        for path in "${PATHS[@]}"; do
+            if [ -d "$path" ]; then
+                FOUND_PATHS+=("$path")
+                echo -e "    ${GREEN}✓ FOUND KICAD $version${NC} ${DIM}@ $path${NC}"
+                break  # take first match per version
+            fi
+        done
+    done
+
+    if [ ${#FOUND_PATHS[@]} -eq 0 ]; then
+        echo -e "${RED}[!] CRITICAL_ERROR: No valid KiCad plugin directories found.${NC}"
+        echo -e "    ${DIM}Run KiCad at least once to initialize system paths.${NC}"
+        exit 1
+    fi
+}
+
+# Uninstall Python dependencies and surface font removal instructions.
+remove_deps_and_fonts() {
+    # Find KiCad Python
+    local KICAD_PYTHON
+    KICAD_PYTHON=$(find_kicad_python) || true
+    if [ -n "$KICAD_PYTHON" ]; then
+        echo -e "${CYAN}[i] Using KiCad Python:${NC} ${TEAL}$KICAD_PYTHON${NC}"
+        echo -e "\n${CYAN}[i] Uninstalling Python dependencies...${NC}"
+        "$KICAD_PYTHON" -m pip uninstall -y PyYAML PyOpenGL PyOpenGL-accelerate trimesh numpy 2>/dev/null || true
+    else
+        echo -e "${YELLOW}[!] Could not find KiCad Python interpreter; skipping dependency removal.${NC}"
+    fi
+
+    echo -e "\n${CYAN}[i] Font removal instructions:${NC}"
+    echo -e "    ${DIM}The following fonts may have been installed to your system:${NC}"
+    echo -e "    ${DIM}- JetBrains Mono${NC}"
+    echo -e "    ${DIM}- Oswald${NC}"
+    echo -e "    ${DIM}- Material Design Icons${NC}"
+    echo
+    echo -e "    ${YELLOW}To remove these fonts:${NC}"
+    echo -e "    ${DIM}macOS:${NC} Open Font Book, find the fonts, right-click → 'Remove from System'"
+    echo -e "    ${DIM}Linux:${NC} Remove from ~/.local/share/fonts/ or /usr/share/fonts/"
+    echo -e "    ${DIM}Windows:${NC} Settings → Personalization → Fonts, right-click → Uninstall"
+    echo
+}
+
 # Header with precise 56-character content width
 echo -e "${CYAN}┌────────────────────────────────────────────────────────┐${NC}"
 echo -e "${CYAN}│${BOLD}  SPINRENDER // PLUGIN_INSTALL // v0.5.0-beta            ${NC}${CYAN}│${NC}"
 echo -e "${CYAN}└────────────────────────────────────────────────────────┘${NC}"
 echo
+
+# ---------------------------------------------------------------------------
+# UNINSTALL MODE: completely remove the plugin from every KiCad environment.
+# ---------------------------------------------------------------------------
+if [ "$UNINSTALL" = true ]; then
+    echo -e "${CYAN}[i] UNINSTALL MODE${NC}"
+    echo -e "${YELLOW}This will remove SpinRender from all detected KiCad environments.${NC}"
+    echo -e "${DIM}Python dependencies and fonts are left untouched (they may be in use elsewhere).${NC}"
+
+    if [ "$AUTO_YES" = false ]; then
+        echo -ne "    ${YELLOW}Continue? (y/n): ${NC}"
+        read -s -n 1 response
+        echo
+        if [[ ! "$response" =~ ^[Yy]$ ]]; then
+            echo -e "${RED}[!] ABORTED.${NC}"
+            exit 0
+        fi
+    fi
+    echo
+
+    scan_kicad_paths
+
+    # Remove the deployed plugin from a single KiCad plugins directory.
+    # Returns 0 on success/skip, 1 on removal failure.
+    uninstall_from_path() {
+        local TARGET_PATH="$1"
+        local TARGET_DIR="$TARGET_PATH/SpinRender"
+
+        echo
+        echo -e "${CYAN}[i] TARGET:${NC} ${TEAL}$TARGET_DIR${NC}"
+
+        if [ ! -d "$TARGET_DIR" ]; then
+            echo -e "    ${DIM}No SpinRender installation here. Skipping.${NC}"
+            return 0
+        fi
+
+        if [ "$AUTO_YES" = false ]; then
+            echo -ne "    ${YELLOW}⚠ Remove this installation? (y/n): ${NC}"
+            while true; do
+                read -s -n 1 response
+                case $response in
+                    [Yy]) echo "y"; break ;;
+                    [Nn])
+                        echo "n"
+                        echo -e "    ${YELLOW}[!] SKIPPED: Installation left untouched.${NC}"
+                        return 0
+                        ;;
+                esac
+            done
+        fi
+
+        # Restore write permissions before removal: a prior install may have left
+        # read-only dirs/files (e.g. resources/kicad_config/*), and rm can't delete
+        # entries inside a directory that lacks write permission.
+        chmod -R u+w "$TARGET_DIR" 2>/dev/null || true
+        rm -rf "$TARGET_DIR"
+
+        if [ -d "$TARGET_DIR" ]; then
+            echo -e "    ${RED}[!] REMOVAL_FAILURE: Could not delete $TARGET_DIR${NC}"
+            return 1
+        fi
+
+        echo -e "    ${GREEN}✓ REMOVED: SpinRender deleted.${NC}"
+        return 0
+    }
+
+    echo
+    echo -e "${CYAN}[i] REMOVING FROM ALL ${#FOUND_PATHS[@]} KICAD ENVIRONMENT(S) FOUND.${NC}"
+
+    UNINSTALL_FAILED=false
+    for path in "${FOUND_PATHS[@]}"; do
+        uninstall_from_path "$path" || UNINSTALL_FAILED=true
+    done
+
+    echo
+    if [ "$UNINSTALL_FAILED" = true ]; then
+        echo -e "${RED}[!] One or more removals failed. Review output above.${NC}"
+        exit 1
+    fi
+
+    echo -e "${GREEN}✓ UNINSTALL_COMPLETE: SpinRender has been removed.${NC}"
+    exit 0
+fi
 
 # Handle reinstall-deps flag
 if [ "$REINSTALL_DEPS" = true ]; then
@@ -97,32 +244,7 @@ if [ "$REINSTALL_DEPS" = true ]; then
         fi
     fi
 
-    # Find KiCad Python
-    KICAD_PYTHON=$(find_kicad_python)
-    if [ -z "$KICAD_PYTHON" ]; then
-        echo -e "${RED}[!] Could not find KiCad Python interpreter.${NC}"
-        echo -e "    ${DIM}Make sure KiCad is installed and has been run at least once.${NC}"
-        exit 1
-    fi
-
-    echo -e "${CYAN}[i] Using KiCad Python:${NC} ${TEAL}$KICAD_PYTHON${NC}"
-
-    # Uninstall Python dependencies
-    echo -e "\n${CYAN}[i] Uninstalling Python dependencies...${NC}"
-    "$KICAD_PYTHON" -m pip uninstall -y PyYAML PyOpenGL PyOpenGL-accelerate trimesh numpy 2>/dev/null || true
-
-    # Remove font installations instructions
-    echo -e "\n${CYAN}[i] Font removal instructions:${NC}"
-    echo -e "    ${DIM}The following fonts may have been installed to your system:${NC}"
-    echo -e "    ${DIM}- JetBrains Mono${NC}"
-    echo -e "    ${DIM}- Oswald${NC}"
-    echo -e "    ${DIM}- Material Design Icons${NC}"
-    echo
-    echo -e "    ${YELLOW}To remove these fonts:${NC}"
-    echo -e "    ${DIM}macOS:${NC} Open Font Book, find the fonts, right-click → 'Remove from System'"
-    echo -e "    ${DIM}Linux:${NC} Remove from ~/.local/share/fonts/ or /usr/share/fonts/"
-    echo -e "    ${DIM}Windows:${NC} Settings → Personalization → Fonts, right-click → Uninstall"
-    echo
+    remove_deps_and_fonts
 
     echo -e "${GREEN}✓ Dependencies and fonts uninstalled.${NC}"
     echo -e "${CYAN}[i] Proceeding with plugin installation...${NC}"
@@ -140,35 +262,7 @@ if [ ! -d "$SOURCE_DIR" ]; then
     exit 1
 fi
 
-declare -a FOUND_PATHS=()
-
-echo -e "${CYAN}[i] SCANNING FOR KICAD ENVIRONMENTS...${NC}"
-
-for version in "${SEARCH_VERSIONS[@]}"; do
-    # Define possible paths for this version
-    declare -a PATHS
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS
-        PATHS=("$HOME/Documents/KiCad/$version/scripting/plugins" "$HOME/Library/Preferences/kicad/$version/scripting/plugins" "$HOME/Documents/KiCad/$version/3rdparty/plugins")
-    else
-        # Linux
-        PATHS=("$HOME/.local/share/kicad/$version/scripting/plugins" "$HOME/.kicad/$version/scripting/plugins")
-    fi
-
-    for path in "${PATHS[@]}"; do
-        if [ -d "$path" ]; then
-            FOUND_PATHS+=("$path")
-            echo -e "    ${GREEN}✓ FOUND KICAD $version${NC} ${DIM}@ $path${NC}"
-            break  # take first match per version
-        fi
-    done
-done
-
-if [ ${#FOUND_PATHS[@]} -eq 0 ]; then
-    echo -e "${RED}[!] CRITICAL_ERROR: No valid KiCad plugin directories found.${NC}"
-    echo -e "    ${DIM}Run KiCad at least once to initialize system paths.${NC}"
-    exit 1
-fi
+scan_kicad_paths
 
 echo
 echo -e "${CYAN}[i] INSTALLING TO ALL ${#FOUND_PATHS[@]} KICAD ENVIRONMENT(S) FOUND.${NC}"
@@ -256,4 +350,3 @@ if [ "$DEPLOY_FAILED" = true ]; then
     echo -e "${RED}[!] One or more deployments failed. Review output above.${NC}"
     exit 1
 fi
-

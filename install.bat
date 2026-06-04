@@ -19,12 +19,15 @@ REM Flag parsing
 set AUTO_YES=false
 set REINSTALL_DEPS=false
 set LINK_THEME=false
+set UNINSTALL=false
 :parse_args
 if "%~1"=="" goto end_parse_args
 if /i "%~1"=="-y" set AUTO_YES=true
 if /i "%~1"=="--yes" set AUTO_YES=true
 if /i "%~1"=="--reinstall-deps" set REINSTALL_DEPS=true
 if /i "%~1"=="--link-theme" set LINK_THEME=true
+if /i "%~1"=="-u" set UNINSTALL=true
+if /i "%~1"=="--uninstall" set UNINSTALL=true
 if /i "%~1"=="-h" goto show_help
 if /i "%~1"=="--help" goto show_help
 shift
@@ -34,9 +37,10 @@ goto parse_args
 echo SPINRENDER INSTALLER HELP
 echo Usage: install.bat [options]
 echo Options:
-echo   -y, --yes              Automatically overwrite existing installation
+echo   -y, --yes              Automatically overwrite/remove without prompting
 echo   --reinstall-deps       Uninstall dependencies and fonts from KiCad Python before install
 echo   --link-theme           Create a symbolic link for dark.yaml (facilitates live theme editing^)
+echo   -u, --uninstall        Completely remove SpinRender from all KiCad environments
 echo   -h, --help             Show this help message
 exit /b 0
 
@@ -50,7 +54,7 @@ echo.
 if "!REINSTALL_DEPS!"=="true" (
     echo [i] REINSTALL-DEPS MODE
     echo This will uninstall SpinRender dependencies and remove fonts from KiCad Python environment.
-    
+
     if "!AUTO_YES!"=="false" (
         <nul set /p "=    Continue? (y/n): "
         choice /c yn /n /m ""
@@ -59,16 +63,8 @@ if "!REINSTALL_DEPS!"=="true" (
             exit /b 0
         )
     )
-    
-    echo [i] Font removal instructions:
-    echo     The following fonts may have been installed to your system:
-    echo     - JetBrains Mono
-    echo     - Oswald
-    echo     - Material Design Icons
-    echo.
-    echo     To remove these fonts:
-    echo     Windows: Settings -^> Personalization -^> Fonts, right-click -^> Uninstall
-    echo.
+
+    call :font_removal_notice
     echo [OK] Dependencies and fonts uninstalled.
     echo [i] Proceeding with plugin installation...
     echo.
@@ -77,10 +73,13 @@ if "!REINSTALL_DEPS!"=="true" (
 set SCRIPT_DIR=%~dp0
 set SOURCE_DIR=%SCRIPT_DIR%SpinRender
 
-if not exist "%SOURCE_DIR%" (
-    echo [!] CRITICAL_ERROR: Source directory not found at:
-    echo     %SOURCE_DIR%
-    exit /b 1
+REM Source dir is only required when installing, not when uninstalling.
+if "!UNINSTALL!"=="false" (
+    if not exist "%SOURCE_DIR%" (
+        echo [!] CRITICAL_ERROR: Source directory not found at:
+        echo     %SOURCE_DIR%
+        exit /b 1
+    )
 )
 
 set FOUND_COUNT=0
@@ -119,6 +118,42 @@ if !FOUND_COUNT! EQU 0 (
     echo [!] CRITICAL_ERROR: No valid KiCad plugin directories found.
     echo     Run KiCad at least once to initialize system paths.
     exit /b 1
+)
+
+REM ----------------------------------------------------------------------
+REM UNINSTALL MODE: completely remove the plugin from every environment.
+REM ----------------------------------------------------------------------
+if "!UNINSTALL!"=="true" (
+    echo.
+    echo [i] UNINSTALL MODE
+    echo This will remove SpinRender from all detected KiCad environments.
+    echo Python dependencies and fonts are left untouched (they may be in use elsewhere^).
+
+    if "!AUTO_YES!"=="false" (
+        <nul set /p "=    Continue? (y/n): "
+        choice /c yn /n /m ""
+        if errorlevel 2 (
+            echo [!] ABORTED.
+            exit /b 0
+        )
+    )
+
+    echo.
+    echo [i] REMOVING FROM ALL !FOUND_COUNT! KICAD ENVIRONMENT(S^) FOUND.
+
+    set "UNINSTALL_FAILED=false"
+    for /l %%i in (1,1,!FOUND_COUNT!) do (
+        call :uninstall_from_path "!FOUND_PATH_%%i!"
+    )
+
+    echo.
+    if "!UNINSTALL_FAILED!"=="true" (
+        echo [!] One or more removals failed. Review output above.
+        exit /b 1
+    )
+
+    echo [OK] UNINSTALL_COMPLETE: SpinRender has been removed.
+    exit /b 0
 )
 
 echo.
@@ -197,4 +232,57 @@ if "!LINK_THEME!"=="true" (
         echo     ⚠ LINK_THEME_WARNING: Source theme not found at !SOURCE_THEME!
     )
 )
+goto :eof
+
+REM ----------------------------------------------------------------------
+REM Remove the deployed plugin from a single KiCad plugins directory.
+REM   %~1 = target plugins path
+REM Sets UNINSTALL_FAILED=true on failure; skips (leaves intact) on decline.
+:uninstall_from_path
+set "TARGET_PATH=%~1"
+set "TARGET_DIR=!TARGET_PATH!\SpinRender"
+
+echo.
+echo [i] TARGET: !TARGET_DIR!
+
+if not exist "!TARGET_DIR!" (
+    echo     No SpinRender installation here. Skipping.
+    goto :eof
+)
+
+if "!AUTO_YES!"=="false" (
+    <nul set /p "=    ⚠ Remove this installation? (y/n): "
+    choice /c yn /n /m ""
+    if errorlevel 2 (
+        echo     [!] SKIPPED: Installation left untouched.
+        goto :eof
+    )
+)
+
+REM Clear read-only/hidden attributes before removal: a prior install may have
+REM left read-only files (e.g. resources\kicad_config\*) that block rmdir.
+attrib -r -h "!TARGET_DIR!\*" /s /d >nul 2>&1
+rmdir /s /q "!TARGET_DIR!"
+
+if exist "!TARGET_DIR!" (
+    echo     [!] REMOVAL_FAILURE: Could not delete !TARGET_DIR!
+    set "UNINSTALL_FAILED=true"
+    goto :eof
+)
+
+echo     ✓ REMOVED: SpinRender deleted.
+goto :eof
+
+REM ----------------------------------------------------------------------
+REM Print font removal instructions (Windows).
+:font_removal_notice
+echo [i] Font removal instructions:
+echo     The following fonts may have been installed to your system:
+echo     - JetBrains Mono
+echo     - Oswald
+echo     - Material Design Icons
+echo.
+echo     To remove these fonts:
+echo     Windows: Settings -^> Personalization -^> Fonts, right-click -^> Uninstall
+echo.
 goto :eof
