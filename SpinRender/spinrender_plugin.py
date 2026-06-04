@@ -291,7 +291,50 @@ class SpinRenderFrame(wx.Frame):
                 self.SetSize((min_width, current_size.GetHeight()))
             logger.debug("Centering window...")
             self.Centre()
+            # Keep the window within the display's work area and fully on-screen.
+            self._fit_to_display()
             logger.debug("_finalize_init complete")
+
+    def _fit_to_display(self):
+        """Ensure the window fits within, and is fully visible on, its display.
+
+        If the window is larger than the available work area (screen minus
+        taskbar/dock/menubar), shrink it to fit. Then move it so no part is
+        off-screen. Falls back to the primary display if the window currently
+        renders entirely off every display.
+        """
+        if not self:
+            return
+        try:
+            idx = wx.Display.GetFromWindow(self)
+            if idx == wx.NOT_FOUND:
+                idx = 0
+            area = wx.Display(idx).GetClientArea()
+
+            size = self.GetSize()
+            w, h = size.GetWidth(), size.GetHeight()
+            fit_w, fit_h = min(w, area.GetWidth()), min(h, area.GetHeight())
+
+            # 1. Resize down to the available space if the window is too big.
+            if fit_w != w or fit_h != h:
+                # SetSizeHints() pinned a min size; relax it only as needed so
+                # the frame can actually shrink to fit the display.
+                mw, mh = self.GetMinWidth(), self.GetMinHeight()
+                self.SetMinSize((
+                    min(mw, fit_w) if mw > 0 else fit_w,
+                    min(mh, fit_h) if mh > 0 else fit_h,
+                ))
+                self.SetSize((fit_w, fit_h))
+                w, h = fit_w, fit_h
+
+            # 2. Move so the whole window sits inside the work area.
+            pos = self.GetPosition()
+            x = max(area.GetX(), min(pos.x, area.GetX() + area.GetWidth() - w))
+            y = max(area.GetY(), min(pos.y, area.GetY() + area.GetHeight() - h))
+            if x != pos.x or y != pos.y:
+                self.SetPosition((x, y))
+        except Exception as e:
+            logger.error(f"_fit_to_display failed: {e}", exc_info=True)
 
     def on_close(self, event):
         """
