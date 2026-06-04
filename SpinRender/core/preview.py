@@ -104,6 +104,10 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         self.board_path = board_path
         self.context = glcanvas.GLContext(self)
         self.initialized = False
+        # Set once the window starts tearing down. Paint/timer callbacks must
+        # short-circuit afterwards: touching the GL context during/after destroy
+        # segfaults on macOS.
+        self._destroyed = False
         self.mesh_data = None
         
         # Universal Joint Parameters
@@ -147,13 +151,34 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         self.Bind(wx.EVT_TIMER, self.on_timer)
         self.loading_timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self._on_loading_timer, self.loading_timer)
+        self.Bind(wx.EVT_WINDOW_DESTROY, self._on_destroy)
         self.loading_timer.Start(50)
         wx.CallAfter(self._start_loading_thread)
 
+    def _on_destroy(self, event):
+        """Stop timers and disable GL work when this canvas is destroyed.
+
+        Without this, a pending animation/loading timer can fire on_paint()
+        against an already-destroyed GL context, segfaulting the host app.
+        """
+        if event.GetEventObject() is self:
+            self._destroyed = True
+            for t in (getattr(self, 'timer', None), getattr(self, 'loading_timer', None)):
+                try:
+                    if t is not None and t.IsRunning():
+                        t.Stop()
+                except Exception:
+                    pass
+        event.Skip()
+
     def _start_loading_thread(self):
+        if self._destroyed or not self:
+            return
         threading.Thread(target=self._export_and_load_sync, daemon=True).start()
 
     def _on_loading_timer(self, _event):
+        if self._destroyed:
+            return
         if self.loading_state:
             self.Refresh()
         else:
@@ -382,6 +407,8 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         self.Refresh()
 
     def on_paint(self, _event):
+        if self._destroyed or not self:
+            return
         size = self.GetSize()
         scale = self.GetContentScaleFactor()
         w, h = int(size.x * scale), int(size.y * scale)
@@ -627,6 +654,8 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         self.Refresh()
 
     def on_timer(self, _event):
+        if self._destroyed:
+            return
         if self.playing:
             self.rotation_angle = (self.rotation_angle + self.rotation_speed) % 360.0
             self.Refresh()
