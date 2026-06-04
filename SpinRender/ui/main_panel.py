@@ -82,7 +82,7 @@ class SpinRenderPanel(wx.Panel):
         )
         
         # Attempt to load last used settings
-        from core.presets import PresetManager
+        from SpinRender.core.presets import PresetManager
         manager = PresetManager(self.board_path)
         last_settings = manager.get_last_used_settings()
         if last_settings:
@@ -375,7 +375,7 @@ class SpinRenderPanel(wx.Panel):
     def save_settings(self):
         """Persist current settings to disk if changed since last save."""
         import hashlib, json
-        from core.presets import PresetManager
+        from SpinRender.core.presets import PresetManager
         data = self.settings.to_dict() if hasattr(self.settings, 'to_dict') else vars(self.settings)
         current_hash = hashlib.md5(json.dumps(data, sort_keys=True).encode()).hexdigest()
         if getattr(self, '_last_saved_hash', None) == current_hash:
@@ -418,7 +418,7 @@ class SpinRenderPanel(wx.Panel):
 
     def on_advanced_options(self, event):
         self.reset_status_bar()
-        from ui.dialogs import AdvancedOptionsDialog
+        from .dialogs import AdvancedOptionsDialog
         dlg = AdvancedOptionsDialog(
             self, self.settings, self.board_path,
             on_theme_change=self._apply_theme_mode_from_dialog
