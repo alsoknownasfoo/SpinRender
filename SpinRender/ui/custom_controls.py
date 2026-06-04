@@ -575,6 +575,11 @@ class CustomDropdown(wx.Panel):
         if 0 <= index < len(self.choices): self.selection = index; self.Refresh(); self.Update()
     def GetStringSelection(self): return self.choices[self.selection] if self.choices else ""
     def SetChoices(self, choices): self.choices, self.selection = choices, 0; self.Refresh(); self.Update()
+    def SetItems(self, choices, selection=0):
+        """Replace the choice list and select an item in one call."""
+        self.choices = choices or []
+        self.selection = selection if 0 <= selection < len(self.choices) else 0
+        self.Refresh(); self.Update()
     def AcceptsFocus(self): return False
     def AcceptsFocusFromKeyboard(self): return False
 
@@ -1491,19 +1496,34 @@ class CustomListItem(wx.Panel):
         self.style_id = id
         self.hovered = False
         self.confirm_mode = False
-        
+        self.delete_hovered = False  # mouse over the trash glyph specifically
+
         # Resolve DNA
         self.token = f"components.list.{self.style_id}"
         if not _theme.has_token(self.token): self.token = "components.list.default"
-        
+
         self.height = _theme._resolve(f"{self.token}.frame.height") or 40
         self.SetMinSize((-1, self.height))
-        
+
         self.Bind(wx.EVT_PAINT, self.on_paint)
+        self.Bind(wx.EVT_MOTION, self.on_motion)
         bind_mouse_events(self, hover_handler=self.on_enter, leave_handler=self.on_leave, click_handler=self.on_click)
 
     def on_enter(self, event): self.hovered = True; self.Refresh(); self.Update()
-    def on_leave(self, event): self.hovered = False; self.Refresh(); self.Update()
+    def on_leave(self, event):
+        self.hovered = False
+        self.delete_hovered = False
+        self.Refresh(); self.Update()
+
+    def on_motion(self, event):
+        # The trash glyph lives in the right action gutter; turn it red only
+        # while the cursor is actually over it.
+        w, _ = self.GetSize()
+        over = (not self.confirm_mode) and (event.GetX() >= w - 40)
+        if over != self.delete_hovered:
+            self.delete_hovered = over
+            self.Refresh(); self.Update()
+        event.Skip()
     
     def on_click(self, event):
         # Determine if click was on action area or main body
@@ -1586,9 +1606,9 @@ class CustomListItem(wx.Panel):
             draw_styled_text(gc, c_icon, f"{self.token}.icon", w - 70, (h - 16) / 2, c_color)
             draw_styled_text(gc, s_icon, f"{self.token}.icon", w - 30, (h - 16) / 2, s_color)
         else:
-            # Draw Delete
+            # Draw Delete (neutral, turning red while the trash itself is hovered)
             d_icon = _theme.glyph(_theme._resolve(f"{actions_token}.delete.icon"))
-            d_color = _theme.color(f"{actions_token}.delete.color")
+            d_color = _theme.color(f"{actions_token}.delete.color", self.delete_hovered)
             draw_styled_text(gc, d_icon, f"{self.token}.icon", w - 30, (h - 16) / 2, d_color)
 
 

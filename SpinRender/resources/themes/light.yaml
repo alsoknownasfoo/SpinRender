@@ -1092,7 +1092,7 @@ components:
           hover: "@colors.transparent"
           active: "@colors.transparent"
       actions:
-        delete:  { icon: { ref: "glyphs.trash" }, color: "@colors.warning" }
+        delete:  { icon: { ref: "glyphs.trash" }, color: { default: "@colors.gray-light", hover: "@colors.red" } }
         confirm: { icon: { ref: "glyphs.save" },  color: "@colors.ok"      }
         cancel:  { icon: { ref: "glyphs.close" }, color: "@colors.warning" }
       container:

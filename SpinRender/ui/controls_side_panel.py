@@ -21,6 +21,16 @@ _locale = Locale.current()
 from .helpers import create_section_label, create_numeric_input, create_text, reapply_text_styles, load_svg, set_text_widget_state
 
 
+# Built-in output resolutions: (display label, "WxH" id). Custom resolutions
+# added by the user are appended after these and persisted in settings.
+BUILTIN_RESOLUTIONS = [
+    ("3840×2160 (4K)", "3840x2160"),
+    ("1920×1080 (1080P)", "1920x1080"),
+    ("1280×720 (720P)", "1280x720"),
+    ("800×800 (Square)", "800x800"),
+]
+
+
 class ControlsSidePanel(wx.Panel):
     """
     Left sidebar panel containing all rendering controls.
@@ -689,11 +699,21 @@ class ControlsSidePanel(wx.Panel):
         # Row 1: Format and Resolution
         cols_panel = wx.Panel(panel)
         cols_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        # Heading rows are kept a fixed height so the FORMAT and RESOLUTION
+        # dropdowns stay vertically aligned even though RESOLUTION carries a gear.
+        head_h = 22
+
         f_col = wx.Panel(cols_panel)
         f_sizer = wx.BoxSizer(wx.VERTICAL)
         f_sizer.AddSpacer(10)
+        # Heading is a direct child of the column so its left edge lines up with
+        # the dropdown below; a zero-width spacer pins the row height so FORMAT
+        # and RESOLUTION (which carries a gear) stay vertically in step.
+        f_head_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.format_heading = create_text(f_col, _locale.get("parameters.format.label", "FORMAT"), "subheader")
-        f_sizer.Add(self.format_heading, 0, wx.BOTTOM, 6)
+        f_head_sizer.Add(self.format_heading, 0, wx.ALIGN_CENTER_VERTICAL)
+        f_head_sizer.Add((0, head_h))
+        f_sizer.Add(f_head_sizer, 0, wx.EXPAND | wx.BOTTOM, 6)
 
         self.format_choices = ["MP4 (H.264)", "GIF", "PNG Sequence"]
         self.format_ids = ["mp4", "gif", "png_sequence"]
@@ -708,15 +728,24 @@ class ControlsSidePanel(wx.Panel):
         r_col = wx.Panel(cols_panel)
         r_sizer = wx.BoxSizer(wx.VERTICAL)
         r_sizer.AddSpacer(10)
-        self.res_heading = create_text(r_col, _locale.get("parameters.resolution.label", "RESOLUTION"), "subheader")
-        r_sizer.Add(self.res_heading, 0, wx.BOTTOM, 6)
 
-        self.res_choices = ["3840×2160 (4K)", "1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
-        self.res_ids = ["3840x2160", "1920x1080", "1280x720", "800x800"]
-        self.res_choice = CustomDropdown(r_col, choices=self.res_choices, size=(-1, 32), id="resolution", section='output')
-        curr_res = self.settings.resolution
-        res_idx = self.res_ids.index(curr_res) if curr_res in self.res_ids else 0
-        self.res_choice.SetSelection(res_idx)
+        # Heading row: title on the left (a direct child of the column, so it
+        # left-aligns with the dropdown), a gear on the right that opens the
+        # "Custom Resolutions" management dialog. The gear is head_h tall, so it
+        # pins this row to the same height as the FORMAT heading row.
+        res_head_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        res_head_sizer.AddSpacer(4)
+        self.res_heading = create_text(r_col, _locale.get("parameters.resolution.label", "RESOLUTION"), "subheader")
+        res_head_sizer.Add(self.res_heading, 0, wx.ALIGN_CENTER_VERTICAL)
+        res_head_sizer.AddStretchSpacer()
+        self.res_gear_btn = CustomButton(r_col, id="options", label="", size=(head_h, head_h), section='output')
+        res_head_sizer.Add(self.res_gear_btn, 0, wx.ALIGN_CENTER_VERTICAL)
+        r_sizer.Add(res_head_sizer, 0, wx.EXPAND | wx.BOTTOM, 6)
+
+        self.res_choices, self.res_ids = self._build_resolution_items()
+        self.res_choice = CustomDropdown(r_col, choices=self.res_choices,
+                                         size=(-1, 32), id="resolution", section='output')
+        self.res_choice.SetSelection(self._resolution_index(self.settings.resolution))
         r_sizer.Add(self.res_choice, 0, wx.EXPAND)
         r_col.SetSizerAndFit(r_sizer)
         cols_sizer.Add(r_col, 1, wx.EXPAND)
@@ -742,6 +771,43 @@ class ControlsSidePanel(wx.Panel):
         # the scroll area's min height is measured), matching Parameters.
         panel.SetSizerAndFit(sizer)
         return panel
+
+    # ─── Resolution dropdown helpers ──────────────────────────────────────
+    @staticmethod
+    def _format_custom_res_label(res_id):
+        """Render a 'WxH' id as a 'Custom (W×H)' dropdown label."""
+        try:
+            w, h = res_id.split('x')
+            return _locale.get("output.resolution.custom_label", "Custom ({w}×{h})").format(w=w, h=h)
+        except (ValueError, AttributeError):
+            return str(res_id)
+
+    def _build_resolution_items(self):
+        """Build (choices, ids) for the resolution dropdown: built-in
+        resolutions followed by the user's saved custom resolutions."""
+        choices, ids = [], []
+        for label, res_id in BUILTIN_RESOLUTIONS:
+            choices.append(label)
+            ids.append(res_id)
+        for res_id in (getattr(self.settings, 'custom_resolutions', None) or []):
+            choices.append(self._format_custom_res_label(res_id))
+            ids.append(res_id)
+        return choices, ids
+
+    def _resolution_index(self, res_id, ids=None):
+        """Index of res_id in the id list, defaulting to 1080P (or 0)."""
+        ids = ids if ids is not None else self.res_ids
+        if res_id in ids:
+            return ids.index(res_id)
+        if '1920x1080' in ids:
+            return ids.index('1920x1080')
+        return 0
+
+    def rebuild_resolution_items(self, selected_id=None):
+        """Rebuild the resolution dropdown after a custom resolution add/delete."""
+        self.res_choices, self.res_ids = self._build_resolution_items()
+        target = selected_id if selected_id is not None else getattr(self.settings, 'resolution', None)
+        self.res_choice.SetItems(self.res_choices, self._resolution_index(target))
 
     def create_footer_panel(self, parent):
         """Create the persistent footer panel with action buttons."""

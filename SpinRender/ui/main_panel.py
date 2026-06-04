@@ -106,8 +106,8 @@ class SpinRenderPanel(wx.Panel):
                 # Update individual attributes
                 for field in ['board_tilt', 'board_roll', 'spin_tilt', 'spin_heading',
                               'period', 'direction', 'lighting', 'bg_color',
-                              'render_mode', 'format', 'resolution', 'preset',
-                              'logging_level', 'easing', 'output_auto', 'output_path',
+                              'render_mode', 'format', 'resolution', 'custom_resolutions',
+                              'preset', 'logging_level', 'easing', 'output_auto', 'output_path',
                               'cli_overrides', 'theme_mode']:
                     if hasattr(last_settings, field):
                         setattr(self.settings, field, getattr(last_settings, field))
@@ -266,6 +266,7 @@ class SpinRenderPanel(wx.Panel):
             'format_ids': csp.format_ids,
             'res_choice': csp.res_choice,
             'res_ids': csp.res_ids,
+            'controls_side_panel': csp,
             'bg_picker': csp.bg_picker,
         }
 
@@ -301,8 +302,9 @@ class SpinRenderPanel(wx.Panel):
         self.controls_side_panel.light_toggle.Bind(wx.EVT_TOGGLEBUTTON, pc.on_lighting_change)
         # Output format
         self.controls_side_panel.format_choice.Bind(wx.EVT_CHOICE, pc.on_format_change)
-        # Resolution
+        # Resolution dropdown + gear (opens the Custom Resolutions dialog)
         self.controls_side_panel.res_choice.Bind(wx.EVT_CHOICE, pc.on_resolution_change)
+        self.controls_side_panel.res_gear_btn.Bind(wx.EVT_BUTTON, pc.on_open_custom_resolutions)
         # Background color
         if self.controls_side_panel.bg_picker:
             self.controls_side_panel.bg_picker.Bind(EVT_COLOURPICKER_CHANGED, lambda e: pc.on_bg_color_change(e.GetString()))

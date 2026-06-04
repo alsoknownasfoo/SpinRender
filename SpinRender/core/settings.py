@@ -1,5 +1,6 @@
 """Render settings dataclass with validation."""
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
+from typing import List
 
 
 @dataclass
@@ -17,6 +18,7 @@ class RenderSettings:
     render_mode: str = 'both'
     format: str = 'mp4'
     resolution: str = '1920x1080'
+    custom_resolutions: List[str] = field(default_factory=list)
     preset: str = 'custom'
     logging_level: str = 'info'
     easing: str = 'linear'

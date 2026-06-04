@@ -17,6 +17,8 @@ Responsible for:
 """
 from typing import Dict, Any, Callable, Optional
 
+import wx
+
 from SpinRender.core.settings import RenderSettings
 from .helpers import update_text
 
@@ -59,6 +61,7 @@ class ParameterController:
         self.format_ids = controls.get('format_ids', [])
         self.res_choice = controls.get('res_choice')
         self.res_ids = controls.get('res_ids', [])
+        self.controls_side_panel = controls.get('controls_side_panel')
 
     # Rotation handlers
     def on_board_tilt_change(self, event):
@@ -190,19 +193,64 @@ class ParameterController:
         self.preview.update_preview_overlay()
         self.schedule_save()
 
-    # Resolution handler
+    # Resolution handlers
+    def _apply_resolution_aspect(self, res_id):
+        """Update settings + viewport aspect ratio from a 'WxH' id."""
+        self.settings.resolution = res_id
+        try:
+            w, h = map(int, res_id.split('x'))
+            if hasattr(self.preview, 'viewport'):
+                self.preview.viewport.set_aspect_ratio(w, h)
+        except Exception:
+            pass
+
+    def _live_res_ids(self):
+        """Current dropdown id list (built-ins + customs), preferring the live
+        list on the side panel over the snapshot captured at construction."""
+        csp = self.controls_side_panel
+        if csp is not None and getattr(csp, 'res_ids', None):
+            return csp.res_ids
+        return self.res_ids
+
     def on_resolution_change(self, event):
         idx = self.res_choice.GetSelection()
-        if 0 <= idx < len(self.res_ids):
-            self.settings.resolution = self.res_ids[idx]
-            try:
-                w, h = map(int, self.settings.resolution.split('x'))
-                if hasattr(self.preview, 'viewport'):
-                    self.preview.viewport.set_aspect_ratio(w, h)
-            except Exception:
-                pass
+        ids = self._live_res_ids()
+        if 0 <= idx < len(ids):
+            self._apply_resolution_aspect(ids[idx])
         self.preview.update_preview_overlay()
         self.schedule_save()
+
+    def on_open_custom_resolutions(self, event=None):
+        """Open the Custom Resolutions dialog (gear icon). The dialog manages the
+        custom-resolution list in-place; on close we rebuild the dropdown and
+        apply any picked resolution, falling back if the active one was deleted."""
+        from .dialogs import CustomResolutionsDialog
+        from .controls_side_panel import BUILTIN_RESOLUTIONS
+
+        csp = self.controls_side_panel
+        parent = self.res_choice.GetTopLevelParent()
+        dlg = CustomResolutionsDialog(parent, self.settings)
+        try:
+            result = dlg.ShowModal()
+            selected = dlg.GetSelectedResolution()
+        finally:
+            dlg.Destroy()
+
+        valid_ids = [rid for _, rid in BUILTIN_RESOLUTIONS] + list(
+            getattr(self.settings, 'custom_resolutions', None) or []
+        )
+        if result == wx.ID_OK and selected and selected in valid_ids:
+            self._apply_resolution_aspect(selected)
+        elif self.settings.resolution not in valid_ids:
+            # The active resolution was deleted in the dialog; fall back.
+            self._apply_resolution_aspect('1920x1080')
+
+        if csp:
+            csp.rebuild_resolution_items(selected_id=self.settings.resolution)
+        self.preview.update_preview_overlay()
+        self.schedule_save()
+        if parent:
+            parent.Raise()
 
     # Background color handler (takes color_hex directly)
     def on_bg_color_change(self, color_hex):

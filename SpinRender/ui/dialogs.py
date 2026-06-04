@@ -767,6 +767,239 @@ class SavePresetDialog(BaseStyledDialog):
     def GetPresetName(self): return self.name_input.GetValue()
 
 
+class AddResolutionDialog(BaseStyledDialog):
+    """
+    Add custom resolution dialog.
+    Stylistically mirrors SavePresetDialog: two digit-only fields (width and
+    height) with smart enable/disable on the confirm button.
+    """
+    MAX_DIM = 16384  # generous upper bound (well past 8K) to reject typos
+
+    def __init__(self, parent):
+        dialog_width = _theme._resolve("layout.dialogs.addpreset.frame.width") or 400
+        dialog_height = 210
+        super().__init__(parent, _locale.get("dialog.add_resolution.title", "Add resolution"), (dialog_width, dialog_height))
+        self.dialog_w = dialog_width
+        self.result_w = self.result_h = None
+        self.build_ui()
+        self.Centre()
+        wx.CallAfter(self.width_input.text_ctrl.SetFocus)
+        self.on_text_change(None)
+
+    def build_ui(self):
+        padding_lg = _theme._resolve("typography.spacing.lg") or 24
+        gap = _theme._resolve("layout.dialogs.addpreset.controls.gap") or 8
+
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(self.create_header(_locale.get("dialog.add_resolution.header", "Add resolution"), show_close=False), 0, wx.EXPAND)
+        self._header_line = wx.Panel(self.main_container, size=(-1, 1))
+        self._header_line.SetBackgroundColour(_theme.color("dividers.default.color"))
+        main_sizer.Add(self._header_line, 0, wx.EXPAND)
+
+        content = wx.Panel(self.main_container)
+        content_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Row: W [____]   ×   H [____]
+        fields_row = wx.Panel(content)
+        fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        w_lbl = create_text(fields_row, _locale.get("dialog.add_resolution.width_label", "W"), "subheader")
+        fields_sizer.Add(w_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, gap)
+        self.width_input = CustomInput(fields_row, size=(-1, 36), id="default")
+        self.width_input.Bind(wx.EVT_TEXT, self.on_text_change)
+        self.width_input.Bind(wx.EVT_TEXT_ENTER, self.on_add)
+        fields_sizer.Add(self.width_input, 1, wx.ALIGN_CENTER_VERTICAL)
+
+        times_lbl = create_text(fields_row, "×", "dialog_description", style=wx.ALIGN_CENTRE_HORIZONTAL)
+        fields_sizer.Add(times_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT, gap)
+
+        h_lbl = create_text(fields_row, _locale.get("dialog.add_resolution.height_label", "H"), "subheader")
+        fields_sizer.Add(h_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, gap)
+        self.height_input = CustomInput(fields_row, size=(-1, 36), id="default")
+        self.height_input.Bind(wx.EVT_TEXT, self.on_text_change)
+        self.height_input.Bind(wx.EVT_TEXT_ENTER, self.on_add)
+        fields_sizer.Add(self.height_input, 1, wx.ALIGN_CENTER_VERTICAL)
+
+        fields_row.SetSizer(fields_sizer)
+        content_sizer.Add(fields_row, 0, wx.EXPAND | wx.ALL, padding_lg)
+
+        helper = create_text(
+            content,
+            _locale.get("dialog.add_resolution.helper", "Enter output dimensions in pixels (numbers only)."),
+            "dialog_description",
+            style=wx.ALIGN_CENTRE_HORIZONTAL,
+        )
+        helper.Wrap(self.dialog_w - 2 * padding_lg)
+        content_sizer.Add(helper, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, padding_lg)
+
+        content.SetSizer(content_sizer)
+        main_sizer.Add(content, 1, wx.EXPAND)
+
+        btn1_width = _theme._resolve("layout.dialogs.addpreset.controls.button1.width")
+        btn2_width = _theme._resolve("layout.dialogs.addpreset.controls.button2.width")
+        prop1 = prop2 = None
+        if isinstance(btn1_width, str) and btn1_width.endswith("%"):
+            try: prop1 = int(btn1_width.rstrip("%").strip())
+            except ValueError: prop1 = None
+        if isinstance(btn2_width, str) and btn2_width.endswith("%"):
+            try: prop2 = int(btn2_width.rstrip("%").strip())
+            except ValueError: prop2 = None
+
+        footer, cancel_btn, self.add_btn = self.create_footer("cancel", "save", btn1_prop=prop1, btn2_prop=prop2, gap=gap)
+        # Re-skin the confirm button as an "Add" action.
+        self.add_btn.SetLabel(_locale.get("dialog.add_resolution.add_button", "Add"))
+        self.add_btn.SetIcon("plus")
+        cancel_btn.Bind(wx.EVT_BUTTON, self.on_cancel)
+        self.add_btn.Bind(wx.EVT_BUTTON, self.on_add)
+        main_sizer.Add(footer, 0, wx.EXPAND)
+
+        self.main_container.SetSizer(main_sizer)
+
+    @staticmethod
+    def _sanitize(input_widget):
+        """Strip everything but digits from an input, capping length, and return the digits."""
+        raw = input_widget.text_ctrl.GetValue()
+        digits = "".join(ch for ch in raw if ch.isdigit())[:5]
+        if digits != raw:
+            input_widget.text_ctrl.ChangeValue(digits)
+            input_widget.text_ctrl.SetInsertionPointEnd()
+        return digits
+
+    def _valid_dim(self, digits):
+        if not digits:
+            return None
+        try:
+            value = int(digits)
+        except ValueError:
+            return None
+        if 1 <= value <= self.MAX_DIM:
+            return value
+        return None
+
+    def on_text_change(self, event):
+        w = self._valid_dim(self._sanitize(self.width_input))
+        h = self._valid_dim(self._sanitize(self.height_input))
+        self.add_btn.Enable(w is not None and h is not None)
+
+    def on_cancel(self, event): self.EndModal(wx.ID_CANCEL)
+
+    def on_add(self, event):
+        if not self.add_btn.IsEnabled():
+            return
+        w = self._valid_dim(self._sanitize(self.width_input))
+        h = self._valid_dim(self._sanitize(self.height_input))
+        if w is None or h is None:
+            return
+        self.result_w, self.result_h = str(w), str(h)
+        self.EndModal(wx.ID_OK)
+
+    def GetResolution(self):
+        """Return (width, height) as normalized digit strings, or (None, None)."""
+        return self.result_w, self.result_h
+
+
+class CustomResolutionsDialog(BaseStyledDialog):
+    """
+    Manage custom output resolutions.
+
+    Mirrors RecallPresetDialog (the "Select custom preset" dialog): a list of
+    saved custom resolutions with the same click-to-select / trash-to-delete UX,
+    plus an "Add Resolution" button appended below the list. Mutates
+    ``settings.custom_resolutions`` in place; the caller reads
+    ``GetSelectedResolution()`` and rebuilds the dropdown on close.
+    """
+
+    def __init__(self, parent, settings):
+        dialog_width = _theme._resolve("layout.dialogs.presets.frame.width") or 400
+        dialog_height = _theme._resolve("layout.dialogs.presets.frame.height") or 400
+        super().__init__(parent, _locale.get("dialog.custom_res.title", "Custom resolutions"), (dialog_width, dialog_height))
+        self.settings = settings
+        self.selected_id = None
+        self.build_ui()
+        self.Centre()
+
+    @staticmethod
+    def _format(res_id):
+        try:
+            w, h = res_id.split('x')
+            return f"{w} × {h}"
+        except (ValueError, AttributeError):
+            return str(res_id)
+
+    def build_ui(self):
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        header = self.create_header(_locale.get("dialog.custom_res.header", "Custom resolutions"))
+        main_sizer.Add(header, 0, wx.EXPAND)
+        self._header_line = wx.Panel(self.main_container, size=(-1, 1))
+        self._header_line.SetBackgroundColour(_theme.color("dividers.default.color"))
+        main_sizer.Add(self._header_line, 0, wx.EXPAND)
+
+        self.list_view = CustomListView(self.main_container, id="custompresets")
+        self.list_view.Bind(EVT_LIST_ITEM_SELECTED, self.on_list_select)
+        self.list_view.Bind(EVT_LIST_ITEM_DELETED, self.on_list_delete)
+        self._populate_list()
+
+        padding_md = _theme._resolve("typography.spacing.md") or 16
+        main_sizer.Add(self.list_view, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, padding_md)
+
+        # "Add Resolution" action appended below the list.
+        self.add_btn = CustomButton(self.main_container, id="save_preset", size=(-1, 36))
+        self.add_btn.SetLabel(_locale.get("dialog.custom_res.add_button", "Add Resolution"))
+        self.add_btn.SetIcon("plus")
+        self.add_btn.Bind(wx.EVT_BUTTON, self.on_add_clicked)
+        main_sizer.Add(self.add_btn, 0, wx.EXPAND | wx.ALL, padding_md)
+
+        self.main_container.SetSizer(main_sizer)
+
+    def _populate_list(self):
+        self.list_view.ClearItems()
+        customs = getattr(self.settings, 'custom_resolutions', None) or []
+        if not customs:
+            empty = self.list_view.AddItem(_locale.get("dialog.custom_res.empty", "No custom resolutions yet."))
+            empty.Enable(False)
+        else:
+            for res_id in customs:
+                self.list_view.AddItem(self._format(res_id), data=res_id)
+        self.list_view.Layout()
+        self.list_view.SetupScrolling(scroll_x=False, scroll_y=True)
+
+    def on_list_select(self, event):
+        self.selected_id = event.GetClientData()
+        self.EndModal(wx.ID_OK)
+
+    def on_list_delete(self, event):
+        res_id = event.GetClientData()
+        customs = list(getattr(self.settings, 'custom_resolutions', None) or [])
+        if res_id in customs:
+            customs.remove(res_id)
+            self.settings.custom_resolutions = customs
+        self._populate_list()
+
+    def on_add_clicked(self, event):
+        from .controls_side_panel import BUILTIN_RESOLUTIONS
+        dlg = AddResolutionDialog(self)
+        try:
+            if dlg.ShowModal() == wx.ID_OK:
+                w, h = dlg.GetResolution()
+                if w and h:
+                    res_id = f"{w}x{h}"
+                    builtin_ids = [rid for _, rid in BUILTIN_RESOLUTIONS]
+                    customs = list(getattr(self.settings, 'custom_resolutions', None) or [])
+                    if res_id not in customs and res_id not in builtin_ids:
+                        customs.append(res_id)
+                        self.settings.custom_resolutions = customs
+                    self._populate_list()
+        finally:
+            dlg.Destroy()
+        self.Raise()
+
+    def on_cancel(self, event):
+        self.EndModal(wx.ID_CANCEL)
+
+    def GetSelectedResolution(self):
+        return self.selected_id
+
+
 class RecallPresetDialog(BaseStyledDialog):
     """
     Recall Preset dialog

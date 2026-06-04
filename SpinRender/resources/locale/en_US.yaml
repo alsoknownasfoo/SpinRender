@@ -121,6 +121,18 @@ locale:
         title: "Enter base filename"
         header: "Enter base filename"
         helper: "Frames are saved as name_00001.png, name_00002.png, …"
+      add_resolution:
+        title: "Add resolution"
+        header: "Add resolution"
+        width_label: "W"
+        height_label: "H"
+        helper: "Enter output dimensions in pixels (numbers only)."
+        add_button: "Add"
+      custom_res:
+        title: "Custom resolutions"
+        header: "Custom resolutions"
+        add_button: "Add Resolution"
+        empty: "No custom resolutions yet."
       render_error: "Render error"
       preparing: "Preparing render..."
       about:
@@ -238,6 +250,7 @@ locale:
         label: "Resolution"
         desc: "Output dimensions and aspect ratio"
         options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
+        custom_label: "Custom ({w}×{h})"
       bg_color:
         label: "Background color"
         desc: "Solid color for transparent areas"
