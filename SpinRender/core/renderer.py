@@ -16,6 +16,44 @@ from pathlib import Path
 logger = logging.getLogger("SpinRender")
 
 
+def _prepare_kicad_config_home(plugin_dir):
+    """Return a writable KICAD_CONFIG_HOME seeded with our 3d_viewer.json.
+
+    kicad-cli treats KICAD_CONFIG_HOME as a full config home: it reads it and
+    writes scratch config (pcbnew.json, 3d/, colors/, ...) back on every render.
+    Pointing it *inside* the installed plugin dir polluted the payload with
+    read-only files that later blocked reinstall. Instead we use a per-user
+    cache dir outside the install and (re)seed only the version-specific
+    3d_viewer.json (the "no floor" raytracing tweak), so our settings always
+    win and the install stays clean. Re-seeding every call also restores our
+    settings if kicad-cli rewrote the file on a prior run.
+    """
+    seed_dir = os.path.join(plugin_dir, 'resources', 'kicad_config')
+    config_home = os.path.join(tempfile.gettempdir(), 'SpinRender_kicad_config')
+
+    if not os.path.isdir(seed_dir):
+        os.makedirs(config_home, exist_ok=True)
+        logger.warning(f"kicad_config seed dir not found: {seed_dir}")
+        return config_home
+
+    # Each immediate subdir is a KiCad version (e.g. "9.0", "10.0") holding a
+    # curated 3d_viewer.json. kicad-cli picks the one matching its version.
+    for version in os.listdir(seed_dir):
+        seed_file = os.path.join(seed_dir, version, '3d_viewer.json')
+        if not os.path.isfile(seed_file):
+            continue
+        dest_dir = os.path.join(config_home, version)
+        try:
+            os.makedirs(dest_dir, exist_ok=True)
+            dest_file = os.path.join(dest_dir, '3d_viewer.json')
+            shutil.copyfile(seed_file, dest_file)
+            os.chmod(dest_file, 0o644)
+        except OSError as e:
+            logger.warning(f"Could not seed 3d_viewer.json for {version}: {e}")
+
+    return config_home
+
+
 # ---------------------------------------------------------------------------
 # Rotation math helpers — translate UI parameters to kicad-cli --rotate X,Y,Z
 #
@@ -405,13 +443,14 @@ class RenderEngine:
                 '--quality', 'user'
             ]
             
-            # Setup environment to use our custom config directory
-            # This allows us to force raytracing settings like "no floor" via 3d_viewer.json
+            # Point kicad-cli at a writable, per-user config home seeded with our
+            # 3d_viewer.json (forces raytracing settings like "no floor"). Kept
+            # outside the install dir so kicad-cli's scratch writes never pollute
+            # the plugin payload. See _prepare_kicad_config_home().
             plugin_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            config_dir = os.path.join(plugin_dir, 'resources', 'kicad_config')
-            
+
             env = os.environ.copy()
-            env['KICAD_CONFIG_HOME'] = config_dir
+            env['KICAD_CONFIG_HOME'] = _prepare_kicad_config_home(plugin_dir)
 
             # Apply lighting parameters from preset
             for key in ['light_top', 'light_bottom', 'light_side', 'light_camera', 'light_side_elevation']:
