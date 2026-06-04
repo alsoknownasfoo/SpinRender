@@ -10,7 +10,7 @@ from pathlib import Path
 
 from .custom_controls import (
     CustomSlider, CustomToggleButton, CustomButton,
-    PresetCard, CustomDropdown, CustomColorPicker
+    PresetCard, CustomDropdown, CustomColorPicker, SectionToggle
 )
 from .text_styles import TextStyle
 from .registry import ControlRegistry
@@ -98,18 +98,39 @@ class ControlsSidePanel(wx.Panel):
         self.div3.SetBackgroundColour(_theme.color("dividers.default.color"))
         content_sizer.Add(self.div3, 0, wx.EXPAND)
 
-        # Output settings section
+        # Output settings section. Proportion 0 (not 1) so it sits naturally
+        # after Parameters instead of stretching to fill — otherwise it gets
+        # anchored to the bottom when the window is taller than the content.
         output_settings = self.create_output_settings_section(self.scrolled_panel)
-        content_sizer.Add(output_settings, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, padding)
+        content_sizer.Add(output_settings, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, padding)
 
         self.scrolled_panel.SetSizer(content_sizer)
         self.scrolled_panel.Layout()
 
-        # Calculate minimum height needed to display all content without scrolling
+        # Calculate minimum height needed to display all content without scrolling.
+        # Measured while Parameters is expanded so the window is sized to the
+        # expanded view; collapsing later just leaves empty space rather than
+        # shrinking the window.
         min_height = content_sizer.CalcMin().y
         # Add extra padding for comfortable viewing
         required_h = min_height + 40
         self.scrolled_panel.SetMinSize((400, required_h))
+
+        # Now apply the persisted collapsed states without disturbing the scroll
+        # area's min height established above. Each collapsed section's own panel
+        # min size must be recomputed (its children are hidden but SetSizerAndFit
+        # already locked in the expanded height); otherwise sections below it stay
+        # anchored beneath a full-height, empty panel.
+        if self.settings.params_collapsed:
+            self._apply_params_collapsed(True)
+            self._params_sizer.Layout()
+            self._params_panel.SetMinSize(self._params_sizer.CalcMin())
+        if self.settings.output_collapsed:
+            self._apply_output_collapsed(True)
+            self._output_sizer.Layout()
+            self._output_panel.SetMinSize(self._output_sizer.CalcMin())
+        if self.settings.params_collapsed or self.settings.output_collapsed:
+            content_sizer.Layout()
 
         main_sizer.Add(self.scrolled_panel, 1, wx.EXPAND)
 
@@ -235,23 +256,127 @@ class ControlsSidePanel(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         header = wx.Panel(panel)
+        header.SetBackgroundColour(_theme.TRANSPARENT)
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        header_sizer.Add(create_section_label(header, _locale.get("sections.parameters", "PARAMETERS"), id="parameters"), 1, wx.ALIGN_CENTER_VERTICAL)
-        
+        section_label = create_section_label(header, _locale.get("sections.parameters", "PARAMETERS"), id="parameters")
+        header_sizer.Add(section_label, 0, wx.ALIGN_CENTER_VERTICAL)
+        header_sizer.AddStretchSpacer()
+
         # Save Preset Button - use themed component definition
         self.save_btn = CustomButton(header, id="save_preset", size=(100, 24), section='parameters')
         self.save_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_save_preset)
-        header_sizer.Add(self.save_btn, 0, wx.ALIGN_CENTER_VERTICAL)
+        header_sizer.Add(self.save_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+
+        # Expand/collapse toggle, sized square to match the title height.
+        title_h = max(section_label.GetBestSize().y, 18)
+        self.params_toggle = SectionToggle(
+            header, size=title_h,
+            collapsed=self.settings.params_collapsed,
+            on_toggle=self.on_params_toggle,
+        )
+        header_sizer.Add(self.params_toggle, 0, wx.ALIGN_CENTER_VERTICAL)
         header.SetSizerAndFit(header_sizer)
 
-        sizer.Add(header, 0, wx.EXPAND | wx.BOTTOM, 10)
-        sizer.Add(self.create_rotation_controls(panel), 0, wx.EXPAND | wx.BOTTOM, 10)
-        sizer.Add(self.create_period_control(panel), 0, wx.EXPAND | wx.BOTTOM, 10)
-        sizer.Add(self.create_direction_control(panel), 0, wx.EXPAND | wx.BOTTOM, 10)
-        sizer.Add(self.create_lighting_control(panel), 0, wx.EXPAND)
+        # Whole header acts as a toggle hit area, except the save-preset button
+        # (and the toggle itself, which carries its own handler).
+        self._bind_header_toggle(
+            header, self._on_params_header_click,
+            exclude={self.save_btn, self.params_toggle},
+        )
 
+        self._params_panel = panel
+        self._params_sizer = sizer
+        sizer.Add(header, 0, wx.EXPAND | wx.BOTTOM, 10)
+        self._params_header_item = sizer.GetItem(header)
+
+        # Collapsible body — hidden when collapsed so only the title shows.
+        self._params_content = [
+            self.create_rotation_controls(panel),
+            self.create_period_control(panel),
+            self.create_direction_control(panel),
+            self.create_lighting_control(panel),
+        ]
+        sizer.Add(self._params_content[0], 0, wx.EXPAND | wx.BOTTOM, 10)
+        sizer.Add(self._params_content[1], 0, wx.EXPAND | wx.BOTTOM, 10)
+        sizer.Add(self._params_content[2], 0, wx.EXPAND | wx.BOTTOM, 10)
+        sizer.Add(self._params_content[3], 0, wx.EXPAND)
+
+        # Build in the expanded state so the panel measures at full height.
+        # The persisted collapsed state is applied later (after the scroll
+        # area's min height is computed) so the window sizes to the expanded
+        # view rather than the collapsed one.
         panel.SetSizerAndFit(sizer)
         return panel
+
+    def _bind_header_toggle(self, widget, handler, exclude):
+        """Recursively make a section header (and its children) a click target.
+
+        Subtrees in `exclude` keep their own handlers and are skipped.
+        """
+        if widget in exclude:
+            return
+        widget.Bind(wx.EVT_LEFT_DOWN, handler)
+        if hasattr(widget, 'SetCursor'):
+            widget.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        for child in widget.GetChildren():
+            self._bind_header_toggle(child, handler, exclude)
+
+    def _relayout_section(self, panel, sizer):
+        """Reflow a collapsed/expanded section and the surrounding scroll area."""
+        sizer.Layout()
+        panel.SetMinSize(sizer.CalcMin())
+        if hasattr(self, 'scrolled_panel'):
+            self.scrolled_panel.Layout()
+            self.scrolled_panel.SetupScrolling(
+                scroll_x=False, scroll_y=True, rate_y=20, scrollToTop=False
+            )
+        self.Layout()
+        if hasattr(self.main_panel, 'save_settings'):
+            self.main_panel.save_settings()
+
+    def _apply_params_collapsed(self, collapsed):
+        """Show/hide the parameters body and keep top/bottom padding symmetric."""
+        show = not collapsed
+        if hasattr(self, 'save_btn'):
+            self.save_btn.Show(show)
+        for child in getattr(self, '_params_content', []):
+            child.Show(show)
+        # When collapsed, drop the header's bottom margin so the gap to the
+        # divider below matches the padding above the title.
+        if getattr(self, '_params_header_item', None) is not None:
+            self._params_header_item.SetBorder(0 if collapsed else 10)
+
+    def on_params_toggle(self, collapsed):
+        """Persist and apply a parameters expand/collapse change."""
+        self.settings.params_collapsed = collapsed
+        self._apply_params_collapsed(collapsed)
+        self._relayout_section(self._params_panel, self._params_sizer)
+
+    def _on_params_header_click(self, event):
+        """Toggle parameters when the header (outside the save button) is clicked."""
+        new_state = not self.settings.params_collapsed
+        self.params_toggle.set_collapsed(new_state)
+        self.on_params_toggle(new_state)
+
+    def _apply_output_collapsed(self, collapsed):
+        """Show/hide the output-settings body, keeping header padding tidy."""
+        show = not collapsed
+        for child in getattr(self, '_output_content', []):
+            child.Show(show)
+        if getattr(self, '_output_header_item', None) is not None:
+            self._output_header_item.SetBorder(0 if collapsed else 10)
+
+    def on_output_toggle(self, collapsed):
+        """Persist and apply an output-settings expand/collapse change."""
+        self.settings.output_collapsed = collapsed
+        self._apply_output_collapsed(collapsed)
+        self._relayout_section(self._output_panel, self._output_sizer)
+
+    def _on_output_header_click(self, event):
+        """Toggle output settings when its header is clicked."""
+        new_state = not self.settings.output_collapsed
+        self.output_toggle.set_collapsed(new_state)
+        self.on_output_toggle(new_state)
 
     def create_rotation_controls(self, parent):
         """Create all rotation axis controls."""
@@ -463,11 +588,37 @@ class ControlsSidePanel(wx.Panel):
         return panel
 
     def create_output_settings_section(self, parent):
-        """Create format, resolution, and background color controls."""
+        """Create the collapsible format, resolution, and background color controls."""
         panel = wx.Panel(parent)
         panel.SetBackgroundColour(_theme.TRANSPARENT)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(create_section_label(panel, _locale.get("sections.output", "OUTPUT SETTINGS"), id="output"), 0, wx.EXPAND | wx.BOTTOM, 10)
+
+        header = wx.Panel(panel)
+        header.SetBackgroundColour(_theme.TRANSPARENT)
+        header_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        section_label = create_section_label(header, _locale.get("sections.output", "OUTPUT SETTINGS"), id="output")
+        header_sizer.Add(section_label, 0, wx.ALIGN_CENTER_VERTICAL)
+        header_sizer.AddStretchSpacer()
+
+        # Expand/collapse toggle, sized square to match the title height.
+        title_h = max(section_label.GetBestSize().y, 18)
+        self.output_toggle = SectionToggle(
+            header, size=title_h,
+            collapsed=self.settings.output_collapsed,
+            on_toggle=self.on_output_toggle,
+        )
+        header_sizer.Add(self.output_toggle, 0, wx.ALIGN_CENTER_VERTICAL)
+        header.SetSizerAndFit(header_sizer)
+
+        # Whole header acts as a toggle hit area (the toggle keeps its own handler).
+        self._bind_header_toggle(
+            header, self._on_output_header_click, exclude={self.output_toggle}
+        )
+
+        self._output_panel = panel
+        self._output_sizer = sizer
+        sizer.Add(header, 0, wx.EXPAND | wx.BOTTOM, 10)
+        self._output_header_item = sizer.GetItem(header)
 
         # Row 1: Format and Resolution
         cols_panel = wx.Panel(panel)
@@ -494,8 +645,8 @@ class ControlsSidePanel(wx.Panel):
         self.res_heading = create_text(r_col, _locale.get("parameters.resolution.label", "RESOLUTION"), "subheader")
         r_sizer.Add(self.res_heading, 0, wx.BOTTOM, 6)
 
-        self.res_choices = ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
-        self.res_ids = ["1920x1080", "1280x720", "800x800"]
+        self.res_choices = ["3840×2160 (4K)", "1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
+        self.res_ids = ["3840x2160", "1920x1080", "1280x720", "800x800"]
         self.res_choice = CustomDropdown(r_col, choices=self.res_choices, size=(-1, 32), id="resolution", section='output')
         curr_res = self.settings.resolution
         res_idx = self.res_ids.index(curr_res) if curr_res in self.res_ids else 0
@@ -505,6 +656,7 @@ class ControlsSidePanel(wx.Panel):
         cols_sizer.Add(r_col, 1, wx.EXPAND)
         cols_panel.SetSizerAndFit(cols_sizer)
         sizer.Add(cols_panel, 0, wx.EXPAND | wx.BOTTOM, 12)
+        self._output_content = [cols_panel]
 
         # Row 2: Background Color
         bg_col = wx.Panel(panel)
@@ -518,7 +670,10 @@ class ControlsSidePanel(wx.Panel):
 
         bg_col.SetSizer(bg_vsizer)
         sizer.Add(bg_col, 0, wx.EXPAND)
+        self._output_content.append(bg_col)
 
+        # Built expanded; the persisted collapsed state is applied later (after
+        # the scroll area's min height is measured), matching Parameters.
         panel.SetSizerAndFit(sizer)
         return panel
 

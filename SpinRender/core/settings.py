@@ -24,6 +24,8 @@ class RenderSettings:
     output_path: str = ''
     cli_overrides: str = ''
     theme_mode: str = 'system'
+    params_collapsed: bool = True
+    output_collapsed: bool = False
 
     def __post_init__(self):
         """Validate settings after initialization."""
