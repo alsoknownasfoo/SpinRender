@@ -1839,7 +1839,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         if self._closing:
             return
 
-        current = _locale.get("component.main.header.subtitle", "0.6.0-beta")
+        current = _locale.get("component.main.header.subtitle", "0.6.1-beta")
 
         if simulated:
             note  = _locale.get("dialog.about.check_updates_simulated",
