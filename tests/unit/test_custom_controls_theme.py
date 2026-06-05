@@ -349,3 +349,60 @@ class TestCustomButtonMouseOutBehavior:
         btn.on_mouse_up(MagicMock())  # pressed is False by default
 
         event_handler.ProcessEvent.assert_not_called()
+
+
+class TestCustomInputNumeric:
+    """Test the numeric spinner logic on CustomInput (clamp/format/nudge)."""
+
+    def _make_numeric_input(self, value="0.00", min_val=-90.0, max_val=90.0,
+                            step=0.1, precision=2):
+        """Build a CustomInput without running wx-heavy __init__."""
+        from SpinRender.ui.custom_controls import CustomInput
+        inp = CustomInput.__new__(CustomInput)
+        inp.type = "numeric"
+        inp.min_val = min_val
+        inp.max_val = max_val
+        inp.step = step
+        inp.precision = precision
+
+        class _FakeTextCtrl:
+            def __init__(self, v): self._v = v
+            def GetValue(self): return self._v
+            def ChangeValue(self, v): self._v = v
+            def SetInsertionPointEnd(self): pass
+
+        inp.text_ctrl = _FakeTextCtrl(value)
+        inp.Refresh = MagicMock()
+        inp._fire_event = MagicMock()
+        return inp
+
+    def test_clamp_respects_min_and_max(self):
+        inp = self._make_numeric_input()
+        assert inp._clamp(200.0) == 90.0
+        assert inp._clamp(-200.0) == -90.0
+        assert inp._clamp(45.0) == 45.0
+
+    def test_clamp_ignores_unset_bounds(self):
+        inp = self._make_numeric_input(min_val=None, max_val=None)
+        assert inp._clamp(99999.0) == 99999.0
+
+    def test_format_numeric_uses_precision(self):
+        assert self._make_numeric_input(precision=2)._format_numeric(5.1) == "5.10"
+        assert self._make_numeric_input(precision=1)._format_numeric(5.0) == "5.0"
+
+    def test_nudge_increments_by_step_and_commits(self):
+        inp = self._make_numeric_input(value="10.00", step=0.1)
+        inp._nudge(0.1)
+        assert inp.text_ctrl.GetValue() == "10.10"
+        inp._fire_event.assert_called_once()
+
+    def test_nudge_clamps_at_max(self):
+        inp = self._make_numeric_input(value="89.95", step=0.1, max_val=90.0)
+        inp._nudge(0.1)
+        assert inp.text_ctrl.GetValue() == "90.00"
+
+    def test_nudge_from_invalid_text_falls_back_to_min(self):
+        inp = self._make_numeric_input(value="abc", min_val=-90.0, step=0.1)
+        inp._nudge(0.1)
+        # base falls back to min_val (-90.0), then +0.1
+        assert inp.text_ctrl.GetValue() == "-89.90"

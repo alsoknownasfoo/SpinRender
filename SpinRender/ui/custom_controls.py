@@ -22,6 +22,16 @@ _locale = Locale.current()
 _LOAD_ATTEMPTED = False
 
 
+def _coerce_float(value):
+    """Best-effort float conversion; returns None for empty/invalid input."""
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def ensure_fonts_loaded():
     """Load bundled fonts (JetBrains Mono, MDI, Oswald). Required for UI."""
     global _LOAD_ATTEMPTED
@@ -1096,7 +1106,13 @@ class CustomInput(wx.Panel):
 
         # Allow empty values (don't revert on blur)
         self.allow_empty = allow_empty
-        
+
+        # Numeric spinner config: step comes from the theme DNA, range from caller.
+        self.step = _coerce_float(_theme._resolve(f"{self.token}.step")) or 1.0
+        self.min_val = _coerce_float(kwargs.get('min_val'))
+        self.max_val = _coerce_float(kwargs.get('max_val'))
+        self.precision = int(kwargs.get('precision', 2))
+
         # 1. Native Control
         style = wx.TE_PROCESS_ENTER | wx.BORDER_NONE
         self.multiline = kwargs.get('multiline', False)
@@ -1137,6 +1153,8 @@ class CustomInput(wx.Panel):
         # 3. Bindings
         self.text_ctrl.Bind(wx.EVT_TEXT, self._on_text)
         self.text_ctrl.Bind(wx.EVT_TEXT_ENTER, self._on_enter)
+        self.text_ctrl.Bind(wx.EVT_KEY_DOWN, self._on_key_down)
+        self.text_ctrl.Bind(wx.EVT_MOUSEWHEEL, self._on_mousewheel)
         self.text_ctrl.Bind(wx.EVT_SET_FOCUS, self._on_focus)
         self.text_ctrl.Bind(wx.EVT_KILL_FOCUS, self._on_blur)
         self.text_ctrl.Bind(wx.EVT_ENTER_WINDOW, self._on_mouse_enter)
@@ -1191,7 +1209,11 @@ class CustomInput(wx.Panel):
         self._fire_event(wx.EVT_TEXT)
         e.Skip()
 
-    def _on_enter(self, e): self._confirm(); self._fire_event(wx.EVT_TEXT_ENTER)
+    def _on_enter(self, e):
+        self._confirm()
+        # Sync the baseline so a following blur doesn't re-commit the same value.
+        self.original_value = self.text_ctrl.GetValue()
+        self._fire_event(wx.EVT_TEXT_ENTER)
     def _on_focus(self, e):
         if self.IsEnabled():
             wx.PostEvent(self, ParameterInteractionEvent(self.GetId()))
@@ -1200,10 +1222,54 @@ class CustomInput(wx.Panel):
         wx.CallAfter(self.text_ctrl.SelectAll)
         self.Refresh(); e.Skip()
     def _on_blur(self, e):
+        # Snapshot whether the field changed before _confirm() reformats it, so we
+        # can commit numeric edits made by typing-then-clicking-away (not just Enter).
+        changed = self.text_ctrl.GetValue().strip() != (self.original_value or "").strip()
         self._confirm()
         if self.multiline and self.placeholder and not self.text_ctrl.GetValue().strip():
             self._show_placeholder()
+        if self.type == "numeric" and changed and not self.IsBeingDeleted():
+            self._fire_event(wx.EVT_TEXT_ENTER)
         self.Refresh(); e.Skip()
+
+    def _on_key_down(self, e):
+        """Up/Down arrows nudge numeric values by the theme step (Shift = ×10)."""
+        if self.type == "numeric" and e.GetKeyCode() in (wx.WXK_UP, wx.WXK_DOWN):
+            direction = 1.0 if e.GetKeyCode() == wx.WXK_UP else -1.0
+            mult = 10.0 if e.ShiftDown() else 1.0
+            self._nudge(direction * self.step * mult)
+            return  # consume — keep the caret put instead of moving it
+        e.Skip()
+
+    def _on_mousewheel(self, e):
+        """Scroll wheel nudges numeric values while the field is focused."""
+        if self.type == "numeric" and self.text_ctrl.HasFocus():
+            direction = 1.0 if e.GetWheelRotation() > 0 else -1.0
+            mult = 10.0 if e.ShiftDown() else 1.0
+            self._nudge(direction * self.step * mult)
+            return
+        e.Skip()
+
+    def _nudge(self, delta):
+        """Apply a numeric delta, clamp to range, and commit like a spin control."""
+        base = _coerce_float(self.text_ctrl.GetValue().strip())
+        if base is None:
+            base = self.min_val if self.min_val is not None else 0.0
+        value = self._clamp(round(base + delta, 6))
+        self.text_ctrl.ChangeValue(self._format_numeric(value))
+        self._fire_event(wx.EVT_TEXT_ENTER)
+        self.text_ctrl.SetInsertionPointEnd()
+        self.Refresh()
+
+    def _clamp(self, value):
+        if self.min_val is not None:
+            value = max(self.min_val, value)
+        if self.max_val is not None:
+            value = min(self.max_val, value)
+        return value
+
+    def _format_numeric(self, value):
+        return f"{value:.{self.precision}f}"
     
     def _on_mouse_enter(self, e): self.hovered = True; self.Refresh(); e.Skip()
     def _on_mouse_leave(self, e): self.hovered = False; self.Refresh(); e.Skip()
@@ -1215,10 +1281,13 @@ class CustomInput(wx.Panel):
         if not val and not self.allow_empty and not self.multiline:
             self.text_ctrl.ChangeValue(self.original_value)
         elif self.type == "numeric":
-            try:
-                v = float(val)
-                self.text_ctrl.ChangeValue(f"{v:.2f}")
-            except: pass
+            v = _coerce_float(val)
+            if v is None:
+                # Garbage input — revert rather than leaving text that would crash
+                # downstream float() parsing in the parameter handlers.
+                self.text_ctrl.ChangeValue(self.original_value)
+            else:
+                self.text_ctrl.ChangeValue(self._format_numeric(self._clamp(v)))
 
     def _fire_event(self, evt_type):
         evt = wx.PyCommandEvent(evt_type.typeId, self.GetId())
@@ -1339,13 +1408,11 @@ class CustomInput(wx.Panel):
     # TODO - Do better hex value handling in input field
     def SetValue(self, val):
         if self.type == "numeric" and val is not None:
-            try:
-                v = float(val)
-                self.text_ctrl.ChangeValue(f"{v:.2f}")
+            v = _coerce_float(val)
+            if v is not None:
+                self.text_ctrl.ChangeValue(self._format_numeric(self._clamp(v)))
                 self.Refresh()
                 return
-            except:
-                pass    
 
         v = str(val)
         if self.prefix and v.startswith(self.prefix): v = v[len(self.prefix):]
