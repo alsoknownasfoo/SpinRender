@@ -220,9 +220,9 @@ class RenderEngine:
         },
         'spin': {
             'board_tilt': 0.0,
-            'board_roll': -45.0,
-            'spin_tilt': 90.0,
-            'spin_heading': 135.0,
+            'board_roll': -90.0,
+            'spin_tilt': -90.0,
+            'spin_heading': -90.0,
             'direction': 'ccw',
             'period':5.0,
             'lighting': 'studio'
