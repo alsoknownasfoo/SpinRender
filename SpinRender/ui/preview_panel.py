@@ -60,6 +60,11 @@ class PreviewPanel(wx.Panel):
         self.playback_index = 0
         self.Bind(wx.EVT_TIMER, self.on_playback_timer, self.playback_timer)
 
+        # Set once teardown starts so the playback timer can't fire Refresh()
+        # against already-destroyed child widgets, which segfaults the host app.
+        self._destroyed = False
+        self.Bind(wx.EVT_WINDOW_DESTROY, self._on_destroy)
+
         # Build UI
         self._create_viewport(board_path)
         self._create_overlay_widgets()
@@ -345,8 +350,26 @@ class PreviewPanel(wx.Panel):
         self.playback_frames = []
         self.playback_index = 0
 
+    def _on_destroy(self, event):
+        """Stop playback when this panel is destroyed.
+
+        A pending playback-timer tick can otherwise fire after the render
+        preview widgets are gone, segfaulting KiCad on close (notably on
+        macOS). The GL viewport guards its own timers the same way.
+        """
+        if event.GetEventObject() is self:
+            self._destroyed = True
+            try:
+                if self.playback_timer.IsRunning():
+                    self.playback_timer.Stop()
+            except Exception:
+                pass
+        event.Skip()
+
     def on_playback_timer(self, event):
         """Timer event - advance to next frame."""
+        if self._destroyed:
+            return
         if not self.playback_frames:
             self.stop_playback()
             return

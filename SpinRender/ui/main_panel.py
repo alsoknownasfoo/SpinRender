@@ -500,6 +500,10 @@ class SpinRenderPanel(wx.Panel):
             self.render_controller.cancel()
 
         self.flush_save()
+        # Stop preview playback and the GL viewport's timers *before* the frame
+        # tears down, so no timer tick fires into destroyed widgets and
+        # segfaults KiCad (notably after a render, when playback is running).
+        self.cleanup()
         f = self.GetTopLevelParent()
         if f:
             f.Close()
@@ -732,5 +736,11 @@ class SpinRenderPanel(wx.Panel):
         widget.Bind(wx.EVT_MOTION, self.on_drag_motion)
         widget.Bind(wx.EVT_LEFT_UP, self.on_drag_end)
     def cleanup(self):
+        if getattr(self, 'preview', None) is None:
+            return
+        try:
+            self.preview.stop_playback()
+        except Exception:
+            pass
         if hasattr(self.preview, 'viewport') and self.preview.viewport:
             self.preview.viewport.cleanup()
