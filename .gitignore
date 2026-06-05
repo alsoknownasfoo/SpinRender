@@ -48,6 +48,11 @@ tests/theme_token_inventory.json
 .res/
 .TODO.md
 SpinRender.zip
+
+# Release / PCM build artifacts
+build/
+/sr-pcm-*.zip
+/SpinRender_v*.zip
 tools/
 tests/
 CLAUDE.md
