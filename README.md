@@ -20,7 +20,10 @@ Give your board dramatic lighting to add wow to your presentation or have it wel
 | **Easy Button** | Two-click, no-fuss, no-skills-required renders. |
 | **Spin Precision** | Control the speed and direction of your spin to the 0.01°. |
 | **Flexible Staging** | Personalize the background and control how your board is lit. |
+| **Render Filters** | Hide vias, components, or test points for a cleaner shot. |
+| **Custom Resolutions** | Add and manage your own output sizes alongside the built-in presets. |
 | **Format Options** | Export to an MP4 movie file, animated GIF, or lossless PNG sequence. |
+| **Non-Destructive** | Renders run on a hidden working copy — your source board is never touched. |
 
 &nbsp;
 ## Installation
@@ -88,7 +91,14 @@ Give your board dramatic lighting to add wow to your presentation or have it wel
 &nbsp;
 ## Usage
 
-Coming..
+1. **Open your board** in the KiCad PCB Editor and launch **SpinRender** from the toolbar.
+2. **Pick a preset** for a one-click spin, or expand the **Parameters** and **Output Settings** sections to dial things in yourself.
+3. **Set your spin** — direction, speed (to 0.01°), and the lighting preset that best frames your board.
+4. **Choose your output** — resolution (built-in or your own custom size via the ⚙ gear) and format (MP4, GIF, or PNG sequence).
+5. **Trim the scene** with **Render Options** — hide vias, components, or test points for a cleaner result.
+6. **Preview** the live 3D viewport, then hit render. Output lands next to your board file.
+
+> 💡 Save your favourite configurations with **+ SAVE PRESET** to reuse them across projects.
 
 ## Troubleshooting
 
