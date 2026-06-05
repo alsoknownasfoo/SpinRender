@@ -25,6 +25,7 @@ from .helpers import create_section_label, create_numeric_input, create_text, re
 # added by the user are appended after these and persisted in settings.
 BUILTIN_RESOLUTIONS = [
     ("3840×2160 (4K)", "3840x2160"),
+    ("2160×3840 (Phone/Tablet)", "2160x3840"),
     ("1920×1080 (1080P)", "1920x1080"),
     ("1280×720 (720P)", "1280x720"),
     ("800×800 (Square)", "800x800"),
