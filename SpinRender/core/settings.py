@@ -18,6 +18,9 @@ class RenderSettings:
     render_mode: str = 'both'
     format: str = 'mp4'
     resolution: str = '1920x1080'
+    hide_vias: bool = True
+    hide_components: bool = True
+    hide_test_points: bool = True
     custom_resolutions: List[str] = field(default_factory=list)
     preset: str = 'custom'
     logging_level: str = 'info'

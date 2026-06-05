@@ -48,6 +48,29 @@ except ImportError:
     from ui.dependencies import DependencyChecker
 logger.debug("Dependency checker imported successfully")
 
+
+def _get_board_file_path(board) -> str:
+    """Resolve the current KiCad board filename across API wrapper variants."""
+    getter = getattr(board, "GetFileName", None)
+    if callable(getter):
+        return getter()
+
+    for caster_name in ("Cast_to_BOARD", "BOARD"):
+        caster = getattr(pcbnew, caster_name, None)
+        if not callable(caster):
+            continue
+
+        try:
+            typed_board = caster(board)
+        except Exception:
+            continue
+
+        getter = getattr(typed_board, "GetFileName", None)
+        if callable(getter):
+            return getter()
+
+    raise AttributeError(f"{type(board).__name__!s} object has no attribute 'GetFileName'")
+
 # NOTE: Do NOT import ui.main_panel here - it pulls in core.preview which requires
 # trimesh/OpenGL. We import it inside Run() AFTER checking dependencies.
 
@@ -112,7 +135,7 @@ class SpinRenderPlugin(pcbnew.ActionPlugin):
                     wx.OK | wx.ICON_ERROR
                 )
                 return
-            board_path = board.GetFileName()
+            board_path = _get_board_file_path(board)
             logger.debug(f"Board loaded: {board_path if board_path else 'Unsaved'}")
 
             # Check dependencies BEFORE importing any heavy modules
@@ -139,7 +162,7 @@ class SpinRenderPlugin(pcbnew.ActionPlugin):
             logger.debug("SpinRenderPanel imported successfully")
 
             # Get board file path
-            board_path = board.GetFileName()
+            board_path = _get_board_file_path(board)
             logger.debug(f"Board path: {board_path}")
             if not board_path or not os.path.exists(board_path):
                 logger.warning("Board file not saved or doesn't exist - aborting")

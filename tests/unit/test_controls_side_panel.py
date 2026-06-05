@@ -184,6 +184,8 @@ class TestControlsSidePanel:
         assert hasattr(panel, 'res_choices')
         assert hasattr(panel, 'res_ids')
         assert hasattr(panel, 'bg_picker')
+        assert hasattr(panel, 'hide_vias_checkbox')
+        assert hasattr(panel, 'hide_vias_label')
 
     def test_export_section_created(self, wx_mock, mock_parent):
         """Test that export buttons are created."""

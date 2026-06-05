@@ -242,10 +242,18 @@ locale:
     # OUTPUT SETTINGS
     output:
       auto_desc: "Automatically save to time-stamped directories."
+      board_options:
+        label: "Render options"
       format:
         label: "Format"
         desc: "Video or image sequence format"
         options: ["MP4 (H.264)", "GIF", "PNG Sequence"]
+      hide_vias:
+        label: "VIAS"
+      hide_components:
+        label: "COMPONENTS"
+      hide_test_points:
+        label: "TEST POINTS (T# REFS)"
       resolution:
         label: "Resolution"
         desc: "Output dimensions and aspect ratio"

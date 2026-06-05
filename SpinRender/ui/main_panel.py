@@ -88,6 +88,9 @@ class SpinRenderPanel(wx.Panel):
             lighting='studio',
             format='mp4',
             resolution='1920x1080',
+            hide_vias=True,
+            hide_components=True,
+            hide_test_points=True,
             bg_color='#000000',
             output_auto=True,
             output_path='',
@@ -267,6 +270,9 @@ class SpinRenderPanel(wx.Panel):
             'format_ids': csp.format_ids,
             'res_choice': csp.res_choice,
             'res_ids': csp.res_ids,
+            'hide_vias_checkbox': getattr(csp, 'hide_vias_checkbox', None),
+            'hide_components_checkbox': getattr(csp, 'hide_components_checkbox', None),
+            'hide_test_points_checkbox': getattr(csp, 'hide_test_points_checkbox', None),
             'controls_side_panel': csp,
             'bg_picker': csp.bg_picker,
         }
@@ -306,9 +312,27 @@ class SpinRenderPanel(wx.Panel):
         # Resolution dropdown + gear (opens the Custom Resolutions dialog)
         self.controls_side_panel.res_choice.Bind(wx.EVT_CHOICE, pc.on_resolution_change)
         self.controls_side_panel.res_gear_btn.Bind(wx.EVT_BUTTON, pc.on_open_custom_resolutions)
+        if getattr(self.controls_side_panel, 'hide_vias_checkbox', None):
+            self.controls_side_panel.hide_vias_checkbox.Bind(wx.EVT_CHECKBOX, pc.on_hide_vias_change)
+        if getattr(self.controls_side_panel, 'hide_components_checkbox', None):
+            self.controls_side_panel.hide_components_checkbox.Bind(wx.EVT_CHECKBOX, pc.on_hide_components_change)
+        if getattr(self.controls_side_panel, 'hide_test_points_checkbox', None):
+            self.controls_side_panel.hide_test_points_checkbox.Bind(wx.EVT_CHECKBOX, pc.on_hide_test_points_change)
         # Background color
         if self.controls_side_panel.bg_picker:
             self.controls_side_panel.bg_picker.Bind(EVT_COLOURPICKER_CHANGED, lambda e: pc.on_bg_color_change(e.GetString()))
+
+    def _prepare_render_board_path(self) -> str:
+        """Return the board path to render after refreshing any working copy."""
+        if self.workspace is None:
+            self.workspace = BoardWorkspace(self.board_path)
+            self.render_board_path = self.workspace.board_path
+
+        return self.workspace.prepare_for_render(
+            hide_vias=not self.settings.hide_vias,
+            hide_components=not self.settings.hide_components,
+            hide_test_points=not self.settings.hide_test_points,
+        )
 
     def create_preview_panel(self, parent):
         """Create the preview panel using the extracted PreviewPanel component."""
@@ -395,10 +419,16 @@ class SpinRenderPanel(wx.Panel):
         import hashlib, json
         from SpinRender.core.presets import PresetManager
         data = self.settings.to_dict() if hasattr(self.settings, 'to_dict') else vars(self.settings)
-        current_hash = hashlib.md5(json.dumps(data, sort_keys=True).encode()).hexdigest()
+        persisted_data = dict(data)
+        persisted_data.update({
+            'hide_vias': True,
+            'hide_components': True,
+            'hide_test_points': True,
+        })
+        current_hash = hashlib.md5(json.dumps(persisted_data, sort_keys=True).encode()).hexdigest()
         if getattr(self, '_last_saved_hash', None) == current_hash:
             return
-        PresetManager(self.board_path).save_last_used_settings(self.settings)
+        PresetManager(self.board_path).save_last_used_settings(RenderSettings.from_dict(persisted_data))
         self._last_saved_hash = current_hash
 
     def on_preset_change(self, preset_id):
@@ -488,6 +518,13 @@ class SpinRenderPanel(wx.Panel):
             self.status_bar.set_status(_locale.get("component.status.stopping", "STOPPING RENDER..."), fg_color=_theme.color("colors.error"))
             return
 
+        try:
+            render_board_path = self._prepare_render_board_path()
+        except Exception as e:
+            logger.error(f"Failed to prepare render board: {e}", exc_info=True)
+            wx.MessageBox(str(e), _locale.get("dialog.title.render_error", "Render Error"), wx.OK | wx.ICON_ERROR)
+            return
+
         # Prepare UI for rendering
         self.render_btn.SetStyle("exit", update_content=False)
         self.render_btn.SetLabel(_locale.get("component.button.stop.label", "STOP"))
@@ -542,7 +579,7 @@ class SpinRenderPanel(wx.Panel):
         # Delegate render orchestration to controller. Render geometry comes from
         # the working copy; output is named/located from the original board.
         self.render_controller.start_render(
-            board_path=self.render_board_path,
+            board_path=render_board_path,
             settings=self.settings,
             progress_cb=self.on_render_progress,
             complete_cb=self.on_render_finished,

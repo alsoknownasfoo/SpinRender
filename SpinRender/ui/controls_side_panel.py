@@ -9,7 +9,7 @@ import wx.lib.scrolledpanel as scrolled
 from pathlib import Path
 
 from .custom_controls import (
-    CustomSlider, CustomToggleButton, CustomButton,
+    CustomSlider, CustomToggleButton, CustomButton, CustomCheckbox,
     PresetCard, CustomDropdown, CustomColorPicker, SectionToggle
 )
 from .text_styles import TextStyle
@@ -725,6 +725,50 @@ class ControlsSidePanel(wx.Panel):
         f_col.SetSizerAndFit(f_sizer)
         cols_sizer.Add(f_col, 1, wx.EXPAND | wx.RIGHT, 12)
 
+        board_options_col = wx.Panel(panel)
+        board_options_sizer = wx.BoxSizer(wx.VERTICAL)
+        board_options_sizer.AddSpacer(10)
+        self.board_options_heading = create_text(
+            board_options_col,
+            _locale.get("output.board_options.label", "RENDER OPTIONS"),
+            "subheader",
+        )
+        board_options_sizer.Add(self.board_options_heading, 0, wx.BOTTOM, 6)
+
+        self.render_options_grid = wx.FlexGridSizer(0, 3, 8, 12)
+        self.render_options_grid.AddGrowableCol(0, 1)
+        self.render_options_grid.AddGrowableCol(1, 1)
+        self.render_options_grid.AddGrowableCol(2, 1)
+
+        self.hide_vias_row, self.hide_vias_checkbox, self.hide_vias_label = self._create_render_option_row(
+            board_options_col,
+            option_id="hide_vias",
+            label=_locale.get("output.hide_vias.label", "VIAS"),
+            value=self.settings.hide_vias,
+        )
+        self.render_options_grid.Add(self.hide_vias_row, 0, wx.EXPAND)
+
+        self.hide_components_row, self.hide_components_checkbox, self.hide_components_label = self._create_render_option_row(
+            board_options_col,
+            option_id="hide_components",
+            label=_locale.get("output.hide_components.label", "COMPONENTS"),
+            value=self.settings.hide_components,
+        )
+        self.render_options_grid.Add(self.hide_components_row, 0, wx.EXPAND)
+
+        self.hide_test_points_row, self.hide_test_points_checkbox, self.hide_test_points_label = self._create_render_option_row(
+            board_options_col,
+            option_id="hide_test_points",
+            label=_locale.get("output.hide_test_points.label", "TEST POINTS (T# REFS)"),
+            value=self.settings.hide_test_points,
+        )
+        self.render_options_grid.Add(self.hide_test_points_row, 0, wx.EXPAND)
+
+        board_options_sizer.Add(self.render_options_grid, 0, wx.EXPAND)
+
+        board_options_col.SetSizer(board_options_sizer)
+        sizer.Add(board_options_col, 0, wx.EXPAND | wx.BOTTOM, 12)
+
         r_col = wx.Panel(cols_panel)
         r_sizer = wx.BoxSizer(wx.VERTICAL)
         r_sizer.AddSpacer(10)
@@ -751,9 +795,9 @@ class ControlsSidePanel(wx.Panel):
         cols_sizer.Add(r_col, 1, wx.EXPAND)
         cols_panel.SetSizerAndFit(cols_sizer)
         sizer.Add(cols_panel, 0, wx.EXPAND | wx.BOTTOM, 12)
-        self._output_content = [cols_panel]
+        self._output_content = [board_options_col, cols_panel]
 
-        # Row 2: Background Color
+        # Row 3: Background Color
         bg_col = wx.Panel(panel)
         bg_vsizer = wx.BoxSizer(wx.VERTICAL)
         bg_vsizer.AddSpacer(10)
@@ -771,6 +815,28 @@ class ControlsSidePanel(wx.Panel):
         # the scroll area's min height is measured), matching Parameters.
         panel.SetSizerAndFit(sizer)
         return panel
+
+    def _create_render_option_row(self, parent, option_id, label, value):
+        """Build a single render-option checkbox row for the options grid."""
+        row = wx.Panel(parent)
+        row.SetBackgroundColour(_theme.TRANSPARENT)
+        row_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        checkbox = CustomCheckbox(
+            row,
+            size=(14, 14),
+            id=option_id,
+            section='output',
+        )
+        checkbox.SetValue(value)
+        row_sizer.Add(checkbox, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+
+        text = create_text(row, label, "description")
+        row_sizer.Add(text, 0, wx.ALIGN_CENTER_VERTICAL)
+
+        row.SetSizerAndFit(row_sizer)
+        text.Bind(wx.EVT_LEFT_DOWN, lambda event, target=checkbox: target.on_click(event))
+        return row, checkbox, text
 
     # ─── Resolution dropdown helpers ──────────────────────────────────────
     @staticmethod

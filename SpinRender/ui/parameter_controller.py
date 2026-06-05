@@ -61,6 +61,9 @@ class ParameterController:
         self.format_ids = controls.get('format_ids', [])
         self.res_choice = controls.get('res_choice')
         self.res_ids = controls.get('res_ids', [])
+        self.hide_vias_checkbox = controls.get('hide_vias_checkbox')
+        self.hide_components_checkbox = controls.get('hide_components_checkbox')
+        self.hide_test_points_checkbox = controls.get('hide_test_points_checkbox')
         self.controls_side_panel = controls.get('controls_side_panel')
 
     # Rotation handlers
@@ -217,6 +220,21 @@ class ParameterController:
         ids = self._live_res_ids()
         if 0 <= idx < len(ids):
             self._apply_resolution_aspect(ids[idx])
+        self.preview.update_preview_overlay()
+        self.schedule_save()
+
+    def on_hide_vias_change(self, event):
+        self.settings.hide_vias = bool(self.hide_vias_checkbox.GetValue())
+        self.preview.update_preview_overlay()
+        self.schedule_save()
+
+    def on_hide_components_change(self, event):
+        self.settings.hide_components = bool(self.hide_components_checkbox.GetValue())
+        self.preview.update_preview_overlay()
+        self.schedule_save()
+
+    def on_hide_test_points_change(self, event):
+        self.settings.hide_test_points = bool(self.hide_test_points_checkbox.GetValue())
         self.preview.update_preview_overlay()
         self.schedule_save()
 

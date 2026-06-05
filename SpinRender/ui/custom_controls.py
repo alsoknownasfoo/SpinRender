@@ -390,6 +390,112 @@ class CustomToggleButton(wx.Panel):
     def AcceptsFocusFromKeyboard(self): return False
 
 
+class CustomCheckbox(wx.Panel):
+    """Compact square checkbox styled to match the left-panel controls."""
+
+    _MIN_BOX_SIZE = 10
+    _OUTER_PADDING = 2
+    _FILL_INSET = 2
+    _OUTER_RADIUS = 5
+    _FILL_RADIUS = 2
+
+    def __init__(self, parent, size=(14, 14), id=wx.ID_ANY, section=None) -> None:
+        if isinstance(id, str):
+            self.style_id = id
+            real_id = wx.ID_ANY
+        else:
+            self.style_id = None
+            real_id = id
+
+        super().__init__(parent, id=real_id, size=size)
+        self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
+        self.value = False
+        self.hovered = False
+        self.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+
+        _p = self.GetParent()
+        while _p is not None:
+            if hasattr(_p, '_registry'):
+                _p._registry.add(self, section=section)
+                break
+            _p = _p.GetParent()
+
+        self.Bind(wx.EVT_PAINT, self.on_paint)
+        bind_mouse_events(
+            self,
+            click_handler=self.on_click,
+            hover_handler=self._on_hover,
+            leave_handler=self._on_leave,
+        )
+
+    def _on_hover(self, event) -> None:
+        if not self.IsEnabled():
+            return
+        self.hovered = True
+        self.Refresh()
+        self.Update()
+
+    def _on_leave(self, event) -> None:
+        self.hovered = False
+        self.Refresh()
+        self.Update()
+
+    def on_click(self, event) -> None:
+        if not self.IsEnabled():
+            return
+        wx.PostEvent(self, ParameterInteractionEvent(self.GetId()))
+        self.SetValue(not self.value)
+        evt = wx.PyCommandEvent(wx.EVT_CHECKBOX.typeId, self.GetId())
+        evt.SetInt(int(self.value))
+        self.GetEventHandler().ProcessEvent(evt)
+
+    def on_paint(self, event) -> None:
+        dc = wx.AutoBufferedPaintDC(self)
+        parent_bg = self.GetParent().GetBackgroundColour()
+        dc.SetBackground(wx.Brush(parent_bg))
+        dc.Clear()
+        gc = wx.GraphicsContext.Create(dc)
+        if not gc:
+            return
+
+        width, height = self.GetSize()
+        enabled = self.IsEnabled()
+        side = max(self._MIN_BOX_SIZE, min(width, height) - self._OUTER_PADDING)
+        x = (width - side) / 2
+        y = (height - side) / 2
+        token = "components.dropdown.default"
+        is_hovered = self.hovered
+
+        bg_color = _theme.color(f"{token}.frame.bg", is_hovered, False, enabled)
+        border_color = _theme.color(f"{token}.frame.border.color", is_hovered, False, enabled)
+
+        gc.SetBrush(wx.Brush(bg_color))
+        gc.SetPen(wx.Pen(border_color, 1))
+        gc.DrawRoundedRectangle(x, y, side, side, self._OUTER_RADIUS)
+
+        if self.value:
+            fill_x = x + self._FILL_INSET + 1
+            fill_y = y + self._FILL_INSET + 1
+            fill_side = max(1, side - ((self._FILL_INSET * 2) + 1))
+            gc.SetBrush(wx.Brush(_theme.color("colors.primary", enabled=enabled)))
+            gc.SetPen(wx.TRANSPARENT_PEN)
+            gc.DrawRoundedRectangle(fill_x, fill_y, fill_side, fill_side, self._FILL_RADIUS)
+
+    def GetValue(self) -> bool:
+        return self.value
+
+    def SetValue(self, value: bool) -> None:
+        self.value = bool(value)
+        self.Refresh()
+        self.Update()
+
+    def AcceptsFocus(self):
+        return False
+
+    def AcceptsFocusFromKeyboard(self):
+        return False
+
+
 class DropdownPopup(wx.PopupTransientWindow):
     """
     Transient popup window for the dropdown list

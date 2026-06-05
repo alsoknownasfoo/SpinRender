@@ -56,6 +56,11 @@ class TestV2ThemeTokenIntegration:
         from SpinRender.ui.custom_controls import CustomToggleButton
         assert CustomToggleButton is not None
 
+    def test_custom_checkbox_uses_v2_tokens(self):
+        """CustomCheckbox should use theme-driven colors rather than a native widget."""
+        from SpinRender.ui.custom_controls import CustomCheckbox
+        assert CustomCheckbox is not None
+
     def test_custom_dropdown_uses_v2_tokens(self):
         """CustomDropdown should use components.dropdown.default tokens."""
         from SpinRender.ui.custom_controls import CustomDropdown

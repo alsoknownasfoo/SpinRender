@@ -39,6 +39,9 @@ def test_render_settings_default_values():
     assert settings.render_mode == 'both'
     assert settings.format == 'mp4'
     assert settings.resolution == '1920x1080'
+    assert settings.hide_vias is True
+    assert settings.hide_components is True
+    assert settings.hide_test_points is True
     assert settings.preset == 'custom'
     assert settings.logging_level == 'info'
 
@@ -235,14 +238,30 @@ def test_render_settings_to_dict_matches_preset_structure():
     data = settings.to_dict()
 
     # Should have all RenderSettings fields
-    expected_keys = [
-        'board_tilt', 'board_roll', 'spin_tilt', 'spin_heading',
-        'period', 'direction', 'lighting', 'bg_color',
-        'render_mode', 'format', 'resolution', 'preset',
-        'logging_level', 'easing', 'output_auto', 'output_path',
-        'cli_overrides', 'theme_mode'
-    ]
+    expected_keys = [field.name for field in fields(RenderSettings)]
     assert list(sorted(data.keys())) == sorted(expected_keys)
+
+
+def test_render_settings_hide_vias_round_trip():
+    """Hide-vias should persist through dict serialization."""
+    settings = RenderSettings(hide_vias=False, hide_components=False, hide_test_points=False)
+
+    recreated = RenderSettings.from_dict(settings.to_dict())
+
+    assert recreated.hide_vias is False
+    assert recreated.hide_components is False
+    assert recreated.hide_test_points is False
+
+
+def test_render_settings_render_option_round_trip():
+    """All render option flags should persist through dict serialization."""
+    settings = RenderSettings(hide_vias=True, hide_components=True, hide_test_points=True)
+
+    recreated = RenderSettings.from_dict(settings.to_dict())
+
+    assert recreated.hide_vias is True
+    assert recreated.hide_components is True
+    assert recreated.hide_test_points is True
 
 
 def test_render_settings_immutability_by_default():

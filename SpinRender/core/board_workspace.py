@@ -17,6 +17,7 @@ import os
 import shutil
 import sys
 from pathlib import Path
+from typing import Any, Optional
 
 logger = logging.getLogger("SpinRender")
 
@@ -47,6 +48,26 @@ class BoardWorkspace:
         """Overwrite the working copy with a fresh copy of the original."""
         self._copy_source_files()
         logger.debug("BoardWorkspace: working copy reset to original")
+
+    def prepare_for_render(
+        self,
+        hide_vias: bool = False,
+        hide_components: bool = False,
+        hide_test_points: bool = False,
+        hide_testpoints: Optional[bool] = None,
+    ) -> str:
+        """Refresh the working copy and apply any render-only board transforms."""
+        if hide_testpoints is not None:
+            hide_test_points = hide_testpoints
+        self.reset()
+        remove_user_drawings_from_board_file(self.board_path)
+        if hide_vias:
+            remove_vias_from_board_file(self.board_path)
+        if hide_components:
+            remove_components_from_board_file(self.board_path)
+        if hide_test_points:
+            remove_testpoints_from_board_file(self.board_path)
+        return self.board_path
 
     def cleanup(self) -> None:
         """Remove the working copy. Safe to call multiple times."""
@@ -90,3 +111,285 @@ class BoardWorkspace:
         except Exception as e:
             # Non-fatal: the copy still works, it just isn't hidden.
             logger.warning(f"BoardWorkspace: could not set hidden attribute: {e}")
+
+
+def _is_via(track: Any, pcbnew_module: Any) -> bool:
+    """Best-effort KiCad track classification across API versions."""
+    via_type = getattr(pcbnew_module, 'PCB_VIA', None)
+    if via_type is not None:
+        try:
+            if isinstance(track, via_type):
+                return True
+        except TypeError:
+            pass
+
+    for attr_name in ('GetClass', 'GetClassName', 'GetTypeDesc'):
+        getter = getattr(track, attr_name, None)
+        if callable(getter):
+            value = getter()
+            if value and 'VIA' in str(value).upper():
+                return True
+
+    return False
+
+
+def _is_test_point_footprint(footprint: Any) -> bool:
+    """Return True when a footprint reference is a ``T#`` designator (e.g. T1).
+
+    Matches a leading ``T`` immediately followed by a digit, so ``T1``/``T2`` are
+    stripped while multi-letter prefixes such as ``TP1`` (test-point pads) are
+    left intact.
+    """
+    ref_getter = getattr(footprint, 'GetReference', None)
+    if not callable(ref_getter):
+        return False
+
+    reference = str(ref_getter() or '').strip().upper()
+    return len(reference) >= 2 and reference[0] == 'T' and reference[1].isdigit()
+
+
+def _clear_footprint_models(footprint: Any) -> bool:
+    """Best-effort removal of a footprint's 3D models across KiCad API variants."""
+    for getter_name in ('Models', 'GetModels'):
+        getter = getattr(footprint, getter_name, None)
+        if not callable(getter):
+            continue
+
+        models = getter()
+        if models is None:
+            continue
+
+        for clearer_name in ('clear', 'Clear'):
+            clearer = getattr(models, clearer_name, None)
+            if callable(clearer):
+                clearer()
+                return True
+
+        if isinstance(models, list):
+            del models[:]
+            return True
+
+    return False
+
+
+def _coerce_board(board: Any, pcbnew_module: Any) -> Any:
+    """Best-effort conversion of raw KiCad SWIG board pointers to BOARD objects."""
+    for getter_name in ('GetTracks', 'Tracks', 'GetFootprints', 'Footprints'):
+        if callable(getattr(board, getter_name, None)):
+            return board
+
+    for caster_name in ('Cast_to_BOARD', 'BOARD'):
+        caster = getattr(pcbnew_module, caster_name, None)
+        if not callable(caster):
+            continue
+
+        try:
+            typed_board = caster(board)
+        except Exception:
+            continue
+
+        for getter_name in ('GetTracks', 'Tracks', 'GetFootprints', 'Footprints'):
+            if callable(getattr(typed_board, getter_name, None)):
+                return typed_board
+
+    return board
+
+
+def _get_board_items(board: Any, *getter_names: str) -> list[Any]:
+    """Return board items across KiCad API variants such as Tracks/GetTracks."""
+    for getter_name in getter_names:
+        getter = getattr(board, getter_name, None)
+        if callable(getter):
+            items = getter()
+            if items is not None:
+                return list(items)
+
+    getter_list = ', '.join(getter_names)
+    raise AttributeError(f"Board object does not expose any of: {getter_list}")
+
+
+def _remove_board_item(board: Any, item: Any) -> None:
+    """Remove an item from its container (board or footprint) across API variants."""
+    for remover_name in ('Delete', 'Remove', 'RemoveNative'):
+        remover = getattr(board, remover_name, None)
+        if callable(remover):
+            remover(item)
+            return
+
+    raise AttributeError(f"Container does not support removing items of type {type(item).__name__}")
+
+
+def _get_footprints(board: Any) -> list[Any]:
+    """Return the board's footprints across API variants ([] when unavailable)."""
+    for getter_name in ('GetFootprints', 'Footprints'):
+        getter = getattr(board, getter_name, None)
+        if callable(getter):
+            items = getter()
+            if items is not None:
+                return list(items)
+    return []
+
+
+def _get_footprint_graphics(footprint: Any) -> list[Any]:
+    """Return a footprint's graphic items across API variants ([] when unavailable)."""
+    for getter_name in ('GraphicalItems', 'GetGraphicalItems'):
+        getter = getattr(footprint, getter_name, None)
+        if callable(getter):
+            items = getter()
+            if items is not None:
+                return list(items)
+    return []
+
+
+def _is_user_drawings_item(item: Any, board: Any, pcbnew_module: Any) -> bool:
+    """Return True when an item belongs to the User.Drawings layer."""
+    layer_name_getter = getattr(item, 'GetLayerName', None)
+    if callable(layer_name_getter):
+        layer_name = layer_name_getter()
+        if str(layer_name or '').strip() == 'User.Drawings':
+            return True
+
+    layer_getter = getattr(item, 'GetLayer', None)
+    if callable(layer_getter):
+        layer = layer_getter()
+
+        board_layer_name = getattr(board, 'GetLayerName', None)
+        if callable(board_layer_name):
+            layer_name = board_layer_name(layer)
+            if str(layer_name or '').strip() == 'User.Drawings':
+                return True
+
+        module_layer_name = getattr(pcbnew_module, 'LayerName', None)
+        if callable(module_layer_name):
+            layer_name = module_layer_name(layer)
+            if str(layer_name or '').strip() == 'User.Drawings':
+                return True
+
+    return False
+
+
+def apply_render_filters_to_board_file(
+    board_path: str,
+    *,
+    hide_vias: bool = False,
+    hide_components: bool = False,
+    hide_test_points: bool = False,
+) -> None:
+    """Load a board through KiCad's Python API, apply render-only filters, and save it."""
+    import pcbnew
+
+    try:
+        board = pcbnew.LoadBoard(board_path)
+    except Exception as exc:
+        logger.error(f"BoardWorkspace: pcbnew.LoadBoard failed for {board_path}: {exc}", exc_info=True)
+        raise RuntimeError(f"Unable to load board for via stripping: {board_path}") from exc
+
+    if board is None:
+        raise RuntimeError(f"Unable to load board for via stripping: {board_path}")
+
+    board = _coerce_board(board, pcbnew)
+
+    removed_vias = 0
+    if hide_vias:
+        for track in _get_board_items(board, 'GetTracks', 'Tracks'):
+            if _is_via(track, pcbnew):
+                _remove_board_item(board, track)
+                removed_vias += 1
+
+    cleared_models = 0
+    removed_footprints = 0
+    if hide_components or hide_test_points:
+        for footprint in _get_board_items(board, 'GetFootprints', 'Footprints'):
+            if hide_components and _clear_footprint_models(footprint):
+                cleared_models += 1
+            if hide_test_points and _is_test_point_footprint(footprint):
+                _remove_board_item(board, footprint)
+                removed_footprints += 1
+
+    try:
+        save_result = pcbnew.SaveBoard(board_path, board)
+    except Exception as exc:
+        logger.error(f"BoardWorkspace: pcbnew.SaveBoard failed for {board_path}: {exc}", exc_info=True)
+        raise RuntimeError(f"Unable to save board after via stripping: {board_path}") from exc
+
+    if save_result is False:
+        raise RuntimeError(f"Unable to save board after via stripping: {board_path}")
+
+    logger.debug(
+        "BoardWorkspace: applied render filters to %s (removed %s vias, cleared %s footprint model sets, removed %s footprints)",
+        board_path,
+        removed_vias,
+        cleared_models,
+        removed_footprints,
+    )
+
+
+def remove_vias_from_board_file(board_path: str) -> None:
+    """Compatibility wrapper for via-only filtering."""
+    apply_render_filters_to_board_file(board_path, hide_vias=True)
+
+
+def remove_user_drawings_from_board_file(board_path: str) -> None:
+    """Remove all User.Drawings items from the disposable render board.
+
+    KiCad's 3D viewer renders the User.Drawings layer, so leftover documentation
+    graphics show up on the rendered board. Both *board-level* drawings and the
+    graphics owned by each *footprint* can live on User.Drawings, so we strip
+    from both: ``board.GetDrawings()`` and every ``footprint.GraphicalItems()``.
+    """
+    import pcbnew
+
+    try:
+        board = pcbnew.LoadBoard(board_path)
+    except Exception as exc:
+        logger.error(f"BoardWorkspace: pcbnew.LoadBoard failed for {board_path}: {exc}", exc_info=True)
+        raise RuntimeError(f"Unable to load board for drawing stripping: {board_path}") from exc
+
+    if board is None:
+        raise RuntimeError(f"Unable to load board for drawing stripping: {board_path}")
+
+    board = _coerce_board(board, pcbnew)
+
+    removed_drawings = 0
+    for drawing in _get_board_items(board, 'GetDrawings', 'Drawings'):
+        if _is_user_drawings_item(drawing, board, pcbnew):
+            _remove_board_item(board, drawing)
+            removed_drawings += 1
+
+    removed_footprint_drawings = 0
+    for footprint in _get_footprints(board):
+        for item in _get_footprint_graphics(footprint):
+            if _is_user_drawings_item(item, board, pcbnew):
+                _remove_board_item(footprint, item)
+                removed_footprint_drawings += 1
+
+    try:
+        save_result = pcbnew.SaveBoard(board_path, board)
+    except Exception as exc:
+        logger.error(f"BoardWorkspace: pcbnew.SaveBoard failed for {board_path}: {exc}", exc_info=True)
+        raise RuntimeError(f"Unable to save board after drawing stripping: {board_path}") from exc
+
+    if save_result is False:
+        raise RuntimeError(f"Unable to save board after drawing stripping: {board_path}")
+
+    logger.debug(
+        "BoardWorkspace: removed %s board + %s footprint User.Drawings items from %s",
+        removed_drawings,
+        removed_footprint_drawings,
+        board_path,
+    )
+
+
+def remove_components_from_board_file(board_path: str) -> None:
+    """Compatibility wrapper for removing footprint 3D models only."""
+    apply_render_filters_to_board_file(board_path, hide_components=True)
+
+
+def remove_test_points_from_board_file(board_path: str) -> None:
+    """Compatibility wrapper for TP*-reference filtering."""
+    apply_render_filters_to_board_file(board_path, hide_test_points=True)
+
+
+def remove_testpoints_from_board_file(board_path: str) -> None:
+    """Backward-compatible alias for TP*-reference filtering."""
+    remove_test_points_from_board_file(board_path)
