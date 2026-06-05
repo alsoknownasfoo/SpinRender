@@ -5,7 +5,7 @@
     "type": "plugin",
     "description": "KiCad plugin for generating animated PCB renders",
     "description_full": "SpinRender is a KiCad plugin that makes it easy to generate beautiful animated PCB renders directly from your KiCad projects. Create professional showcase videos, GIFs, and image sequences with just a few clicks.",
-    "category": "Render",
+    "category": "render",
     "author": {
         "name": "Foo Hoang",
         "contact": {
