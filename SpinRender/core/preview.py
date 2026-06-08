@@ -307,6 +307,12 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         return None
 
     def _update_loading(self, state):
+        # Queued via wx.CallAfter from the loader thread; the canvas may have
+        # been torn down before it fires. `not self` is True once the underlying
+        # C++ object is gone — without this guard self.Refresh() raises
+        # "wrapped C/C++ object of type GLPreviewRenderer has been deleted".
+        if self._destroyed or not self:
+            return
         self.loading_state = state
         self.Refresh()
 
