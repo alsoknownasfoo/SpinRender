@@ -73,6 +73,10 @@ class SpinRenderPanel(wx.Panel):
             self.render_board_path = self.workspace.board_path
         except Exception as e:
             logger.error(f"Failed to create board working copy; rendering from original: {e}", exc_info=True)
+        # Content hash of the board snapshot the preview was last built from.
+        # Used to skip needless reloads when the window regains focus but the
+        # board is unchanged (see refresh_preview_if_changed).
+        self._last_preview_hash = self._snapshot_hash()
         self.Bind(wx.EVT_WINDOW_DESTROY, self._on_panel_destroy)
 
         # Default settings
@@ -333,6 +337,44 @@ class SpinRenderPanel(wx.Panel):
             hide_components=not self.settings.hide_components,
             hide_test_points=not self.settings.hide_test_points,
         )
+
+    def _snapshot_hash(self):
+        """SHA-1 of the workspace's live-board snapshot, or None if unavailable."""
+        if self.workspace is None:
+            return None
+        try:
+            import hashlib
+            with open(self.workspace.snapshot_path, 'rb') as f:
+                return hashlib.sha1(f.read()).hexdigest()
+        except OSError:
+            return None
+
+    def refresh_preview_if_changed(self):
+        """Re-capture the live board and reload the preview only if its content
+        changed since the last load.
+
+        Called when the plugin window regains focus so the preview reflects
+        edits made in the PCB editor while the plugin stayed open. The hash gate
+        keeps this cheap: an unchanged board re-serializes but never re-exports.
+        Runs on the main thread (focus event), so pcbnew use is thread-safe.
+        """
+        if self.workspace is None:
+            return
+        # Don't disturb an in-flight render (it re-captures the board itself).
+        if self.render_controller.is_rendering():
+            return
+        try:
+            self.workspace.capture_live_board()
+            new_hash = self._snapshot_hash()
+            if new_hash is None or new_hash == self._last_preview_hash:
+                return
+            self._last_preview_hash = new_hash
+            # Refresh the working copy the preview reads from, then reload it.
+            self.workspace.reset()
+            if getattr(self, 'preview', None):
+                self.preview.reload_model()
+        except Exception as e:
+            logger.error(f"Preview refresh on focus failed: {e}", exc_info=True)
 
     def create_preview_panel(self, parent):
         """Create the preview panel using the extracted PreviewPanel component."""

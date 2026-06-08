@@ -253,7 +253,21 @@ class SpinRenderFrame(wx.Frame):
 
         # Bind close event
         self.Bind(wx.EVT_CLOSE, self.on_close)
+
+        # Refresh the preview when the window regains focus so it reflects edits
+        # made in the PCB editor while SpinRender stayed open (hash-gated, so an
+        # unchanged board is a no-op).
+        self.Bind(wx.EVT_ACTIVATE, self.on_activate)
         logger.debug("Close event bound, __init__ complete")
+
+    def on_activate(self, event):
+        """Re-sync the preview to the live board when the window is activated."""
+        try:
+            if event.GetActive() and self.panel and hasattr(self.panel, 'refresh_preview_if_changed'):
+                self.panel.refresh_preview_if_changed()
+        except Exception as e:
+            logger.error(f"on_activate refresh failed: {e}", exc_info=True)
+        event.Skip()
 
     def _init_theme_watcher(self):
         """Initialize a timer to watch for theme file changes (Hot Reload)."""

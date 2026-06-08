@@ -495,6 +495,11 @@ class PreviewPanel(wx.Panel):
         self.viewport.set_aspect_ratio(width, height)
         self.update_preview_overlay()
 
+    def reload_model(self):
+        """Reload the 3D model in the viewport (board changed in the editor)."""
+        if getattr(self, 'viewport', None):
+            self.viewport.reload_model()
+
     def update_render_mode_ui(self, active_mode: str):
         """
         Update colors of render mode toggle buttons.

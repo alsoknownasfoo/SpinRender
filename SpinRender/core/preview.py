@@ -199,6 +199,18 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             return
         wx.CallLater(600, self._start_loading_thread, attempt)
 
+    def reload_model(self):
+        """Re-run the export/load pipeline after the board changed in the
+        editor. Callers should gate on actual content change; when the board is
+        unchanged the content-hashed GLB cache hits and no re-export happens."""
+        if self._destroyed or not self:
+            return
+        self.loading_state = "exporting"
+        if not self.loading_timer.IsRunning():
+            self.loading_timer.Start(50)
+        self.Refresh()
+        self._start_loading_thread()
+
     def _on_loading_timer(self, _event):
         if self._destroyed:
             return
