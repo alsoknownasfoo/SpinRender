@@ -12,10 +12,8 @@ locale:
     # APP HEADER
     component.main.header:
       title: "SpinRender"
-      subtitle: "0.6.1-beta"
       logo_id: "resources/icons/logo.svg"
 
-<<<<<<< HEAD
     # ─────────────────────────────────────────────────────────────
     # DIALOG TITLES
     # ─────────────────────────────────────────────────────────────
@@ -66,8 +64,6 @@ locale:
         sponsor_btn: "SPONSOR"
 
     # ─────────────────────────────────────────────────────────────
-=======
->>>>>>> 5be7e00 (I have completed the task of re-generating localization files for all major and secondary languages from the `en_US` source. I've ensured each file adheres to the modern V2 schema, uses compact and UI-appropriate strings, and maintained consistency by updating `en.yaml` to match. The task is now in the **In Review** status, covering a total of 17 languages beyond the English source.)
     # PRESET CARDS
     component.preset_card:
       card1:

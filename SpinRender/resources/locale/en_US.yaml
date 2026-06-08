@@ -15,7 +15,6 @@ locale:
     # APP HEADER
     component.main.header:
       title: "SpinRender"
-      subtitle: "0.6.1-beta"
       logo_id: "resources/icons/logo.svg"
 
     # PRESET CARDS

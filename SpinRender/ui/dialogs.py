@@ -23,6 +23,7 @@ from .helpers import (
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
 from SpinRender.foundation.icons import STATUS_ICONS
+from SpinRender.version import get_version, base_version, is_newer
 
 _theme = Theme.current()
 _locale = Locale.current()
@@ -1463,7 +1464,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         right.SetBackgroundColour(_theme.color("colors.gray-dark"))
         rs = wx.BoxSizer(wx.VERTICAL)
 
-        ver_raw = _locale.get("component.main.header.subtitle", "0.5.0-BETA")
+        ver_raw = get_version()
         meta_wrap = wx.Panel(right)
         meta_wrap.SetBackgroundColour(_theme.color("colors.gray-dark"))
         meta_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -1839,13 +1840,13 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         if self._closing:
             return
 
-        current = _locale.get("component.main.header.subtitle", "0.6.1-beta")
+        current = base_version()
 
         if simulated:
             note  = _locale.get("dialog.about.check_updates_simulated",
                                  "(simulated — repo not yet public)")
             label = f"{_locale.get('dialog.about.check_updates_done', 'UP TO DATE')} {note}"
-        elif latest_tag and latest_tag.lstrip("v") > current.lstrip("v"):
+        elif is_newer(latest_tag, current):
             label = (f"{_locale.get('dialog.about.check_updates_available', 'UPDATE AVAILABLE')}"
                      f": {latest_tag}")
         else:

@@ -16,6 +16,7 @@ from .text_styles import TextStyle
 from .registry import ControlRegistry
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
+from SpinRender.version import get_version
 _theme = Theme.current()
 _locale = Locale.current()
 from .helpers import create_section_label, create_numeric_input, create_text, reapply_text_styles, load_svg, set_text_widget_state
@@ -172,7 +173,7 @@ class ControlsSidePanel(wx.Panel):
         self.header_title = create_text(header, _locale.get("component.main.header.title", "SPINRENDER"), "title")
         title_sizer.Add(self.header_title, 0)
 
-        self.header_subtitle = create_text(header, _locale.get("component.main.header.subtitle", "0.5.0-BETA"), "version")
+        self.header_subtitle = create_text(header, get_version(), "version")
         title_sizer.Add(self.header_subtitle, 0)
         sizer.Add(title_sizer, 0, wx.ALIGN_CENTER_VERTICAL)
 

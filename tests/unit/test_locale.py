@@ -68,10 +68,14 @@ class TestLocaleLookup:
         value = self.locale.get("component.main.header.title")
         assert value == "SpinRender"
 
-    def test_get_component_header_subtitle(self):
-        """get('component.main.header.subtitle') should return version string."""
-        value = self.locale.get("component.main.header.subtitle")
-        assert value == "0.9.0-alpha"
+    def test_header_subtitle_not_in_locale(self):
+        """The version is no longer a locale string — it comes from SpinRender.version.
+
+        The header subtitle used to hold a hardcoded version that drifted across
+        every locale file; it now resolves at runtime via get_version(), so the
+        locale key is intentionally absent.
+        """
+        assert self.locale.get("component.main.header.subtitle") is None
 
     def test_get_button_render_label(self):
         """get('component.button.render.label') should return 'Render' (uppercase via theme)."""
