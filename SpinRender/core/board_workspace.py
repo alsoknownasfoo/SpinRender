@@ -23,6 +23,8 @@ logger = logging.getLogger("SpinRender")
 
 # Marker embedded in the working-copy filename so leftovers are recognizable.
 _WORK_SUFFIX = ".spinrender-tmp"
+# Marker for the pristine snapshot of the live in-memory board.
+_SNAPSHOT_SUFFIX = ".spinrender-src"
 
 _IS_WINDOWS = sys.platform.startswith("win")
 _FILE_ATTRIBUTE_HIDDEN = 0x02
@@ -40,14 +42,100 @@ class BoardWorkspace:
         # _hide() sets the hidden attribute).
         name = f".{src.stem}{_WORK_SUFFIX}{src.suffix}"
         self.board_path = str(src.with_name(name))
-        self._paired_paths = [Path(self.board_path)]
+        # Pristine snapshot of the *live* in-memory board. The working copy is
+        # refreshed from this snapshot (not the on-disk file) so the preview and
+        # render reflect exactly what the user currently sees in the editor,
+        # including unsaved edits. See capture_live_board().
+        snap_name = f".{src.stem}{_SNAPSHOT_SUFFIX}{src.suffix}"
+        self.snapshot_path = str(src.with_name(snap_name))
+        self._paired_paths = [Path(self.board_path), Path(self.snapshot_path)]
+        self.capture_live_board()
         self._copy_source_files()
         logger.debug(f"BoardWorkspace: working copy at {self.board_path}")
 
+    def capture_live_board(self) -> bool:
+        """Serialize the live in-memory board to the pristine snapshot.
+
+        Captures exactly what the user currently sees in the PCB editor —
+        including unsaved edits — rather than the last-saved file on disk.
+
+        MUST be called on KiCad's main/UI thread: pcbnew is not thread-safe.
+        Returns True when the live board was captured, False when it fell back
+        to copying the on-disk file. The snapshot is always populated on return
+        (or an OSError is raised).
+        """
+        if self._serialize_live_board(self.snapshot_path):
+            logger.debug("BoardWorkspace: captured live in-memory board")
+            return True
+        # Fallback: copy the last-saved file so the snapshot is always present.
+        try:
+            shutil.copy2(self.source_path, self.snapshot_path)
+            self._hide(self.snapshot_path)
+            logger.debug("BoardWorkspace: snapshot fell back to on-disk file")
+        except OSError as e:
+            logger.error(f"BoardWorkspace: snapshot fallback copy failed: {e}")
+            raise
+        return False
+
+    def _serialize_live_board(self, dest: str) -> bool:
+        """Write the live board to ``dest`` via pcbnew, undoing any side effects
+        on the live board (filename / modified flag) so the user's editor
+        session is untouched. Returns False on any failure (caller falls back)."""
+        try:
+            import pcbnew
+        except Exception:
+            return False
+        try:
+            board = pcbnew.GetBoard()
+        except Exception as e:
+            logger.warning(f"BoardWorkspace: pcbnew.GetBoard() failed: {e}")
+            return False
+        if board is None:
+            return False
+        # Only trust the live board if it's the project we were opened for; a
+        # filename mismatch means GetBoard() isn't our source board.
+        try:
+            live_name = board.GetFileName()
+        except Exception:
+            live_name = ""
+        if not live_name or os.path.normpath(live_name) != os.path.normpath(self.source_path):
+            logger.debug("BoardWorkspace: live board filename mismatch; using on-disk copy")
+            return False
+        # SaveBoard can mutate the board's filename (and clear its modified flag)
+        # on some KiCad versions. Capture and restore both so the user's next
+        # Ctrl+S still targets their real file and the dirty indicator is intact.
+        was_modified = None
+        try:
+            if hasattr(board, "IsModified"):
+                was_modified = board.IsModified()
+        except Exception:
+            was_modified = None
+        try:
+            pcbnew.SaveBoard(dest, board)
+        except Exception as e:
+            logger.warning(f"BoardWorkspace: pcbnew.SaveBoard failed; using on-disk copy: {e}")
+            return False
+        finally:
+            try:
+                if board.GetFileName() != live_name:
+                    board.SetFileName(live_name)
+            except Exception:
+                pass
+            try:
+                if was_modified and hasattr(board, "SetModified"):
+                    board.SetModified()
+            except Exception:
+                pass
+        if not os.path.exists(dest) or os.path.getsize(dest) == 0:
+            logger.warning("BoardWorkspace: SaveBoard produced no output; using on-disk copy")
+            return False
+        self._hide(dest)
+        return True
+
     def reset(self) -> None:
-        """Overwrite the working copy with a fresh copy of the original."""
+        """Overwrite the working copy with a fresh copy of the live-board snapshot."""
         self._copy_source_files()
-        logger.debug("BoardWorkspace: working copy reset to original")
+        logger.debug("BoardWorkspace: working copy reset to live-board snapshot")
 
     def prepare_for_render(
         self,
@@ -59,6 +147,10 @@ class BoardWorkspace:
         """Refresh the working copy and apply any render-only board transforms."""
         if hide_testpoints is not None:
             hide_test_points = hide_testpoints
+        # Re-capture the live board first so renders reflect any edits made
+        # while the plugin stayed open. Called on the main thread via
+        # SpinRenderPanel.on_render -> _prepare_render_board_path.
+        self.capture_live_board()
         self.reset()
         remove_user_drawings_from_board_file(self.board_path)
         if hide_vias:
@@ -82,7 +174,10 @@ class BoardWorkspace:
     def _copy_source_files(self) -> None:
         """Refresh the board copy and any same-stem project files KiCad expects."""
         board_copy = Path(self.board_path)
-        shutil.copy2(self.source_path, board_copy)
+        # Board geometry comes from the live-board snapshot (capture_live_board);
+        # fall back to the on-disk source if the snapshot is somehow missing.
+        board_src = self.snapshot_path if os.path.exists(self.snapshot_path) else self.source_path
+        shutil.copy2(board_src, board_copy)
         self._hide(str(board_copy))
 
         src = Path(self.source_path)

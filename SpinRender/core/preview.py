@@ -15,6 +15,7 @@ import threading
 import subprocess
 import os
 import tempfile
+import hashlib
 import logging
 from pathlib import Path
 
@@ -179,10 +180,24 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
                     pass
         event.Skip()
 
-    def _start_loading_thread(self):
+    # Total attempts to export + load the model before falling back to the
+    # placeholder. First-run exports can lose a post-write read race; a bounded
+    # self-healing retry guarantees the model loads instead of staying blank.
+    _MAX_LOAD_ATTEMPTS = 3
+
+    def _start_loading_thread(self, attempt=1):
         if self._destroyed or not self:
             return
-        threading.Thread(target=self._export_and_load_sync, daemon=True).start()
+        threading.Thread(
+            target=self._export_and_load_sync, args=(attempt,), daemon=True
+        ).start()
+
+    def _retry_loading(self, attempt):
+        """Schedule another export/load pass (main thread; keeps the loading
+        animation up while we retry)."""
+        if self._destroyed or not self:
+            return
+        wx.CallLater(600, self._start_loading_thread, attempt)
 
     def _on_loading_timer(self, _event):
         if self._destroyed:
@@ -192,24 +207,36 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         else:
             self.loading_timer.Stop()
 
-    def _export_and_load_sync(self):
+    def _board_cache_key(self):
+        """Content hash of the board file. Keying the GLB cache on content (not
+        mtime) means an unchanged board reuses its cached export across launches
+        — even though the working copy is re-serialized live each launch with a
+        fresh mtime — while edits correctly invalidate the cache."""
         try:
-            # 1. Determine Cache Path based on file timestamp
-            mtime = int(os.path.getmtime(self.board_path))
+            with open(self.board_path, 'rb') as f:
+                return hashlib.sha1(f.read()).hexdigest()[:16]
+        except OSError:
+            return str(int(os.path.getmtime(self.board_path)))
+
+    def _export_and_load_sync(self, attempt=1):
+        try:
+            # 1. Determine cache path from board content (see _board_cache_key).
+            key = self._board_cache_key()
             stem = Path(self.board_path).stem
             cache_dir = os.path.join(tempfile.gettempdir(), "SpinRender_Cache")
             os.makedirs(cache_dir, exist_ok=True)
-            
-            glb_path = os.path.join(cache_dir, f"{stem}_{mtime}.glb")
-            
+
+            glb_name = f"{stem}_{key}.glb"
+            glb_path = os.path.join(cache_dir, glb_name)
+
             # Cleanup old versions of this board from cache
             try:
                 for f in os.listdir(cache_dir):
-                    if f.startswith(f"{stem}_") and f.endswith(".glb") and f != f"{stem}_{mtime}.glb":
+                    if f.startswith(f"{stem}_") and f.endswith(".glb") and f != glb_name:
                         try: os.remove(os.path.join(cache_dir, f))
                         except: pass
             except: pass
-            
+
             mesh = None
 
             # 2. Check if valid cache exists
@@ -232,11 +259,22 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
 
             if mesh is not None:
                 wx.CallAfter(self._set_mesh, mesh)
+            elif attempt < self._MAX_LOAD_ATTEMPTS and not self._destroyed:
+                # Self-heal: keep the loading animation up and try the whole
+                # export/load pipeline again before dropping to the placeholder.
+                logger.warning(
+                    f"Preview model load failed (attempt {attempt}/{self._MAX_LOAD_ATTEMPTS}); retrying."
+                )
+                wx.CallAfter(self._retry_loading, attempt + 1)
             else:
+                logger.error("Preview model load failed after retries; showing placeholder.")
                 wx.CallAfter(self._update_loading, None)
         except Exception as e:
             logger.error(f"Sync Error: {e}", exc_info=True)
-            wx.CallAfter(self._update_loading, None)
+            if attempt < self._MAX_LOAD_ATTEMPTS and not self._destroyed:
+                wx.CallAfter(self._retry_loading, attempt + 1)
+            else:
+                wx.CallAfter(self._update_loading, None)
 
     def _load_mesh_with_retry(self, glb_path, attempts=3, delay=0.25):
         """Load a GLB, retrying briefly to ride out transient post-export read

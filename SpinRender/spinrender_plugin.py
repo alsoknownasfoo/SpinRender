@@ -164,13 +164,23 @@ class SpinRenderPlugin(pcbnew.ActionPlugin):
             # Get board file path
             board_path = _get_board_file_path(board)
             logger.debug(f"Board path: {board_path}")
+            # The board must have been saved at least once: SpinRender needs a
+            # real project directory so KiCad can resolve ${KIPRJMOD} and
+            # relative 3D-model paths for the working copy. Unsaved *edits* are
+            # fine — we serialize the live in-memory board at launch/render
+            # (see BoardWorkspace.capture_live_board), so the user does not need
+            # to save the latest changes first.
             if not board_path or not os.path.exists(board_path):
-                logger.warning("Board file not saved or doesn't exist - aborting")
-                wx.MessageBox(
-                    "Board file not saved. Please save your board file first.",
-                    "SpinRender - Unsaved Board",
-                    wx.OK | wx.ICON_ERROR
+                logger.warning("Board has never been saved - aborting launch")
+                dlg = wx.MessageDialog(
+                    None,
+                    "Document needs to be saved before launching SpinRender",
+                    "SpinRender",
+                    wx.OK | wx.ICON_WARNING
                 )
+                dlg.SetOKLabel("Close")
+                dlg.ShowModal()
+                dlg.Destroy()
                 return
 
             # Launch SpinRender panel
