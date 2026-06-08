@@ -15,6 +15,11 @@ from pathlib import Path
 
 logger = logging.getLogger("SpinRender")
 
+# Per-frame render timeout (seconds). Raytracing a large board at high
+# resolution can take well over the old 30s ceiling; 300s matches the MP4
+# assembly budget and avoids spurious "render timed out" on heavy boards.
+RENDER_FRAME_TIMEOUT = 300
+
 
 def _prepare_kicad_config_home(plugin_dir):
     """Return a writable KICAD_CONFIG_HOME seeded with our 3d_viewer.json.
@@ -163,7 +168,15 @@ def find_command(cmd):
 
 
 def _start_text_process(cmd, env=None):
-    """Start a subprocess with explicit UTF-8 text decoding."""
+    """Start a subprocess with explicit UTF-8 text decoding.
+
+    start_new_session detaches the child into its own session/process group.
+    On macOS this matters: kicad-cli's renderer opens its own GL / WindowServer
+    connection, and spawning it as a child of the already-GL-bound pcbnew GUI
+    process makes that init hang (timeout) or crash (SIGSEGV / exit -11). A
+    fresh session gives the child a clean WindowServer connection. Standalone
+    renders already work, so this only fixes the in-process-spawn case.
+    """
     return subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -173,7 +186,22 @@ def _start_text_process(cmd, env=None):
         encoding='utf-8',
         errors='replace',
         env=env,
+        start_new_session=True,
     )
+
+
+def _format_cli_output(output, max_lines=15):
+    """Build a readable tail of kicad-cli's output for an error message.
+
+    The old errors surfaced only the exit code (e.g. "-11"), which made remote
+    bug reports undiagnosable. Including the child's last lines reveals the real
+    cause (missing model, GL crash, bad arg) in the dialog and log.
+    """
+    if not output or not output.strip():
+        return " (kicad-cli produced no output)"
+    lines = [ln.rstrip() for ln in output.splitlines() if ln.strip()]
+    tail = "\n".join(lines[-max_lines:])
+    return f"\nkicad-cli output:\n{tail}"
 
 
 def _apply_overrides(cmd, override_str):
@@ -470,15 +498,19 @@ class RenderEngine:
             # Execute render and pipe output to logger
             logger.debug(f"CLI CMD: {' '.join(cmd)}")
 
+            stdout = ""
             try:
                 process = _start_text_process(cmd, env=env)
 
-                stdout, _ = process.communicate(timeout=30)
+                stdout, _ = process.communicate(timeout=RENDER_FRAME_TIMEOUT)
                 if logger.isEnabledFor(logging.DEBUG):
                     for line in stdout.splitlines():
                         logger.debug(f"  [kicad-cli] {line.strip()}")
                 if process.returncode != 0:
-                    raise RuntimeError(f"Frame {i} render failed with exit code {process.returncode}")
+                    raise RuntimeError(
+                        f"Frame {i} render failed with exit code "
+                        f"{process.returncode}.{_format_cli_output(stdout)}"
+                    )
 
                 # Update progress with completed frame
                 if self.progress_callback:
@@ -486,7 +518,18 @@ class RenderEngine:
 
             except subprocess.TimeoutExpired:
                 process.kill()
-                raise RuntimeError(f"Frame {i} render timed out")
+                # Drain whatever the child emitted before we killed it.
+                try:
+                    stdout, _ = process.communicate(timeout=5)
+                except Exception:
+                    pass
+                raise RuntimeError(
+                    f"Frame {i} render timed out after {RENDER_FRAME_TIMEOUT}s."
+                    f"{_format_cli_output(stdout)}"
+                )
+            except RuntimeError:
+                # Already a descriptive render error — don't double-wrap it.
+                raise
             except Exception as e:
                 raise RuntimeError(f"Frame {i} render failed: {str(e)}")
 
