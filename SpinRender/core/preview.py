@@ -46,11 +46,7 @@ class PCBModelLoader:
             if not kicad_cli:
                 return False
             cmd = [kicad_cli, 'pcb', 'export', 'glb', '--fuse-shapes', '--grid-origin', '--no-dnp', '--subst-models', '--include-pads', '--include-silkscreen', board_path, '--output', output_path]
-            # start_new_session detaches kicad-cli into its own session so it gets
-            # a clean WindowServer/GL connection. Spawned as a child of the
-            # GL-bound pcbnew GUI on macOS, the export can otherwise hang (and the
-            # preview never loads). Render uses the same guard (see renderer.py).
-            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120, text=True, start_new_session=True)
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120, text=True)
             if result.returncode != 0:
                 logger.error(f"kicad-cli glb export failed (rc={result.returncode}): {(result.stderr or '').strip()[:500]}")
                 return False

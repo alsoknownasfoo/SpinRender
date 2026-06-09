@@ -168,15 +168,7 @@ def find_command(cmd):
 
 
 def _start_text_process(cmd, env=None):
-    """Start a subprocess with explicit UTF-8 text decoding.
-
-    start_new_session detaches the child into its own session/process group.
-    On macOS this matters: kicad-cli's renderer opens its own GL / WindowServer
-    connection, and spawning it as a child of the already-GL-bound pcbnew GUI
-    process makes that init hang (timeout) or crash (SIGSEGV / exit -11). A
-    fresh session gives the child a clean WindowServer connection. Standalone
-    renders already work, so this only fixes the in-process-spawn case.
-    """
+    """Start a subprocess with explicit UTF-8 text decoding."""
     return subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -186,7 +178,6 @@ def _start_text_process(cmd, env=None):
         encoding='utf-8',
         errors='replace',
         env=env,
-        start_new_session=True,
     )
 
 
