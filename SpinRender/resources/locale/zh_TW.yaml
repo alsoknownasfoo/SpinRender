@@ -117,6 +117,18 @@ locale:
         title: "輸入基本檔名"
         header: "輸入基本檔名"
         helper: "幀將儲存為 name_00001.png, name_00002.png, …"
+      add_resolution:
+        title: "新增解析度"
+        header: "新增解析度"
+        width_label: "寬"
+        height_label: "高"
+        helper: "輸入以像素為單位的輸出尺寸（僅限數字）。"
+        add_button: "新增"
+      custom_res:
+        title: "自訂解析度"
+        header: "自訂解析度"
+        add_button: "新增解析度"
+        empty: "暫無自訂解析度。"
       render_error: "渲染錯誤"
       preparing: "正在準備渲染..."
       # 當電路板從未儲存到磁碟時顯示的儲存保護。
@@ -143,9 +155,17 @@ locale:
         check_updates:           "檢查更新"
         check_updates_progress:  "正在檢查..."
         check_updates_done:      "已是最新"
-        check_updates_available: "有可用更新"
-        check_updates_simulated: "(模擬)"
-        release_notes_label:     "發行說明"
+        check_updates_available: "有更新"
+        check_updates_simulated: "(Sim)"
+        update_via_pcm:          "透過 PCM 更新"
+        update_install:          "更新至"
+        update_confirm:          "立即下載並安裝最新版本？之後必須重啟 KiCad。"
+        update_installing:       "正在安裝..."
+        update_done:             "已更新 —— 請重啟 KiCad"
+        update_done_body:        "SpinRender 已更新。重啟 KiCad 以載入新版本。"
+        update_failed:           "更新失敗"
+        update_failed_body:      "無法自動更新："
+        release_notes_label:     "版本資訊"
         releases_url:            "https://github.com/alsoknownasfoo/SpinRender/releases"
         section_author:          "作者"
         author_github_label:     "alsoknownasfoo"
@@ -171,14 +191,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        license_label:           "授權"
+        license_text:            "開源 · 個人使用免費"
+        built_with_label:        "建置工具"
+        resources_label:         "資源"
+        sponsor_btn:             "贊助"
         version_prefix: "v"
         author: "alsoknownasfoo"
         author_prefix: "由 "
-        license_label: "授權"
-        license_text: "開源 · 個人使用免費"
-        built_with_label: "建置工具"
-        resources_label: "資源"
-        sponsor_btn: "贊助"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"
@@ -255,18 +275,27 @@ locale:
 
     # OUTPUT SETTINGS
     output:
-      auto_desc: "自動儲存到帶時間戳記的目錄。"
+      auto_desc: "自動儲存到帶有時間戳記的目錄。"
+      board_options:
+        label: "渲染選項"
       format:
         label: "格式"
-        desc: "影片或圖像序列格式"
+        desc: "影片或影像序列格式"
         options: ["MP4 (H.264)", "GIF", "PNG 序列"]
+      hide_vias:
+        label: "過孔 (VIAS)"
+      hide_components:
+        label: "組件 (COMPONENTS)"
+      hide_test_points:
+        label: "測試點 (T# REFS)"
       resolution:
         label: "解析度"
-        desc: "輸出尺寸和寬高比"
+        desc: "輸出尺寸和長寬比"
         options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (方形)"]
+        custom_label: "自訂 ({w}×{h})"
       bg_color:
         label: "背景顏色"
-        desc: "透明區域填充色"
+        desc: "透明區域的純色"
 
     # ─────────────────────────────────────────────────────────────
     # 4. VIEWPORT

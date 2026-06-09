@@ -117,6 +117,18 @@ locale:
         title: "Fájlnév"
         header: "Alap fájlnév megadása"
         helper: "A képek mentése: név_00001.png, név_00002.png, …"
+      add_resolution:
+        title: "Felbontás hozzáadása"
+        header: "Felbontás hozzáadása"
+        width_label: "SZ"
+        height_label: "M"
+        helper: "Adja meg a kimeneti méreteket pixelben (csak számok)."
+        add_button: "Hozzáadás"
+      custom_res:
+        title: "Egyedi felbontások"
+        header: "Egyedi felbontások"
+        add_button: "Felbontás hozzáadása"
+        empty: "Még nincsenek egyedi felbontások."
       render_error: "Renderelési hiba"
       preparing: "Előkészítés..."
       # Mentési figyelmeztetés, ha a panel még nem volt elmentve.
@@ -145,6 +157,14 @@ locale:
         check_updates_done:      "Naprakész"
         check_updates_available: "Frissítés elérhető"
         check_updates_simulated: "(Sim)"
+        update_via_pcm:          "Frissítés PCM-en keresztül"
+        update_install:          "Frissítés erre:"
+        update_confirm:          "Letölti és telepíti a legújabb verziót? Utána a KiCad-et újra kell indítani."
+        update_installing:       "Telepítés..."
+        update_done:             "Frissítve — indítsa újra a KiCad-et"
+        update_done_body:        "A SpinRender frissült. Indítsa újra a KiCad-et az új verzió betöltéséhez."
+        update_failed:           "Frissítés sikertelen"
+        update_failed_body:      "Nem sikerült az automatikus frissítés:"
         release_notes_label:     "Kiadási megjegyzések"
         releases_url:            "https://github.com/alsoknownasfoo/SpinRender/releases"
         section_author:          "Szerző"
@@ -171,14 +191,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        license_label:           "LICENC"
+        license_text:            "NYÍLT FORRÁSKÓD · INGYENES SZEMÉLYES HASZNÁLATRA"
+        built_with_label:        "KÉSZÜLT"
+        resources_label:         "FORRÁSOK"
+        sponsor_btn:             "TÁMOGATÁS"
         version_prefix: "v"
         author: "alsoknownasfoo"
         author_prefix: "készítette: "
-        license_label: "LICENC"
-        license_text: "NYÍLT FORRÁSKÓD · INGYENES SZEMÉLYES HASZNÁLATRA"
-        built_with_label: "KÉSZÜLT"
-        resources_label: "FORRÁSOK"
-        sponsor_btn: "TÁMOGATÁS"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"
@@ -256,14 +276,23 @@ locale:
     # OUTPUT SETTINGS
     output:
       auto_desc: "Auto mentés dátumozott mappákba."
+      board_options:
+        label: "Renderelési beállítások"
       format:
         label: "Formátum"
         desc: "Videó vagy képsorozat"
         options: ["MP4 (H.264)", "GIF", "PNG sorozat"]
+      hide_vias:
+        label: "VIAK"
+      hide_components:
+        label: "ALKATRÉSZEK"
+      hide_test_points:
+        label: "TESZTPONTOK (T# REFS)"
       resolution:
         label: "Felbontás"
         desc: "Kimeneti méretek és arány"
         options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Négyzet)"]
+        custom_label: "Egyedi ({w}×{h})"
       bg_color:
         label: "Háttérszín"
         desc: "Kitöltő szín az áttetsző részeknél"

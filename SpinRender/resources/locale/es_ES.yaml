@@ -117,6 +117,18 @@ locale:
         title: "Nombre de archivo base"
         header: "Nombre de archivo base"
         helper: "Fotogramas guardados como nombre_00001.png, nombre_00002.png, …"
+      add_resolution:
+        title: "Añadir resolución"
+        header: "Añadir resolución"
+        width_label: "A"
+        height_label: "H"
+        helper: "Introduce las dimensiones de salida en píxeles (solo números)."
+        add_button: "Añadir"
+      custom_res:
+        title: "Resoluciones personalizadas"
+        header: "Resoluciones personalizadas"
+        add_button: "Añadir resolución"
+        empty: "Aún no hay resoluciones personalizadas."
       render_error: "Error de renderizado"
       preparing: "Preparando renderizado..."
       # Aviso mostrado cuando la placa nunca ha sido guardada en disco.
@@ -146,8 +158,16 @@ locale:
         check_updates:           "Buscar actualizaciones"
         check_updates_progress:  "Buscando..."
         check_updates_done:      "Actualizado"
-        check_updates_available: "Act. disponible"
+        check_updates_available: "Actualización disp."
         check_updates_simulated: "(Sim)"
+        update_via_pcm:          "Actualizar vía PCM"
+        update_install:          "Actualizar a"
+        update_confirm:          "¿Descargar e instalar la última versión ahora? KiCad debe reiniciarse después."
+        update_installing:       "Instalando..."
+        update_done:             "Actualizado — reiniciar KiCad"
+        update_done_body:        "SpinRender se ha actualizado. Reinicia KiCad para cargar la nueva versión."
+        update_failed:           "Error al actualizar"
+        update_failed_body:      "No se pudo actualizar automáticamente:"
         release_notes_label:     "Notas de versión"
         releases_url:            "https://github.com/alsoknownasfoo/SpinRender/releases"
         section_author:          "Autor"
@@ -174,14 +194,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        license_label:           "LICENCIA"
+        license_text:            "CÓDIGO ABIERTO · GRATIS PARA USO PERSONAL"
+        built_with_label:        "CREADO CON"
+        resources_label:         "RECURSOS"
+        sponsor_btn:             "PATROCINAR"
         version_prefix: "v"
         author: "alsoknownasfoo"
         author_prefix: "por "
-        license_label: "LICENCIA"
-        license_text: "CÓDIGO ABIERTO · GRATUITO PARA USO PERSONAL"
-        built_with_label: "CREADO CON"
-        resources_label: "RECURSOS"
-        sponsor_btn: "PATROCINAR"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"
@@ -258,15 +278,24 @@ locale:
 
     # OUTPUT SETTINGS
     output:
-      auto_desc: "Guardar automáticamente en carpetas con fecha."
+      auto_desc: "Guardado auto. en carpetas con marca de tiempo."
+      board_options:
+        label: "Opciones de renderizado"
       format:
         label: "Formato"
-        desc: "Vídeo o secuencia de imágenes"
+        desc: "Formato de vídeo o secuencia de imágenes"
         options: ["MP4 (H.264)", "GIF", "Secuencia PNG"]
+      hide_vias:
+        label: "VÍAS"
+      hide_components:
+        label: "COMPONENTES"
+      hide_test_points:
+        label: "PUNTOS DE PRUEBA (REFS T#)"
       resolution:
         label: "Resolución"
         desc: "Dimensiones y relación de aspecto"
         options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Cuadrado)"]
+        custom_label: "Personalizado ({w}×{h})"
       bg_color:
         label: "Color de fondo"
         desc: "Color sólido para áreas transparentes"

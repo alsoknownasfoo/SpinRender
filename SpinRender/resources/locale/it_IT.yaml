@@ -117,6 +117,18 @@ locale:
         title: "Nome file base"
         header: "Nome file base"
         helper: "I fotogrammi saranno salvati come nome_00001.png, nome_00002.png, …"
+      add_resolution:
+        title: "Aggiungi risoluzione"
+        header: "Aggiungi risoluzione"
+        width_label: "L"
+        height_label: "A"
+        helper: "Inserisci le dimensioni di output in pixel (solo numeri)."
+        add_button: "Aggiungi"
+      custom_res:
+        title: "Risoluzioni personalizzate"
+        header: "Risoluzioni personalizzate"
+        add_button: "Aggiungi risoluzione"
+        empty: "Nessuna risoluzione personalizzata ancora."
       render_error: "Errore rendering"
       preparing: "Preparazione render..."
       # Controllo salvataggio se la scheda non è mai stata salvata su disco.
@@ -145,6 +157,14 @@ locale:
         check_updates_done:      "Aggiornato"
         check_updates_available: "Aggiorn. dispon."
         check_updates_simulated: "(Sim)"
+        update_via_pcm:          "Aggiorna tramite PCM"
+        update_install:          "Aggiorna a"
+        update_confirm:          "Scaricare e installare l'ultima versione ora? KiCad deve essere riavviato in seguito."
+        update_installing:       "Installazione..."
+        update_done:             "Aggiornato — riavvia KiCad"
+        update_done_body:        "SpinRender è stato aggiornato. Riavvia KiCad per caricare la nuova versione."
+        update_failed:           "Aggiornamento fallito"
+        update_failed_body:      "Impossibile aggiornare automaticamente:"
         release_notes_label:     "Note di rilascio"
         releases_url:            "https://github.com/alsoknownasfoo/SpinRender/releases"
         section_author:          "Autore"
@@ -171,14 +191,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        license_label:           "LICENZA"
+        license_text:            "OPEN SOURCE · GRATUITO PER USO PERSONALE"
+        built_with_label:        "REALIZZATO CON"
+        resources_label:         "RISORSE"
+        sponsor_btn:             "SPONSORIZZA"
         version_prefix: "v"
         author: "alsoknownasfoo"
         author_prefix: "da "
-        license_label: "LICENZA"
-        license_text: "OPEN SOURCE · GRATUITO PER USO PERSONALE"
-        built_with_label: "REALIZZATO CON"
-        resources_label: "RISORSE"
-        sponsor_btn: "SPONSORIZZA"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"
@@ -255,17 +275,26 @@ locale:
 
     # OUTPUT SETTINGS
     output:
-      auto_desc: "Salvataggio auto in cartelle datate."
+      auto_desc: "Salva autom. in cartelle con timestamp."
+      board_options:
+        label: "Opzioni di rendering"
       format:
         label: "Formato"
-        desc: "Video o sequenza immagini"
+        desc: "Formato video o sequenza immagini"
         options: ["MP4 (H.264)", "GIF", "Sequenza PNG"]
+      hide_vias:
+        label: "VIA"
+      hide_components:
+        label: "COMPONENTI"
+      hide_test_points:
+        label: "PUNTI DI TEST (REFS T#)"
       resolution:
         label: "Risoluzione"
-        desc: "Dimensioni e proporzioni"
+        desc: "Dimensioni di output e rapporto d'aspetto"
         options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Quadrato)"]
+        custom_label: "Personalizzato ({w}×{h})"
       bg_color:
-        label: "Colore sfondo"
+        label: "Colore di sfondo"
         desc: "Colore solido per aree trasparenti"
 
     # ─────────────────────────────────────────────────────────────

@@ -117,6 +117,18 @@ locale:
         title: "Nom de fichier base"
         header: "Nom de fichier base"
         helper: "Les images sont sauvées en nom_00001.png, nom_00002.png, …"
+      add_resolution:
+        title: "Ajouter une résolution"
+        header: "Ajouter une résolution"
+        width_label: "L"
+        height_label: "H"
+        helper: "Entrez les dimensions de sortie en pixels (chiffres uniquement)."
+        add_button: "Ajouter"
+      custom_res:
+        title: "Résolutions personnalisées"
+        header: "Résolutions personnalisées"
+        add_button: "Ajouter une résolution"
+        empty: "Aucune résolution personnalisée pour le moment."
       render_error: "Erreur de rendu"
       preparing: "Préparation du rendu..."
       # Alerte si la carte n'a jamais été enregistrée sur le disque.
@@ -148,6 +160,14 @@ locale:
         check_updates_done:      "À jour"
         check_updates_available: "MAJ dispo"
         check_updates_simulated: "(Sim)"
+        update_via_pcm:          "Mise à jour via PCM"
+        update_install:          "Mettre à jour vers"
+        update_confirm:          "Télécharger et installer la dernière version maintenant ? KiCad doit être redémarré ensuite."
+        update_installing:       "Installation..."
+        update_done:             "Mis à jour — redémarrer KiCad"
+        update_done_body:        "SpinRender a été mis à jour. Redémarrez KiCad pour charger la nouvelle version."
+        update_failed:           "Échec de la mise à jour"
+        update_failed_body:      "Impossible de mettre à jour automatiquement :"
         release_notes_label:     "Notes de version"
         releases_url:            "https://github.com/alsoknownasfoo/SpinRender/releases"
         section_author:          "Auteur"
@@ -174,14 +194,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        license_label:           "LICENCE"
+        license_text:            "OPEN SOURCE · GRATUIT POUR USAGE PERSONNEL"
+        built_with_label:        "DÉVELOPPÉ AVEC"
+        resources_label:         "RESSOURCES"
+        sponsor_btn:             "SPONSORISER"
         version_prefix: "v"
         author: "alsoknownasfoo"
         author_prefix: "par "
-        license_label: "LICENCE"
-        license_text: "OPEN SOURCE · GRATUIT POUR USAGE PERSONNEL"
-        built_with_label: "DÉVELOPPÉ AVEC"
-        resources_label: "RESSOURCES"
-        sponsor_btn: "SPONSORISER"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"
@@ -259,17 +279,26 @@ locale:
     # OUTPUT SETTINGS
     output:
       auto_desc: "Sauvegarde auto avec horodatage."
+      board_options:
+        label: "Options de rendu"
       format:
         label: "Format"
         desc: "Vidéo ou séquence d'images"
         options: ["MP4 (H.264)", "GIF", "Séquence PNG"]
+      hide_vias:
+        label: "VIAS"
+      hide_components:
+        label: "COMPOSANTS"
+      hide_test_points:
+        label: "POINTS DE TEST (REFS T#)"
       resolution:
         label: "Résolution"
         desc: "Dimensions et ratio"
         options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Carré)"]
+        custom_label: "Personnalisé ({w}×{h})"
       bg_color:
-        label: "Couleur de fond"
-        desc: "Couleur pour zones transparentes"
+        label: "Couleur d'arrière-plan"
+        desc: "Couleur unie pour zones transparentes"
 
     # ─────────────────────────────────────────────────────────────
     # 4. VIEWPORT

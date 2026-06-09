@@ -114,9 +114,21 @@ locale:
         title: "カスタムプリセット選択"
         header: "カスタムプリセット選択"
       filename:
-        title: "基本ファイル名入力"
-        header: "基本ファイル名入力"
-        helper: "フレームは name_00001.png, name_00002.png... として保存されます"
+        title: "ベースファイル名を入力"
+        header: "ベースファイル名を入力"
+        helper: "画像は name_00001.png, name_00002.png, … として保存されます。"
+      add_resolution:
+        title: "解像度の追加"
+        header: "解像度の追加"
+        width_label: "幅"
+        height_label: "高"
+        helper: "出力サイズをピクセル単位で入力してください（数字のみ）。"
+        add_button: "追加"
+      custom_res:
+        title: "カスタム解像度"
+        header: "カスタム解像度"
+        add_button: "解像度を追加"
+        empty: "カスタム解像度はまだありません。"
       render_error: "レンダリングエラー"
       preparing: "準備中..."
       # 基板が一度も保存されていない場合に表示される保存警告。
@@ -143,8 +155,16 @@ locale:
         check_updates:           "アップデートを確認"
         check_updates_progress:  "確認中..."
         check_updates_done:      "最新の状態です"
-        check_updates_available: "アップデートあり"
+        check_updates_available: "更新あり"
         check_updates_simulated: "(Sim)"
+        update_via_pcm:          "PCM経由で更新"
+        update_install:          "以下に更新"
+        update_confirm:          "最新バージョンを今すぐダウンロードしてインストールしますか？ その後、KiCadを再起動する必要があります。"
+        update_installing:       "インストール中..."
+        update_done:             "更新完了 — KiCadを再起動してください"
+        update_done_body:        "SpinRenderが更新されました。新バージョンを読み込むためにKiCadを再起動してください。"
+        update_failed:           "更新失敗"
+        update_failed_body:      "自動更新できませんでした："
         release_notes_label:     "リリースノート"
         releases_url:            "https://github.com/alsoknownasfoo/SpinRender/releases"
         section_author:          "作者"
@@ -171,14 +191,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        license_label:           "ライセンス"
+        license_text:            "オープンソース · 個人利用は無料"
+        built_with_label:        "使用ツール"
+        resources_label:         "リソース"
+        sponsor_btn:             "スポンサー"
         version_prefix: "v"
         author: "alsoknownasfoo"
         author_prefix: "by "
-        license_label: "ライセンス"
-        license_text: "オープンソース · 個人利用は無料"
-        built_with_label: "使用ツール"
-        resources_label: "リソース"
-        sponsor_btn: "スポンサー"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"
@@ -256,17 +276,26 @@ locale:
     # OUTPUT SETTINGS
     output:
       auto_desc: "タイムスタンプ付きフォルダに自動保存。"
+      board_options:
+        label: "レンダーオプション"
       format:
         label: "フォーマット"
         desc: "ビデオまたは連番画像"
-        options: ["MP4 (H.264)", "GIF", "PNG 連番"]
+        options: ["MP4 (H.264)", "GIF", "PNG連番画像"]
+      hide_vias:
+        label: "ビア"
+      hide_components:
+        label: "コンポーネント"
+      hide_test_points:
+        label: "テストポイント (T#)"
       resolution:
         label: "解像度"
         desc: "出力サイズとアスペクト比"
         options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (正方形)"]
+        custom_label: "カスタム ({w}×{h})"
       bg_color:
         label: "背景色"
-        desc: "透過領域の塗りつぶし色"
+        desc: "透明部分の背景色"
 
     # ─────────────────────────────────────────────────────────────
     # 4. VIEWPORT

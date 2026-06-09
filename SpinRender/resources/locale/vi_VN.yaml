@@ -117,6 +117,18 @@ locale:
         title: "Tên tệp"
         header: "Nhập tên tệp cơ bản"
         helper: "Các khung hình được lưu dưới dạng ten_00001.png, ten_00002.png, …"
+      add_resolution:
+        title: "Thêm độ phân giải"
+        header: "Thêm độ phân giải"
+        width_label: "R"
+        height_label: "C"
+        helper: "Nhập kích thước đầu ra bằng pixel (chỉ số)."
+        add_button: "Thêm"
+      custom_res:
+        title: "Độ phân giải tùy chỉnh"
+        header: "Độ phân giải tùy chỉnh"
+        add_button: "Thêm độ phân giải"
+        empty: "Chưa có độ phân giải tùy chỉnh nào."
       render_error: "Lỗi xuất ảnh"
       preparing: "Đang chuẩn bị..."
       # Cảnh báo lưu khi bo mạch chưa bao giờ được lưu vào đĩa.
@@ -143,9 +155,17 @@ locale:
         check_updates:           "Kiểm tra cập nhật"
         check_updates_progress:  "Đang kiểm tra..."
         check_updates_done:      "Đã là mới nhất"
-        check_updates_available: "Có bản cập nhật mới"
+        check_updates_available: "Có cập nhật"
         check_updates_simulated: "(Sim)"
-        release_notes_label:     "Ghi chú phiên bản"
+        update_via_pcm:          "Cập nhật qua PCM"
+        update_install:          "Cập nhật lên"
+        update_confirm:          "Tải xuống và cài đặt phiên bản mới nhất ngay bây giờ? Cần khởi động lại KiCad sau đó."
+        update_installing:       "Đang cài đặt..."
+        update_done:             "Đã cập nhật — khởi động lại KiCad"
+        update_done_body:        "SpinRender đã được cập nhật. Khởi động lại KiCad để tải phiên bản mới."
+        update_failed:           "Cập nhật thất bại"
+        update_failed_body:      "Không thể tự động cập nhật:"
+        release_notes_label:     "Ghi chú phát hành"
         releases_url:            "https://github.com/alsoknownasfoo/SpinRender/releases"
         section_author:          "Tác giả"
         author_github_label:     "alsoknownasfoo"
@@ -171,14 +191,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        license_label:           "GIẤY PHÉP"
+        license_text:            "MÃ NGUỒN MỞ · MIỄN PHÍ CHO MỤC ĐÍCH CÁ NHÂN"
+        built_with_label:        "ĐƯỢC XÂY DỰNG BẰNG"
+        resources_label:         "TÀI NGUYÊN"
+        sponsor_btn:             "TÀI TRỢ"
         version_prefix: "v"
         author: "alsoknownasfoo"
         author_prefix: "bởi "
-        license_label: "GIẤY PHÉP"
-        license_text: "MÃ NGUỒN MỞ · MIỄN PHÍ CHO MỤC ĐÍCH CÁ NHÂN"
-        built_with_label: "ĐƯỢC XÂY DỰNG BẰNG"
-        resources_label: "TÀI NGUYÊN"
-        sponsor_btn: "TÀI TRỢ"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"
@@ -255,18 +275,27 @@ locale:
 
     # OUTPUT SETTINGS
     output:
-      auto_desc: "Tự động lưu vào thư mục có đóng dấu thời gian."
+      auto_desc: "Tự động lưu vào thư mục có dấu thời gian."
+      board_options:
+        label: "Tùy chọn render"
       format:
         label: "Định dạng"
-        desc: "Video hoặc chuỗi hình ảnh"
+        desc: "Định dạng video hoặc chuỗi hình ảnh"
         options: ["MP4 (H.264)", "GIF", "Chuỗi PNG"]
+      hide_vias:
+        label: "VIAS"
+      hide_components:
+        label: "LINH KIỆN"
+      hide_test_points:
+        label: "ĐIỂM KIỂM TRA (T#)"
       resolution:
         label: "Độ phân giải"
-        desc: "Kích thước và tỷ lệ khung hình"
+        desc: "Kích thước đầu ra và tỷ lệ khung hình"
         options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Vuông)"]
+        custom_label: "Tùy chỉnh ({w}×{h})"
       bg_color:
         label: "Màu nền"
-        desc: "Màu đơn sắc cho vùng trong suốt"
+        desc: "Màu đơn cho các vùng trong suốt"
 
     # ─────────────────────────────────────────────────────────────
     # 4. VIEWPORT

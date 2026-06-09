@@ -114,9 +114,21 @@ locale:
         title: "Вибрати пресет"
         header: "Вибрати власний пресет"
       filename:
-        title: "Ім'я файлу"
+        title: "Введіть базове ім'я файлу"
         header: "Введіть базове ім'я файлу"
         helper: "Кадри зберігаються як name_00001.png, name_00002.png, …"
+      add_resolution:
+        title: "Додати роздільну здатність"
+        header: "Додати роздільну здатність"
+        width_label: "Ш"
+        height_label: "В"
+        helper: "Введіть розміри у пікселях (лише цифри)."
+        add_button: "Додати"
+      custom_res:
+        title: "Власні роздільні здатності"
+        header: "Власні роздільні здатності"
+        add_button: "Додати роздільну здатність"
+        empty: "Власних роздільних здатностей ще немає."
       render_error: "Помилка рендерингу"
       preparing: "Підготовка рендерингу..."
       # Попередження про необхідність збереження, якщо плата не була збережена на диск.
@@ -145,6 +157,14 @@ locale:
         check_updates_done:      "Оновлень немає"
         check_updates_available: "Доступне оновлення"
         check_updates_simulated: "(Sim)"
+        update_via_pcm:          "Оновити через PCM"
+        update_install:          "Оновити до"
+        update_confirm:          "Завантажити та встановити останню версію? Після цього потрібен перезапуск KiCad."
+        update_installing:       "Встановлення..."
+        update_done:             "Оновлено — перезапустіть KiCad"
+        update_done_body:        "SpinRender оновлено. Перезапустіть KiCad, щоб завантажити нову версію."
+        update_failed:           "Помилка оновлення"
+        update_failed_body:      "Не вдалося оновити автоматично:"
         release_notes_label:     "Список змін"
         releases_url:            "https://github.com/alsoknownasfoo/SpinRender/releases"
         section_author:          "Автор"
@@ -171,14 +191,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        license_label:           "ЛІЦЕНЗІЯ"
+        license_text:            "OPEN SOURCE · БЕЗКОШТОВНО ДЛЯ ОСОБИСТОГО ВИКОРИСТАННЯ"
+        built_with_label:        "СТВОРЕНО ЗА ДОПОМОГОЮ"
+        resources_label:         "РЕСУРСИ"
+        sponsor_btn:             "СПОНСОРУВАТИ"
         version_prefix: "v"
         author: "alsoknownasfoo"
         author_prefix: "від "
-        license_label: "ЛІЦЕНЗІЯ"
-        license_text: "OPEN SOURCE · БЕЗКОШТОВНО ДЛЯ ОСОБИСТОГО ВИКОРИСТАННЯ"
-        built_with_label: "СТВОРЕНО ЗА ДОПОМОГОЮ"
-        resources_label: "РЕСУРСИ"
-        sponsor_btn: "СПОНСОРУВАТИ"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"
@@ -255,18 +275,27 @@ locale:
 
     # OUTPUT SETTINGS
     output:
-      auto_desc: "Автозбереження в папки з датою."
+      auto_desc: "Автозбереження у папки з датою/часом."
+      board_options:
+        label: "Налаштування рендеру"
       format:
         label: "Формат"
         desc: "Відео або послідовність кадрів"
         options: ["MP4 (H.264)", "GIF", "PNG кадри"]
+      hide_vias:
+        label: "ПЕРЕХІДНІ ОТВОРИ (VIAS)"
+      hide_components:
+        label: "КОМПОНЕНТИ"
+      hide_test_points:
+        label: "КОНТРОЛЬНІ ТОЧКИ (T#)"
       resolution:
         label: "Роздільна здатність"
-        desc: "Розміри та співвідношення сторін"
+        desc: "Розміри кадру та співвідношення сторін"
         options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Квадрат)"]
+        custom_label: "Власна ({w}×{h})"
       bg_color:
         label: "Колір фону"
-        desc: "Суцільний колір для прозорих зон"
+        desc: "Суцільний колір для прозорих областей"
 
     # ─────────────────────────────────────────────────────────────
     # 4. VIEWPORT

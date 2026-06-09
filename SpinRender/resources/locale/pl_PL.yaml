@@ -17,16 +17,16 @@ locale:
     # PRESET CARDS
     component.preset_card:
       card1:
-        label: "Bohater"
+        label: "Heros"
         icon_ref: "glyphs.preset-hero"
       card2:
         label: "Obrót"
         icon_ref: "glyphs.preset-spin"
       card3:
-        label: "Przerzut"
+        label: "Obracanie"
         icon_ref: "glyphs.preset-flip"
       card4:
-        label: "Własny"
+        label: "Wybierz własny"
         icon_ref: "glyphs.preset-custom"
 
     # BUTTONS
@@ -41,7 +41,7 @@ locale:
         label: "Anuluj"
         icon_ref: "glyphs.close"
       ok:
-        label: "OK"
+        label: "Ok"
         icon_ref: "glyphs.save"
       save:
         label: "Zapisz"
@@ -76,14 +76,14 @@ locale:
 
     # STATUS MESSAGES
     component.status:
-      ready: "Gotowe"
+      ready: "Gotowy"
       rendering: "Renderowanie klatki {current}/{total}"
-      complete: "Renderowanie ukończone"
+      complete: "Renderowanie zakończone"
       stopped: "Renderowanie zatrzymane"
       stopping: "Zatrzymywanie..."
       error: "Błąd: {message}"
-      no_presets: "Nie znaleziono zapisanych presetów."
-      preparing: "Przygotowywanie renderowania..."
+      no_presets: "Brak zapisanych presetów."
+      preparing: "Przygotowywanie..."
 
     # BADGES
     component.badge:
@@ -100,23 +100,35 @@ locale:
         header: "Opcje zaawansowane"
         theme_desc: "Motyw interfejsu."
         overrides_placeholder: "np. --color-theme=theme"
-        parameter_overrides_label: "Nadpisanie parametrów"
+        parameter_overrides_label: "Nadpisywanie parametrów"
         see: " Zobacz "
         docs_link: "opcje renderowania kicad-cli"
         section_output: "Ścieżka wyjściowa"
-        section_overrides: "Nadpisanie parametrów"
-        section_logging: "Logi systemowe"
+        section_overrides: "Nadpisywanie parametrów"
+        section_logging: "Logowanie systemowe"
       save_preset:
         title: "Zapisz preset"
         header: "Zapisz preset"
         placeholder: "NAZWA_PRESETU"
       recall_preset:
-        title: "Wybierz preset"
+        title: "Wybierz własny preset"
         header: "Wybierz własny preset"
       filename:
         title: "Nazwa pliku"
         header: "Wprowadź nazwę bazową"
         helper: "Klatki zapisywane jako nazwa_00001.png, nazwa_00002.png, …"
+      add_resolution:
+        title: "Dodaj rozdzielczość"
+        header: "Dodaj rozdzielczość"
+        width_label: "S"
+        height_label: "W"
+        helper: "Wprowadź wymiary wyjściowe w pikselach (tylko cyfry)."
+        add_button: "Dodaj"
+      custom_res:
+        title: "Własne rozdzielczości"
+        header: "Własne rozdzielczości"
+        add_button: "Dodaj rozdzielczość"
+        empty: "Brak własnych rozdzielczości."
       render_error: "Błąd renderowania"
       preparing: "Przygotowywanie..."
       # Ostrzeżenie o zapisie, gdy płytka nie została jeszcze zapisana na dysku.
@@ -145,6 +157,14 @@ locale:
         check_updates_done:      "Aktualny"
         check_updates_available: "Aktualizacja dostępna"
         check_updates_simulated: "(Sim)"
+        update_via_pcm:          "Aktualizuj przez PCM"
+        update_install:          "Aktualizuj do"
+        update_confirm:          "Pobrać i zainstalować najnowszą wersję? Po zakończeniu wymagany jest restart KiCad."
+        update_installing:       "Instalowanie..."
+        update_done:             "Zaktualizowano — zrestartuj KiCad"
+        update_done_body:        "SpinRender został zaktualizowany. Zrestartuj KiCad, aby załadować nową wersję."
+        update_failed:           "Aktualizacja nieudana"
+        update_failed_body:      "Nie udało się zaktualizować automatycznie:"
         release_notes_label:     "Informacje o wydaniu"
         releases_url:            "https://github.com/alsoknownasfoo/SpinRender/releases"
         section_author:          "Autor"
@@ -171,14 +191,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        license_label:           "LICENCJA"
+        license_text:            "OPEN SOURCE · DARMOWE DO UŻYTKU OSOBISTEGO"
+        built_with_label:        "ZBUDOWANO Z"
+        resources_label:         "ZASOBY"
+        sponsor_btn:             "SPONSORUJ"
         version_prefix: "v"
         author: "alsoknownasfoo"
         author_prefix: "przez "
-        license_label: "LICENCJA"
-        license_text: "OPEN SOURCE · DARMOWE DO UŻYTKU OSOBISTEGO"
-        built_with_label: "ZBUDOWANO Z"
-        resources_label: "ZASOBY"
-        sponsor_btn: "SPONSORUJ"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"
@@ -255,18 +275,27 @@ locale:
 
     # OUTPUT SETTINGS
     output:
-      auto_desc: "Automatyczny zapis w folderach z datą."
+      auto_desc: "Autom. zapis do folderów z datą."
+      board_options:
+        label: "Opcje renderowania"
       format:
         label: "Format"
-        desc: "Wideo lub sekwencja obrazów"
+        desc: "Format wideo lub sekwencja obrazów"
         options: ["MP4 (H.264)", "GIF", "Sekwencja PNG"]
+      hide_vias:
+        label: "PRZELOTKI (VIAS)"
+      hide_components:
+        label: "KOMPONENTY"
+      hide_test_points:
+        label: "PUNKTY TESTOWE (T# REFS)"
       resolution:
         label: "Rozdzielczość"
-        desc: "Wymiary i proporcje"
+        desc: "Wymiary wyjściowe i proporcje"
         options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Kwadrat)"]
+        custom_label: "Własna ({w}×{h})"
       bg_color:
         label: "Kolor tła"
-        desc: "Kolor dla obszarów przezroczystych"
+        desc: "Jednolity kolor dla przezroczystości"
 
     # ─────────────────────────────────────────────────────────────
     # 4. VIEWPORT

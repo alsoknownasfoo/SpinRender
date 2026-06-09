@@ -114,9 +114,21 @@ locale:
         title: "Kies preset"
         header: "Kies aangepaste preset"
       filename:
-        title: "Bestandsnaam"
+        title: "Voer basisbestandsnaam in"
         header: "Voer basisbestandsnaam in"
         helper: "Frames worden opgeslagen als naam_00001.png, naam_00002.png, …"
+      add_resolution:
+        title: "Resolutie toevoegen"
+        header: "Resolutie toevoegen"
+        width_label: "B"
+        height_label: "H"
+        helper: "Voer uitvoerdimensies in pixels in (alleen getallen)."
+        add_button: "Toevoegen"
+      custom_res:
+        title: "Aangepaste resoluties"
+        header: "Aangepaste resoluties"
+        add_button: "Resolutie toevoegen"
+        empty: "Nog geen aangepaste resoluties."
       render_error: "Renderfout"
       preparing: "Voorbereiden..."
       # Opslagwaarschuwing wanneer de printplaat nog nooit op schijf is opgeslagen.
@@ -145,6 +157,14 @@ locale:
         check_updates_done:      "Up-to-date"
         check_updates_available: "Update beschikbaar"
         check_updates_simulated: "(Sim)"
+        update_via_pcm:          "Update via PCM"
+        update_install:          "Update naar"
+        update_confirm:          "De nieuwste versie nu downloaden en installeren? KiCad moet daarna opnieuw worden opgestart."
+        update_installing:       "Installeren..."
+        update_done:             "Bijgewerkt — herstart KiCad"
+        update_done_body:        "SpinRender is bijgewerkt. Start KiCad opnieuw op om de nieuwe versie te laden."
+        update_failed:           "Update mislukt"
+        update_failed_body:      "Kon niet automatisch bijwerken:"
         release_notes_label:     "Release-opmerkingen"
         releases_url:            "https://github.com/alsoknownasfoo/SpinRender/releases"
         section_author:          "Auteur"
@@ -171,14 +191,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        license_label:           "LICENTIE"
+        license_text:            "OPEN SOURCE · GRATIS VOOR PERSOONLIJK GEBRUIK"
+        built_with_label:        "GEMAAKT MET"
+        resources_label:         "BRONNEN"
+        sponsor_btn:             "SPONSOR"
         version_prefix: "v"
         author: "alsoknownasfoo"
         author_prefix: "door "
-        license_label: "LICENTIE"
-        license_text: "OPEN SOURCE · GRATIS VOOR PERSOONLIJK GEBRUIK"
-        built_with_label: "GEMAAKT MET"
-        resources_label: "BRONNEN"
-        sponsor_btn: "SPONSOR"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"
@@ -255,18 +275,27 @@ locale:
 
     # OUTPUT SETTINGS
     output:
-      auto_desc: "Automatisch opslaan in gedateerde mappen."
+      auto_desc: "Autom. opslaan in mappen met tijdstempel."
+      board_options:
+        label: "Render-opties"
       format:
         label: "Formaat"
-        desc: "Video- of afbeeldingsvolgorde"
-        options: ["MP4 (H.264)", "GIF", "PNG reeks"]
+        desc: "Video of beeldreeks formaat"
+        options: ["MP4 (H.264)", "GIF", "PNG Reeks"]
+      hide_vias:
+        label: "VIA'S"
+      hide_components:
+        label: "COMPONENTEN"
+      hide_test_points:
+        label: "TESTPUNTEN (REFS T#)"
       resolution:
         label: "Resolutie"
-        desc: "Uitvoerafmetingen en beeldverhouding"
+        desc: "Uitvoerdimensies en beeldverhouding"
         options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Vierkant)"]
+        custom_label: "Aangepast ({w}×{h})"
       bg_color:
         label: "Achtergrondkleur"
-        desc: "Effen kleur voor transparante delen"
+        desc: "Effen kleur voor transparante gebieden"
 
     # ─────────────────────────────────────────────────────────────
     # 4. VIEWPORT

@@ -116,7 +116,19 @@ locale:
       filename:
         title: "기본 파일명 입력"
         header: "기본 파일명 입력"
-        helper: "프레임은 name_00001.png, name_00002.png...로 저장됩니다"
+        helper: "프레임은 name_00001.png, name_00002.png, … 형식으로 저장됩니다."
+      add_resolution:
+        title: "해상도 추가"
+        header: "해상도 추가"
+        width_label: "가로"
+        height_label: "세로"
+        helper: "출력 크기를 픽셀 단위로 입력하세요(숫자만 가능)."
+        add_button: "추가"
+      custom_res:
+        title: "사용자 정의 해상도"
+        header: "사용자 정의 해상도"
+        add_button: "해상도 추가"
+        empty: "저장된 사용자 정의 해상도가 없습니다."
       render_error: "렌더링 오류"
       preparing: "준비 중..."
       # 보드가 디스크에 저장되지 않았을 때 표시되는 저장 경고.
@@ -145,6 +157,14 @@ locale:
         check_updates_done:      "최신 상태"
         check_updates_available: "업데이트 가능"
         check_updates_simulated: "(Sim)"
+        update_via_pcm:          "PCM을 통해 업데이트"
+        update_install:          "업데이트 버전:"
+        update_confirm:          "지금 최신 버전을 다운로드하고 설치할까요? 완료 후 KiCad를 재시작해야 합니다."
+        update_installing:       "설치 중..."
+        update_done:             "업데이트 완료 — KiCad 재시작 필요"
+        update_done_body:        "SpinRender가 업데이트되었습니다. 새 버전을 적용하려면 KiCad를 재시작하세요."
+        update_failed:           "업데이트 실패"
+        update_failed_body:      "자동 업데이트를 수행할 수 없습니다:"
         release_notes_label:     "릴리스 노트"
         releases_url:            "https://github.com/alsoknownasfoo/SpinRender/releases"
         section_author:          "제작자"
@@ -171,14 +191,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        license_label:           "라이선스"
+        license_text:            "오픈 소스 · 개인 사용 무료"
+        built_with_label:        "사용된 기술"
+        resources_label:         "리소스"
+        sponsor_btn:             "후원하기"
         version_prefix: "v"
         author: "alsoknownasfoo"
         author_prefix: "제작: "
-        license_label: "라이선스"
-        license_text: "오픈 소스 · 개인 사용 무료"
-        built_with_label: "사용된 기술"
-        resources_label: "리소스"
-        sponsor_btn: "후원하기"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"
@@ -256,17 +276,26 @@ locale:
     # OUTPUT SETTINGS
     output:
       auto_desc: "타임스탬프 폴더에 자동 저장."
+      board_options:
+        label: "렌더링 옵션"
       format:
-        label: "형식"
-        desc: "비디오 또는 이미지 시퀀스"
+        label: "포맷"
+        desc: "동영상 또는 이미지 시퀀스"
         options: ["MP4 (H.264)", "GIF", "PNG 시퀀스"]
+      hide_vias:
+        label: "비아(VIAS)"
+      hide_components:
+        label: "부품(COMPONENTS)"
+      hide_test_points:
+        label: "테스트 포인트(T# REFS)"
       resolution:
         label: "해상도"
-        desc: "출력 크기 및 가로세로비"
+        desc: "출력 크기 및 종횡비"
         options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (정사각형)"]
+        custom_label: "사용자 정의 ({w}×{h})"
       bg_color:
-        label: "배경 색상"
-        desc: "투명 영역 배경색"
+        label: "배경색"
+        desc: "투명 영역의 배경색"
 
     # ─────────────────────────────────────────────────────────────
     # 4. VIEWPORT

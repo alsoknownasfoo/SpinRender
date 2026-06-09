@@ -14,56 +14,6 @@ locale:
       title: "SpinRender"
       logo_id: "resources/icons/logo.svg"
 
-    # ─────────────────────────────────────────────────────────────
-    # DIALOG TITLES
-    # ─────────────────────────────────────────────────────────────
-    dialog:
-      advanced:
-        title: "ADVANCED OPTIONS"
-        overrides_placeholder: "e.g. --color-theme=theme"
-      save_preset:
-        title: "SAVE PRESET"
-      recall_preset:
-        title: "SELECT CUSTOM PRESET"
-      about:
-        title: "ABOUT SPINRENDER"
-        version_prefix: "v"
-        author_prefix: "by "
-        author: "alsoknownasfoo"
-        repo_url: "https://github.com/alsoknownasfoo/SpinRender"
-        repo_label: "/alsoknownasfoo/SpinRender"
-        issues_url: "https://github.com/alsoknownasfoo/SpinRender/issues/new"
-        issues_label: "Report an issue"
-        discussions_url: "https://github.com/alsoknownasfoo/SpinRender/discussions"
-        discussions_label: "Ask a question"
-        readme_url: "https://github.com/alsoknownasfoo/SpinRender/blob/main/README.md"
-        readme_label: "Help & documentation"
-        releases_url: "https://github.com/alsoknownasfoo/SpinRender/releases"
-        releases_label: "Release notes"
-        license_label: "LICENSE"
-        license_text: "OPEN SOURCE · FREE FOR PERSONAL USE"
-        notices_label: "Open source notices"
-        notices_url: "https://github.com/alsoknownasfoo/SpinRender/blob/main/NOTICES.md"
-        gpl_label: "GPLv3 License"
-        gpl_url: "https://github.com/alsoknownasfoo/SpinRender/blob/main/LICENSE"
-        cc_label: "CC BY-NC 4.0"
-        cc_url: "https://creativecommons.org/licenses/by-nc/4.0/"
-        sponsor_url: "https://github.com/sponsors/alsoknownasfoo"
-        sponsor_label: "Support this project — GitHub Sponsors"
-        kofi_url: "https://ko-fi.com/alsoknownasfoo"
-        kofi_label: "KO-FI"
-        built_with_label: "BUILT WITH"
-        resources_label: "RESOURCES"
-        check_updates: "CHECK FOR UPDATES"
-        check_updates_progress: "CHECKING..."
-        check_updates_done: "UP TO DATE"
-        check_updates_available: "UPDATE AVAILABLE"
-        check_updates_simulated: "(simulated — repo not yet public)"
-        license_tagline: "OPEN SOURCE · FREE FOR PERSONAL USE"
-        release_notes_label: "RELEASE NOTES"
-        sponsor_btn: "SPONSOR"
-
-    # ─────────────────────────────────────────────────────────────
     # PRESET CARDS
     component.preset_card:
       card1:
@@ -112,7 +62,7 @@ locale:
         label: ""
         icon_ref: "glyphs.info"
       save_preset:
-        label: "Save Preset"
+        label: "Preset"
         icon_ref: "glyphs.plus"
       browse:
         label: "Browse"
@@ -167,6 +117,18 @@ locale:
         title: "Enter base filename"
         header: "Enter base filename"
         helper: "Frames are saved as name_00001.png, name_00002.png, …"
+      add_resolution:
+        title: "Add resolution"
+        header: "Add resolution"
+        width_label: "W"
+        height_label: "H"
+        helper: "Enter output dimensions in pixels (numbers only)."
+        add_button: "Add"
+      custom_res:
+        title: "Custom resolutions"
+        header: "Custom resolutions"
+        add_button: "Add Resolution"
+        empty: "No custom resolutions yet."
       render_error: "Render error"
       preparing: "Preparing render..."
       # Save guard shown when the board has never been saved to disk.
@@ -198,6 +160,14 @@ locale:
         check_updates_done:      "Up to date"
         check_updates_available: "Update available"
         check_updates_simulated: "(Sim)"
+        update_via_pcm:          "Update via PCM"
+        update_install:          "Update to"
+        update_confirm:          "Download and install the latest version now? KiCad must be restarted afterwards."
+        update_installing:       "Installing..."
+        update_done:             "Updated — restart KiCad"
+        update_done_body:        "SpinRender was updated. Restart KiCad to load the new version."
+        update_failed:           "Update failed"
+        update_failed_body:      "Could not update automatically:"
         release_notes_label:     "Release notes"
         releases_url:            "https://github.com/alsoknownasfoo/SpinRender/releases"
         section_author:          "Author"
@@ -224,6 +194,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        license_label:           "LICENSE"
+        license_text:            "OPEN SOURCE · FREE FOR PERSONAL USE"
+        built_with_label:        "BUILT WITH"
+        resources_label:         "RESOURCES"
+        sponsor_btn:             "SPONSOR"
+        version_prefix: "v"
+        author: "alsoknownasfoo"
+        author_prefix: "by "
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"
@@ -301,14 +279,23 @@ locale:
     # OUTPUT SETTINGS
     output:
       auto_desc: "Automatically save to time-stamped directories."
+      board_options:
+        label: "Render options"
       format:
         label: "Format"
         desc: "Video or image sequence format"
         options: ["MP4 (H.264)", "GIF", "PNG Sequence"]
+      hide_vias:
+        label: "VIAS"
+      hide_components:
+        label: "COMPONENTS"
+      hide_test_points:
+        label: "TEST POINTS (T# REFS)"
       resolution:
         label: "Resolution"
         desc: "Output dimensions and aspect ratio"
         options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Square)"]
+        custom_label: "Custom ({w}×{h})"
       bg_color:
         label: "Background color"
         desc: "Solid color for transparent areas"

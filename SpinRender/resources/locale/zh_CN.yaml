@@ -117,6 +117,18 @@ locale:
         title: "输入基本文件名"
         header: "输入基本文件名"
         helper: "帧将保存为 name_00001.png, name_00002.png, …"
+      add_resolution:
+        title: "添加分辨率"
+        header: "添加分辨率"
+        width_label: "宽"
+        height_label: "高"
+        helper: "输入以像素为单位的输出尺寸（仅限数字）。"
+        add_button: "添加"
+      custom_res:
+        title: "自定义分辨率"
+        header: "自定义分辨率"
+        add_button: "添加分辨率"
+        empty: "暂无自定义分辨率。"
       render_error: "渲染错误"
       preparing: "正在准备渲染..."
       # 当电路板从未保存到磁盘时显示的保存保护。
@@ -143,8 +155,16 @@ locale:
         check_updates:           "检查更新"
         check_updates_progress:  "正在检查..."
         check_updates_done:      "已是最新"
-        check_updates_available: "有可用更新"
-        check_updates_simulated: "(模拟)"
+        check_updates_available: "有更新"
+        check_updates_simulated: "(Sim)"
+        update_via_pcm:          "通过 PCM 更新"
+        update_install:          "更新至"
+        update_confirm:          "立即下载并安装最新版本？之后必须重启 KiCad。"
+        update_installing:       "正在安装..."
+        update_done:             "已更新 —— 请重启 KiCad"
+        update_done_body:        "SpinRender 已更新。重启 KiCad 以加载新版本。"
+        update_failed:           "更新失败"
+        update_failed_body:      "无法自动更新："
         release_notes_label:     "发行说明"
         releases_url:            "https://github.com/alsoknownasfoo/SpinRender/releases"
         section_author:          "作者"
@@ -171,14 +191,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        license_label:           "许可证"
+        license_text:            "开源 · 个人使用免费"
+        built_with_label:        "构建工具"
+        resources_label:         "资源"
+        sponsor_btn:             "赞助"
         version_prefix: "v"
         author: "alsoknownasfoo"
         author_prefix: "由 "
-        license_label: "许可证"
-        license_text: "开源 · 个人使用免费"
-        built_with_label: "构建工具"
-        resources_label: "资源"
-        sponsor_btn: "赞助"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"
@@ -255,18 +275,27 @@ locale:
 
     # OUTPUT SETTINGS
     output:
-      auto_desc: "自动保存到带时间戳的目录。"
+      auto_desc: "自动保存到带有时间戳的目录。"
+      board_options:
+        label: "渲染选项"
       format:
         label: "格式"
         desc: "视频或图像序列格式"
         options: ["MP4 (H.264)", "GIF", "PNG 序列"]
+      hide_vias:
+        label: "过孔 (VIAS)"
+      hide_components:
+        label: "组件 (COMPONENTS)"
+      hide_test_points:
+        label: "测试点 (T# REFS)"
       resolution:
         label: "分辨率"
-        desc: "输出尺寸和宽高比"
+        desc: "输出尺寸和纵横比"
         options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (方形)"]
+        custom_label: "自定义 ({w}×{h})"
       bg_color:
         label: "背景颜色"
-        desc: "透明区域填充色"
+        desc: "透明区域的纯色"
 
     # ─────────────────────────────────────────────────────────────
     # 4. VIEWPORT

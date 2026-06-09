@@ -114,9 +114,21 @@ locale:
         title: "Vybrat vlastní preset"
         header: "Vybrat vlastní preset"
       filename:
-        title: "Zadat název souboru"
-        header: "Zadat základní název souboru"
-        helper: "Snímky se ukládají jako název_00001.png, název_00002.png, …"
+        title: "Zadejte základní název souboru"
+        header: "Zadejte základní název souboru"
+        helper: "Snímky jsou ukládány jako název_00001.png, název_00002.png, …"
+      add_resolution:
+        title: "Přidat rozlišení"
+        header: "Přidat rozlišení"
+        width_label: "Š"
+        height_label: "V"
+        helper: "Zadejte výstupní rozměry v pixelech (pouze čísla)."
+        add_button: "Přidat"
+      custom_res:
+        title: "Vlastní rozlišení"
+        header: "Vlastní rozlišení"
+        add_button: "Přidat rozlišení"
+        empty: "Zatím žádná vlastní rozlišení."
       render_error: "Chyba renderování"
       preparing: "Příprava renderování..."
       # Ochrana uložení, pokud deska nebyla nikdy uložena na disk.
@@ -145,6 +157,14 @@ locale:
         check_updates_done:      "Aktuální"
         check_updates_available: "Aktualizace k dispozici"
         check_updates_simulated: "(Sim)"
+        update_via_pcm:          "Aktualizovat přes PCM"
+        update_install:          "Aktualizovat na"
+        update_confirm:          "Stáhnout a nainstalovat nejnovější verzi? Poté bude nutné restartovat KiCad."
+        update_installing:       "Instalace..."
+        update_done:             "Aktualizováno — restartujte KiCad"
+        update_done_body:        "SpinRender byl aktualizován. Restartujte KiCad pro načtení nové verze."
+        update_failed:           "Aktualizace se nezdařila"
+        update_failed_body:      "Automatickou aktualizaci nelze provést:"
         release_notes_label:     "Poznámky k vydání"
         releases_url:            "https://github.com/alsoknownasfoo/SpinRender/releases"
         section_author:          "Autor"
@@ -171,14 +191,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        license_label:           "LICENCE"
+        license_text:            "OPEN SOURCE · ZDARMA PRO OSOBNÍ POUŽITÍ"
+        built_with_label:        "VYTVOŘENO POMOCÍ"
+        resources_label:         "ZDROJE"
+        sponsor_btn:             "SPONZOROVAT"
         version_prefix: "v"
         author: "alsoknownasfoo"
         author_prefix: "od "
-        license_label: "LICENCE"
-        license_text: "OPEN SOURCE · ZDARMA PRO OSOBNÍ POUŽITÍ"
-        built_with_label: "VYTVOŘENO POMOCÍ"
-        resources_label: "ZDROJE"
-        sponsor_btn: "SPONZOR"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"
@@ -255,15 +275,24 @@ locale:
 
     # OUTPUT SETTINGS
     output:
-      auto_desc: "Automatické ukládání do složek s datem."
+      auto_desc: "Auto. ukládání do složek s časovým razítkem."
+      board_options:
+        label: "Možnosti renderování"
       format:
         label: "Formát"
-        desc: "Video nebo sekvence snímků"
-        options: ["MP4 (H.264)", "GIF", "PNG sekvence"]
+        desc: "Formát videa nebo sekvence snímků"
+        options: ["MP4 (H.264)", "GIF", "Sekvence PNG"]
+      hide_vias:
+        label: "PROKOPY (VIAS)"
+      hide_components:
+        label: "SOUČÁSTKY"
+      hide_test_points:
+        label: "TESTOVACÍ BODY (T# REFS)"
       resolution:
         label: "Rozlišení"
         desc: "Výstupní rozměry a poměr stran"
         options: ["1920×1080 (1080P)", "1280×720 (720P)", "800×800 (Čtverec)"]
+        custom_label: "Vlastní ({w}×{h})"
       bg_color:
         label: "Barva pozadí"
         desc: "Plná barva pro průhledné oblasti"
