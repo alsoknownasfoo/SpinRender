@@ -23,7 +23,9 @@ from .helpers import (
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
 from SpinRender.foundation.icons import STATUS_ICONS
-from SpinRender.version import get_version, base_version, is_newer
+from SpinRender.version import get_version, base_version, is_newer, is_pcm_install
+from SpinRender import version as version_module
+from SpinRender.core import self_update
 
 _theme = Theme.current()
 _locale = Locale.current()
@@ -1564,7 +1566,10 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         right.SetBackgroundColour(_theme.color("colors.gray-dark"))
         rs = wx.BoxSizer(wx.VERTICAL)
 
-        ver_raw = get_version()
+        raw_ver = get_version()
+        ver_prefix = _locale.get("dialog.about.version_prefix", "v")
+        ver_raw = f"{ver_prefix}{raw_ver}" if not raw_ver.startswith(ver_prefix) else raw_ver
+
         meta_wrap = wx.Panel(right)
         meta_wrap.SetBackgroundColour(_theme.color("colors.gray-dark"))
         meta_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -1620,11 +1625,17 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         as_ = wx.BoxSizer(wx.VERTICAL)
         as_.Add(self._section_label(auth, _locale.get("dialog.about.section_author", "AUTHOR")), 0, wx.BOTTOM, 10)
 
+        author_name = _locale.get("dialog.about.author", "alsoknownasfoo")
+        author_prefix = _locale.get("dialog.about.author_prefix", "by ")
+        author_text = f"{author_prefix}{author_name}"
+
         links_gap = 12
         logo_size = 42
 
         author_links = wx.Panel(auth)
         author_links.SetBackgroundColour(_theme.color("colors.gray-dark"))
+
+        author_lbl = create_text(author_links, author_text, "about_link_label", color_token="colors.gray-light")
 
         github_row = self._link_row(
             author_links,
@@ -1649,6 +1660,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         author_links_sizer.Add(_AuthorLogoPanel(author_links, logo_size), 0, wx.RIGHT | wx.ALIGN_TOP, 16)
 
         links_col = wx.BoxSizer(wx.VERTICAL)
+        links_col.Add(author_lbl, 0, wx.BOTTOM, links_gap)
         links_col.Add(github_row, 0, wx.BOTTOM, links_gap)
         links_col.Add(web_row, 0)
         author_links_sizer.Add(links_col, 0, wx.ALIGN_TOP)
@@ -1658,12 +1670,12 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         auth.SetSizer(as_)
         sizer.Add(auth, 1)
 
-        # Right — SUPPORTED BY
+        # Right — BUILT WITH (Supported By)
         ai_col = wx.Panel(panel)
         ai_col.SetMinSize((200, -1))
         ai_col.SetBackgroundColour(_theme.color("colors.gray-dark"))
         ais = wx.BoxSizer(wx.VERTICAL)
-        ais.Add(self._section_label(ai_col, _locale.get("dialog.about.section_supported_by", "SUPPORTED BY")), 0, wx.BOTTOM, 10)
+        ais.Add(self._section_label(ai_col, _locale.get("dialog.about.built_with_label", "BUILT WITH")), 0, wx.BOTTOM, 10)
         ais.Add((0, 10))
         ai_row = wx.Panel(ai_col)
         ai_row.SetBackgroundColour(_theme.color("colors.gray-dark"))
@@ -1807,7 +1819,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
             donate_row,
             "donate",
             "heart",
-            "SPONSOR ME ON",
+            _locale.get("dialog.about.sponsor_btn", "SPONSOR"),
             "GITHUB",
             _locale.get("dialog.about.github_sponsors_url", "https://github.com/sponsors/alsoknownasfoo"),
         )
@@ -1815,7 +1827,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
             donate_row,
             "kofi",
             "coffee",
-            "SUPPORT ME ON",
+            _locale.get("dialog.about.sponsor_btn", "SPONSOR"),
             "KO-FI",
             _locale.get("dialog.about.kofi_url", "https://ko-fi.com/alsoknownasfoo"),
         )
@@ -1838,11 +1850,11 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         base  = _locale.get("dialog.about.repo_url", "https://github.com/alsoknownasfoo/SpinRender")
 
-        # Left — LINKS
+        # Left — LINKS / RESOURCES
         links_panel = wx.Panel(panel)
         links_panel.SetBackgroundColour(_theme.color("colors.gray-dark"))
         ls = wx.BoxSizer(wx.VERTICAL)
-        ls.Add(self._section_label(links_panel, _locale.get("dialog.about.section_links", "LINKS")), 0, wx.BOTTOM, 10)
+        ls.Add(self._section_label(links_panel, _locale.get("dialog.about.resources_label", "RESOURCES")), 0, wx.BOTTOM, 10)
         for icon_glyph, lkey, fallback, url in [
             ("discussions", "dialog.about.discussions_label",   "Ask a question",            f"{base}/discussions"),
             ("github",      "dialog.about.repo_label",          "/alsoknownasfoo/SpinRender", base),
@@ -1859,7 +1871,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         lic_panel.SetMinSize((200, -1))
         lic_panel.SetBackgroundColour(_theme.color("colors.gray-dark"))
         lic_s = wx.BoxSizer(wx.VERTICAL)
-        lic_s.Add(self._section_label(lic_panel, _locale.get("dialog.about.section_license", "LICENSE")), 0, wx.BOTTOM, 10)
+        lic_s.Add(self._section_label(lic_panel, _locale.get("dialog.about.license_label", "LICENSE")), 0, wx.BOTTOM, 10)
         lic_s.Add(self._link_row(lic_panel, "file",
                                  _locale.get("dialog.about.gpl_label", "GPLv3 License"),
                                  _locale.get("dialog.about.gpl_url", f"{base}/blob/main/LICENSE")),
@@ -1906,7 +1918,8 @@ class AboutSpinRenderDialog(BaseStyledDialog):
                 )
                 with urllib.request.urlopen(req, timeout=8) as resp:
                     data = json.loads(resp.read())
-                wx.CallAfter(self._finish_update_check, data.get("tag_name", ""), simulated=False)
+                wx.CallAfter(self._finish_update_check, data.get("tag_name", ""),
+                             simulated=False, zipball_url=data.get("zipball_url", ""))
             except Exception:
                 # Repo not yet public or network failure — fall back to simulation
                 import time
@@ -1935,12 +1948,13 @@ class AboutSpinRenderDialog(BaseStyledDialog):
             self._stop_update_timer()
         event.Skip()
 
-    def _finish_update_check(self, latest_tag, simulated):
+    def _finish_update_check(self, latest_tag, simulated, zipball_url=""):
         self._stop_update_timer()
         if self._closing:
             return
 
         current = base_version()
+        self._pending_zipball = ""
 
         if simulated:
             note  = _locale.get("dialog.about.check_updates_simulated",
@@ -1949,6 +1963,16 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         elif is_newer(latest_tag, current):
             label = (f"{_locale.get('dialog.about.check_updates_available', 'UPDATE AVAILABLE')}"
                      f": {latest_tag}")
+            if is_pcm_install():
+                # PCM owns this install — direct the user to update through PCM
+                # rather than overwriting files PCM tracks.
+                label = (f"{label} — "
+                         f"{_locale.get('dialog.about.update_via_pcm', 'UPDATE VIA PCM')}")
+            else:
+                # Manual / release / dev install: offer a one-click self-update.
+                self._pending_zipball = zipball_url
+                self._enter_install_mode(latest_tag)
+                return
         else:
             label = _locale.get("dialog.about.check_updates_done", "UP TO DATE")
 
@@ -1956,6 +1980,83 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         self.upd_btn.SetIcon("cw")
         self.upd_btn.SetIconRotation(0)
         self.upd_btn.Enable(True)
+
+    def _enter_install_mode(self, tag):
+        """Switch the button into a one-click 'install update' action (non-PCM)."""
+        self.upd_btn.SetLabel(
+            f"{_locale.get('dialog.about.update_install', 'UPDATE TO')} {tag}")
+        self.upd_btn.SetIcon("cw")
+        self.upd_btn.SetIconRotation(0)
+        self.upd_btn.Enable(True)
+        self.upd_btn.Unbind(wx.EVT_BUTTON)
+        self.upd_btn.Bind(wx.EVT_BUTTON, self.on_install_update)
+
+    def on_install_update(self, event):
+        """Download the latest release and replace the installed plugin in place."""
+        import threading
+        if not getattr(self, "_pending_zipball", ""):
+            return
+
+        confirm = wx.MessageBox(
+            _locale.get("dialog.about.update_confirm",
+                        "Download and install the latest version now? "
+                        "KiCad must be restarted afterwards."),
+            _locale.get("dialog.about.title", "About SpinRender"),
+            wx.YES_NO | wx.ICON_QUESTION, self)
+        if confirm != wx.YES:
+            return
+
+        self.upd_btn.Enable(False)
+        self.upd_btn.SetLabel(_locale.get("dialog.about.update_installing", "INSTALLING..."))
+        self.upd_btn.SetIcon("cw")
+        self.upd_btn.SetIconRotation(0)
+        self._update_rotation = 0
+        self._update_timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self._on_update_tick, self._update_timer)
+        self._update_timer.Start(75)
+
+        zipball = self._pending_zipball
+        install_dir = version_module.installed_package_dir()
+
+        def _worker():
+            import tempfile
+            try:
+                with tempfile.TemporaryDirectory(prefix="spinrender_upd_") as tmp:
+                    tmp_path = Path(tmp)
+                    archive = self_update.download(zipball, tmp_path / "release.zip")
+                    extracted = self_update.extract_zip(archive, tmp_path / "x")
+                    pkg = self_update.find_package_root(extracted)
+                    self_update.apply_package(pkg, install_dir)
+                wx.CallAfter(self._finish_install, None)
+            except Exception as exc:  # surfaced to the user via _finish_install
+                wx.CallAfter(self._finish_install, exc)
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _finish_install(self, error):
+        self._stop_update_timer()
+        if self._closing:
+            return
+
+        title = _locale.get("dialog.about.title", "About SpinRender")
+        if error is None:
+            self.upd_btn.SetLabel(
+                _locale.get("dialog.about.update_done", "UPDATED — RESTART KICAD"))
+            self.upd_btn.SetIconRotation(0)
+            self.upd_btn.Enable(False)
+            wx.MessageBox(
+                _locale.get("dialog.about.update_done_body",
+                            "SpinRender was updated. Restart KiCad to load the new version."),
+                title, wx.OK | wx.ICON_INFORMATION, self)
+        else:
+            self.upd_btn.SetLabel(
+                _locale.get("dialog.about.update_failed", "UPDATE FAILED"))
+            self.upd_btn.SetIconRotation(0)
+            self.upd_btn.Enable(True)
+            wx.MessageBox(
+                f"{_locale.get('dialog.about.update_failed_body', 'Could not update automatically:')}"
+                f"\n\n{error}",
+                title, wx.OK | wx.ICON_ERROR, self)
 
     def on_cancel(self, event):
         self._closing = True
