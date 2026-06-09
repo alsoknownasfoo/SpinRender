@@ -114,6 +114,77 @@ scan_kicad_paths() {
     fi
 }
 
+# Identifier-named directory KiCad's PCM uses for SpinRender. A manual install
+# (this script) deploys a "SpinRender" dir instead; having BOTH present makes
+# KiCad register the plugin twice and can shadow its bundled resources.
+PCM_PLUGIN_DIRNAME="com_alsoknownasfoo_spinrender"
+
+# Return the PCM 3rdparty/plugins base for a given KiCad version.
+pcm_base_for_version() {
+    local version="$1"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "$HOME/Documents/KiCad/$version/3rdparty/plugins"
+    else
+        echo "$HOME/.local/share/kicad/$version/3rdparty/plugins"
+    fi
+}
+
+# Warn (and offer to abort) when a PCM-managed SpinRender is already installed.
+warn_if_pcm_installed() {
+    local found_pcm=()
+    for version in "${SEARCH_VERSIONS[@]}"; do
+        local pcm_dir
+        pcm_dir="$(pcm_base_for_version "$version")/$PCM_PLUGIN_DIRNAME"
+        [ -d "$pcm_dir" ] && found_pcm+=("$pcm_dir")
+    done
+
+    [ ${#found_pcm[@]} -eq 0 ] && return 0
+
+    echo
+    echo -e "${YELLOW}⚠ PCM_INSTALL_DETECTED: SpinRender is already installed via KiCad's Plugin & Content Manager:${NC}"
+    for p in "${found_pcm[@]}"; do
+        echo -e "    ${DIM}$p${NC}"
+    done
+    echo -e "    ${YELLOW}Running the PCM copy and this manual install at the same time registers the${NC}"
+    echo -e "    ${YELLOW}plugin twice and can shadow its resources.${NC}"
+    echo -e "    ${CYAN}Recommended: uninstall the PCM copy first (KiCad → Plugin and Content Manager${NC}"
+    echo -e "    ${CYAN}→ Installed → SpinRender → Uninstall), then re-run this script.${NC}"
+    echo
+
+    if [ "$AUTO_YES" = false ]; then
+        echo -ne "    ${YELLOW}Continue with the manual install anyway? (y/n): ${NC}"
+        while true; do
+            read -s -n 1 response
+            case $response in
+                [Yy]) echo "y"; break ;;
+                [Nn]) echo "n"; echo -e "    ${DIM}Aborted. Uninstall the PCM copy, then re-run.${NC}"; exit 0 ;;
+            esac
+        done
+    fi
+}
+
+# Write a build-provenance stamp into a freshly deployed plugin directory.
+# Only stamps when this script runs from a git clone, so the installed copy can
+# report the exact commit it came from (e.g. 0.6.1-beta+6f70af5). Extracted
+# release installs stay clean, which is how the updater tells the two apart.
+write_build_stamp() {
+    local target_dir="$1"
+    local stamp_file="$target_dir/_version"
+    rm -f "$stamp_file"
+
+    [ -d "$SCRIPT_DIR/.git" ] || return 0  # extracted release -> no stamp
+
+    local plugin_version sha
+    plugin_version=$(grep -E '^__version__' "$SOURCE_DIR/__init__.py" 2>/dev/null \
+        | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+    sha=$(git -C "$SCRIPT_DIR" rev-parse --short=7 HEAD 2>/dev/null)
+
+    if [ -n "$plugin_version" ] && [ -n "$sha" ]; then
+        echo "${plugin_version}+${sha}" > "$stamp_file"
+        echo -e "    ${DIM}[i] Stamped dev build: ${plugin_version}+${sha}${NC}"
+    fi
+}
+
 # Uninstall Python dependencies and surface font removal instructions.
 remove_deps_and_fonts() {
     # Find KiCad Python
@@ -142,7 +213,7 @@ remove_deps_and_fonts() {
 
 # Header with precise 56-character content width
 echo -e "${CYAN}┌────────────────────────────────────────────────────────┐${NC}"
-echo -e "${CYAN}│${BOLD}  SPINRENDER // PLUGIN_INSTALL // v0.5.0-beta            ${NC}${CYAN}│${NC}"
+echo -e "${CYAN}│${BOLD}  SPINRENDER // PLUGIN_INSTALL // v0.6.1-beta            ${NC}${CYAN}│${NC}"
 echo -e "${CYAN}└────────────────────────────────────────────────────────┘${NC}"
 echo
 
@@ -264,6 +335,8 @@ fi
 
 scan_kicad_paths
 
+warn_if_pcm_installed
+
 echo
 echo -e "${CYAN}[i] INSTALLING TO ALL ${#FOUND_PATHS[@]} KICAD ENVIRONMENT(S) FOUND.${NC}"
 
@@ -312,6 +385,8 @@ deploy_to_path() {
         echo -e "    ${RED}[!] DEPLOYMENT_FAILURE: Asset copy verify failed.${NC}"
         return 1
     fi
+
+    write_build_stamp "$TARGET_DIR"
 
     echo -e "    ${GREEN}✓ DEPLOYMENT_COMPLETE: SpinRender is active.${NC}"
 

@@ -19,6 +19,17 @@ from pathlib import Path
 
 from . import __version__
 
+# Filename of the build stamp written by install.sh / install.bat when the
+# plugin is deployed from a git clone. Installed copies ship without a ``.git``
+# directory, so this static file is how a commit-based install is told apart
+# from a clean release install after deployment.
+_STAMP_FILENAME = "_version"
+
+# Directory name KiCad's PCM uses for this package (the identifier with dots
+# replaced by underscores). A manual install.sh deploy uses "SpinRender", so the
+# parent directory name reliably distinguishes a PCM install from a manual one.
+_PCM_DIR_NAME = "com_alsoknownasfoo_spinrender"
+
 
 def _read_text(path: Path) -> str | None:
     """Return the stripped text of ``path``, or ``None`` if it can't be read."""
@@ -26,6 +37,11 @@ def _read_text(path: Path) -> str | None:
         return path.read_text(encoding="utf-8").strip()
     except (OSError, UnicodeDecodeError):
         return None
+
+
+def _package_dir() -> Path:
+    """Return the directory holding this package (where the build stamp lives)."""
+    return Path(__file__).resolve().parent
 
 
 def _resolve_git_dir(repo_root: Path) -> Path | None:
@@ -82,15 +98,28 @@ def _head_commit(git_dir: Path) -> str | None:
 def get_version() -> str:
     """Return the version string to display.
 
-    Release/PCM installs return the static base version. Git checkouts append
-    the short commit hash (e.g. ``0.6.1-beta+abc1234``). Any failure falls back
-    to the static version — this never raises.
+    Resolution order (first hit wins):
+
+    1. A static ``_version`` build stamp in the package directory, written by
+       the installer when deployed from a git clone (e.g. ``0.6.1-beta+abc1234``).
+       This is authoritative for installed copies, which have no ``.git``.
+    2. A live ``.git`` directory (running straight from a checkout): append the
+       short commit hash.
+    3. The clean static base version (release / PCM install).
+
+    Any failure falls back to the static version — this never raises.
     """
     base = __version__
     try:
-        # SpinRender/version.py -> SpinRender/ (package) -> repo root
-        repo_root = Path(__file__).resolve().parent.parent
-        git_dir = _resolve_git_dir(repo_root)
+        pkg_dir = _package_dir()
+
+        # 1. Install-time build stamp (survives in installs that lack .git).
+        stamp = _read_text(pkg_dir / _STAMP_FILENAME)
+        if stamp:
+            return stamp
+
+        # 2. Running from a git checkout.
+        git_dir = _resolve_git_dir(pkg_dir.parent)
         if git_dir is None:
             return base
         sha = _head_commit(git_dir)
@@ -100,6 +129,35 @@ def get_version() -> str:
     except Exception:
         # Version display must never break plugin startup.
         return base
+
+
+def installed_package_dir() -> Path:
+    """Return the directory this package is installed in (for self-update)."""
+    return _package_dir()
+
+
+def is_pcm_install() -> bool:
+    """Return ``True`` when this copy was installed by KiCad's PCM.
+
+    PCM extracts the package into a directory named after the plugin identifier
+    (``com_alsoknownasfoo_spinrender``); a manual ``install.sh`` deploy uses
+    ``SpinRender``. The parent directory name is the reliable discriminator.
+    Never raises.
+    """
+    try:
+        return _package_dir().name == _PCM_DIR_NAME
+    except Exception:
+        return False
+
+
+def is_dev_build(version: str | None = None) -> bool:
+    """Return ``True`` when ``version`` carries a git commit suffix (``+sha``).
+
+    Defaults to the resolved :func:`get_version`. A dev/commit build is one
+    deployed from a clone; a clean release string has no ``+`` build metadata.
+    """
+    value = get_version() if version is None else version
+    return "+" in value
 
 
 def base_version() -> str:

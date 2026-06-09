@@ -47,7 +47,7 @@ exit /b 0
 :end_parse_args
 
 echo ┌────────────────────────────────────────────────────────┐
-echo │  SPINRENDER // PLUGIN_INSTALL // v0.5.0-beta            │
+echo │  SPINRENDER // PLUGIN_INSTALL // v0.6.1-beta            │
 echo └────────────────────────────────────────────────────────┘
 echo.
 
@@ -156,6 +156,8 @@ if "!UNINSTALL!"=="true" (
     exit /b 0
 )
 
+call :warn_if_pcm_installed
+
 echo.
 echo [i] INSTALLING TO ALL !FOUND_COUNT! KICAD ENVIRONMENT(S^) FOUND.
 
@@ -216,6 +218,8 @@ if not exist "!TARGET_DIR!\__init__.py" (
     goto :eof
 )
 
+call :write_build_stamp "!TARGET_DIR!"
+
 echo     ✓ DEPLOYMENT_COMPLETE: SpinRender is active.
 
 if "!LINK_THEME!"=="true" (
@@ -271,6 +275,60 @@ if exist "!TARGET_DIR!" (
 )
 
 echo     ✓ REMOVED: SpinRender deleted.
+goto :eof
+
+REM ----------------------------------------------------------------------
+REM Warn (and offer to abort) when a PCM-managed SpinRender is already present.
+REM PCM extracts into a "com_alsoknownasfoo_spinrender" dir under 3rdparty; a
+REM manual install uses "SpinRender". Both loaded at once registers twice.
+:warn_if_pcm_installed
+set "PCM_FOUND=false"
+for %%v in (10.0 9.0 8.0 7.0) do (
+    if exist "!USERPROFILE!\Documents\KiCad\%%v\3rdparty\plugins\com_alsoknownasfoo_spinrender" set "PCM_FOUND=true"
+)
+if "!PCM_FOUND!"=="false" goto :eof
+
+echo.
+echo ⚠ PCM_INSTALL_DETECTED: SpinRender is already installed via KiCad's Plugin and Content Manager:
+for %%v in (10.0 9.0 8.0 7.0) do (
+    if exist "!USERPROFILE!\Documents\KiCad\%%v\3rdparty\plugins\com_alsoknownasfoo_spinrender" echo     !USERPROFILE!\Documents\KiCad\%%v\3rdparty\plugins\com_alsoknownasfoo_spinrender
+)
+echo     Running the PCM copy and this manual install at the same time registers the
+echo     plugin twice and can shadow its resources.
+echo     Recommended: uninstall the PCM copy first ^(KiCad -^> Plugin and Content Manager
+echo     -^> Installed -^> SpinRender -^> Uninstall^), then re-run this script.
+echo.
+if "!AUTO_YES!"=="false" (
+    <nul set /p "=    Continue with the manual install anyway? (y/n): "
+    choice /c yn /n /m ""
+    if errorlevel 2 (
+        echo     [!] Aborted. Uninstall the PCM copy, then re-run.
+        exit /b 0
+    )
+)
+goto :eof
+
+REM ----------------------------------------------------------------------
+REM Write a build-provenance stamp when installing from a git clone, so the
+REM installed copy reports the exact commit it came from (e.g.
+REM 0.6.1-beta+6f70af5). Release installs stay clean.
+REM   %~1 = deployed plugin directory
+:write_build_stamp
+set "STAMP_TARGET=%~1"
+if exist "!STAMP_TARGET!\_version" del /f /q "!STAMP_TARGET!\_version" >nul 2>&1
+if not exist "%SCRIPT_DIR%.git" goto :eof
+where git >nul 2>&1
+if errorlevel 1 goto :eof
+
+set "PLUGIN_VERSION="
+for /f "tokens=2 delims== " %%a in ('findstr /b /c:"__version__" "%SOURCE_DIR%\__init__.py"') do set "PLUGIN_VERSION=%%~a"
+set "GIT_SHA="
+for /f %%s in ('git -C "%SCRIPT_DIR%." rev-parse --short=7 HEAD 2^>nul') do set "GIT_SHA=%%s"
+
+if not defined PLUGIN_VERSION goto :eof
+if not defined GIT_SHA goto :eof
+> "!STAMP_TARGET!\_version" echo !PLUGIN_VERSION!+!GIT_SHA!
+echo     [i] Stamped dev build: !PLUGIN_VERSION!+!GIT_SHA!
 goto :eof
 
 REM ----------------------------------------------------------------------
