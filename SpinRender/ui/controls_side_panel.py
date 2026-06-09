@@ -4,6 +4,8 @@ ControlsSidePanel - Extracted left sidebar UI construction from SpinRenderPanel.
 This panel contains all the controls for rendering parameters, presets, and output settings.
 """
 import wx
+from SpinRender.utils.wx_svg_compat import ensure_wx_svg
+ensure_wx_svg()
 import wx.svg
 import wx.lib.scrolledpanel as scrolled
 from pathlib import Path

@@ -9,6 +9,8 @@ from pathlib import Path
 from typing import Optional
 
 import wx
+from SpinRender.utils.wx_svg_compat import ensure_wx_svg
+ensure_wx_svg()
 import wx.svg
 
 from SpinRender.core.theme import Theme

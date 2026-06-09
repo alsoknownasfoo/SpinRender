@@ -4,6 +4,8 @@ Implements designs from SpinRender.pen exactly
 """
 import wx
 import wx.lib.scrolledpanel as scrolled
+from SpinRender.utils.wx_svg_compat import ensure_wx_svg
+ensure_wx_svg()
 import wx.svg
 import math
 import re
