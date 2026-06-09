@@ -134,6 +134,28 @@ locale:
         empty: "No custom resolutions yet."
       render_error: "Render error"
       preparing: "Preparing render..."
+      # Save guard shown when the board has never been saved to disk.
+      save_required:
+        title: "SpinRender error"
+        message: "This document needs to be saved before launching SpinRender."
+      # Pre-flight 3D model cache warm-up (shown before the main window).
+      warmup:
+        title: "Starting SpinRender"
+        message: "Preparing 3D models for rendering…"
+        more_info: "More Info"
+        detail: |-
+          KiCad tessellates each component's 3D model the first time it's used and
+          caches the result — the same 3D model cache KiCad's own 3D Viewer builds.
+
+          Boards with many or highly detailed models can take several minutes to
+          prepare. It only happens again if your 3D model files change; after that,
+          renders and the preview are fast.
+        elapsed: "Elapsed: {mins}m {secs:02d}s"
+        required_title: "Starting SpinRender"
+        required_message: |-
+          SpinRender can't start without preparing the 3D model cache.
+
+          This is the same 3D model data KiCad's own 3D Viewer builds, and it only needs to be done once — until your 3D models change. Please relaunch SpinRender when you're ready to let it finish.
       about:
         title: "About SpinRender"
         check_updates:           "Check for updates"
@@ -167,6 +189,11 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        license_label:           "LICENSE"
+        license_text:            "OPEN SOURCE · FREE FOR PERSONAL USE"
+        built_with_label:        "BUILT WITH"
+        resources_label:         "RESOURCES"
+        sponsor_btn:             "SPONSOR"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"

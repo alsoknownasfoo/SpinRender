@@ -1078,6 +1078,106 @@ class RecallPresetDialog(BaseStyledDialog):
     def GetSelectedName(self): return self.selected_name
 
 
+class MessageDialog(BaseStyledDialog):
+    """
+    Themed modal message dialog — a styled, on-brand replacement for the native
+    ``wx.MessageDialog``. Renders the same chromeless dark frame, header bar,
+    drop shadow and themed button as the rest of SpinRender's dialogs.
+
+    Layout: header bar (title) → divider → wrapped body text → footer with a
+    single confirm button (defaults to "Close"). An optional secondary button
+    can be supplied for confirm/cancel use. ``ShowModal`` returns ``wx.ID_OK``
+    for the confirm button (or ESC/secondary → ``wx.ID_CANCEL``).
+
+    Prefer the module-level :func:`show_message` for the common one-button case.
+    """
+
+    def __init__(self, parent, title, message, *,
+                 confirm_label=None, confirm_id="close",
+                 secondary_label=None, secondary_id="cancel", width=None):
+        dialog_width = width or _theme._resolve("layout.dialogs.addpreset.frame.width") or 400
+        super().__init__(parent, title, (dialog_width, 200))
+        self.dialog_w = dialog_width
+        self._title = title
+        self._message = message
+        self._confirm_label = confirm_label
+        self._confirm_id = confirm_id
+        self._secondary_label = secondary_label
+        self._secondary_id = secondary_id
+        self.build_ui()
+        self.autosize_dialog_height()
+        self.center_over_parent()
+
+    def build_ui(self):
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        main_sizer.Add(self.create_header(self._title, show_close=False), 0, wx.EXPAND)
+
+        self._header_line = wx.Panel(self.main_container, size=(-1, 1))
+        self._header_line.SetBackgroundColour(_theme.color("dividers.default.color"))
+        main_sizer.Add(self._header_line, 0, wx.EXPAND)
+
+        content = wx.Panel(self.main_container)
+        content.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        content_sizer = wx.BoxSizer(wx.VERTICAL)
+
+        padding_lg = _theme._resolve("typography.spacing.lg") or 24
+        body = create_text(content, self._message, "dialog_description", style=wx.ST_NO_AUTORESIZE)
+        body.Wrap(self.dialog_w - 2 * padding_lg)
+        content_sizer.Add(body, 0, wx.EXPAND | wx.ALL, padding_lg)
+        content.SetSizer(content_sizer)
+        main_sizer.Add(content, 1, wx.EXPAND)
+
+        main_sizer.Add(self._build_footer(), 0, wx.EXPAND)
+        self.main_container.SetSizer(main_sizer)
+
+    def _build_footer(self):
+        padding = 16
+        gap = 8
+        footer = wx.Panel(self.main_container)
+        outer = wx.BoxSizer(wx.VERTICAL)
+
+        self._footer_divider = wx.Panel(footer, size=(-1, 1))
+        self._footer_divider.SetBackgroundColour(_theme.color("borders.default.color"))
+        outer.Add(self._footer_divider, 0, wx.EXPAND)
+
+        row = wx.BoxSizer(wx.HORIZONTAL)
+        row.Add((padding, 0))
+        if self._secondary_label:
+            secondary = CustomButton(footer, id=self._secondary_id, label=self._secondary_label, size=(-1, 36))
+            secondary.Bind(wx.EVT_BUTTON, lambda _e: self.EndModal(wx.ID_CANCEL))
+            row.Add(secondary, 1)
+            row.Add((gap, 0))
+        confirm = CustomButton(footer, id=self._confirm_id, label=self._confirm_label, size=(-1, 36))
+        confirm.Bind(wx.EVT_BUTTON, lambda _e: self.EndModal(wx.ID_OK))
+        row.Add(confirm, 1)
+        row.Add((padding, 0))
+
+        outer.Add((0, padding))
+        outer.Add(row, 0, wx.EXPAND)
+        outer.Add((0, padding))
+        footer.SetSizer(outer)
+        return footer
+
+    def on_cancel(self, event):
+        self.EndModal(wx.ID_CANCEL)
+
+
+def show_message(parent, title, message, button_label=None, button_id="close", width=None):
+    """Show a themed modal :class:`MessageDialog` and return its result code.
+
+    Drop-in replacement for the common single-button ``wx.MessageDialog`` /
+    ``wx.MessageBox`` usage, but rendered with SpinRender's theme. ``button_label``
+    defaults to None so the button derives its label from the ``component.button``
+    locale entry for ``button_id`` (e.g. "close" → localized "Close").
+    """
+    dlg = MessageDialog(parent, title, message, confirm_label=button_label,
+                        confirm_id=button_id, width=width)
+    try:
+        return dlg.ShowModal()
+    finally:
+        dlg.Destroy()
+
+
 # ─── About dialog helpers ─────────────────────────────────────────────────
 
 class _AiLogoPanel(wx.Panel):

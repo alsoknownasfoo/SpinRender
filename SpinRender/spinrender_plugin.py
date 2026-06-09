@@ -164,6 +164,54 @@ class SpinRenderPlugin(pcbnew.ActionPlugin):
             # Get board file path
             board_path = _get_board_file_path(board)
             logger.debug(f"Board path: {board_path}")
+
+            # Resolve the KiCad parent window up-front so our themed dialogs
+            # (the save guard below, the cache warm-up) center over KiCad and
+            # share its modal ownership.
+            logger.debug("Looking for KiCad parent window...")
+            parent = wx.FindWindowByName("PcbFrame")
+            if not parent:
+                logger.debug("PcbFrame not found, using top window")
+                parent = wx.GetApp().GetTopWindow()
+            logger.debug(f"Parent window: {parent}")
+
+            # Apply the user's saved theme (light/dark/system) up-front so the
+            # pre-flight dialogs below match the main window. The main panel
+            # applies this too, but only once it is constructed — which is after
+            # these dialogs are shown, so without this they would render in the
+            # default (dark) theme regardless of the user's choice.
+            try:
+                from SpinRender.ui.main_panel import _apply_theme_mode
+                from SpinRender.core.presets import PresetManager
+            except ImportError:
+                from ui.main_panel import _apply_theme_mode
+                from core.presets import PresetManager
+            # Read the user's saved theme_mode the same way the main panel does:
+            # project last-used settings when the board is saved, otherwise the
+            # global last-used settings (PresetManager(None) falls back to it).
+            # This makes BOTH the save guard and the warm-up dialog honor the
+            # user's selection (falling back to 'system' only if nothing saved).
+            theme_mode = 'system'
+            try:
+                pm_path = board_path if (board_path and os.path.exists(board_path)) else None
+                last_settings = PresetManager(pm_path).get_last_used_settings()
+                if last_settings is not None:
+                    theme_mode = getattr(last_settings, 'theme_mode', 'system')
+            except Exception as e:
+                logger.debug(f"Could not read saved theme mode, using system: {e}")
+            _apply_theme_mode(theme_mode)
+            logger.debug(f"Applied theme mode '{theme_mode}' for pre-flight dialogs")
+
+            # Themed dialogs (match the main window's look) live in ui.dialogs;
+            # user-facing strings come from the locale files.
+            try:
+                from SpinRender.ui.dialogs import show_message
+                from SpinRender.core.locale import Locale
+            except ImportError:
+                from ui.dialogs import show_message
+                from core.locale import Locale
+            _loc = Locale.current()
+
             # The board must have been saved at least once: SpinRender needs a
             # real project directory so KiCad can resolve ${KIPRJMOD} and
             # relative 3D-model paths for the working copy. Unsaved *edits* are
@@ -172,24 +220,15 @@ class SpinRenderPlugin(pcbnew.ActionPlugin):
             # to save the latest changes first.
             if not board_path or not os.path.exists(board_path):
                 logger.warning("Board has never been saved - aborting launch")
-                dlg = wx.MessageDialog(
-                    None,
-                    "Document needs to be saved before launching SpinRender",
-                    "SpinRender",
-                    wx.OK | wx.ICON_WARNING
+                show_message(
+                    parent,
+                    _loc.get("dialog.save_required.title", "SpinRender error"),
+                    _loc.get(
+                        "dialog.save_required.message",
+                        "This document needs to be saved before launching SpinRender.",
+                    ),
                 )
-                dlg.SetOKLabel("Close")
-                dlg.ShowModal()
-                dlg.Destroy()
                 return
-
-            # Launch SpinRender panel
-            logger.debug("Looking for KiCad parent window...")
-            parent = wx.FindWindowByName("PcbFrame")
-            if not parent:
-                logger.debug("PcbFrame not found, using top window")
-                parent = wx.GetApp().GetTopWindow()
-            logger.debug(f"Parent window: {parent}")
 
             # Pre-flight: warm KiCad's 3D model tessellation cache before opening
             # the window. A cold cache makes the preview and first render block
