@@ -52,7 +52,7 @@ def ensure_fonts_loaded():
     fonts_dir = Path(__file__).resolve().parent.parent / "resources" / "fonts"
     font_files = {
         _theme.font_family("mono"): ["JetBrainsMono-VariableFont_wght.ttf"],
-        _theme.font_family("icon"): ["MaterialDesignIconsDesktop.ttf"],
+        _theme.font_family("icon"): ["materialdesignicons-webfont.ttf"],
         _theme.font_family("display"): ["Oswald-VariableFont_wght.ttf"]
     }
 
@@ -1560,7 +1560,7 @@ class CustomColorPicker(wx.Panel):
         x += 35  # Account for swatch width + padding
         # Hex input field fixed to 100px width, right-aligned
         hex_x = w // 2
-        rects['hex'] = wx.Rect(hex_x, 7, hex_x/2, 32)
+        rects['hex'] = wx.Rect(hex_x, 7, hex_x // 2, 32)
         return rects
 
     def on_paint(self, event):
