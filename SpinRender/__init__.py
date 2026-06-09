@@ -1,6 +1,6 @@
 """
 SpinRender - KiCad Plugin for PCB Animation Rendering
-Version: 0.6.1-beta
+Version: 0.6.2-beta
 Author: Foo Hoang
 License: GPLv3
 """
@@ -11,7 +11,7 @@ License: GPLv3
 # should import their own dependencies explicitly. 
 
 # KiCad plugin metadata
-__version__ = "0.6.1-beta"
+__version__ = "0.6.2-beta"
 __author__ = "Foo Hoang"
 
 import sys

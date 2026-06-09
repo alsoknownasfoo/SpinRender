@@ -47,7 +47,7 @@ exit /b 0
 :end_parse_args
 
 echo ┌────────────────────────────────────────────────────────┐
-echo │  SPINRENDER // PLUGIN_INSTALL // v0.6.1-beta            │
+echo │  SPINRENDER // PLUGIN_INSTALL // v0.6.2-beta            │
 echo └────────────────────────────────────────────────────────┘
 echo.
 

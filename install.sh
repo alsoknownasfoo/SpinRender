@@ -213,7 +213,7 @@ remove_deps_and_fonts() {
 
 # Header with precise 56-character content width
 echo -e "${CYAN}┌────────────────────────────────────────────────────────┐${NC}"
-echo -e "${CYAN}│${BOLD}  SPINRENDER // PLUGIN_INSTALL // v0.6.1-beta            ${NC}${CYAN}│${NC}"
+echo -e "${CYAN}│${BOLD}  SPINRENDER // PLUGIN_INSTALL // v0.6.2-beta            ${NC}${CYAN}│${NC}"
 echo -e "${CYAN}└────────────────────────────────────────────────────────┘${NC}"
 echo
 
