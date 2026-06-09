@@ -119,6 +119,25 @@ locale:
         helper: "프레임은 name_00001.png, name_00002.png...로 저장됩니다"
       render_error: "렌더링 오류"
       preparing: "준비 중..."
+      # 보드가 디스크에 저장되지 않았을 때 표시되는 저장 경고.
+      save_required:
+        title: "오류"
+        message: "SpinRender를 실행하기 전에 이 문서를 저장해야 합니다."
+      # 3D 모델 캐시 웜업 (메인 창 전에 표시).
+      warmup:
+        title: "SpinRender 시작 중"
+        message: "렌더링을 위한 3D 모델 준비 중…"
+        more_info: "추가 정보"
+        detail: |-
+          KiCad는 각 부품의 3D 모델을 처음 사용할 때 테셀레이션하여 결과를 캐시합니다. 이는 KiCad의 자체 3D 뷰어가 생성하는 것과 동일한 3D 모델 캐시입니다.
+
+          부품이 많거나 매우 정교한 모델이 포함된 보드는 준비하는 데 몇 분이 걸릴 수 있습니다. 이 과정은 3D 모델 파일이 변경될 때만 다시 수행됩니다. 그 이후에는 렌더링과 미리보기가 빠르게 작동합니다.
+        elapsed: "경과 시간: {mins}분 {secs:02d}초"
+        required_title: "SpinRender 시작 중"
+        required_message: |-
+          3D 모델 캐시를 준비하지 않고는 SpinRender를 시작할 수 없습니다.
+
+          이는 KiCad 자체 3D 뷰어가 생성하는 것과 동일한 3D 모델 데이터이며, 3D 모델이 변경되기 전까지 한 번만 수행하면 됩니다. 프로세스를 완료할 준비가 되면 SpinRender를 다시 실행해 주세요.
       about:
         title: "SpinRender 정보"
         check_updates:           "업데이트 확인"
@@ -134,8 +153,7 @@ locale:
         author_website_label:    "alsoknownasfoo.com"
         author_website_url:      "https://alsoknownasfoo.com"
         section_supported_by:    "지원"
-        license_tagline:         "개인용 무료
-응원해 주세요!"
+        license_tagline:         "개인용 무료\n응원해 주세요!"
         github_sponsors_label:   "GitHub Sponsors"
         kofi_label:              "Ko-fi"
         section_links:           "링크"
@@ -153,6 +171,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        version_prefix: "v"
+        author: "alsoknownasfoo"
+        author_prefix: "제작: "
+        license_label: "라이선스"
+        license_text: "오픈 소스 · 개인 사용 무료"
+        built_with_label: "사용된 기술"
+        resources_label: "리소스"
+        sponsor_btn: "후원하기"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"

@@ -117,8 +117,27 @@ locale:
         title: "Имя файла"
         header: "Введите базовое имя файла"
         helper: "Кадры сохраняются как name_00001.png, name_00002.png, …"
-      render_error: "Ошибка рендера"
+      render_error: "Ошибка рендеринга"
       preparing: "Подготовка рендеринга..."
+      # Предупреждение о необходимости сохранения, если плата не была сохранена на диск.
+      save_required:
+        title: "Ошибка"
+        message: "Этот документ необходимо сохранить перед запуском SpinRender."
+      # Прогрев кэша 3D-моделей (показывается перед основным окном).
+      warmup:
+        title: "Запуск SpinRender"
+        message: "Подготовка 3D-моделей для рендеринга…"
+        more_info: "Подробнее"
+        detail: |-
+          KiCad тесселирует 3D-модель каждого компонента при первом использовании и кэширует результат — тот же кэш 3D-моделей, который использует встроенный 3D-просмотщик KiCad.
+
+          Подготовка плат с большим количеством или высокодетализированными моделями может занять несколько минут. Это происходит повторно только при изменении файлов 3D-моделей; после этого рендеринг и предварительный просмотр работают быстро.
+        elapsed: "Прошло: {mins}м {secs:02d}с"
+        required_title: "Запуск SpinRender"
+        required_message: |-
+          SpinRender не может запуститься без подготовки кэша 3D-моделей.
+
+          Это те же данные 3D-моделей, которые использует встроенный 3D-просмотщик KiCad, и это нужно сделать только один раз — до тех пор, пока ваши 3D-модели не изменятся. Пожалуйста, перезапустите SpinRender, когда будете готовы позволить ему завершить процесс.
       about:
         title: "О SpinRender"
         check_updates:           "Проверить обновления"
@@ -134,8 +153,7 @@ locale:
         author_website_label:    "alsoknownasfoo.com"
         author_website_url:      "https://alsoknownasfoo.com"
         section_supported_by:    "Поддержка"
-        license_tagline:         "Бесплатно для личного пользования
-Поддержите автора!"
+        license_tagline:         "Бесплатно для личного пользования\nПоддержите автора!"
         github_sponsors_label:   "GitHub Sponsors"
         kofi_label:              "Ko-fi"
         section_links:           "Ссылки"
@@ -153,6 +171,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        version_prefix: "v"
+        author: "alsoknownasfoo"
+        author_prefix: "от "
+        license_label: "ЛИЦЕНЗИЯ"
+        license_text: "OPEN SOURCE · БЕСПЛАТНО ДЛЯ ЛИЧНОГО ИСПОЛЬЗОВАНИЯ"
+        built_with_label: "СОЗДАНО С ПОМОЩЬЮ"
+        resources_label: "РЕСУРСЫ"
+        sponsor_btn: "СПОНСИРОВАТЬ"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"

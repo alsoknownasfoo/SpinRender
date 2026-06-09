@@ -222,7 +222,7 @@ class SpinRenderPlugin(pcbnew.ActionPlugin):
                 logger.warning("Board has never been saved - aborting launch")
                 show_message(
                     parent,
-                    _loc.get("dialog.save_required.title", "SpinRender error"),
+                    _loc.get("dialog.save_required.title", "Error"),
                     _loc.get(
                         "dialog.save_required.message",
                         "This document needs to be saved before launching SpinRender.",

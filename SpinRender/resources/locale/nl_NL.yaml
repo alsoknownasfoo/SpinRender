@@ -119,6 +119,25 @@ locale:
         helper: "Frames worden opgeslagen als naam_00001.png, naam_00002.png, …"
       render_error: "Renderfout"
       preparing: "Voorbereiden..."
+      # Opslagwaarschuwing wanneer de printplaat nog nooit op schijf is opgeslagen.
+      save_required:
+        title: "Fout"
+        message: "Dit document moet worden opgeslagen voordat SpinRender wordt gestart."
+      # 3D-model cache opwarmen (getoond vóór het hoofdvenster).
+      warmup:
+        title: "SpinRender starten"
+        message: "3D-modellen voorbereiden voor rendering…"
+        more_info: "Meer informatie"
+        detail: |-
+          KiCad tesselateert het 3D-model van elk component de eerste keer dat het wordt gebruikt en slaat het resultaat op in een cache — dezelfde 3D-modelcache die de eigen 3D-viewer van KiCad opbouwt.
+
+          Printplaten met veel of zeer gedetailleerde modellen kunnen enkele minuten nodig hebben om voor te bereiden. Dit gebeurt alleen opnieuw als uw 3D-modelbestanden veranderen; daarna zijn renders en de preview snel.
+        elapsed: "Verstreken: {mins}m {secs:02d}s"
+        required_title: "SpinRender starten"
+        required_message: |-
+          SpinRender kan niet starten zonder de 3D-modelcache voor te bereiden.
+
+          Dit zijn dezelfde 3D-modelgegevens die de eigen 3D-viewer van KiCad opbouwt, en dit hoeft maar één keer te gebeuren — totdat uw 3D-modellen veranderen. Start SpinRender opnieuw op wanneer u klaar bent om het te laten voltooien.
       about:
         title: "Over SpinRender"
         check_updates:           "Zoek naar updates"
@@ -134,8 +153,7 @@ locale:
         author_website_label:    "alsoknownasfoo.com"
         author_website_url:      "https://alsoknownasfoo.com"
         section_supported_by:    "Gesteund door"
-        license_tagline:         "Gratis voor privégebruik
-Doneer als je het leuk vindt!"
+        license_tagline:         "Gratis voor privégebruik\nDoneer als je het leuk vindt!"
         github_sponsors_label:   "GitHub Sponsors"
         kofi_label:              "Ko-fi"
         section_links:           "Links"
@@ -153,6 +171,14 @@ Doneer als je het leuk vindt!"
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        version_prefix: "v"
+        author: "alsoknownasfoo"
+        author_prefix: "door "
+        license_label: "LICENTIE"
+        license_text: "OPEN SOURCE · GRATIS VOOR PERSOONLIJK GEBRUIK"
+        built_with_label: "GEMAAKT MET"
+        resources_label: "BRONNEN"
+        sponsor_btn: "SPONSOR"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"

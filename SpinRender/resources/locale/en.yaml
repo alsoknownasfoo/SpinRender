@@ -171,7 +171,7 @@ locale:
       preparing: "Preparing render..."
       # Save guard shown when the board has never been saved to disk.
       save_required:
-        title: "SpinRender error"
+        title: "Error"
         message: "This document needs to be saved before launching SpinRender."
       # Pre-flight 3D model cache warm-up (shown before the main window).
       warmup:

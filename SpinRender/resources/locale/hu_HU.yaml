@@ -119,6 +119,25 @@ locale:
         helper: "A képek mentése: név_00001.png, név_00002.png, …"
       render_error: "Renderelési hiba"
       preparing: "Előkészítés..."
+      # Mentési figyelmeztetés, ha a panel még nem volt elmentve.
+      save_required:
+        title: "Hiba"
+        message: "Ezt a dokumentumot el kell menteni a SpinRender elindítása előtt."
+      # 3D modell gyorsítótár előmelegítése (a főablak előtt jelenik meg).
+      warmup:
+        title: "SpinRender indítása"
+        message: "3D modellek előkészítése a rendereléshez…"
+        more_info: "További információ"
+        detail: |-
+          A KiCad az első használatkor minden alkatrész 3D modelljét feldolgozza és gyorsítótárazza az eredményt – ugyanazt a 3D modell gyorsítótárat, amelyet a KiCad saját 3D nézegetője is épít.
+
+          A sok vagy rendkívül részletes modellt tartalmazó panelek előkészítése több percig is eltarthat. Ez csak akkor ismétlődik meg, ha a 3D modellfájlok megváltoznak; ezt követően a renderelés és az előnézet gyors lesz.
+        elapsed: "Eltelt idő: {mins}m {secs:02d}s"
+        required_title: "SpinRender indítása"
+        required_message: |-
+          A SpinRender nem tud elindulni a 3D modell gyorsítótár előkészítése nélkül.
+
+          Ez ugyanaz a 3D modell adat, amelyet a KiCad saját 3D nézegetője épít, és csak egyszer kell elvégezni – amíg a 3D modelljei meg nem változnak. Kérjük, indítsa újra a SpinRender-t, ha készen áll a folyamat befejezésére.
       about:
         title: "A SpinRender-ről"
         check_updates:           "Frissítések keresése"
@@ -134,8 +153,7 @@ locale:
         author_website_label:    "alsoknownasfoo.com"
         author_website_url:      "https://alsoknownasfoo.com"
         section_supported_by:    "Támogató"
-        license_tagline:         "Magáncélra ingyenes
-Támogasd, ha szereted!"
+        license_tagline:         "Magáncélra ingyenes\nTámogasd, ha szereted!"
         github_sponsors_label:   "GitHub Sponsors"
         kofi_label:              "Ko-fi"
         section_links:           "Linkek"
@@ -153,6 +171,14 @@ Támogasd, ha szereted!"
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        version_prefix: "v"
+        author: "alsoknownasfoo"
+        author_prefix: "készítette: "
+        license_label: "LICENC"
+        license_text: "NYÍLT FORRÁSKÓD · INGYENES SZEMÉLYES HASZNÁLATRA"
+        built_with_label: "KÉSZÜLT"
+        resources_label: "FORRÁSOK"
+        sponsor_btn: "TÁMOGATÁS"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"

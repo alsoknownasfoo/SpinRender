@@ -117,8 +117,27 @@ locale:
         title: "Ім'я файлу"
         header: "Введіть базове ім'я файлу"
         helper: "Кадри зберігаються як name_00001.png, name_00002.png, …"
-      render_error: "Помилка рендера"
+      render_error: "Помилка рендерингу"
       preparing: "Підготовка рендерингу..."
+      # Попередження про необхідність збереження, якщо плата не була збережена на диск.
+      save_required:
+        title: "Помилка"
+        message: "Цей документ потрібно зберегти перед запуском SpinRender."
+      # Прогрів кешу 3D-моделей (показується перед основним вікном).
+      warmup:
+        title: "Запуск SpinRender"
+        message: "Підготовка 3D-моделей для рендерингу…"
+        more_info: "Детальніше"
+        detail: |-
+          KiCad теселює 3D-модель кожного компонента при першому використанні та кешує результат — той самий кеш 3D-моделей, який створює власний 3D-переглядач KiCad.
+
+          Підготовка плат з великою кількістю або дуже деталізованими моделями може зайняти кілька хвилин. Це відбувається знову лише при зміні файлів 3D-моделей; після цього рендеринг та попередній перегляд працюють швидко.
+        elapsed: "Минуло: {mins}хв {secs:02d}с"
+        required_title: "Запуск SpinRender"
+        required_message: |-
+          SpinRender не може запуститися без підготовки кешу 3D-моделей.
+
+          Це ті самі дані 3D-моделей, які створює власний 3D-переглядач KiCad, і це потрібно зробити лише один раз — поки ваші 3D-моделі не зміняться. Будь ласка, перезапустіть SpinRender, коли будете готові дозволити йому завершити процес.
       about:
         title: "Про SpinRender"
         check_updates:           "Перевірити оновлення"
@@ -134,8 +153,7 @@ locale:
         author_website_label:    "alsoknownasfoo.com"
         author_website_url:      "https://alsoknownasfoo.com"
         section_supported_by:    "Підтримка"
-        license_tagline:         "Безкоштовно для власного вжитку
-Підтримайте автора!"
+        license_tagline:         "Безкоштовно для власного вжитку\nПідтримайте автора!"
         github_sponsors_label:   "GitHub Sponsors"
         kofi_label:              "Ko-fi"
         section_links:           "Посилання"
@@ -153,6 +171,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        version_prefix: "v"
+        author: "alsoknownasfoo"
+        author_prefix: "від "
+        license_label: "ЛІЦЕНЗІЯ"
+        license_text: "OPEN SOURCE · БЕЗКОШТОВНО ДЛЯ ОСОБИСТОГО ВИКОРИСТАННЯ"
+        built_with_label: "СТВОРЕНО ЗА ДОПОМОГОЮ"
+        resources_label: "РЕСУРСИ"
+        sponsor_btn: "СПОНСОРУВАТИ"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"

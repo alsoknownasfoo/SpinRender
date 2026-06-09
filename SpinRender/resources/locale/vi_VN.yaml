@@ -119,6 +119,25 @@ locale:
         helper: "Các khung hình được lưu dưới dạng ten_00001.png, ten_00002.png, …"
       render_error: "Lỗi xuất ảnh"
       preparing: "Đang chuẩn bị..."
+      # Cảnh báo lưu khi bo mạch chưa bao giờ được lưu vào đĩa.
+      save_required:
+        title: "Lỗi"
+        message: "Tài liệu này cần được lưu trước khi khởi chạy SpinRender."
+      # Làm nóng bộ nhớ đệm mô hình 3D (hiển thị trước cửa sổ chính).
+      warmup:
+        title: "Đang khởi chạy SpinRender"
+        message: "Chuẩn bị mô hình 3D để render…"
+        more_info: "Thêm thông tin"
+        detail: |-
+          KiCad sẽ chia lưới mô hình 3D của mỗi linh kiện trong lần đầu tiên sử dụng và lưu kết quả vào bộ nhớ đệm — cùng một bộ nhớ đệm mô hình 3D mà Trình xem 3D của KiCad tự xây dựng.
+
+          Các bo mạch có nhiều hoặc mô hình có độ chi tiết cao có thể mất vài phút để chuẩn bị. Quá trình này chỉ lặp lại nếu các tệp mô hình 3D của bạn thay đổi; sau đó, việc render và xem trước sẽ rất nhanh.
+        elapsed: "Đã trôi qua: {mins}p {secs:02d}s"
+        required_title: "Đang khởi chạy SpinRender"
+        required_message: |-
+          SpinRender không thể khởi động mà không chuẩn bị bộ nhớ đệm mô hình 3D.
+
+          Đây cùng là dữ liệu mô hình 3D mà Trình xem 3D của KiCad tự xây dựng, và chỉ cần thực hiện một lần — cho đến khi các mô hình 3D của bạn thay đổi. Vui lòng khởi chạy lại SpinRender khi bạn đã sẵn sàng để quá trình hoàn tất.
       about:
         title: "Về SpinRender"
         check_updates:           "Kiểm tra cập nhật"
@@ -134,8 +153,7 @@ locale:
         author_website_label:    "alsoknownasfoo.com"
         author_website_url:      "https://alsoknownasfoo.com"
         section_supported_by:    "Được hỗ trợ bởi"
-        license_tagline:         "Miễn phí cho cá nhân
-Ủng hộ nếu bạn thích!"
+        license_tagline:         "Miễn phí cho cá nhân\nỦng hộ nếu bạn thích!"
         github_sponsors_label:   "GitHub Sponsors"
         kofi_label:              "Ko-fi"
         section_links:           "Liên kết"
@@ -153,6 +171,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        version_prefix: "v"
+        author: "alsoknownasfoo"
+        author_prefix: "bởi "
+        license_label: "GIẤY PHÉP"
+        license_text: "MÃ NGUỒN MỞ · MIỄN PHÍ CHO MỤC ĐÍCH CÁ NHÂN"
+        built_with_label: "ĐƯỢC XÂY DỰNG BẰNG"
+        resources_label: "TÀI NGUYÊN"
+        sponsor_btn: "TÀI TRỢ"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"

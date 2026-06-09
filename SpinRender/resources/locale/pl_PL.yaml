@@ -119,6 +119,25 @@ locale:
         helper: "Klatki zapisywane jako nazwa_00001.png, nazwa_00002.png, …"
       render_error: "Błąd renderowania"
       preparing: "Przygotowywanie..."
+      # Ostrzeżenie o zapisie, gdy płytka nie została jeszcze zapisana na dysku.
+      save_required:
+        title: "Błąd"
+        message: "Ten dokument musi zostać zapisany przed uruchomieniem SpinRender."
+      # Rozgrzewanie pamięci podręcznej modeli 3D (pokazywane przed głównym oknem).
+      warmup:
+        title: "Uruchamianie SpinRender"
+        message: "Przygotowywanie modeli 3D do renderowania…"
+        more_info: "Więcej informacji"
+        detail: |-
+          KiCad tesseluje model 3D każdego komponentu przy pierwszym użyciu i zapisuje wynik w pamięci podręcznej – jest to ta sama pamięć podręczna modeli 3D, którą tworzy przeglądarka 3D KiCad.
+
+          Przygotowanie płytek z wieloma lub bardzo szczegółowymi modelami może zająć kilka minut. Dzieje się to ponownie tylko w przypadku zmiany plików modeli 3D; potem renderowanie i podgląd są szybkie.
+        elapsed: "Upłynęło: {mins}m {secs:02d}s"
+        required_title: "Uruchamianie SpinRender"
+        required_message: |-
+          SpinRender nie może zostać uruchomiony bez przygotowania pamięci podręcznej modeli 3D.
+
+          Są to te same dane modeli 3D, które tworzy przeglądarka 3D KiCad i operację tę należy wykonać tylko raz – do czasu zmiany modeli 3D. Prosimy o ponowne uruchomienie SpinRender, gdy będziesz gotowy na ukończenie tego procesu.
       about:
         title: "O SpinRender"
         check_updates:           "Sprawdź aktualizacje"
@@ -134,8 +153,7 @@ locale:
         author_website_label:    "alsoknownasfoo.com"
         author_website_url:      "https://alsoknownasfoo.com"
         section_supported_by:    "Wspierane przez"
-        license_tagline:         "Darmowy do użytku osobistego
-Doceniasz? Wspomóż!"
+        license_tagline:         "Darmowy do użytku osobistego\nDoceniasz? Wspomóż!"
         github_sponsors_label:   "GitHub Sponsors"
         kofi_label:              "Ko-fi"
         section_links:           "Linki"
@@ -153,6 +171,14 @@ Doceniasz? Wspomóż!"
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        version_prefix: "v"
+        author: "alsoknownasfoo"
+        author_prefix: "przez "
+        license_label: "LICENCJA"
+        license_text: "OPEN SOURCE · DARMOWE DO UŻYTKU OSOBISTEGO"
+        built_with_label: "ZBUDOWANO Z"
+        resources_label: "ZASOBY"
+        sponsor_btn: "SPONSORUJ"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"

@@ -119,6 +119,25 @@ locale:
         helper: "幀將儲存為 name_00001.png, name_00002.png, …"
       render_error: "渲染錯誤"
       preparing: "正在準備渲染..."
+      # 當電路板從未儲存到磁碟時顯示的儲存保護。
+      save_required:
+        title: "錯誤"
+        message: "啟動 SpinRender 前需要儲存此文件。"
+      # 預執行 3D 模型快取預熱（在主視窗之前顯示）。
+      warmup:
+        title: "正在啟動 SpinRender"
+        message: "正在準備用於渲染的 3D 模型…"
+        more_info: "更多資訊"
+        detail: |-
+          KiCad 在第一次使用時會細分每個組件的 3D 模型並快取結果 —— 這與 KiCad 自帶的 3D 查看器建置的 3D 模型快取相同。
+
+          具有許多或高度詳細模型的電路板可能需要幾分鐘時間來準備。只有在您的 3D 模型檔案發生更改時才會再次發生；之後，渲染和預覽會很快。
+        elapsed: "已用時間: {mins}分 {secs:02d}秒"
+        required_title: "正在啟動 SpinRender"
+        required_message: |-
+          如果不準備 3D 模型快取，SpinRender 將無法啟動。
+
+          這是 KiCad 自帶的 3D 查看器建置的相同 3D 模型資料，只需執行一次 —— 直到您的 3D 模型發生更改。準備好後請重新啟動 SpinRender 以完成該程序。
       about:
         title: "關於 SpinRender"
         check_updates:           "檢查更新"
@@ -134,8 +153,7 @@ locale:
         author_website_label:    "alsoknownasfoo.com"
         author_website_url:      "https://alsoknownasfoo.com"
         section_supported_by:    "贊助支持"
-        license_tagline:         "個人免費使用
-喜愛請支持！"
+        license_tagline:         "個人免費使用\n喜愛請支持！"
         github_sponsors_label:   "GitHub Sponsors"
         kofi_label:              "Ko-fi"
         section_links:           "連結"
@@ -153,6 +171,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        version_prefix: "v"
+        author: "alsoknownasfoo"
+        author_prefix: "由 "
+        license_label: "授權"
+        license_text: "開源 · 個人使用免費"
+        built_with_label: "建置工具"
+        resources_label: "資源"
+        sponsor_btn: "贊助"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"

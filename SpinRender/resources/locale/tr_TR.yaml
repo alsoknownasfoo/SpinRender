@@ -119,6 +119,25 @@ locale:
         helper: "Kareler ad_00001.png, ad_00002.png... olarak kaydedilir"
       render_error: "Render hatası"
       preparing: "Hazırlanıyor..."
+      # Kart hiç diske kaydedilmediğinde gösterilen kayıt uyarısı.
+      save_required:
+        title: "Hata"
+        message: "SpinRender'ı başlatmadan önce bu belgenin kaydedilmesi gerekiyor."
+      # 3D model önbelleği hazırlığı (ana pencereden önce gösterilir).
+      warmup:
+        title: "SpinRender Başlatılıyor"
+        message: "Render için 3D modeller hazırlanıyor…"
+        more_info: "Daha fazla bilgi"
+        detail: |-
+          KiCad, her bileşenin 3D modelini ilk kullanıldığında mozaikler ve sonucu önbelleğe alır — bu, KiCad'in kendi 3D Görüntüleyicisinin oluşturduğu aynı 3D model önbelleğidir.
+
+          Çok sayıda veya son derece ayrıntılı modele sahip kartların hazırlanması birkaç dakika sürebilir. Bu durum yalnızca 3D model dosyalarınız değiştiğinde tekrarlanır; ondan sonra renderlar ve önizleme hızlıdır.
+        elapsed: "Geçen süre: {mins}dk {secs:02d}sn"
+        required_title: "SpinRender Başlatılıyor"
+        required_message: |-
+          SpinRender, 3D model önbelleği hazırlanmadan başlatılamaz.
+
+          Bu, KiCad'in kendi 3D Görüntüleyicisinin oluşturduğu aynı 3D model verisidir ve 3D modelleriniz değişene kadar yalnızca bir kez yapılması gerekir. Lütfen işlemi bitirmesine izin vermeye hazır olduğunuzda SpinRender'ı yeniden başlatın.
       about:
         title: "SpinRender Hakkında"
         check_updates:           "Güncellemeleri denetle"
@@ -134,8 +153,7 @@ locale:
         author_website_label:    "alsoknownasfoo.com"
         author_website_url:      "https://alsoknownasfoo.com"
         section_supported_by:    "Destekleyen"
-        license_tagline:         "Kişisel kullanım için ücretsiz
-Sevdiyseniz bağış yapın!"
+        license_tagline:         "Kişisel kullanım için ücretsiz\nSevdiyseniz bağış yapın!"
         github_sponsors_label:   "GitHub Sponsors"
         kofi_label:              "Ko-fi"
         section_links:           "Bağlantılar"
@@ -153,6 +171,14 @@ Sevdiyseniz bağış yapın!"
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        version_prefix: "v"
+        author: "alsoknownasfoo"
+        author_prefix: "yapan: "
+        license_label: "LİSANS"
+        license_text: "AÇIK KAYNAK · KİŞİSEL KULLANIM İČİN ÜCRETSİZ"
+        built_with_label: "İLE YAPILDI"
+        resources_label: "KAYNAKLAR"
+        sponsor_btn: "SPONSOR OL"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"

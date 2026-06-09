@@ -119,6 +119,25 @@ locale:
         helper: "フレームは name_00001.png, name_00002.png... として保存されます"
       render_error: "レンダリングエラー"
       preparing: "準備中..."
+      # 基板が一度も保存されていない場合に表示される保存警告。
+      save_required:
+        title: "エラー"
+        message: "SpinRenderを起動する前に、このドキュメントを保存する必要があります。"
+      # 3Dモデルキャッシュの準備（メインウィンドウの前に表示）。
+      warmup:
+        title: "SpinRenderを起動中"
+        message: "レンダリング用の3Dモデルを準備しています…"
+        more_info: "詳細情報"
+        detail: |-
+          KiCadは、各コンポーネントの3Dモデルを最初に使用するときにテッセレーションを行い、その結果をキャッシュします。これはKiCad独自の3Dビューアーが構築するのと同じ3Dモデルキャッシュです。
+
+          モデルが多い場合や詳細なモデルがある基板では、準備に数分かかることがあります。これは3Dモデルファイルが変更された場合にのみ再実行されます。その後、レンダリングとプレビューは高速になります。
+        elapsed: "経過時間: {mins}分 {secs:02d}秒"
+        required_title: "SpinRenderを起動中"
+        required_message: |-
+          3Dモデルキャッシュを準備せずにSpinRenderを開始することはできません。
+
+          これはKiCad独自の3Dビューアーが構築するのと同じ3Dモデルデータであり、3Dモデルが変更されるまで一度だけ行う必要があります。準備が整いましたら、SpinRenderを再起動して完了させてください。
       about:
         title: "SpinRender について"
         check_updates:           "アップデートを確認"
@@ -134,8 +153,7 @@ locale:
         author_website_label:    "alsoknownasfoo.com"
         author_website_url:      "https://alsoknownasfoo.com"
         section_supported_by:    "サポート"
-        license_tagline:         "個人利用無料
-気に入ったら寄付を！"
+        license_tagline:         "個人利用無料\n気に入ったら寄付を！"
         github_sponsors_label:   "GitHub Sponsors"
         kofi_label:              "Ko-fi"
         section_links:           "リンク"
@@ -153,6 +171,14 @@ locale:
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        version_prefix: "v"
+        author: "alsoknownasfoo"
+        author_prefix: "by "
+        license_label: "ライセンス"
+        license_text: "オープンソース · 個人利用は無料"
+        built_with_label: "使用ツール"
+        resources_label: "リソース"
+        sponsor_btn: "スポンサー"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"

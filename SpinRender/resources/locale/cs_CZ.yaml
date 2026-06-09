@@ -119,6 +119,25 @@ locale:
         helper: "Snímky se ukládají jako název_00001.png, název_00002.png, …"
       render_error: "Chyba renderování"
       preparing: "Příprava renderování..."
+      # Ochrana uložení, pokud deska nebyla nikdy uložena na disk.
+      save_required:
+        title: "Chyba"
+        message: "Tento dokument musí být před spuštěním SpinRender uložen."
+      # Předehřev mezipaměti 3D modelů (zobrazuje se před hlavním oknem).
+      warmup:
+        title: "Spouštění SpinRender"
+        message: "Příprava 3D modelů pro renderování…"
+        more_info: "Více informací"
+        detail: |-
+          KiCad při prvním použití vypočítá 3D model každé součástky a výsledek uloží do mezipaměti – jedná se o stejnou mezipaměť 3D modelů, kterou využívá i vlastní 3D prohlížeč KiCad.
+
+          Desky s mnoha nebo vysoce detailními modely mohou vyžadovat několik minut na přípravu. K tomuto procesu dochází znovu pouze při změně souborů 3D modelů; poté jsou rendery i náhledy rychlé.
+        elapsed: "Uplynulo: {mins}m {secs:02d}s"
+        required_title: "Spouštění SpinRender"
+        required_message: |-
+          SpinRender nelze spustit bez přípravy mezipaměti 3D modelů.
+
+          Jedná se o stejná data 3D modelů, která využívá vlastní 3D prohlížeč KiCad, a je třeba je připravit pouze jednou – dokud se nezmění vaše 3D modely. Až budete připraveni nechat proces dokončit, spusťte SpinRender znovu.
       about:
         title: "O SpinRender"
         check_updates:           "Zkontrolovat aktualizace"
@@ -134,8 +153,7 @@ locale:
         author_website_label:    "alsoknownasfoo.com"
         author_website_url:      "https://alsoknownasfoo.com"
         section_supported_by:    "Podporováno"
-        license_tagline:         "Zdarma pro osobní použití
-Podpořte nás darem!"
+        license_tagline:         "Zdarma pro osobní použití\nPodpořte nás darem!"
         github_sponsors_label:   "GitHub Sponsors"
         kofi_label:              "Ko-fi"
         section_links:           "Odkazy"
@@ -153,6 +171,14 @@ Podpořte nás darem!"
         notices_url:             "https://github.com/alsoknownasfoo/SpinRender/blob/main/docs/NOTICES.md"
         github_sponsors_url:     "https://github.com/sponsors/alsoknownasfoo"
         kofi_url:                "https://ko-fi.com/alsoknownasfoo"
+        version_prefix: "v"
+        author: "alsoknownasfoo"
+        author_prefix: "od "
+        license_label: "LICENCE"
+        license_text: "OPEN SOURCE · ZDARMA PRO OSOBNÍ POUŽITÍ"
+        built_with_label: "VYTVOŘENO POMOCÍ"
+        resources_label: "ZDROJE"
+        sponsor_btn: "SPONZOR"
         ai:
           claude_url:            "https://claude.ai/"
           gemini_url:            "https://gemini.google.com/"
