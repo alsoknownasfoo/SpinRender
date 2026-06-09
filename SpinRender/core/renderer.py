@@ -154,11 +154,22 @@ def find_command(cmd):
             '/usr/local/bin/kicad-cli',
             '/opt/homebrew/bin/kicad-cli'
         ]
+        if os.name == 'nt':
+            prog_files = os.environ.get('PROGRAMFILES', 'C:\\Program Files')
+            for ver in ('10.0', '9.0', '8.0'):
+                common_paths.append(os.path.join(prog_files, 'KiCad', ver, 'bin', 'kicad-cli.exe'))
     elif cmd == 'ffmpeg':
         common_paths = [
             '/usr/local/bin/ffmpeg',
             '/opt/homebrew/bin/ffmpeg'
         ]
+        if os.name == 'nt':
+            prog_files = os.environ.get('PROGRAMFILES', 'C:\\Program Files')
+            common_paths += [
+                os.path.join(prog_files, 'Gyan', 'FFmpeg', 'bin', 'ffmpeg.exe'),
+                os.path.join(prog_files, 'ffmpeg', 'bin', 'ffmpeg.exe'),
+                'C:\\ffmpeg\\bin\\ffmpeg.exe',
+            ]
 
     for path in common_paths:
         if os.path.exists(path):
