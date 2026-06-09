@@ -191,6 +191,19 @@ class SpinRenderPlugin(pcbnew.ActionPlugin):
                 parent = wx.GetApp().GetTopWindow()
             logger.debug(f"Parent window: {parent}")
 
+            # Pre-flight: warm KiCad's 3D model tessellation cache before opening
+            # the window. A cold cache makes the preview and first render block
+            # for minutes; this shows a progress dialog (only when actually
+            # needed) and lets the user cancel. Cancelling aborts the launch.
+            logger.debug("Ensuring 3D model cache is warm...")
+            try:
+                from SpinRender.core.cache_warmer import ensure_model_cache_warm
+            except ImportError:
+                from core.cache_warmer import ensure_model_cache_warm
+            if not ensure_model_cache_warm(parent, board_path):
+                logger.info("Cache warm-up cancelled by user - aborting launch")
+                return
+
             logger.debug("Creating SpinRenderFrame...")
             frame = SpinRenderFrame(parent, board_path)
             logger.debug("Showing frame...")
