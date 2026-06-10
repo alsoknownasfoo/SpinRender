@@ -21,7 +21,7 @@ from SpinRender.core.locale import Locale
 from SpinRender.version import get_version
 _theme = Theme.current()
 _locale = Locale.current()
-from .helpers import create_section_label, create_numeric_input, create_text, reapply_text_styles, load_svg, set_text_widget_state
+from .helpers import create_section_label, create_numeric_input, create_text, reapply_text_styles, load_svg, set_text_widget_state, effective_background
 
 
 # Built-in output resolutions: (display label, "WxH" id). Custom resolutions
@@ -78,8 +78,9 @@ class ControlsSidePanel(wx.Panel):
         main_container.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        # Get uniform padding from theme
-        padding = _theme._parse_padding(_theme._resolve("layout.main.leftpanel.padding") or 16)['left']
+        # Get uniform padding from theme (theme values are 96dpi design pixels;
+        # scale to the display's actual DPI like the rest of the layout)
+        padding = self.FromDIP(_theme._parse_padding(_theme._resolve("layout.main.leftpanel.padding") or 16)['left'])
         self.padding = padding  # Store for use in sub-layouts
 
         # Header (always visible at top)
@@ -92,7 +93,7 @@ class ControlsSidePanel(wx.Panel):
         main_sizer.Add(self._header_divider, 0, wx.EXPAND)
 
         # Scrollable content area (presets, parameters, output)
-        self.scrolled_panel = scrolled.ScrolledPanel(main_container, size=(400, -1))
+        self.scrolled_panel = scrolled.ScrolledPanel(main_container, size=self.FromDIP(wx.Size(400, -1)))
         self.scrolled_panel.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
         self.scrolled_panel.SetupScrolling(scroll_x=False, scroll_y=True, rate_y=20)
         content_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -128,8 +129,8 @@ class ControlsSidePanel(wx.Panel):
         # shrinking the window.
         min_height = content_sizer.CalcMin().y
         # Add extra padding for comfortable viewing
-        required_h = min_height + 40
-        self.scrolled_panel.SetMinSize((400, required_h))
+        required_h = min_height + self.FromDIP(40)
+        self.scrolled_panel.SetMinSize((self.FromDIP(400), required_h))
 
         # Now apply the persisted collapsed states without disturbing the scroll
         # area's min height established above. Each collapsed section's own panel
@@ -350,38 +351,47 @@ class ControlsSidePanel(wx.Panel):
         Entering any target turns the section's hover on; leaving turns it off
         only when the pointer has left every target (so moving between the title
         and toggle doesn't flicker, and hovering the save button doesn't count).
-        """
-        targets = []
 
-        def collect(widget):
+        Excluded subtrees still get enter/leave bindings: their screen rects sit
+        inside the header root's rect, so without them the hover state would
+        stay on while the pointer is over (or exits through) an excluded widget.
+        """
+        targets, excluded = [], []
+
+        def collect(widget, into):
+            into.append(widget)
+            for child in widget.GetChildren():
+                collect(child, into)
+
+        def collect_targets(widget):
             if widget in exclude:
+                collect(widget, excluded)
                 return
             targets.append(widget)
             for child in widget.GetChildren():
-                collect(child)
+                collect_targets(child)
 
-        collect(root)
+        collect_targets(root)
 
         def pointer_in_targets():
             mouse_pos = wx.GetMousePosition()
+            for widget in excluded:
+                rect = widget.GetScreenRect()
+                if rect and rect.Contains(mouse_pos):
+                    return False
             for widget in targets:
                 rect = widget.GetScreenRect()
                 if rect and rect.Contains(mouse_pos):
                     return True
             return False
 
-        def on_enter(event):
-            on_change(True)
+        def update(event):
+            on_change(pointer_in_targets())
             event.Skip()
 
-        def on_leave(event):
-            if not pointer_in_targets():
-                on_change(False)
-            event.Skip()
-
-        for widget in targets:
-            widget.Bind(wx.EVT_ENTER_WINDOW, on_enter)
-            widget.Bind(wx.EVT_LEAVE_WINDOW, on_leave)
+        for widget in targets + excluded:
+            widget.Bind(wx.EVT_ENTER_WINDOW, update)
+            widget.Bind(wx.EVT_LEAVE_WINDOW, update)
 
     def _set_header_hover(self, toggle, title_label, hovered):
         """Apply the shared hover color to a section's toggle icon and title."""
@@ -717,7 +727,7 @@ class ControlsSidePanel(wx.Panel):
         f_head_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.format_heading = create_text(f_col, _locale.get("parameters.format.label", "FORMAT"), "subheader")
         f_head_sizer.Add(self.format_heading, 0, wx.ALIGN_CENTER_VERTICAL)
-        f_head_sizer.Add((0, head_h))
+        f_head_sizer.Add((0, self.FromDIP(head_h)))
         f_sizer.Add(f_head_sizer, 0, wx.EXPAND | wx.BOTTOM, 6)
 
         self.format_choices = ["MP4 (H.264)", "GIF", "PNG Sequence"]
@@ -943,23 +953,26 @@ class ControlsSidePanel(wx.Panel):
 class SVGLogoPanel(wx.Panel):
     """Panel that renders the SpinRender SVG logo."""
     def __init__(self, parent, size=(58, 58)):
-        super().__init__(parent, size=size)
+        # `size` is 96dpi design pixels; scale the panel and render the SVG
+        # to fill it (a fixed 1.0 render scale stays small on HiDPI displays).
+        super().__init__(parent, size=parent.FromDIP(wx.Size(*size)))
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.svg_image = load_svg(Path(__file__).parent.parent / "resources" / "icons" / "logo.svg")
         self.Bind(wx.EVT_PAINT, self.on_paint)
 
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
+        # Clear the buffer first: AutoBufferedPaintDC starts with undefined
+        # contents, and the SVG's transparent pixels would show stale memory.
+        dc.SetBackground(wx.Brush(effective_background(self)))
+        dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc:
             return
         width, height = self.GetSize()
-        gc.SetBrush(wx.TRANSPARENT_BRUSH)
-        gc.SetPen(wx.TRANSPARENT_PEN)
-        gc.DrawRectangle(0, 0, width, height)
         if self.svg_image:
             try:
-                self.svg_image.RenderToGC(gc, 1.0)
+                self.svg_image.RenderToGC(gc, size=(float(width), float(height)))
             except Exception:
                 gc.SetBrush(wx.Brush(_theme.color("colors.primary")))
                 gc.DrawRectangle(0, 0, width, height)

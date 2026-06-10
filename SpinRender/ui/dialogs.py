@@ -16,6 +16,7 @@ from .custom_controls import (
 from .helpers import (
     bind_hover_text_group,
     create_text,
+    effective_background,
     load_svg,
     load_svg_markup,
     replace_svg_fill,
@@ -52,9 +53,15 @@ class BaseStyledDialog(wx.Dialog):
             except (ValueError, TypeError):
                 self.shadow_size = 16
 
+        # Theme/layout values are 96dpi design pixels; scale to the display's
+        # actual DPI (matches the main panel's FromDIP-based layout). `parent`
+        # is used since `self` isn't constructed yet.
+        self.shadow_size = parent.FromDIP(self.shadow_size)
+        size = parent.FromDIP(wx.Size(*size))
+
         # Expand size to account for shadow padding
         actual_size = wx.Size(size[0] + self.shadow_size * 2, size[1] + self.shadow_size * 2)
-        
+
         super().__init__(
             parent,
             title=title,
@@ -81,24 +88,28 @@ class BaseStyledDialog(wx.Dialog):
 
     def on_paint_window(self, event):
         dc = wx.AutoBufferedPaintDC(self)
+        # Clear the buffer first: AutoBufferedPaintDC starts with undefined
+        # contents, so unpainted pixels (rounded corners) show stale memory.
+        dc.SetBackground(wx.Brush(_theme.BLACK))
+        dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
 
         w, h = self.GetSize()
         s = self.shadow_size
-        
+
         # 1. Draw Shadow (Fading black)
         for i in range(s):
             # Doubled base alpha (from 80 to 160) for much darker shadow
             alpha = int(160 * (1.0 - (i / s)**0.5))
             gc.SetBrush(wx.Brush(wx.Colour(_theme.BLACK.Red(), _theme.BLACK.Green(), _theme.BLACK.Blue(), alpha)))
             gc.SetPen(wx.TRANSPARENT_PEN)
-            gc.DrawRoundedRectangle(i, i, w - 2*i, h - 2*i, 12)
-            
+            gc.DrawRoundedRectangle(i, i, w - 2*i, h - 2*i, self.FromDIP(12))
+
         # 2. Draw actual modal background (no border)
         gc.SetBrush(wx.Brush(_theme.color("colors.gray-dark")))
         gc.SetPen(wx.TRANSPARENT_PEN)
-        gc.DrawRoundedRectangle(s, s, self.logical_size[0], self.logical_size[1], 4)
+        gc.DrawRoundedRectangle(s, s, self.logical_size[0], self.logical_size[1], self.FromDIP(4))
 
     def on_char_hook(self, event):
         if event.GetKeyCode() == wx.WXK_ESCAPE:
@@ -150,6 +161,7 @@ class BaseStyledDialog(wx.Dialog):
         header_height = _theme._resolve("layout.dialogs.default.header.height")
         if header_height is None:
             header_height = 48
+        header_height = self.FromDIP(header_height)
         header = wx.Panel(self.main_container, size=(-1, header_height))
         self._dialog_header = header  # stored for reapply_theme
         header.SetBackgroundColour(_theme.color("colors.gray-dark"))
@@ -205,6 +217,8 @@ class BaseStyledDialog(wx.Dialog):
         else:
             pad = {'left': padding.get('left', 16), 'right': padding.get('right', 16),
                    'top': padding.get('top', 16), 'bottom': padding.get('bottom', 16)}
+        pad = {k: self.FromDIP(v) for k, v in pad.items()}
+        gap = self.FromDIP(gap)
 
         footer = wx.Panel(self.main_container)
         outer_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -1231,6 +1245,8 @@ class _AiLogoPanel(wx.Panel):
 
     def _on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
+        dc.SetBackground(wx.Brush(effective_background(self)))
+        dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc:
             return
@@ -1392,6 +1408,8 @@ class _AuthorLogoPanel(wx.Panel):
 
     def _on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
+        dc.SetBackground(wx.Brush(effective_background(self)))
+        dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc:
             return
@@ -1447,6 +1465,8 @@ class AboutSpinRenderDialog(BaseStyledDialog):
 
     def on_paint_window(self, event):
         dc = wx.AutoBufferedPaintDC(self)
+        dc.SetBackground(wx.Brush(_theme.BLACK))
+        dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc:
             return
@@ -1709,6 +1729,8 @@ class AboutSpinRenderDialog(BaseStyledDialog):
 
             def _paint(_event):
                 dc = wx.AutoBufferedPaintDC(card)
+                dc.SetBackground(wx.Brush(effective_background(card)))
+                dc.Clear()
                 gc = wx.GraphicsContext.Create(dc)
                 if not gc:
                     _logger.debug("GraphicsContext unavailable for donate card: %s", style_id)

@@ -61,6 +61,8 @@ class RoundedPanel(wx.Panel):
 
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
+        dc.SetBackground(wx.Brush(self.GetParent().GetBackgroundColour()))
+        dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
         w, h = self.GetSize()
@@ -95,6 +97,8 @@ class CustomButton(wx.Panel):
 
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
+        dc.SetBackground(wx.Brush(self.GetParent().GetBackgroundColour()))
+        dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
 

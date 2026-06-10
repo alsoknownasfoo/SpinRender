@@ -7,14 +7,17 @@ import wx.lib.scrolledpanel as scrolled
 from SpinRender.utils.wx_svg_compat import ensure_wx_svg
 ensure_wx_svg()
 import wx.svg
+import logging
 import math
 import re
 from pathlib import Path
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
 from .text_styles import TextStyles
-from .helpers import bind_mouse_events, create_text, prepare_styled_text, draw_styled_text
+from .helpers import bind_mouse_events, create_text, prepare_styled_text, draw_styled_text, effective_background
 from .events import ParameterInteractionEvent
+
+logger = logging.getLogger("SpinRender")
 
 _theme = Theme.current()
 _locale = Locale.current()
@@ -46,6 +49,7 @@ def ensure_fonts_loaded():
         return
 
     if not hasattr(wx.Font, "AddPrivateFont"):
+        logger.warning("ensure_fonts_loaded: wx.Font.AddPrivateFont unavailable; bundled fonts not loaded")
         return
 
     # Load from resources folder
@@ -59,11 +63,22 @@ def ensure_fonts_loaded():
     for family, files in font_files.items():
         for filename in files:
             font_path = fonts_dir / filename
-            if font_path.exists():
-                try:
-                    wx.Font.AddPrivateFont(str(font_path))
-                except Exception:
-                    pass
+            if not font_path.exists():
+                logger.warning(f"ensure_fonts_loaded: font file not found for '{family}': {font_path}")
+                continue
+            try:
+                if wx.Font.AddPrivateFont(str(font_path)):
+                    logger.debug(f"ensure_fonts_loaded: loaded '{family}' from {font_path.name}")
+                else:
+                    logger.warning(f"ensure_fonts_loaded: AddPrivateFont returned False for '{family}' ({font_path.name})")
+            except NotImplementedError:
+                # Some wxWidgets builds (e.g. KiCad 10's bundled build on Windows)
+                # don't implement AddPrivateFont at all - the SIP binding exists
+                # but raises. Fonts must be installed system-wide instead; see
+                # DependencyChecker._ensure_windows_fonts_native().
+                logger.debug(f"ensure_fonts_loaded: AddPrivateFont not implemented on this wx build; '{family}' must be installed system-wide")
+            except Exception as e:
+                logger.warning(f"ensure_fonts_loaded: failed to load '{family}' from {font_path.name}: {type(e).__name__}: {e!r}", exc_info=True)
 
 
 
@@ -116,7 +131,7 @@ class CustomSlider(wx.Panel):
             self.style_id = None
             real_id = id
 
-        super().__init__(parent, id=real_id, size=size)
+        super().__init__(parent, id=real_id, size=parent.FromDIP(wx.Size(*size)))
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
 
         self.value = value
@@ -163,6 +178,8 @@ class CustomSlider(wx.Panel):
 
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
+        dc.SetBackground(wx.Brush(effective_background(self)))
+        dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
 
@@ -253,7 +270,7 @@ class CustomToggleButton(wx.Panel):
             self.style_id = None
             real_id = id
 
-        super().__init__(parent, id=real_id, size=size)
+        super().__init__(parent, id=real_id, size=parent.FromDIP(wx.Size(*size)))
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         if options is None:
             off_label = _locale.get("system.controls.toggle_off", "OFF")
@@ -289,6 +306,8 @@ class CustomToggleButton(wx.Panel):
 
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
+        dc.SetBackground(wx.Brush(effective_background(self)))
+        dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
 
@@ -419,7 +438,7 @@ class CustomCheckbox(wx.Panel):
             self.style_id = None
             real_id = id
 
-        super().__init__(parent, id=real_id, size=size)
+        super().__init__(parent, id=real_id, size=parent.FromDIP(wx.Size(*size)))
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.value = False
         self.hovered = False
@@ -463,8 +482,7 @@ class CustomCheckbox(wx.Panel):
 
     def on_paint(self, event) -> None:
         dc = wx.AutoBufferedPaintDC(self)
-        parent_bg = self.GetParent().GetBackgroundColour()
-        dc.SetBackground(wx.Brush(parent_bg))
+        dc.SetBackground(wx.Brush(effective_background(self)))
         dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc:
@@ -516,7 +534,7 @@ class DropdownPopup(wx.PopupTransientWindow):
         super().__init__(parent, wx.BORDER_NONE)
         self.choices, self.selection, self.callback, self.hover_index = choices, current_selection, callback, -1
         self.style_id = style_id
-        self.item_height = 32
+        self.item_height = self.FromDIP(32)
         
         # Theme token mapping
         token = f"components.dropdown.{style_id}" if style_id else "components.dropdown.default"
@@ -532,11 +550,15 @@ class DropdownPopup(wx.PopupTransientWindow):
 
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
+        # Clear the buffer first: AutoBufferedPaintDC starts with undefined
+        # contents, so any pixel the handler doesn't draw shows stale memory.
+        dc.SetBackground(wx.Brush(self.GetBackgroundColour()))
+        dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
 
         width, height = self.GetSize()
-        
+
         # Theme token mappings
         token = f"components.dropdown.{self.style_id}" if self.style_id else "components.dropdown.default"
         if not _theme.has_token(token): token = "components.dropdown.default"
@@ -552,8 +574,9 @@ class DropdownPopup(wx.PopupTransientWindow):
 
         # 2. Menu Items
         item_radius = _theme.size(f"{token}.menu.items.radius") or 2
+        pad = self.FromDIP(4)
         for i, choice in enumerate(self.choices):
-            rect = wx.Rect(4, 4 + (i * self.item_height), width - 8, self.item_height)
+            rect = wx.Rect(pad, pad + (i * self.item_height), width - 2 * pad, self.item_height)
             is_selected = (i == self.selection)
             is_hovered = (i == self.hover_index)
             
@@ -576,16 +599,16 @@ class DropdownPopup(wx.PopupTransientWindow):
             text_color = _theme.color(f"{label_token}.color", is_hovered, is_selected, True)
 
             _, _, th = prepare_styled_text(gc, choice, label_token, text_color)
-            draw_styled_text(gc, choice, label_token, rect.x + 8, rect.y + (rect.height - th) / 2, text_color)
+            draw_styled_text(gc, choice, label_token, rect.x + self.FromDIP(8), rect.y + (rect.height - th) / 2, text_color)
 
     def on_mouse_move(self, event):
-        idx = (event.GetY() - 4) // self.item_height
+        idx = (event.GetY() - self.FromDIP(4)) // self.item_height
         if 0 <= idx < len(self.choices):
             if self.hover_index != idx: self.hover_index = idx; self.Refresh(); self.Update()
         elif self.hover_index != -1: self.hover_index = -1; self.Refresh(); self.Update()
 
     def on_click(self, event):
-        idx = (event.GetY() - 4) // self.item_height
+        idx = (event.GetY() - self.FromDIP(4)) // self.item_height
         if 0 <= idx < len(self.choices): self.callback(idx); self.Dismiss()
 
     def on_leave(self, event): self.hover_index = -1; self.Refresh(); self.Update()
@@ -603,7 +626,7 @@ class CustomDropdown(wx.Panel):
             self.style_id = None
             real_id = id
 
-        super().__init__(parent, id=real_id, size=size)
+        super().__init__(parent, id=real_id, size=parent.FromDIP(wx.Size(*size)))
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.choices, self.selection, self.hovered, self.is_open = choices or [], 0, False, False
         self._default_label = _locale.get("components.dropdown.default.label", "SELECT OPTION")
@@ -620,6 +643,8 @@ class CustomDropdown(wx.Panel):
 
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
+        dc.SetBackground(wx.Brush(effective_background(self)))
+        dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
 
@@ -671,7 +696,7 @@ class CustomDropdown(wx.Panel):
         if not self.choices: return
         popup = DropdownPopup(self, self.choices, self.selection, self.on_select, style_id=self.style_id or "default")
         width, height = self.GetSize()
-        popup_height = (len(self.choices) * 32) + 8
+        popup_height = (len(self.choices) * popup.item_height) + self.FromDIP(8)
         popup.SetSize((width, popup_height))
         pos = self.ClientToScreen(wx.Point(0, height))
         display_rect = wx.Display().GetClientArea()
@@ -715,7 +740,7 @@ class CustomButton(wx.Panel):
             self.style_id = None
             real_id = id
 
-        super().__init__(parent, id=real_id, size=size)
+        super().__init__(parent, id=real_id, size=parent.FromDIP(wx.Size(*size)))
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
 
         # Auto-derive label/icon from style_id via locale
@@ -750,6 +775,8 @@ class CustomButton(wx.Panel):
 
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
+        dc.SetBackground(wx.Brush(effective_background(self)))
+        dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
 
@@ -882,7 +909,7 @@ class PresetCard(wx.Panel):
             self.style_id = None
             real_id = id
 
-        super().__init__(parent, id=real_id, size=size)
+        super().__init__(parent, id=real_id, size=parent.FromDIP(wx.Size(*size)))
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
 
         if self.style_id:
@@ -913,8 +940,7 @@ class PresetCard(wx.Panel):
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         # Clear buffer to parent background so transparent card bg shows correctly
-        parent_bg = self.GetParent().GetBackgroundColour()
-        dc.SetBackground(wx.Brush(parent_bg))
+        dc.SetBackground(wx.Brush(effective_background(self)))
         dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
@@ -935,7 +961,7 @@ class PresetCard(wx.Panel):
         gc.SetBrush(wx.Brush(bg))
         if border: gc.SetPen(wx.Pen(border, 1))
         else: gc.SetPen(wx.TRANSPARENT_PEN)
-        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 8)
+        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, self.FromDIP(8))
 
         # Resolve icon
         icon_char = ""
@@ -951,7 +977,8 @@ class PresetCard(wx.Panel):
         
         _, tw, th = prepare_styled_text(gc, self.label, f"{token}.label", txt_color)
 
-        gap, total_h = 8, ih + 8 + th
+        gap = self.FromDIP(8)
+        total_h = ih + gap + th
         start_y = (height - total_h) / 2
 
         draw_styled_text(gc, icon_char, f"{token}.icon", (width - iw) / 2, start_y, icon_color)
@@ -981,12 +1008,16 @@ class SectionLabel(wx.Panel):
     def __init__(self, parent, label=None, size=(-1, 20), id="default"):
         if label is None:
             label = _locale.get("components.section.default.label", "Section")
-        super().__init__(parent, size=size)
+        super().__init__(parent)
         self.style_id = id
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         self._txt = create_text(self, label, "header")
         sizer.Add(self._txt, 0, wx.ALIGN_CENTER_VERTICAL)
-        self.SetSizer(sizer)
+        # Size to the actual (DPI-scaled) text metrics rather than a fixed
+        # pixel height — a hardcoded height assumes a 96dpi font and clips/
+        # overlaps adjacent sections once Windows display scaling enlarges
+        # the "header" font beyond that height.
+        self.SetSizerAndFit(sizer)
 
 
 class SectionToggle(wx.Panel):
@@ -996,9 +1027,10 @@ class SectionToggle(wx.Panel):
     the height of an adjacent section title for visual alignment.
     """
     def __init__(self, parent, size=20, collapsed=True, on_toggle=None, y_nudge=0):
-        side = int(size)
+        # `size`/`y_nudge` are 96dpi design pixels; scale to the display.
+        side = parent.FromDIP(int(size))
         self._side = side
-        self._y_nudge = int(y_nudge)
+        self._y_nudge = parent.FromDIP(int(y_nudge))
         # Pad the widget vertically by 2*nudge and bottom-align the box so that,
         # once vertically centered in the header, the box renders y_nudge px low.
         super().__init__(parent, size=(side, side + 2 * self._y_nudge))
@@ -1034,8 +1066,7 @@ class SectionToggle(wx.Panel):
 
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
-        parent_bg = self.GetParent().GetBackgroundColour()
-        dc.SetBackground(wx.Brush(parent_bg))
+        dc.SetBackground(wx.Brush(effective_background(self)))
         dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc:
@@ -1051,14 +1082,15 @@ class SectionToggle(wx.Panel):
         y_off = height - box
 
         # Rounded-square stroke, inset by 1px so the stroke stays inside bounds.
+        inset = max(1, self.FromDIP(1))
         gc.SetBrush(wx.TRANSPARENT_BRUSH)
-        gc.SetPen(wx.Pen(color, 1))
-        gc.DrawRoundedRectangle(1, y_off + 1, box - 2, box - 2, 2)
+        gc.SetPen(wx.Pen(color, inset))
+        gc.DrawRoundedRectangle(inset, y_off + inset, box - 2 * inset, box - 2 * inset, self.FromDIP(2))
 
         # Centered +/- drawn as vector strokes for crisp, equal spacing.
         cx, cy = box / 2.0, y_off + box / 2.0
         arm = max(3.0, box * 0.25)
-        gc.SetPen(wx.Pen(color, 1.6))
+        gc.SetPen(wx.Pen(color, max(1.6, box * 0.13)))
         path = gc.CreatePath()
         # Horizontal bar (present for both "+" and "-").
         path.MoveToPoint(cx - arm, cy)
@@ -1093,7 +1125,7 @@ class CustomInput(wx.Panel):
         actual_size = list(size)
         if actual_size[0] == -1: actual_size[0] = 100
 
-        super().__init__(parent, id=real_id, size=tuple(actual_size))
+        super().__init__(parent, id=real_id, size=parent.FromDIP(wx.Size(*actual_size)))
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
 
         # Resolve DNA
@@ -1302,33 +1334,38 @@ class CustomInput(wx.Panel):
 
     def _relayout(self):
         w, h = self.GetSize()
+        dip = self.FromDIP
+        # The themed font must be applied before measuring GetBestSize —
+        # otherwise the control is sized for the default font and the text
+        # sits off-center once on_paint swaps the real font in.
+        self.text_ctrl.SetFont(_theme.font(self.token))
         # Area calculation
-        px = 12
-        if self.type == "rich": px = 36
+        px = dip(12)
+        if self.type == "rich": px = dip(36)
         if self.type == "rich" and self.show_chip and self.chip:
-            self.chip.Move(wx.Point(36, (h - self.chip.GetSize().y) / 2))
-            px += self.chip.GetSize().x + 6
-            
-        pw = w - px - 12
+            self.chip.Move(wx.Point(dip(36), (h - self.chip.GetSize().y) // 2))
+            px += self.chip.GetSize().x + dip(6)
+
+        pw = w - px - dip(12)
         if self.type == "numeric":
             # Probe font size for unit width
             font = _theme.font(self.token)
             temp_dc = wx.ScreenDC(); temp_dc.SetFont(font)
             utw, _ = temp_dc.GetTextExtent(self.unit)
-            pw -= (utw + 8)
-            
+            pw -= (utw + dip(8))
+
         # Position native control
         if self.multiline:
             # Multiline fills available height with 8px padding
             # Increase width by reducing right padding to 4px
-            pw = w - px - 4
-            ph = h - 16
+            pw = w - px - dip(4)
+            ph = h - dip(16)
             self.text_ctrl.SetSize(pw, ph)
-            self.text_ctrl.SetPosition((px, 8))
+            self.text_ctrl.SetPosition((px, dip(8)))
         else:
-            ph = self.text_ctrl.GetBestSize().y - 4 # Add vertical padding
+            ph = self.text_ctrl.GetBestSize().y - dip(4) # Add vertical padding
             self.text_ctrl.SetSize(pw, ph)
-            self.text_ctrl.SetPosition((px, (h - ph) / 2))
+            self.text_ctrl.SetPosition((px, (h - ph) // 2))
 
     def reapply_theme(self):
         if self.chip:
@@ -1341,7 +1378,10 @@ class CustomInput(wx.Panel):
         self.Refresh(); event.Skip()
 
     def on_paint(self, event):
-        dc = wx.AutoBufferedPaintDC(self); gc = wx.GraphicsContext.Create(dc)
+        dc = wx.AutoBufferedPaintDC(self)
+        dc.SetBackground(wx.Brush(effective_background(self)))
+        dc.Clear()
+        gc = wx.GraphicsContext.Create(dc)
         if not gc: return
         w, h = self.GetSize(); enabled = self.IsEnabled(); focused = self.text_ctrl.HasFocus()
 
@@ -1471,6 +1511,8 @@ class ProjectFolderChip(wx.Panel):
 
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
+        dc.SetBackground(wx.Brush(effective_background(self)))
+        dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
         w, h = self.GetSize()
@@ -1513,7 +1555,7 @@ class CustomColorPicker(wx.Panel):
         
         self.Bind(wx.EVT_PAINT, self.on_paint)
         bind_mouse_events(self, hover_handler=self.on_mouse_move, click_handler=self.on_click, leave_handler=self.on_leave)
-        self.SetMinSize((340, 64)); self._layout_input(); self.Bind(wx.EVT_SIZE, self._on_size)
+        self.SetMinSize(self.FromDIP(wx.Size(340, 64))); self._layout_input(); self.Bind(wx.EVT_SIZE, self._on_size)
 
     def _on_size(self, event): self._layout_input(); event.Skip()
     def _update_selection(self):
@@ -1546,25 +1588,30 @@ class CustomColorPicker(wx.Panel):
 
     def _get_rects(self):
         w, h = self.GetSize()
-        rects, x = {}, 2  # Start at 2px to account for border offset
-        # Each preset: 28px wide + 10px gap (spacing between swatches)
+        dip = self.FromDIP
+        swatch = dip(28)
+        rects, x = {}, dip(2)  # Start at 2px to account for border offset
+        # Each preset: swatch width + 10px gap (spacing between swatches)
         for i in range(len(self.PRESETS)):
-            rects[f'preset_{i}'] = wx.Rect(x, 10, 28, 28)
-            x += 38  # 28 + 10
+            rects[f'preset_{i}'] = wx.Rect(x, dip(10), swatch, swatch)
+            x += swatch + dip(10)
         # Divider with 4px padding on each side (8px total)
         x += 0  # 4px left padding before divider
         rects['divider'] = x
-        x += 12  # 4px right padding after divider
+        x += dip(12)  # 4px right padding after divider
         # Custom swatch (larger hit area for label)
-        rects['custom'] = wx.Rect(x, 10, 28, 40)
-        x += 35  # Account for swatch width + padding
+        rects['custom'] = wx.Rect(x, dip(10), swatch, dip(40))
+        x += dip(35)  # Account for swatch width + padding
         # Hex input field fixed to 100px width, right-aligned
         hex_x = w // 2
-        rects['hex'] = wx.Rect(hex_x, 7, hex_x // 2, 32)
+        rects['hex'] = wx.Rect(hex_x, dip(7), hex_x // 2, dip(32))
         return rects
 
     def on_paint(self, event):
-        dc = wx.AutoBufferedPaintDC(self); gc = wx.GraphicsContext.Create(dc)
+        dc = wx.AutoBufferedPaintDC(self)
+        dc.SetBackground(wx.Brush(effective_background(self)))
+        dc.Clear()
+        gc = wx.GraphicsContext.Create(dc)
         if not gc: return
         w, h = self.GetSize(); enabled, rects = self.IsEnabled(), self._get_rects()
         
@@ -1582,14 +1629,16 @@ class CustomColorPicker(wx.Panel):
         # Hex input frame is handled by CustomInput itself
 
     def _draw_swatch(self, gc, x, y, ch, lbl, sel, hov, enabled):
-        sc = wx.Colour(ch); 
-        
+        sc = wx.Colour(ch);
+        dip = self.FromDIP
+        swatch = dip(28)
+
         # Swatch border role
         token = "components.colorpicker.default"
         bc_token = f"{token}.items.border.color"
         ibs_token = f"{token}.items.innerborder.size"
         ibc_token = f"{token}.items.innerborder.color"
-        
+
         # 1. Background
         # sc is a user-supplied color value (not a theme token), so disabled state is
         # computed inline using the same weighted-luminance formula as Theme.disabled().
@@ -1600,8 +1649,8 @@ class CustomColorPicker(wx.Panel):
             sc = wx.Colour(gray, gray, gray, _theme._disabled_alpha(sc.Alpha()))
         gc.SetBrush(wx.Brush(sc))
         gc.SetPen(wx.TRANSPARENT_PEN)
-        gc.DrawRoundedRectangle(x, y, 28, 28, 4)
-        
+        gc.DrawRoundedRectangle(x, y, swatch, swatch, dip(4))
+
         # 2. Inner Border (Optional)
         if _theme.has_token(ibc_token):
             ibc = _theme.color(ibc_token, hov, sel, enabled)
@@ -1609,17 +1658,17 @@ class CustomColorPicker(wx.Panel):
             gc.SetPen(wx.Pen(ibc, ibs))
             gc.SetBrush(wx.TRANSPARENT_BRUSH)
             # Inset by 1px to show inside outer border
-            gc.DrawRoundedRectangle(x + 1, y + 1, 25, 25, 3)
+            gc.DrawRoundedRectangle(x + 1, y + 1, swatch - 3, swatch - 3, dip(3))
 
         # 3. Outer Border
         stc = _theme.color(bc_token, hov, sel, enabled)
         thk = _theme.size(f"{token}.items.border.size") or 1
         gc.SetPen(wx.Pen(stc, thk))
         gc.SetBrush(wx.TRANSPARENT_BRUSH)
-        gc.DrawRoundedRectangle(x, y, 28, 28, 4)
-        
+        gc.DrawRoundedRectangle(x, y, swatch, swatch, dip(4))
+
         _, tw, _ = prepare_styled_text(gc, lbl, f"{token}.label")
-        draw_styled_text(gc, lbl, f"{token}.label",     x + (28 - tw) / 2, y + 32, _theme.color(f"{token}.label.color", hov, sel, enabled))
+        draw_styled_text(gc, lbl, f"{token}.label",     x + (swatch - tw) / 2, y + dip(32), _theme.color(f"{token}.label.color", hov, sel, enabled))
 
     def on_mouse_move(self, event):
         if not self.IsEnabled(): return
@@ -1678,7 +1727,7 @@ class CustomListItem(wx.Panel):
         if not _theme.has_token(self.token): self.token = "components.list.default"
 
         self.height = _theme._resolve(f"{self.token}.frame.height") or 40
-        self.SetMinSize((-1, self.height))
+        self.SetMinSize(self.FromDIP(wx.Size(-1, self.height)))
 
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_MOTION, self.on_motion)
@@ -1731,6 +1780,8 @@ class CustomListItem(wx.Panel):
 
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
+        dc.SetBackground(wx.Brush(effective_background(self)))
+        dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
 

@@ -485,6 +485,23 @@ def create_frame(parent: wx.Panel, style_token: str, **kwargs) -> wx.Panel:
     return frame
 
 
+def effective_background(widget: wx.Window) -> wx.Colour:
+    """Nearest opaque ancestor background colour, for clearing paint buffers.
+
+    Section/row containers use a fully transparent background colour so the
+    panel behind them shows through; dc.Clear() ignores alpha, so clearing a
+    custom control's buffer to its direct parent's colour paints a black box.
+    Walk up until a window with an opaque background is found.
+    """
+    p = widget.GetParent()
+    while p is not None:
+        c = p.GetBackgroundColour()
+        if c.IsOk() and c.Alpha() == wx.ALPHA_OPAQUE:
+            return c
+        p = p.GetParent()
+    return wx.Colour(0, 0, 0)
+
+
 def bind_mouse_events(widget: wx.Window,
                       hover_handler=None,
                       leave_handler=None,
