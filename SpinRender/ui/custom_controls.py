@@ -1117,7 +1117,8 @@ class SectionToggle(wx.Panel):
         cx, cy = box / 2.0, y_off + box / 2.0
         arm = max(3.0, box * 0.25)
         # wx.Pen width must be int; GraphicsPenInfo keeps the fractional width.
-        gc.SetPen(gc.CreatePen(wx.GraphicsPenInfo(color).Width(max(1.6, box * 0.13))))
+        # Design weight is 1.6px on the 20px box (box * 0.08), DPI-scaled via box.
+        gc.SetPen(gc.CreatePen(wx.GraphicsPenInfo(color).Width(max(1.0, box * 0.08))))
         path = gc.CreatePath()
         # Horizontal bar (present for both "+" and "-").
         path.MoveToPoint(cx - arm, cy)
@@ -1389,10 +1390,12 @@ class CustomInput(wx.Panel):
     def _relayout(self):
         w, h = self.GetSize()
         dip = self.FromDIP
-        # The themed font must be applied before measuring GetBestSize —
+        # wxMSW: apply the themed font before measuring GetBestSize —
         # otherwise the control is sized for the default font and the text
-        # sits off-center once on_paint swaps the real font in.
-        self.text_ctrl.SetFont(_theme.font(self.token))
+        # sits off-center once on_paint swaps the real font in. macOS keeps
+        # measuring with the control's current font (its historical sizing).
+        if wx.Platform == '__WXMSW__':
+            self.text_ctrl.SetFont(_theme.font(self.token))
         # Area calculation
         px = dip(12)
         if self.type == "rich": px = dip(36)
@@ -1620,6 +1623,10 @@ class CustomColorPicker(wx.Panel):
     def __init__(self, parent, current_color="#000000", section=None):
         super().__init__(parent)
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
+        # The picker sits on transparent section rows; without a themed colour
+        # of its own, the hex CustomInput would clear its paint buffer to the
+        # opaque system default this panel reports (square light corners).
+        apply_transparent_background(self)
         self.current_color, self.hover_idx, self.selection, self.editing = current_color.upper(), -1, -1, False
         self._update_selection()
 
@@ -1730,23 +1737,25 @@ class CustomColorPicker(wx.Panel):
             if _theme.is_light():
                 gray = min(255, int(gray + (255 - gray) * 0.25))
             sc = wx.Colour(gray, gray, gray, _theme._disabled_alpha(sc.Alpha()))
-        gc.SetBrush(wx.Brush(sc))
         gc.SetPen(wx.TRANSPARENT_PEN)
-        gc.DrawRoundedRectangle(x, y, swatch, swatch, dip(4))
-
-        # 2. Inner Border (Optional)
-        if _theme.has_token(ibc_token):
-            ibc = _theme.color(ibc_token, hov, sel, enabled)
-            ibs = max(1, dip(_theme.size(ibs_token) or 1))
-            gc.SetPen(wx.Pen(ibc, ibs))
-            gc.SetBrush(wx.TRANSPARENT_BRUSH)
-            # Inset by 1px (design) to show inside outer border
-            inset = max(1, dip(1))
-            gc.DrawRoundedRectangle(x + inset, y + inset, swatch - 3 * inset, swatch - 3 * inset, dip(3))
-
-        # 3. Outer Border
-        stc = _theme.color(bc_token, hov, sel, enabled)
         thk = max(1, dip(_theme.size(f"{token}.items.border.size") or 1))
+        gap = max(1.0, float(dip(_theme.size(ibs_token) or 1)))
+
+        # 2. Gap band (innerborder colour), drawn as a full base beneath the
+        # colour fill and selection ring: the visible part is the uniform gap
+        # ring between them, so it can't be swallowed by stroke alignment.
+        if _theme.has_token(ibc_token):
+            gc.SetBrush(wx.Brush(_theme.color(ibc_token, hov, sel, enabled)))
+            gc.DrawRoundedRectangle(x, y, swatch, swatch, dip(4))
+
+        # 3. Colour fill, inset uniformly: half the ring stroke (it straddles
+        # the rect edge) plus the gap width on every side.
+        ci = thk / 2.0 + gap
+        gc.SetBrush(wx.Brush(sc))
+        gc.DrawRoundedRectangle(x + ci, y + ci, swatch - 2 * ci, swatch - 2 * ci, max(1, dip(2)))
+
+        # 4. Outer Border (selection ring)
+        stc = _theme.color(bc_token, hov, sel, enabled)
         gc.SetPen(wx.Pen(stc, thk))
         gc.SetBrush(wx.TRANSPARENT_BRUSH)
         gc.DrawRoundedRectangle(x, y, swatch, swatch, dip(4))

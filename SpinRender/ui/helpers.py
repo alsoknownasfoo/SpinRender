@@ -492,7 +492,17 @@ def effective_background(widget: wx.Window) -> wx.Colour:
     panel behind them shows through; dc.Clear() ignores alpha, so clearing a
     custom control's buffer to its direct parent's colour paints a black box.
     Walk up until a window with an opaque background is found.
+
+    Only wxMSW needs the resolution: its paint buffers start undefined and
+    never-coloured windows report an opaque system default. macOS composites
+    windows transparently, so clearing to the direct parent's colour (even a
+    fully transparent one — effectively a no-op) preserves its historical
+    rendering; resolving to an ancestor's opaque colour there paints a wrong
+    solid box over the see-through containers.
     """
+    if wx.Platform != '__WXMSW__':
+        parent = widget.GetParent()
+        return parent.GetBackgroundColour() if parent else wx.Colour(0, 0, 0)
     p = widget.GetParent()
     while p is not None:
         # Skip ancestors whose colour was never explicitly themed: wxMSW
