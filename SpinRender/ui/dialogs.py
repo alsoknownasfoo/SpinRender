@@ -14,7 +14,6 @@ from .custom_controls import (
     EVT_LIST_ITEM_SELECTED, EVT_LIST_ITEM_DELETED
 )
 from .helpers import (
-    apply_transparent_background,
     bind_hover_text_group,
     create_text,
     effective_background,
@@ -242,7 +241,7 @@ class BaseStyledDialog(wx.Dialog):
         gap = self.FromDIP(gap)
 
         footer = wx.Panel(self.main_container)
-        apply_transparent_background(footer)
+        footer.SetBackgroundColour(_theme.color("colors.gray-dark"))
         outer_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self._footer_divider = wx.Panel(footer, size=(-1, 1))
@@ -332,7 +331,7 @@ class FilenameEntryDialog(BaseStyledDialog):
         main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
         content = wx.Panel(self.main_container)
-        apply_transparent_background(content)
+        content.SetBackgroundColour(_theme.color("colors.gray-dark"))
         content_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.name_input = CustomInput(content, size=(-1, 36), id="default")
@@ -434,14 +433,14 @@ class AdvancedOptionsDialog(BaseStyledDialog):
 
         # Content
         content = wx.Panel(self.main_container)
-        apply_transparent_background(content)
+        content.SetBackgroundColour(_theme.color("colors.gray-dark"))
         content_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # 0. APPEARANCE section
         content_sizer.Add(self.create_section_label(content, _locale.get("parameters.appearance.label", "APPEARANCE")), 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(12))
 
         theme_row = wx.Panel(content)
-        apply_transparent_background(theme_row)
+        theme_row.SetBackgroundColour(_theme.color("colors.gray-dark"))
         theme_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         theme_desc = create_text(theme_row, _locale.get("dialog.advanced.theme_desc", "Interface theme."), "dialog_description", color_token="colors.gray-light")
@@ -468,7 +467,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
 
         # Auto Row
         auto_row = wx.Panel(content)
-        apply_transparent_background(auto_row)
+        auto_row.SetBackgroundColour(_theme.color("colors.gray-dark"))
         auto_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         auto_desc = create_text(auto_row, _locale.get("output.auto_desc", "Automatically save to time-stamped directories."), "dialog_description")
@@ -485,7 +484,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
 
         # Path Input Row
         path_input_row = wx.Panel(content)
-        apply_transparent_background(path_input_row)
+        path_input_row.SetBackgroundColour(_theme.color("colors.gray-dark"))
         path_input_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         self.path_display = CustomInput(path_input_row, size=(-1, 36), id="path")
@@ -505,7 +504,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         
         # Helper link simulation
         link_row = wx.Panel(content)
-        apply_transparent_background(link_row)
+        link_row.SetBackgroundColour(_theme.color("colors.gray-dark"))
         link_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         info_icon = create_text(link_row, _theme.glyph("info"), "icon", color_token="colors.gray-light")
@@ -580,7 +579,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         content_sizer.Add(logging_header_sizer, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(12))
         
         log_row = wx.Panel(content)
-        apply_transparent_background(log_row)
+        log_row.SetBackgroundColour(_theme.color("colors.gray-dark"))
         log_hsizer = wx.BoxSizer(wx.HORIZONTAL)
         
         log_info = create_text(log_row, _locale.get("parameters.log_info", "Logs are kept for 30 days. Useful for troubleshooting render failures."), "dialog_description", style=wx.ST_NO_AUTORESIZE)
@@ -753,7 +752,7 @@ class SavePresetDialog(BaseStyledDialog):
         main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
         content = wx.Panel(self.main_container)
-        apply_transparent_background(content)
+        content.SetBackgroundColour(_theme.color("colors.gray-dark"))
         content_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.name_input = CustomInput(content, size=(-1, 36), id="default")
@@ -844,12 +843,12 @@ class AddResolutionDialog(BaseStyledDialog):
         main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
         content = wx.Panel(self.main_container)
-        apply_transparent_background(content)
+        content.SetBackgroundColour(_theme.color("colors.gray-dark"))
         content_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Row: W [____]   ×   H [____]
         fields_row = wx.Panel(content)
-        apply_transparent_background(fields_row)
+        fields_row.SetBackgroundColour(_theme.color("colors.gray-dark"))
         fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         w_lbl = create_text(fields_row, _locale.get("dialog.add_resolution.width_label", "W"), "subheader")
@@ -1182,7 +1181,7 @@ class MessageDialog(BaseStyledDialog):
         padding = 16
         gap = 8
         footer = wx.Panel(self.main_container)
-        apply_transparent_background(footer)
+        footer.SetBackgroundColour(_theme.color("colors.gray-dark"))
         outer = wx.BoxSizer(wx.VERTICAL)
 
         self._footer_divider = wx.Panel(footer, size=(-1, 1))
