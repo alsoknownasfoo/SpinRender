@@ -334,7 +334,29 @@ class SpinRenderFrame(wx.Frame):
         self.theme_timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_theme_watch_timer, self.theme_timer)
         self.theme_timer.Start(1000) # Check every second
+        # The timer holds a raw pointer to this frame as its event target. It
+        # MUST be stopped before the frame is destroyed: a tick fired after
+        # Destroy() calls through the freed frame and hard-crashes KiCad
+        # (0xc0000005) — typically a second or two after the plugin is
+        # reopened, once the heap block gets reused. EVT_WINDOW_DESTROY covers
+        # teardown paths that bypass on_close (e.g. KiCad closing the parent).
+        self.Bind(wx.EVT_WINDOW_DESTROY, self._on_frame_destroy)
         logger.debug(f"Theme watcher initialized for {self.theme_path.name}")
+
+    def _stop_theme_watcher(self):
+        """Stop the theme hot-reload timer (idempotent)."""
+        timer = getattr(self, 'theme_timer', None)
+        if timer is not None:
+            try:
+                if timer.IsRunning():
+                    timer.Stop()
+            except RuntimeError:
+                pass
+
+    def _on_frame_destroy(self, event):
+        if event.GetEventObject() is self:
+            self._stop_theme_watcher()
+        event.Skip()
 
     def on_theme_watch_timer(self, event):
         """Check if theme file has been modified and reload if needed."""
@@ -440,6 +462,7 @@ class SpinRenderFrame(wx.Frame):
         Handle window close
         """
         logger.debug("SpinRenderFrame.on_close() called")
+        self._stop_theme_watcher()
         # Clean up resources
         if hasattr(self.panel, 'cleanup'):
             logger.debug("Calling panel cleanup()...")
