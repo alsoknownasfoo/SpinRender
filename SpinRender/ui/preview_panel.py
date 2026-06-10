@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from .text_styles import TextStyle, TextStyles
-from .helpers import create_text, update_text
+from .helpers import create_text, update_text, apply_transparent_background
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
 _theme = Theme.current()
@@ -41,6 +41,9 @@ class PreviewPanel(wx.Panel):
             on_close_callback: Optional callback to invoke when render preview is closed
         """
         super().__init__(parent)
+        # Set before children are created so overlay panels resolve their
+        # see-through background against this colour (not the MSW default).
+        self.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
         self.settings = settings
         self.board_path = board_path
         self.on_close_callback = on_close_callback
@@ -79,6 +82,7 @@ class PreviewPanel(wx.Panel):
         """Create all overlay text widgets."""
         # Top overlay container
         top_meta = wx.Panel(self)
+        apply_transparent_background(top_meta)
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         # Top-Left: Preset name OR parameters
@@ -137,6 +141,7 @@ class PreviewPanel(wx.Panel):
 
         # Bottom overlay container
         bottom_meta = wx.Panel(self)
+        apply_transparent_background(bottom_meta)
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.ov_bottom_left = create_text(bottom_meta, "", "info")
@@ -176,14 +181,14 @@ class PreviewPanel(wx.Panel):
         """Set up the main sizer for PreviewPanel to manage all children."""
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        # Add top info overlay with 12px margins
-        main_sizer.Add(self._top_meta, 0, wx.EXPAND | wx.ALL, 12)
+        # Add top info overlay with 12px (design) margins
+        main_sizer.Add(self._top_meta, 0, wx.EXPAND | wx.ALL, self.FromDIP(12))
 
         # Add viewport container with proportion=1 to fill remaining space
         main_sizer.Add(self._viewport_container, 1, wx.EXPAND)
 
-        # Add bottom info overlay with 12px margins
-        main_sizer.Add(self._bottom_meta, 0, wx.EXPAND | wx.ALL, 12)
+        # Add bottom info overlay with 12px (design) margins
+        main_sizer.Add(self._bottom_meta, 0, wx.EXPAND | wx.ALL, self.FromDIP(12))
 
         self.SetSizer(main_sizer)
 

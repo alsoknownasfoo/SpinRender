@@ -3,12 +3,15 @@ ControlsSidePanel - Extracted left sidebar UI construction from SpinRenderPanel.
 
 This panel contains all the controls for rendering parameters, presets, and output settings.
 """
+import logging
 import wx
 from SpinRender.utils.wx_svg_compat import ensure_wx_svg
 ensure_wx_svg()
 import wx.svg
 import wx.lib.scrolledpanel as scrolled
 from pathlib import Path
+
+logger = logging.getLogger("SpinRender")
 
 from .custom_controls import (
     CustomSlider, CustomToggleButton, CustomButton, CustomCheckbox,
@@ -21,7 +24,11 @@ from SpinRender.core.locale import Locale
 from SpinRender.version import get_version
 _theme = Theme.current()
 _locale = Locale.current()
-from .helpers import create_section_label, create_numeric_input, create_text, reapply_text_styles, load_svg, set_text_widget_state, effective_background
+from .helpers import (
+    create_section_label, create_numeric_input, create_text, reapply_text_styles,
+    load_svg, set_text_widget_state, effective_background,
+    apply_transparent_background, refresh_transparent_backgrounds,
+)
 from SpinRender.utils.paint_guard import guarded_paint
 
 
@@ -89,7 +96,7 @@ class ControlsSidePanel(wx.Panel):
         main_sizer.Add(self.header_panel, 0, wx.EXPAND)
 
         # Divider after header
-        self._header_divider = wx.Panel(main_container, size=(-1, 1))
+        self._header_divider = wx.Panel(main_container, size=(-1, max(1, self.FromDIP(1))))
         self._header_divider.SetBackgroundColour(_theme.color("dividers.default.color"))
         main_sizer.Add(self._header_divider, 0, wx.EXPAND)
 
@@ -103,7 +110,7 @@ class ControlsSidePanel(wx.Panel):
         presets = self.create_preset_section(self.scrolled_panel)
         content_sizer.Add(presets, 0, wx.EXPAND | wx.ALL, padding)
 
-        self.div2 = wx.Panel(self.scrolled_panel, size=(-1, 1))
+        self.div2 = wx.Panel(self.scrolled_panel, size=(-1, max(1, self.FromDIP(1))))
         self.div2.SetBackgroundColour(_theme.color("dividers.default.color"))
         content_sizer.Add(self.div2, 0, wx.EXPAND)
 
@@ -111,7 +118,7 @@ class ControlsSidePanel(wx.Panel):
         params = self.create_parameters_section(self.scrolled_panel)
         content_sizer.Add(params, 0, wx.EXPAND | wx.ALL, padding)
 
-        self.div3 = wx.Panel(self.scrolled_panel, size=(-1, 1))
+        self.div3 = wx.Panel(self.scrolled_panel, size=(-1, max(1, self.FromDIP(1))))
         self.div3.SetBackgroundColour(_theme.color("dividers.default.color"))
         content_sizer.Add(self.div3, 0, wx.EXPAND)
 
@@ -152,7 +159,7 @@ class ControlsSidePanel(wx.Panel):
         main_sizer.Add(self.scrolled_panel, 1, wx.EXPAND)
 
         # Divider before footer (distinctive separator)
-        self._footer_divider = wx.Panel(main_container, size=(-1, 1))
+        self._footer_divider = wx.Panel(main_container, size=(-1, max(1, self.FromDIP(1))))
         self._footer_divider.SetBackgroundColour(_theme.color("dividers.default.color"))
         main_sizer.Add(self._footer_divider, 0, wx.EXPAND)
 
@@ -166,12 +173,12 @@ class ControlsSidePanel(wx.Panel):
 
     def create_header(self, parent):
         """Create the logo and title header."""
-        header = wx.Panel(parent, size=(-1, 90))
+        header = wx.Panel(parent, size=(-1, self.FromDIP(90)))
         header.SetBackgroundColour(_theme.color("layout.main.leftpanel.bg"))
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         logo = SVGLogoPanel(header, size=(58, 58))
-        sizer.Add(logo, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 16)
+        sizer.Add(logo, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, self.FromDIP(16))
 
         title_sizer = wx.BoxSizer(wx.VERTICAL)
         self.header_title = create_text(header, _locale.get("component.main.header.title", "SPINRENDER"), "title")
@@ -187,7 +194,7 @@ class ControlsSidePanel(wx.Panel):
         self.header_close_btn = CustomButton(header, id="close", label="", size=(36, 36))
         
         self.header_close_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_close)
-        sizer.Add(self.header_close_btn, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 16)
+        sizer.Add(self.header_close_btn, 0, wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, self.FromDIP(16))
 
         header.SetSizerAndFit(sizer)
         self.main_panel.enable_drag(header)
@@ -208,7 +215,11 @@ class ControlsSidePanel(wx.Panel):
             self.footer_panel.SetBackgroundColour(footer_bg)
 
         if hasattr(self, 'preset_row'):
-            self.preset_row.SetBackgroundColour(_theme.TRANSPARENT)
+            apply_transparent_background(self.preset_row)
+
+        # Re-resolve every Windows stand-in for a transparent container now
+        # that the opaque panels above carry the new theme colours.
+        refresh_transparent_backgrounds(self)
 
         # 1. Re-apply all registered text styles globally
         reapply_text_styles()
@@ -237,14 +248,14 @@ class ControlsSidePanel(wx.Panel):
     def create_preset_section(self, parent):
         """Create the preset selection buttons."""
         panel = wx.Panel(parent)
-        panel.SetBackgroundColour(_theme.TRANSPARENT)
+        apply_transparent_background(panel)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(create_section_label(panel, _locale.get("sections.presets", "LOOP PRESETS"), id="presets"), 0, wx.EXPAND | wx.BOTTOM, 8)
+        sizer.Add(create_section_label(panel, _locale.get("sections.presets", "LOOP PRESETS"), id="presets"), 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(8))
 
         preset_row = wx.Panel(panel)
         self.preset_row = preset_row
         self._preset_row = preset_row
-        preset_row.SetBackgroundColour(_theme.TRANSPARENT)
+        apply_transparent_background(preset_row)
         preset_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         preset_ids = ["hero", "spin", "flip", "custom"]
@@ -259,7 +270,7 @@ class ControlsSidePanel(wx.Panel):
             flags = wx.EXPAND
             if i < len(preset_ids) - 1:
                 flags |= wx.RIGHT
-            preset_sizer.Add(btn, 1, flags, 8)
+            preset_sizer.Add(btn, 1, flags, self.FromDIP(8))
 
         preset_row.SetSizerAndFit(preset_sizer)
         sizer.Add(preset_row, 0, wx.EXPAND)
@@ -269,17 +280,17 @@ class ControlsSidePanel(wx.Panel):
     def create_parameters_section(self, parent):
         """Create the collapsible parameters section."""
         panel = wx.Panel(parent)
-        panel.SetBackgroundColour(_theme.TRANSPARENT)
+        apply_transparent_background(panel)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         header = wx.Panel(panel)
-        header.SetBackgroundColour(_theme.TRANSPARENT)
+        apply_transparent_background(header)
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
         section_label = create_section_label(header, _locale.get("sections.parameters", "PARAMETERS"), id="parameters")
 
         # Title, then the expand/collapse toggle to its RIGHT (12x12, 5px gap).
         self._params_title = section_label
-        header_sizer.Add(section_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        header_sizer.Add(section_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, self.FromDIP(5))
         self.params_toggle = SectionToggle(
             header, size=12, y_nudge=1,
             collapsed=self.settings.params_collapsed,
@@ -311,7 +322,7 @@ class ControlsSidePanel(wx.Panel):
 
         self._params_panel = panel
         self._params_sizer = sizer
-        sizer.Add(header, 0, wx.EXPAND | wx.BOTTOM, 10)
+        sizer.Add(header, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(10))
         self._params_header_item = sizer.GetItem(header)
 
         # Collapsible body — hidden when collapsed so only the title shows.
@@ -321,9 +332,9 @@ class ControlsSidePanel(wx.Panel):
             self.create_direction_control(panel),
             self.create_lighting_control(panel),
         ]
-        sizer.Add(self._params_content[0], 0, wx.EXPAND | wx.BOTTOM, 10)
-        sizer.Add(self._params_content[1], 0, wx.EXPAND | wx.BOTTOM, 10)
-        sizer.Add(self._params_content[2], 0, wx.EXPAND | wx.BOTTOM, 10)
+        sizer.Add(self._params_content[0], 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(10))
+        sizer.Add(self._params_content[1], 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(10))
+        sizer.Add(self._params_content[2], 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(10))
         sizer.Add(self._params_content[3], 0, wx.EXPAND)
 
         # Build in the expanded state so the panel measures at full height.
@@ -429,7 +440,7 @@ class ControlsSidePanel(wx.Panel):
         # When collapsed, drop the header's bottom margin so the gap to the
         # divider below matches the padding above the title.
         if getattr(self, '_params_header_item', None) is not None:
-            self._params_header_item.SetBorder(0 if collapsed else 10)
+            self._params_header_item.SetBorder(0 if collapsed else self.FromDIP(10))
 
     def on_params_toggle(self, collapsed):
         """Persist and apply a parameters expand/collapse change."""
@@ -449,7 +460,7 @@ class ControlsSidePanel(wx.Panel):
         for child in getattr(self, '_output_content', []):
             child.Show(show)
         if getattr(self, '_output_header_item', None) is not None:
-            self._output_header_item.SetBorder(0 if collapsed else 10)
+            self._output_header_item.SetBorder(0 if collapsed else self.FromDIP(10))
 
     def on_output_toggle(self, collapsed):
         """Persist and apply an output-settings expand/collapse change."""
@@ -466,14 +477,15 @@ class ControlsSidePanel(wx.Panel):
     def create_rotation_controls(self, parent):
         """Create all rotation axis controls."""
         panel = wx.Panel(parent)
+        apply_transparent_background(panel)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.AddSpacer(10)
+        sizer.AddSpacer(self.FromDIP(10))
         self.rot_heading = create_text(panel, _locale.get("parameters.rotation_heading", "ROTATION SETTINGS"), "subheader")
-        sizer.Add(self.rot_heading, 0, wx.BOTTOM, 6)
+        sizer.Add(self.rot_heading, 0, wx.BOTTOM, self.FromDIP(6))
 
         # Helper text immediately below subheader
         self.rot_desc = create_text(panel, _locale.get("parameters.rotation_desc", "BOARD: ORIENT ON SPINDLE | SPIN: ORIENT THE SPINDLE ITSELF"), "description")
-        sizer.Add(self.rot_desc, 0, wx.BOTTOM, 10)
+        sizer.Add(self.rot_desc, 0, wx.BOTTOM, self.FromDIP(10))
 
         # Fetch icon_ref from locale for each axis. Colors are ID-driven.
         row1 = self.create_axis_control(
@@ -481,28 +493,28 @@ class ControlsSidePanel(wx.Panel):
             _locale.get("parameters.board_tilt.icon_ref", "axis-x"),
             -90, 90, locale_key="parameters.board_tilt.label", id="primary"
         )
-        sizer.Add(row1, 0, wx.EXPAND | wx.BOTTOM, 4)
+        sizer.Add(row1, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(4))
 
         row2 = self.create_axis_control(
             panel, "BOARD ROLL", self.settings.board_roll,
             _locale.get("parameters.board_roll.icon_ref", "axis-y"),
             -180, 180, locale_key="parameters.board_roll.label", id="secondary"
         )
-        sizer.Add(row2, 0, wx.EXPAND | wx.BOTTOM, 4)
+        sizer.Add(row2, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(4))
 
         row3 = self.create_axis_control(
             panel, "SPIN TILT", self.settings.spin_tilt,
             _locale.get("parameters.spin_tilt.icon_ref", "axis-y-rot"),
             -90, 90, locale_key="parameters.spin_tilt.label", id="tertiary"
         )
-        sizer.Add(row3, 0, wx.EXPAND | wx.BOTTOM, 4)
+        sizer.Add(row3, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(4))
 
         row4 = self.create_axis_control(
             panel, "SPIN HEADING", self.settings.spin_heading,
             _locale.get("parameters.spin_heading.icon_ref", "axis-z-rot"),
             -180, 180, locale_key="parameters.spin_heading.label", id="quaternary"
         )
-        sizer.Add(row4, 0, wx.EXPAND | wx.BOTTOM, 4)
+        sizer.Add(row4, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(4))
 
         # Back-apply the final maximum label width to all axis label panels so
         # every slider in the group ends up with the same (minimum) width.
@@ -519,11 +531,13 @@ class ControlsSidePanel(wx.Panel):
     def create_axis_control(self, parent, label_text, def_val, icon_name, min_val, max_val, locale_key=None, id="default"):
         """Create a labeled slider + numeric input row."""
         row = wx.Panel(parent)
+        apply_transparent_background(row)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
-        sizer.AddSpacer(10)
+        sizer.AddSpacer(self.FromDIP(10))
 
         # Build label content first to measure its width
         label_part = wx.Panel(row)
+        apply_transparent_background(label_part)
         lp_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         # icon_name is now a glyph name (e.g., 'axis-x-arrow'), call theme.glyph()
@@ -536,7 +550,7 @@ class ControlsSidePanel(wx.Panel):
         if icon_char:
             icon_lbl = create_text(label_part, icon_char, "icon", color_token=resolved_token)
             self._registry.add(icon_lbl, section='parameters')
-            lp_sizer.Add(icon_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+            lp_sizer.Add(icon_lbl, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, self.FromDIP(4))
 
         resolved_label = _locale.get(locale_key, label_text) if locale_key else label_text
         lbl = create_text(label_part, f"{resolved_label}:", "label", color_token=resolved_token)
@@ -555,10 +569,10 @@ class ControlsSidePanel(wx.Panel):
             self._axis_label_parts = []
         self._axis_label_parts.append(label_part)
 
-        sizer.Add(label_part, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        sizer.Add(label_part, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, self.FromDIP(8))
 
         slider = CustomSlider(row, value=def_val, min_val=min_val, max_val=max_val, size=(-1, 18), id=id, section='parameters')
-        sizer.Add(slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+        sizer.Add(slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, self.FromDIP(10))
 
         # Numeric input with themed size (use component definition)
         inp = create_numeric_input(row, f"{def_val:.2f}", "°", editable=True, min_val=min_val, max_val=max_val, id="axis", section='parameters')
@@ -573,26 +587,29 @@ class ControlsSidePanel(wx.Panel):
     def create_period_control(self, parent):
         """Create the rotation period control."""
         panel = wx.Panel(parent)
+        apply_transparent_background(panel)
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.period_heading = create_text(panel, _locale.get("parameters.period.label", "ROTATION PERIOD"), "subheader")
-        sizer.Add(self.period_heading, 0, wx.BOTTOM, 6)
+        sizer.Add(self.period_heading, 0, wx.BOTTOM, self.FromDIP(6))
 
         p_val = self.settings.period
         self.period_meta_row = wx.Panel(panel)
+        apply_transparent_background(self.period_meta_row)
         meta_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.period_desc = create_text(self.period_meta_row, _locale.get("parameters.period.desc", "SPEED OF 360° SPIN"), "description")
         meta_sizer.Add(self.period_desc, 0, wx.ALIGN_CENTER_VERTICAL)
         meta_sizer.AddStretchSpacer()
         self.frame_count = create_text(self.period_meta_row, f"{int(p_val * 30)} f", "description")
-        meta_sizer.Add(self.frame_count, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 8)
+        meta_sizer.Add(self.frame_count, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, self.FromDIP(8))
         self.period_meta_row.SetSizerAndFit(meta_sizer)
-        sizer.Add(self.period_meta_row, 0, wx.EXPAND | wx.BOTTOM, 10)
+        sizer.Add(self.period_meta_row, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(10))
 
         crow = wx.Panel(panel)
+        apply_transparent_background(crow)
         csizer = wx.BoxSizer(wx.HORIZONTAL)
-        csizer.AddSpacer(10)
+        csizer.AddSpacer(self.FromDIP(10))
         self.period_slider = CustomSlider(crow, value=p_val, min_val=0.1, max_val=30, size=(-1, 18), id="default", section='parameters')
-        csizer.Add(self.period_slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 10)
+        csizer.Add(self.period_slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, self.FromDIP(10))
         unit = _locale.get("parameters.period.unit", "sec")
         self.period_input = create_numeric_input(crow, f"{p_val:.1f}", unit, editable=True, min_val=0.1, max_val=30, id="speed", section='parameters')
         csizer.Add(self.period_input, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -604,13 +621,14 @@ class ControlsSidePanel(wx.Panel):
     def create_direction_control(self, parent):
         """Create the direction toggle (CW/CCW)."""
         panel = wx.Panel(parent)
+        apply_transparent_background(panel)
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.dir_heading = create_text(panel, _locale.get("parameters.direction.label", "DIRECTION"), "subheader")
-        sizer.Add(self.dir_heading, 0, wx.BOTTOM, 6)
+        sizer.Add(self.dir_heading, 0, wx.BOTTOM, self.FromDIP(6))
 
         # Helper text immediately below subheader
         self.dir_desc = create_text(panel, _locale.get("parameters.direction.desc", "Rotation direction"), "description")
-        sizer.Add(self.dir_desc, 0, wx.BOTTOM, 10)
+        sizer.Add(self.dir_desc, 0, wx.BOTTOM, self.FromDIP(10))
 
         # Fetch labels and icon refs from locale
         dir_options = [
@@ -621,7 +639,7 @@ class ControlsSidePanel(wx.Panel):
         ]
 
         csizer = wx.BoxSizer(wx.HORIZONTAL)
-        csizer.AddSpacer(10)
+        csizer.AddSpacer(self.FromDIP(10))
 
         self.dir_toggle = CustomToggleButton(panel, options=dir_options, size=(210, 32), id="direction", section='parameters')
         initial_idx = 1 if self.settings.direction == 'cw' else 0
@@ -635,14 +653,15 @@ class ControlsSidePanel(wx.Panel):
     def create_lighting_control(self, parent):
         """Create the lighting preset toggle."""
         panel = wx.Panel(parent)
+        apply_transparent_background(panel)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.AddSpacer(10)
+        sizer.AddSpacer(self.FromDIP(10))
         self.light_heading = create_text(panel, _locale.get("parameters.lighting.label", "LIGHTING"), "subheader")
-        sizer.Add(self.light_heading, 0, wx.BOTTOM, 6)
+        sizer.Add(self.light_heading, 0, wx.BOTTOM, self.FromDIP(6))
 
         # Helper text immediately below subheader
         self.light_hint = create_text(panel, _locale.get("parameters.lighting_hint", "SELECT WORKSPACE TO USE KICAD 3D VIEWER SETTINGS"), "description")
-        sizer.Add(self.light_hint, 0, wx.BOTTOM, 10)
+        sizer.Add(self.light_hint, 0, wx.BOTTOM, self.FromDIP(10))
 
         # Fetch labels and icon refs from locale
         self.light_options = [
@@ -661,7 +680,7 @@ class ControlsSidePanel(wx.Panel):
         ]
 
         csizer = wx.BoxSizer(wx.HORIZONTAL)
-        csizer.AddSpacer(10)
+        csizer.AddSpacer(self.FromDIP(10))
         self.light_toggle = CustomToggleButton(panel, options=self.light_options, size=(320, 32), id="lighting", section='parameters')
         current_light = self.settings.lighting
         initial_idx = next((i for i, opt in enumerate(self.light_options) if opt['id'] == current_light), 0)
@@ -675,17 +694,17 @@ class ControlsSidePanel(wx.Panel):
     def create_output_settings_section(self, parent):
         """Create the collapsible format, resolution, and background color controls."""
         panel = wx.Panel(parent)
-        panel.SetBackgroundColour(_theme.TRANSPARENT)
+        apply_transparent_background(panel)
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         header = wx.Panel(panel)
-        header.SetBackgroundColour(_theme.TRANSPARENT)
+        apply_transparent_background(header)
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
         section_label = create_section_label(header, _locale.get("sections.output", "OUTPUT SETTINGS"), id="output")
 
         # Title, then the expand/collapse toggle to its RIGHT (12x12, 5px gap).
         self._output_title = section_label
-        header_sizer.Add(section_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        header_sizer.Add(section_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, self.FromDIP(5))
         self.output_toggle = SectionToggle(
             header, size=12, y_nudge=1,
             collapsed=self.settings.output_collapsed,
@@ -709,19 +728,21 @@ class ControlsSidePanel(wx.Panel):
 
         self._output_panel = panel
         self._output_sizer = sizer
-        sizer.Add(header, 0, wx.EXPAND | wx.BOTTOM, 10)
+        sizer.Add(header, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(10))
         self._output_header_item = sizer.GetItem(header)
 
         # Row 1: Format and Resolution
         cols_panel = wx.Panel(panel)
+        apply_transparent_background(cols_panel)
         cols_sizer = wx.BoxSizer(wx.HORIZONTAL)
         # Heading rows are kept a fixed height so the FORMAT and RESOLUTION
         # dropdowns stay vertically aligned even though RESOLUTION carries a gear.
         head_h = 22
 
         f_col = wx.Panel(cols_panel)
+        apply_transparent_background(f_col)
         f_sizer = wx.BoxSizer(wx.VERTICAL)
-        f_sizer.AddSpacer(10)
+        f_sizer.AddSpacer(self.FromDIP(10))
         # Heading is a direct child of the column so its left edge lines up with
         # the dropdown below; a zero-width spacer pins the row height so FORMAT
         # and RESOLUTION (which carries a gear) stay vertically in step.
@@ -729,7 +750,7 @@ class ControlsSidePanel(wx.Panel):
         self.format_heading = create_text(f_col, _locale.get("parameters.format.label", "FORMAT"), "subheader")
         f_head_sizer.Add(self.format_heading, 0, wx.ALIGN_CENTER_VERTICAL)
         f_head_sizer.Add((0, self.FromDIP(head_h)))
-        f_sizer.Add(f_head_sizer, 0, wx.EXPAND | wx.BOTTOM, 6)
+        f_sizer.Add(f_head_sizer, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(6))
 
         self.format_choices = ["MP4 (H.264)", "GIF", "PNG Sequence"]
         self.format_ids = ["mp4", "gif", "png_sequence"]
@@ -739,19 +760,20 @@ class ControlsSidePanel(wx.Panel):
         self.format_choice.SetSelection(fmt_idx)
         f_sizer.Add(self.format_choice, 0, wx.EXPAND)
         f_col.SetSizerAndFit(f_sizer)
-        cols_sizer.Add(f_col, 1, wx.EXPAND | wx.RIGHT, 12)
+        cols_sizer.Add(f_col, 1, wx.EXPAND | wx.RIGHT, self.FromDIP(12))
 
         board_options_col = wx.Panel(panel)
+        apply_transparent_background(board_options_col)
         board_options_sizer = wx.BoxSizer(wx.VERTICAL)
-        board_options_sizer.AddSpacer(10)
+        board_options_sizer.AddSpacer(self.FromDIP(10))
         self.board_options_heading = create_text(
             board_options_col,
             _locale.get("output.board_options.label", "RENDER OPTIONS"),
             "subheader",
         )
-        board_options_sizer.Add(self.board_options_heading, 0, wx.BOTTOM, 6)
+        board_options_sizer.Add(self.board_options_heading, 0, wx.BOTTOM, self.FromDIP(6))
 
-        self.render_options_grid = wx.FlexGridSizer(0, 3, 8, 12)
+        self.render_options_grid = wx.FlexGridSizer(0, 3, self.FromDIP(8), self.FromDIP(12))
         self.render_options_grid.AddGrowableCol(0, 1)
         self.render_options_grid.AddGrowableCol(1, 1)
         self.render_options_grid.AddGrowableCol(2, 1)
@@ -783,24 +805,25 @@ class ControlsSidePanel(wx.Panel):
         board_options_sizer.Add(self.render_options_grid, 0, wx.EXPAND)
 
         board_options_col.SetSizer(board_options_sizer)
-        sizer.Add(board_options_col, 0, wx.EXPAND | wx.BOTTOM, 12)
+        sizer.Add(board_options_col, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(12))
 
         r_col = wx.Panel(cols_panel)
+        apply_transparent_background(r_col)
         r_sizer = wx.BoxSizer(wx.VERTICAL)
-        r_sizer.AddSpacer(10)
+        r_sizer.AddSpacer(self.FromDIP(10))
 
         # Heading row: title on the left (a direct child of the column, so it
         # left-aligns with the dropdown), a gear on the right that opens the
         # "Custom Resolutions" management dialog. The gear is head_h tall, so it
         # pins this row to the same height as the FORMAT heading row.
         res_head_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        res_head_sizer.AddSpacer(4)
+        res_head_sizer.AddSpacer(self.FromDIP(4))
         self.res_heading = create_text(r_col, _locale.get("parameters.resolution.label", "RESOLUTION"), "subheader")
         res_head_sizer.Add(self.res_heading, 0, wx.ALIGN_CENTER_VERTICAL)
         res_head_sizer.AddStretchSpacer()
         self.res_gear_btn = CustomButton(r_col, id="options", label="", size=(head_h, head_h), section='output')
         res_head_sizer.Add(self.res_gear_btn, 0, wx.ALIGN_CENTER_VERTICAL)
-        r_sizer.Add(res_head_sizer, 0, wx.EXPAND | wx.BOTTOM, 6)
+        r_sizer.Add(res_head_sizer, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(6))
 
         self.res_choices, self.res_ids = self._build_resolution_items()
         self.res_choice = CustomDropdown(r_col, choices=self.res_choices,
@@ -810,15 +833,16 @@ class ControlsSidePanel(wx.Panel):
         r_col.SetSizerAndFit(r_sizer)
         cols_sizer.Add(r_col, 1, wx.EXPAND)
         cols_panel.SetSizerAndFit(cols_sizer)
-        sizer.Add(cols_panel, 0, wx.EXPAND | wx.BOTTOM, 12)
+        sizer.Add(cols_panel, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(12))
         self._output_content = [board_options_col, cols_panel]
 
         # Row 3: Background Color
         bg_col = wx.Panel(panel)
+        apply_transparent_background(bg_col)
         bg_vsizer = wx.BoxSizer(wx.VERTICAL)
-        bg_vsizer.AddSpacer(10)
+        bg_vsizer.AddSpacer(self.FromDIP(10))
         self.bg_heading = create_text(bg_col, _locale.get("parameters.bg_color.label", "BACKGROUND COLOR"), "subheader")
-        bg_vsizer.Add(self.bg_heading, 0, wx.BOTTOM, 6)
+        bg_vsizer.Add(self.bg_heading, 0, wx.BOTTOM, self.FromDIP(6))
 
         self.bg_picker = CustomColorPicker(bg_col, current_color=self.settings.bg_color, section='output')
         bg_vsizer.Add(self.bg_picker, 0, wx.EXPAND)
@@ -835,7 +859,7 @@ class ControlsSidePanel(wx.Panel):
     def _create_render_option_row(self, parent, option_id, label, value):
         """Build a single render-option checkbox row for the options grid."""
         row = wx.Panel(parent)
-        row.SetBackgroundColour(_theme.TRANSPARENT)
+        apply_transparent_background(row)
         row_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         checkbox = CustomCheckbox(
@@ -845,7 +869,7 @@ class ControlsSidePanel(wx.Panel):
             section='output',
         )
         checkbox.SetValue(value)
-        row_sizer.Add(checkbox, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
+        row_sizer.Add(checkbox, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, self.FromDIP(8))
 
         text = create_text(row, label, "description")
         row_sizer.Add(text, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -902,30 +926,31 @@ class ControlsSidePanel(wx.Panel):
 
         # Compute padding from theme (use same padding as main left panel)
         padding = _theme._parse_padding(_theme._resolve("layout.main.leftpanel.padding") or 16)
-        vertical_pad = padding.get('top', 12)
-        horizontal_pad = padding.get('left', 16)
+        vertical_pad = self.FromDIP(padding.get('top', 12))
+        horizontal_pad = self.FromDIP(padding.get('left', 16))
 
         # Top divider already added by parent, but we add spacing
         main_sizer.Add((0, vertical_pad))
 
         # Button row
         btn_row = wx.Panel(footer)
+        apply_transparent_background(btn_row)
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         # Options button (small icon button)
         self.adv_btn = CustomButton(btn_row, id="options", size=(36, 36), section='footer')
         self.adv_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_advanced_options)
-        btn_sizer.Add(self.adv_btn, 0, wx.RIGHT, 4)
+        btn_sizer.Add(self.adv_btn, 0, wx.RIGHT, self.FromDIP(4))
 
         # About button (help-circle icon)
         self.about_btn = CustomButton(btn_row, id="about", size=(36, 36), section='footer')
         self.about_btn.Bind(wx.EVT_BUTTON, self.on_about)
-        btn_sizer.Add(self.about_btn, 0, wx.RIGHT, 8)
+        btn_sizer.Add(self.about_btn, 0, wx.RIGHT, self.FromDIP(8))
 
         # Cancel/Exit button
         self.can_btn = CustomButton(btn_row, id="exit", size=(110, 36), section='footer')
         self.can_btn.Bind(wx.EVT_BUTTON, self.main_panel.on_cancel)
-        btn_sizer.Add(self.can_btn, 0, wx.RIGHT, 8)
+        btn_sizer.Add(self.can_btn, 0, wx.RIGHT, self.FromDIP(8))
 
         # Render button (takes remaining space)
         self.render_btn = CustomButton(btn_row, id="render", section='footer')
@@ -974,7 +999,10 @@ class SVGLogoPanel(wx.Panel):
         width, height = self.GetSize()
         if self.svg_image:
             try:
-                self.svg_image.RenderToGC(gc, size=(float(width), float(height)))
+                # ints, not floats: KiCad 10's wxPython builds wx.Size(*size)
+                # internally and rejects float arguments (TypeError on Windows).
+                self.svg_image.RenderToGC(gc, size=(int(width), int(height)))
             except Exception:
+                logger.warning("SVGLogoPanel: RenderToGC failed; drawing fallback", exc_info=True)
                 gc.SetBrush(wx.Brush(_theme.color("colors.primary")))
                 gc.DrawRectangle(0, 0, width, height)
