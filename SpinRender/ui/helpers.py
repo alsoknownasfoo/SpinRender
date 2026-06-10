@@ -495,11 +495,47 @@ def effective_background(widget: wx.Window) -> wx.Colour:
     """
     p = widget.GetParent()
     while p is not None:
+        # Skip ancestors whose colour was never explicitly themed: wxMSW
+        # reports an opaque system default (#202020 in dark mode) for them,
+        # which would leak into paint buffers.
+        explicit = getattr(p, '_sr_transparent_bg', None) is None
         c = p.GetBackgroundColour()
-        if c.IsOk() and c.Alpha() == wx.ALPHA_OPAQUE:
+        if explicit and c.IsOk() and c.Alpha() == wx.ALPHA_OPAQUE:
             return c
         p = p.GetParent()
     return wx.Colour(0, 0, 0)
+
+
+def apply_transparent_background(window: wx.Window) -> None:
+    """Give a container a see-through background that works on every platform.
+
+    macOS honours a fully transparent background colour, letting the panel
+    behind show through. wxMSW does not — an alpha-0 colour paints solid
+    black. On Windows, resolve to the nearest opaque ancestor colour instead,
+    which is visually identical as long as the ancestor is a flat fill.
+
+    Call this after the window is parented, and after ancestors have their
+    backgrounds set.
+    """
+    if wx.Platform == '__WXMSW__':
+        window._sr_transparent_bg = True
+        window.SetBackgroundColour(effective_background(window))
+    else:
+        window.SetBackgroundColour(_theme.TRANSPARENT)
+
+
+def refresh_transparent_backgrounds(root: wx.Window) -> None:
+    """Re-resolve apply_transparent_background() panels after a theme change.
+
+    Top-down so a re-resolved parent is already correct when its descendants
+    look it up. No-op outside Windows (mac keeps true transparency).
+    """
+    if wx.Platform != '__WXMSW__':
+        return
+    if getattr(root, '_sr_transparent_bg', None):
+        apply_transparent_background(root)
+    for child in root.GetChildren():
+        refresh_transparent_backgrounds(child)
 
 
 def bind_mouse_events(widget: wx.Window,

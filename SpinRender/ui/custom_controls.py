@@ -14,7 +14,7 @@ from pathlib import Path
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
 from .text_styles import TextStyles
-from .helpers import bind_mouse_events, create_text, prepare_styled_text, draw_styled_text, effective_background
+from .helpers import bind_mouse_events, create_text, prepare_styled_text, draw_styled_text, effective_background, apply_transparent_background
 from .events import ParameterInteractionEvent
 from SpinRender.utils.paint_guard import guarded_paint
 
@@ -192,11 +192,13 @@ class CustomSlider(wx.Panel):
         token = f"components.slider.{self.style_id}" if self.style_id else "components.slider.default"
         if not _theme.has_token(token): token = "components.slider.default"
 
-        track_h = _theme._resolve(f"{token}.track.frame.height") or 4
+        # Theme metrics are 96dpi design pixels; the GC draws in device pixels
+        # on Windows, so scale them like the FromDIP-sized layout around them.
+        track_h = self.FromDIP(int(_theme._resolve(f"{token}.track.frame.height") or 4))
         track_y = (height - track_h) / 2
-        
-        thumb_w = _theme._resolve(f"{token}.nub.width") or 7
-        thumb_h = _theme._resolve(f"{token}.nub.height") or 18
+
+        thumb_w = self.FromDIP(int(_theme._resolve(f"{token}.nub.width") or 7))
+        thumb_h = self.FromDIP(int(_theme._resolve(f"{token}.nub.height") or 18))
         thumb_y = (height - thumb_h) / 2
 
         # Fetch colors dynamically from component section
@@ -204,22 +206,23 @@ class CustomSlider(wx.Panel):
         fill_color = _theme.color(f"{token}.nub.color", self._hovered, False, enabled)
         thumb_color = fill_color
         
+        radius = self.FromDIP(2)
         gc.SetBrush(wx.Brush(track_color))
         gc.SetPen(wx.TRANSPARENT_PEN)
-        gc.DrawRoundedRectangle(0, track_y, width, track_h, 2)
+        gc.DrawRoundedRectangle(0, track_y, width, track_h, radius)
 
         ratio = (self.value - self.min_val) / (self.max_val - self.min_val)
         fill_width = ratio * width
 
         if fill_width > 0:
             gc.SetBrush(wx.Brush(fill_color))
-            gc.DrawRoundedRectangle(0, track_y, fill_width, track_h, 2)
+            gc.DrawRoundedRectangle(0, track_y, fill_width, track_h, radius)
 
         thumb_x = fill_width - thumb_w / 2
         thumb_x = max(0, min(thumb_x, width - thumb_w))
 
         gc.SetBrush(wx.Brush(thumb_color))
-        gc.DrawRoundedRectangle(thumb_x, thumb_y, thumb_w, thumb_h, 2)
+        gc.DrawRoundedRectangle(thumb_x, thumb_y, thumb_w, thumb_h, radius)
 
     def on_mouse_down(self, event):
         if not self.IsEnabled(): return
@@ -328,10 +331,12 @@ class CustomToggleButton(wx.Panel):
         bg_color = _theme.color(f"{token}.frame.bg", is_any_hovered, False, enabled)
         border_color = _theme.color(f"{token}.frame.border.color", is_any_hovered, False, enabled)
         
-        radius = _theme.size(f"{token}.frame.radius") or 6
+        # Theme metrics are design px; scale for the device-pixel GC on Windows.
+        radius = self.FromDIP(_theme.size(f"{token}.frame.radius") or 6)
+        pen_w = max(1, self.FromDIP(1))
         gc.SetBrush(wx.Brush(bg_color))
-        gc.SetPen(wx.Pen(border_color, 1))
-        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, radius)
+        gc.SetPen(wx.Pen(border_color, pen_w))
+        gc.DrawRoundedRectangle(pen_w, pen_w, width - 2 * pen_w, height - 2 * pen_w, radius)
 
         # 2. Draw each segment
         for i, opt in enumerate(self.options):
@@ -354,7 +359,7 @@ class CustomToggleButton(wx.Panel):
             if seg_bg.Alpha() > 0:
                 gc.SetBrush(wx.Brush(seg_bg))
                 gc.SetPen(wx.TRANSPARENT_PEN)
-                gc.DrawRoundedRectangle(x_offset + 1, 1, state_width - 2, height - 2, radius)
+                gc.DrawRoundedRectangle(x_offset + pen_w, pen_w, state_width - 2 * pen_w, height - 2 * pen_w, radius)
 
             # Resolve Content Colors
             label_token = f"{token}.items.label"
@@ -384,7 +389,7 @@ class CustomToggleButton(wx.Panel):
         if icon_char:
             _, iw, ih = prepare_styled_text(gc, icon_char, icon_token, i_color)
 
-        gap = 6 if (icon_char and label) else 0
+        gap = self.FromDIP(6) if (icon_char and label) else 0
         total_w = iw + gap + tw
         start_x = x_offset + (width - total_w) / 2
 
@@ -494,7 +499,11 @@ class CustomCheckbox(wx.Panel):
 
         width, height = self.GetSize()
         enabled = self.IsEnabled()
-        side = max(self._MIN_BOX_SIZE, min(width, height) - self._OUTER_PADDING)
+        # Class constants are design px; scale for the device-pixel GC on Windows.
+        outer_pad = self.FromDIP(self._OUTER_PADDING)
+        fill_inset = self.FromDIP(self._FILL_INSET)
+        pen_w = max(1, self.FromDIP(1))
+        side = max(self.FromDIP(self._MIN_BOX_SIZE), min(width, height) - outer_pad)
         x = (width - side) / 2
         y = (height - side) / 2
         token = "components.dropdown.default"
@@ -504,16 +513,16 @@ class CustomCheckbox(wx.Panel):
         border_color = _theme.color(f"{token}.frame.border.color", is_hovered, False, enabled)
 
         gc.SetBrush(wx.Brush(bg_color))
-        gc.SetPen(wx.Pen(border_color, 1))
-        gc.DrawRoundedRectangle(x, y, side, side, self._OUTER_RADIUS)
+        gc.SetPen(wx.Pen(border_color, pen_w))
+        gc.DrawRoundedRectangle(x, y, side, side, self.FromDIP(self._OUTER_RADIUS))
 
         if self.value:
-            fill_x = x + self._FILL_INSET + 1
-            fill_y = y + self._FILL_INSET + 1
-            fill_side = max(1, side - ((self._FILL_INSET * 2) + 1))
+            fill_x = x + fill_inset + pen_w
+            fill_y = y + fill_inset + pen_w
+            fill_side = max(1, side - ((fill_inset * 2) + pen_w))
             gc.SetBrush(wx.Brush(_theme.color("colors.primary", enabled=enabled)))
             gc.SetPen(wx.TRANSPARENT_PEN)
-            gc.DrawRoundedRectangle(fill_x, fill_y, fill_side, fill_side, self._FILL_RADIUS)
+            gc.DrawRoundedRectangle(fill_x, fill_y, fill_side, fill_side, self.FromDIP(self._FILL_RADIUS))
 
     def GetValue(self) -> bool:
         return self.value
@@ -571,14 +580,15 @@ class DropdownPopup(wx.PopupTransientWindow):
         # 1. Menu Container
         bg_color = _theme.color(f"{token}.menu.frame.bg")
         border_color = _theme.color(f"{token}.menu.frame.border.color")
-        radius = _theme.size(f"{token}.menu.frame.radius") or 4
-        
+        radius = self.FromDIP(_theme.size(f"{token}.menu.frame.radius") or 4)
+        pen_w = max(1, self.FromDIP(1))
+
         gc.SetBrush(wx.Brush(bg_color))
-        gc.SetPen(wx.Pen(border_color, 1))
-        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, radius)
+        gc.SetPen(wx.Pen(border_color, pen_w))
+        gc.DrawRoundedRectangle(pen_w, pen_w, width - 2 * pen_w, height - 2 * pen_w, radius)
 
         # 2. Menu Items
-        item_radius = _theme.size(f"{token}.menu.items.radius") or 2
+        item_radius = self.FromDIP(_theme.size(f"{token}.menu.items.radius") or 2)
         pad = self.FromDIP(4)
         for i, choice in enumerate(self.choices):
             rect = wx.Rect(pad, pad + (i * self.item_height), width - 2 * pad, self.item_height)
@@ -590,14 +600,14 @@ class DropdownPopup(wx.PopupTransientWindow):
             if item_bg.Alpha() > 0:
                 gc.SetBrush(wx.Brush(item_bg))
                 gc.SetPen(wx.TRANSPARENT_PEN)
-                gc.DrawRoundedRectangle(rect.x + 1, rect.y + 1, rect.width - 2, rect.height - 2, item_radius)
-            
+                gc.DrawRoundedRectangle(rect.x + pen_w, rect.y + pen_w, rect.width - 2 * pen_w, rect.height - 2 * pen_w, item_radius)
+
             # Resolve Item Border (usually for hover)
             item_bc = _theme.color(f"{token}.menu.items.border.color", is_hovered, is_selected, True)
             if item_bc.Alpha() > 0:
-                gc.SetPen(wx.Pen(item_bc, 1))
+                gc.SetPen(wx.Pen(item_bc, pen_w))
                 gc.SetBrush(wx.TRANSPARENT_BRUSH)
-                gc.DrawRoundedRectangle(rect.x + 1, rect.y + 1, rect.width - 2, rect.height - 2, item_radius)
+                gc.DrawRoundedRectangle(rect.x + pen_w, rect.y + pen_w, rect.width - 2 * pen_w, rect.height - 2 * pen_w, item_radius)
             
             # Resolve Item Label (Font & Color)
             label_token = f"{token}.menu.items.label"
@@ -669,10 +679,12 @@ class CustomDropdown(wx.Panel):
         # If open or hovered, the engine can handle stateful lookup if provided in YAML, 
         # or we pass the flags here.
         bc = _theme.color(bc_token, self.hovered or self.is_open, False, enabled)
-        gc.SetPen(wx.Pen(bc, 1))
-        
-        radius = _theme.size(f"{token}.frame.radius") or 4
-        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, radius)
+        # Theme metrics are design px; scale for the device-pixel GC on Windows.
+        pen_w = max(1, self.FromDIP(1))
+        gc.SetPen(wx.Pen(bc, pen_w))
+
+        radius = self.FromDIP(_theme.size(f"{token}.frame.radius") or 4)
+        gc.DrawRoundedRectangle(pen_w, pen_w, width - 2 * pen_w, height - 2 * pen_w, radius)
 
         # 2. Resolve Label (Font & Color)
         label = self.choices[self.selection] if self.choices else getattr(self, '_default_label', _locale.get("components.dropdown.default.label", "SELECT OPTION"))
@@ -681,15 +693,16 @@ class CustomDropdown(wx.Panel):
         # Color resolution from label.color.default/hover
         text_color = _theme.color(f"{label_token}.color", self.hovered or self.is_open, False, enabled)
 
+        pad = self.FromDIP(12)
         _, _, th = prepare_styled_text(gc, label, label_token, text_color)
-        draw_styled_text(gc, label, label_token, 12, (height - th) / 2, text_color)
+        draw_styled_text(gc, label, label_token, pad, (height - th) / 2, text_color)
 
         # 3. Resolve Chevron Icon
         icon_char = _theme.glyph("chevron-up" if self.is_open else "chevron-down")
         icon_color = _theme.color(f"{token}.icon.color", self.hovered or self.is_open, False, enabled)
-            
+
         _, iw, ih = prepare_styled_text(gc, icon_char, f"{token}.icon", icon_color)
-        draw_styled_text(gc, icon_char, f"{token}.icon", width - iw - 12, (height - ih) / 2, icon_color)
+        draw_styled_text(gc, icon_char, f"{token}.icon", width - iw - pad, (height - ih) / 2, icon_color)
 
     def on_click(self, event):
         if self.IsEnabled():
@@ -807,10 +820,12 @@ class CustomButton(wx.Panel):
 
         final_icon_color = final_text
 
+        # Geometry constants are design px; scale for the device-pixel GC on Windows.
+        pen_w = max(1, self.FromDIP(1))
         gc.SetBrush(wx.Brush(bg))
-        if final_border: gc.SetPen(wx.Pen(final_border, 1))
+        if final_border: gc.SetPen(wx.Pen(final_border, pen_w))
         else: gc.SetPen(wx.TRANSPARENT_PEN)
-        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, 6)
+        gc.DrawRoundedRectangle(pen_w, pen_w, width - 2 * pen_w, height - 2 * pen_w, self.FromDIP(6))
 
         # Resolve icon from theme glyphs
         icon_char = ""
@@ -833,7 +848,7 @@ class CustomButton(wx.Panel):
                 text_w = max(text_w, lw)
                 text_h += lh
             if len(text_lines) > 1:
-                line_gap = 1
+                line_gap = max(1, self.FromDIP(1))
                 text_h += line_gap * (len(text_lines) - 1)
 
         iw, ih = 0, 0
@@ -846,7 +861,7 @@ class CustomButton(wx.Panel):
             iw, ih = gc.GetTextExtent(icon_char)
 
         has_text = len(text_lines) > 0
-        gap = 10 if (icon_char and has_text) else 0
+        gap = self.FromDIP(10) if (icon_char and has_text) else 0
         total_w = iw + gap + text_w
         start_x = (width - total_w) / 2
 
@@ -966,10 +981,11 @@ class PresetCard(wx.Panel):
         
         txt_color = _theme.color(f"{token}.label.color", self.hovered, self.selected, enabled)
 
+        pen_w = max(1, self.FromDIP(1))
         gc.SetBrush(wx.Brush(bg))
-        if border: gc.SetPen(wx.Pen(border, 1))
+        if border: gc.SetPen(wx.Pen(border, pen_w))
         else: gc.SetPen(wx.TRANSPARENT_PEN)
-        gc.DrawRoundedRectangle(1, 1, width - 2, height - 2, self.FromDIP(8))
+        gc.DrawRoundedRectangle(pen_w, pen_w, width - 2 * pen_w, height - 2 * pen_w, self.FromDIP(8))
 
         # Resolve icon
         icon_char = ""
@@ -1017,6 +1033,7 @@ class SectionLabel(wx.Panel):
         if label is None:
             label = _locale.get("components.section.default.label", "Section")
         super().__init__(parent)
+        apply_transparent_background(self)
         self.style_id = id
         sizer = wx.BoxSizer(wx.HORIZONTAL)
         self._txt = create_text(self, label, "header")
@@ -1171,8 +1188,10 @@ class CustomInput(wx.Panel):
             style |= wx.TE_CENTRE
             
         self.text_ctrl = wx.TextCtrl(self, value=str(value), style=style)
-        self.text_ctrl.SetBackgroundColour("TRANSPARENT")
-        
+        # hovered must exist before _apply_field_background resolves state colours
+        self.hovered = False
+        self._apply_field_background()
+
         if hasattr(self.text_ctrl, 'SetFocusAppearance'):
             self.text_ctrl.SetFocusAppearance(False)
         if hasattr(self.text_ctrl, 'OSXSetFocusRingStyle'):
@@ -1181,10 +1200,9 @@ class CustomInput(wx.Panel):
         # Aggressive Mac suppression
         disable_mac_focus_ring(self.text_ctrl)
         
-        # 2. State
+        # 2. State (hovered is initialized above, before _apply_field_background)
         self.placeholder = str(placeholder)
         self._placeholder_active = False
-        self.hovered = False
         self.original_value = str(value)
         self.icon_ref = _theme._resolve(f"{self.token}.icon")
         self.show_chip = False
@@ -1221,6 +1239,29 @@ class CustomInput(wx.Panel):
         # Show placeholder for multiline fields when initially empty
         if self.multiline and self.placeholder and not value:
             wx.CallAfter(self._show_placeholder)
+
+    def _solid_field_bg(self):
+        """Frame bg composited over the panel behind it, as a solid colour."""
+        base = effective_background(self)
+        bg = _theme.color(f"{self.token}.frame.bg", self.hovered, False, self.IsEnabled())
+        a = bg.Alpha() / 255.0
+        return wx.Colour(
+            int(bg.Red()   * a + base.Red()   * (1.0 - a)),
+            int(bg.Green() * a + base.Green() * (1.0 - a)),
+            int(bg.Blue()  * a + base.Blue()  * (1.0 - a)),
+        )
+
+    def _apply_field_background(self):
+        """Match the native TextCtrl's background to the painted HUD frame.
+
+        macOS supports a transparent text field over the painted frame; wxMSW
+        does not — it paints the system edit background, so give it the
+        frame's composited colour instead.
+        """
+        if wx.Platform == '__WXMSW__':
+            self.text_ctrl.SetBackgroundColour(self._solid_field_bg())
+        else:
+            self.text_ctrl.SetBackgroundColour("TRANSPARENT")
 
     def _show_placeholder(self):
         """Display placeholder as muted styled text inside the text control."""
@@ -1270,6 +1311,9 @@ class CustomInput(wx.Panel):
         # can commit numeric edits made by typing-then-clicking-away (not just Enter).
         changed = self.text_ctrl.GetValue().strip() != (self.original_value or "").strip()
         self._confirm()
+        # Drop the focus-time SelectAll: wxMSW keeps painting an inactive
+        # selection highlight behind the text after focus moves away.
+        self.text_ctrl.SelectNone()
         if self.multiline and self.placeholder and not self.text_ctrl.GetValue().strip():
             self._show_placeholder()
         if self.type == "numeric" and changed and not self.IsBeingDeleted():
@@ -1373,7 +1417,11 @@ class CustomInput(wx.Panel):
             self.text_ctrl.SetSize(pw, ph)
             self.text_ctrl.SetPosition((px, dip(8)))
         else:
-            ph = self.text_ctrl.GetBestSize().y - dip(4) # Add vertical padding
+            ph = self.text_ctrl.GetBestSize().y
+            if wx.Platform == '__WXMAC__':
+                # Trim mac's extra internal field padding; on Windows the best
+                # size is already tight and trimming clips the digits' bottoms.
+                ph -= dip(4)
             self.text_ctrl.SetSize(pw, ph)
             self.text_ctrl.SetPosition((px, (h - ph) // 2))
 
@@ -1401,7 +1449,7 @@ class CustomInput(wx.Panel):
         bg = _theme.color(f"{self.token}.frame.bg", self.hovered, False, enabled)
         font = _theme.font(self.token)
         
-        self.text_ctrl.SetBackgroundColour("TRANSPARENT")
+        self._apply_field_background()
         self.text_ctrl.SetForegroundColour(tc)
         self.text_ctrl.SetFont(font)
         
@@ -1438,20 +1486,35 @@ class CustomInput(wx.Panel):
         else:
             bc, bs = _theme.color(bc_tok, self.hovered, False, enabled), _theme.size(bs_tok) or 1
 
+        # Theme metrics are design px; scale for the device-pixel GC on Windows.
+        bs = max(1, self.FromDIP(bs))
         gc.SetBrush(wx.Brush(bg)); gc.SetPen(wx.Pen(bc, bs))
-        gc.DrawRoundedRectangle(1, 1, w - 2, h - 2, _theme.size(f"{self.token}.frame.radius") or 6)
+        gc.DrawRoundedRectangle(1, 1, w - 2, h - 2, self.FromDIP(_theme.size(f"{self.token}.frame.radius") or 6))
 
         # 3. Draw Non-editable content
+        # Stand-in for the native TextCtrl while it's hidden (disabled on MSW):
+        # draw its value at the same position/alignment with the state colour.
+        if not self.text_ctrl.IsShown() and not self._placeholder_active:
+            val = self.text_ctrl.GetValue()
+            if val:
+                gc.SetFont(gc.CreateFont(font, tc))
+                vw, vh = gc.GetTextExtent(val)
+                tx, ty = self.text_ctrl.GetPosition()
+                cw, ch = self.text_ctrl.GetSize()
+                vx = tx + cw - vw if (self.text_ctrl.GetWindowStyle() & wx.TE_RIGHT) else tx
+                gc.DrawText(val, vx, ty + (ch - vh) / 2)
+
+        pad = self.FromDIP(12)
         if self.type == "rich" and self.icon_ref:
             icon_char = _theme.glyph(self.icon_ref)
             icon_color = _theme.color(f"{self.token}.icon.color", self.hovered, False, enabled) if _theme.has_token(f"{self.token}.icon.color") else tc
             _, _, ith = prepare_styled_text(gc, icon_char, f"{self.token}.icon_style", icon_color)
-            draw_styled_text(gc, icon_char, f"{self.token}.icon_style", 12, (h - ith) / 2, icon_color)
+            draw_styled_text(gc, icon_char, f"{self.token}.icon_style", pad, (h - ith) / 2, icon_color)
 
         if self.type == "numeric" and self.unit:
             unit_color = _theme.color(f"{self.token}.color", self.hovered, False, enabled)
             _, utw, uth = prepare_styled_text(gc, self.unit, f"{self.token}.label", unit_color)
-            draw_styled_text(gc, self.unit, f"{self.token}.label", w - utw - 12, (h - uth) / 2, unit_color)
+            draw_styled_text(gc, self.unit, f"{self.token}.label", w - utw - pad, (h - uth) / 2, unit_color)
 
     def GetValue(self):
         if self._placeholder_active:
@@ -1478,6 +1541,10 @@ class CustomInput(wx.Panel):
     def Enable(self, enable=True):
         super().Enable(enable)
         self.text_ctrl.Enable(enable)
+        # wxMSW paints disabled native edits with the system gray regardless of
+        # SetBackgroundColour; hide the control and let on_paint draw the value.
+        if wx.Platform == '__WXMSW__' and not self.multiline:
+            self.text_ctrl.Show(enable)
         if self.chip: self.chip.Enable(enable)
         self.Refresh()
 
@@ -1506,8 +1573,10 @@ class ProjectFolderChip(wx.Panel):
 
     def _compute_size(self):
         font = _theme.font("components.badge.label")
-        height = _theme.size("components.badge.frame.height")
-        pad_h = _theme.size("components.badge.frame.padding.horizontal")
+        # Theme metrics are design px; the measured text extent is already in
+        # display px (font scales with DPI), so scale these to match.
+        height = self.FromDIP(_theme.size("components.badge.frame.height"))
+        pad_h = self.FromDIP(_theme.size("components.badge.frame.padding.horizontal"))
         temp_dc = wx.ScreenDC()
         temp_dc.SetFont(font)
         tw, _ = temp_dc.GetTextExtent("PROJECT FOLDER")
@@ -1529,7 +1598,7 @@ class ProjectFolderChip(wx.Panel):
         if not gc: return
         w, h = self.GetSize()
         enabled = self.IsEnabled()
-        radius = _theme.size("components.badge.frame.radius")
+        radius = self.FromDIP(_theme.size("components.badge.frame.radius"))
         gc.SetBrush(wx.Brush(_theme.color("components.badge.frame.bg", enabled=enabled)))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRoundedRectangle(0, 0, w, h, radius)
@@ -1634,8 +1703,9 @@ class CustomColorPicker(wx.Panel):
             r = rects[f'preset_{i}']; self._draw_swatch(gc, r.x, r.y, hv, lbl, i == self.selection, i == self.hover_idx, enabled)
         
         border = _theme.color("borders.subtle.color", hovered=False, pressed=False, enabled=enabled)
-        gc.SetPen(wx.Pen(border, 1))
-        dx = rects['divider']; gc.StrokeLine(dx, 10, dx, h - 10)
+        gc.SetPen(wx.Pen(border, max(1, self.FromDIP(1))))
+        pad = self.FromDIP(10)
+        dx = rects['divider']; gc.StrokeLine(dx, pad, dx, h - pad)
         # Only pass the 28x28 box for drawing, but use larger rect for hit detection
         rc = rects['custom']; self._draw_swatch(gc, rc.x, rc.y, self.current_color, "CUSTOM", self.selection == -1, self.hover_idx == 4, enabled)
         
@@ -1667,15 +1737,16 @@ class CustomColorPicker(wx.Panel):
         # 2. Inner Border (Optional)
         if _theme.has_token(ibc_token):
             ibc = _theme.color(ibc_token, hov, sel, enabled)
-            ibs = _theme.size(ibs_token) or 1
+            ibs = max(1, dip(_theme.size(ibs_token) or 1))
             gc.SetPen(wx.Pen(ibc, ibs))
             gc.SetBrush(wx.TRANSPARENT_BRUSH)
-            # Inset by 1px to show inside outer border
-            gc.DrawRoundedRectangle(x + 1, y + 1, swatch - 3, swatch - 3, dip(3))
+            # Inset by 1px (design) to show inside outer border
+            inset = max(1, dip(1))
+            gc.DrawRoundedRectangle(x + inset, y + inset, swatch - 3 * inset, swatch - 3 * inset, dip(3))
 
         # 3. Outer Border
         stc = _theme.color(bc_token, hov, sel, enabled)
-        thk = _theme.size(f"{token}.items.border.size") or 1
+        thk = max(1, dip(_theme.size(f"{token}.items.border.size") or 1))
         gc.SetPen(wx.Pen(stc, thk))
         gc.SetBrush(wx.TRANSPARENT_BRUSH)
         gc.DrawRoundedRectangle(x, y, swatch, swatch, dip(4))
@@ -1756,7 +1827,7 @@ class CustomListItem(wx.Panel):
         # The trash glyph lives in the right action gutter; turn it red only
         # while the cursor is actually over it.
         w, _ = self.GetSize()
-        over = (not self.confirm_mode) and (event.GetX() >= w - 40)
+        over = (not self.confirm_mode) and (event.GetX() >= w - self.FromDIP(40))
         if over != self.delete_hovered:
             self.delete_hovered = over
             self.Refresh(); self.Update()
@@ -1767,7 +1838,7 @@ class CustomListItem(wx.Panel):
         w, h = self.GetSize()
         x = event.GetX()
         
-        action_width = 80 # Approx width of action area
+        action_width = self.FromDIP(80) # Approx width of action area
         if x > w - action_width:
             self.handle_action_click(x - (w - action_width))
         else:
@@ -1775,7 +1846,7 @@ class CustomListItem(wx.Panel):
 
     def handle_action_click(self, local_x):
         if self.confirm_mode:
-            if local_x < 40: # Cancel
+            if local_x < self.FromDIP(40): # Cancel
                 self.confirm_mode = False
             else: # Confirm
                 self._fire_event(EVT_LIST_ITEM_DELETED)
@@ -1809,20 +1880,21 @@ class CustomListItem(wx.Panel):
         # 2. Resolve Frame Border
         bc_token = f"{self.token}.frame.border.color"
         bc = _theme.color(bc_token, self.hovered, False, enabled)
-        gc.SetPen(wx.Pen(bc, 1))
-        
-        radius = _theme.size(f"{self.token}.frame.radius") or 4
-        gc.DrawRoundedRectangle(1, 1, w - 2, h - 2, radius)
+        pen_w = max(1, self.FromDIP(1))
+        gc.SetPen(wx.Pen(bc, pen_w))
+
+        radius = self.FromDIP(_theme.size(f"{self.token}.frame.radius") or 4)
+        gc.DrawRoundedRectangle(pen_w, pen_w, w - 2 * pen_w, h - 2 * pen_w, radius)
 
         # 3. Icon & Label
         tc = _theme.color(f"{self.token}.label.color", self.hovered, False, enabled)
 
-        text_x = 12
+        text_x = self.FromDIP(12)
         if self.icon_ref:
             icon_char = _theme.glyph(self.icon_ref)
             _, _, ith = prepare_styled_text(gc, icon_char, f"{self.token}.icon", tc)
-            draw_styled_text(gc, icon_char, f"{self.token}.icon", 12, (h - ith) / 2, tc)
-            text_x = 36
+            draw_styled_text(gc, icon_char, f"{self.token}.icon", self.FromDIP(12), (h - ith) / 2, tc)
+            text_x = self.FromDIP(36)
 
         _, _, th = prepare_styled_text(gc, self.label, f"{self.token}.label", tc)
         draw_styled_text(gc, self.label, f"{self.token}.label", text_x, (h - th) / 2, tc)
@@ -1843,13 +1915,14 @@ class CustomListItem(wx.Panel):
             s_icon = _theme.glyph(_theme._resolve(f"{actions_token}.confirm.icon"))
             s_color = _theme.color(f"{actions_token}.confirm.color")
             
-            draw_styled_text(gc, c_icon, f"{self.token}.icon", w - 70, (h - 16) / 2, c_color)
-            draw_styled_text(gc, s_icon, f"{self.token}.icon", w - 30, (h - 16) / 2, s_color)
+            glyph_h = self.FromDIP(16)
+            draw_styled_text(gc, c_icon, f"{self.token}.icon", w - self.FromDIP(70), (h - glyph_h) / 2, c_color)
+            draw_styled_text(gc, s_icon, f"{self.token}.icon", w - self.FromDIP(30), (h - glyph_h) / 2, s_color)
         else:
             # Draw Delete (neutral, turning red while the trash itself is hovered)
             d_icon = _theme.glyph(_theme._resolve(f"{actions_token}.delete.icon"))
             d_color = _theme.color(f"{actions_token}.delete.color", self.delete_hovered)
-            draw_styled_text(gc, d_icon, f"{self.token}.icon", w - 30, (h - 16) / 2, d_color)
+            draw_styled_text(gc, d_icon, f"{self.token}.icon", w - self.FromDIP(30), (h - self.FromDIP(16)) / 2, d_color)
 
 
 class CustomListView(scrolled.ScrolledPanel):
@@ -1866,6 +1939,11 @@ class CustomListView(scrolled.ScrolledPanel):
         if not _theme.has_token(token):
             token = "components.list.default"
         self.token = token
+
+        # Keep the wx colour in sync with what on_paint clears to, so child
+        # items' effective_background() resolves correctly (wxMSW reports an
+        # opaque system default for never-coloured windows).
+        self.SetBackgroundColour(_theme.color(f"{token}.container.frame.bg"))
 
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.SetSizer(self.main_sizer)
@@ -1885,7 +1963,7 @@ class CustomListView(scrolled.ScrolledPanel):
         from SpinRender.core.theme import Theme
         _theme = Theme.current()
         item_gap = gap if gap is not None else int(_theme._resolve("layout.main.leftpanel.control.between_items") or 10)
-        self.main_sizer.Add(item, 0, wx.EXPAND | wx.BOTTOM, item_gap)
+        self.main_sizer.Add(item, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(item_gap))
         self.Layout()
         self.SetupScrolling(scroll_x=False, scroll_y=True)
         return item
