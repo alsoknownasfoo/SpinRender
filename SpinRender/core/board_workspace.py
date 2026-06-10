@@ -33,7 +33,7 @@ _FILE_ATTRIBUTE_NORMAL = 0x80
 
 def _hide_path(path: str) -> None:
     """Set the Windows hidden attribute (no-op elsewhere; dotfile suffices)."""
-    if not _IS_WINDOWS:
+    if not _IS_WINDOWS or not os.path.exists(path):
         return
     try:
         import ctypes
@@ -63,6 +63,30 @@ def _unhide_path(path: str) -> None:
         logger.warning(f"BoardWorkspace: could not clear attributes on {path}: {e}")
 
 
+# pcbnew.SaveBoard doesn't only write the .kicad_pcb: it also (re)writes the
+# same-stem project files next to it. Hiding/unhiding must treat the whole
+# set as a unit — overwriting a still-hidden .kicad_pro with CREATE_ALWAYS
+# fails with access denied on Windows, and freshly side-written project
+# files would otherwise leak into the folder unhidden.
+_PROJECT_SUFFIXES = ('.kicad_pro', '.kicad_prl')
+
+
+def _board_file_set(board_path: str) -> list:
+    """The board file plus the same-stem project files SaveBoard rewrites."""
+    p = Path(board_path)
+    return [str(p)] + [str(p.with_suffix(s)) for s in _PROJECT_SUFFIXES]
+
+
+def _unhide_board_set(board_path: str) -> None:
+    for f in _board_file_set(board_path):
+        _unhide_path(f)
+
+
+def _hide_board_set(board_path: str) -> None:
+    for f in _board_file_set(board_path):
+        _hide_path(f)
+
+
 class BoardWorkspace:
     """Maintains a disposable, hidden working copy of a board's .kicad_pcb file."""
 
@@ -82,6 +106,10 @@ class BoardWorkspace:
         snap_name = f".{src.stem}{_SNAPSHOT_SUFFIX}{src.suffix}"
         self.snapshot_path = str(src.with_name(snap_name))
         self._paired_paths = [Path(self.board_path), Path(self.snapshot_path)]
+        # SaveBoard side-writes same-stem project files next to the snapshot;
+        # track them so cleanup() removes them too (skipped when absent).
+        for suffix in _PROJECT_SUFFIXES:
+            self._paired_paths.append(Path(self.snapshot_path).with_suffix(suffix))
         self.capture_live_board()
         self._copy_source_files()
         logger.debug(f"BoardWorkspace: working copy at {self.board_path}")
@@ -145,7 +173,7 @@ class BoardWorkspace:
         except Exception:
             was_modified = None
         try:
-            self._unhide(dest)
+            _unhide_board_set(dest)
             pcbnew.SaveBoard(dest, board)
         except Exception as e:
             logger.warning(f"BoardWorkspace: pcbnew.SaveBoard failed; using on-disk copy: {e}")
@@ -164,7 +192,7 @@ class BoardWorkspace:
         if not os.path.exists(dest) or os.path.getsize(dest) == 0:
             logger.warning("BoardWorkspace: SaveBoard produced no output; using on-disk copy")
             return False
-        self._hide(dest)
+        _hide_board_set(dest)
         return True
 
     def reset(self) -> None:
@@ -201,6 +229,8 @@ class BoardWorkspace:
         for path in self._paired_paths:
             try:
                 if path.exists():
+                    # Clear read-only (re-stamped by cloud sync) so remove works.
+                    _unhide_path(str(path))
                     os.remove(path)
                     logger.debug(f"BoardWorkspace: removed {path}")
             except OSError as e:
@@ -433,14 +463,14 @@ def apply_render_filters_to_board_file(
                 _remove_board_item(board, footprint)
                 removed_footprints += 1
 
-    _unhide_path(board_path)
+    _unhide_board_set(board_path)
     try:
         save_result = pcbnew.SaveBoard(board_path, board)
     except Exception as exc:
         logger.error(f"BoardWorkspace: pcbnew.SaveBoard failed for {board_path}: {exc}", exc_info=True)
         raise RuntimeError(f"Unable to save board after via stripping: {board_path}") from exc
     finally:
-        _hide_path(board_path)
+        _hide_board_set(board_path)
 
     if save_result is False:
         raise RuntimeError(f"Unable to save board after via stripping: {board_path}")
@@ -493,14 +523,14 @@ def remove_user_drawings_from_board_file(board_path: str) -> None:
                 _remove_board_item(footprint, item)
                 removed_footprint_drawings += 1
 
-    _unhide_path(board_path)
+    _unhide_board_set(board_path)
     try:
         save_result = pcbnew.SaveBoard(board_path, board)
     except Exception as exc:
         logger.error(f"BoardWorkspace: pcbnew.SaveBoard failed for {board_path}: {exc}", exc_info=True)
         raise RuntimeError(f"Unable to save board after drawing stripping: {board_path}") from exc
     finally:
-        _hide_path(board_path)
+        _hide_board_set(board_path)
 
     if save_result is False:
         raise RuntimeError(f"Unable to save board after drawing stripping: {board_path}")
