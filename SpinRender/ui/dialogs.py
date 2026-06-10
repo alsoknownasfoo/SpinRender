@@ -58,6 +58,13 @@ class BaseStyledDialog(wx.Dialog):
         # actual DPI (matches the main panel's FromDIP-based layout). `parent`
         # is used since `self` isn't constructed yet.
         self.shadow_size = parent.FromDIP(self.shadow_size)
+        # The fading painted shadow would need a transparent frame to bleed
+        # onto the desktop, which neither wxMSW nor this wxOSX setup provides —
+        # the margin renders as a solid black ring and steals content space.
+        # Historically it was never visible anyway: without a dialog sizer, wx
+        # stretched main_container over the whole frame (macOS dialogs get the
+        # native OS window shadow instead). Keep the inset at zero everywhere.
+        self.shadow_size = 0
         size = parent.FromDIP(wx.Size(*size))
 
         # Expand size to account for shadow padding
@@ -80,9 +87,15 @@ class BaseStyledDialog(wx.Dialog):
         self.logical_size = size
         self.drag_pos = None
         
-        # Layout container for the actual content (offset by shadow)
+        # Layout container for the actual content (offset by shadow). Pin it
+        # with a sizer: without one, wx's top-level default stretches the only
+        # child to fill the whole frame on the next size event, covering the
+        # shadow inset and leaving a bg-coloured band under short content.
         self.main_container = wx.Panel(self, pos=(self.shadow_size, self.shadow_size), size=size)
         self.main_container.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        frame_sizer = wx.BoxSizer(wx.VERTICAL)
+        frame_sizer.Add(self.main_container, 1, wx.EXPAND | wx.ALL, self.shadow_size)
+        self.SetSizer(frame_sizer)
         
         self.Bind(wx.EVT_CHAR_HOOK, self.on_char_hook)
         self.Bind(wx.EVT_PAINT, self.on_paint_window)
@@ -92,7 +105,9 @@ class BaseStyledDialog(wx.Dialog):
         dc = wx.AutoBufferedPaintDC(self)
         # Clear the buffer first: AutoBufferedPaintDC starts with undefined
         # contents, so unpainted pixels (rounded corners) show stale memory.
-        dc.SetBackground(wx.Brush(_theme.BLACK))
+        # With no shadow inset (MSW) the clear colour IS the visible corner
+        # colour, so use the body colour there instead of black.
+        dc.SetBackground(wx.Brush(_theme.BLACK if self.shadow_size else _theme.color("colors.gray-dark")))
         dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc: return
@@ -172,14 +187,14 @@ class BaseStyledDialog(wx.Dialog):
         _color_token = "colors.secondary" if "SETUP" in title_text else "colors.primary"
         self.header_title = create_text(header, title_text, "header", color_token=_color_token)
         
-        header_sizer.Add(self.header_title, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 16)
+        header_sizer.Add(self.header_title, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, self.FromDIP(16))
         
         # Add standard close button if requested
         header_sizer.AddStretchSpacer()
         if show_close:
             close_btn = CustomButton(header, id="close", label="", size=(32, 32))
             close_btn.Bind(wx.EVT_BUTTON, self.on_cancel)
-            header_sizer.Add(close_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 12)
+            header_sizer.Add(close_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, self.FromDIP(12))
         
         header.SetSizer(header_sizer)
 
@@ -307,7 +322,7 @@ class FilenameEntryDialog(BaseStyledDialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(self.create_header(_locale.get("dialog.filename.header", "Enter base filename"), show_close=False), 0, wx.EXPAND)
 
-        self._header_line = wx.Panel(self.main_container, size=(-1, 1))
+        self._header_line = wx.Panel(self.main_container, size=(-1, max(1, self.FromDIP(1))))
         self._header_line.SetBackgroundColour(_theme.color("dividers.default.color"))
         main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
@@ -407,7 +422,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         main_sizer.Add(self.create_header(_locale.get("dialog.advanced.header", "Advanced options"), show_close=False), 0, wx.EXPAND)
 
         # Border separator
-        self._header_line = wx.Panel(self.main_container, size=(-1, 1))
+        self._header_line = wx.Panel(self.main_container, size=(-1, max(1, self.FromDIP(1))))
         self._header_line.SetBackgroundColour(_theme.color("dividers.default.color"))
         main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
@@ -416,7 +431,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         content_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # 0. APPEARANCE section
-        content_sizer.Add(self.create_section_label(content, _locale.get("parameters.appearance.label", "APPEARANCE")), 0, wx.EXPAND | wx.BOTTOM, 12)
+        content_sizer.Add(self.create_section_label(content, _locale.get("parameters.appearance.label", "APPEARANCE")), 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(12))
 
         theme_row = wx.Panel(content)
         theme_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -438,10 +453,10 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         theme_sizer.Add(self.theme_toggle, 0, wx.ALIGN_CENTER_VERTICAL)
 
         theme_row.SetSizer(theme_sizer)
-        content_sizer.Add(theme_row, 0, wx.EXPAND | wx.BOTTOM, 20)
+        content_sizer.Add(theme_row, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(20))
 
         # 1. OUTPUT PATH section
-        content_sizer.Add(self.create_section_label(content, _locale.get("parameters.output_path.label", "OUTPUT PATH")), 0, wx.EXPAND | wx.BOTTOM, 12)
+        content_sizer.Add(self.create_section_label(content, _locale.get("parameters.output_path.label", "OUTPUT PATH")), 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(12))
 
         # Auto Row
         auto_row = wx.Panel(content)
@@ -457,21 +472,21 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         auto_sizer.Add(self.auto_toggle, 0, wx.ALIGN_CENTER_VERTICAL)
         
         auto_row.SetSizer(auto_sizer)
-        content_sizer.Add(auto_row, 0, wx.EXPAND | wx.BOTTOM, 16)
+        content_sizer.Add(auto_row, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(16))
 
         # Path Input Row
         path_input_row = wx.Panel(content)
         path_input_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         self.path_display = CustomInput(path_input_row, size=(-1, 36), id="path")
-        path_input_sizer.Add(self.path_display, 1, wx.RIGHT, 8)
+        path_input_sizer.Add(self.path_display, 1, wx.RIGHT, self.FromDIP(8))
         
         self.browse_btn = CustomButton(path_input_row, id="browse", size=(100, 36))
         self.browse_btn.Bind(wx.EVT_BUTTON, self.on_browse)
         path_input_sizer.Add(self.browse_btn, 0)
         
         path_input_row.SetSizer(path_input_sizer)
-        content_sizer.Add(path_input_row, 0, wx.EXPAND | wx.BOTTOM, 20)
+        content_sizer.Add(path_input_row, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(20))
 
         # 2. PARAMETER OVERRIDES section
         overrides_header_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -484,7 +499,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         
         info_icon = create_text(link_row, _theme.glyph("info"), "icon", color_token="colors.gray-light")
         link_sizer.Add(info_icon, 0, wx.ALIGN_CENTER_VERTICAL)
-        link_sizer.AddSpacer(6)
+        link_sizer.AddSpacer(self.FromDIP(6))
         
         see_txt = create_text(link_row, _locale.get("dialog.advanced.see", "See "), "dialog_description")
         link_sizer.Add(see_txt, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -520,7 +535,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         
         link_row.SetSizer(link_sizer)
         overrides_header_sizer.Add(link_row, 0, wx.ALIGN_CENTER_VERTICAL)
-        content_sizer.Add(overrides_header_sizer, 0, wx.EXPAND | wx.BOTTOM, 12)
+        content_sizer.Add(overrides_header_sizer, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(12))
         
         self.override_input = CustomInput(
             content,
@@ -531,7 +546,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
             id="parameters",
             allow_empty=True
         )
-        padding_lg = _theme._resolve("typography.spacing.lg") or 24
+        padding_lg = self.FromDIP(_theme._resolve("typography.spacing.lg") or 24)
         content_sizer.Add(self.override_input, 1, wx.EXPAND | wx.BOTTOM, padding_lg)
 
         # 3. LOGGING section
@@ -551,14 +566,14 @@ class AdvancedOptionsDialog(BaseStyledDialog):
             click_handler=lambda e: SpinLogger.open_logs_folder(),
         )
         logging_header_sizer.Add(open_logs_txt, 0, wx.ALIGN_CENTER_VERTICAL)
-        content_sizer.Add(logging_header_sizer, 0, wx.EXPAND | wx.BOTTOM, 12)
+        content_sizer.Add(logging_header_sizer, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(12))
         
         log_row = wx.Panel(content)
         log_hsizer = wx.BoxSizer(wx.HORIZONTAL)
         
         log_info = create_text(log_row, _locale.get("parameters.log_info", "Logs are kept for 30 days. Useful for troubleshooting render failures."), "dialog_description", style=wx.ST_NO_AUTORESIZE)
-        log_info.Wrap(220) # Wrap to leave space for the 330px toggle in 600px dialog
-        log_hsizer.Add(log_info, 1, wx.ALIGN_TOP | wx.TOP, 4)
+        log_info.Wrap(self.FromDIP(220)) # Wrap to leave space for the 330px toggle in 600px dialog
+        log_hsizer.Add(log_info, 1, wx.ALIGN_TOP | wx.TOP, self.FromDIP(4))
         
         self.log_opts = [
             {'id': 'off', 'label': _locale.get("system.controls.toggle_off", "OFF"), 'icon': 'close'},
@@ -572,10 +587,10 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         log_hsizer.Add(self.log_toggle, 0, wx.ALIGN_TOP)
         
         log_row.SetSizer(log_hsizer)
-        content_sizer.Add(log_row, 0, wx.EXPAND | wx.BOTTOM, 12)
+        content_sizer.Add(log_row, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(12))
 
         content.SetSizer(content_sizer)
-        padding_lg = _theme._resolve("typography.spacing.lg") or 24
+        padding_lg = self.FromDIP(_theme._resolve("typography.spacing.lg") or 24)
         main_sizer.Add(content, 1, wx.EXPAND | wx.ALL, padding_lg)
 
         # Footer
@@ -721,7 +736,7 @@ class SavePresetDialog(BaseStyledDialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         # Header without close button as requested
         main_sizer.Add(self.create_header(_locale.get("dialog.preset.save.header", "Save preset"), show_close=False), 0, wx.EXPAND)
-        self._header_line = wx.Panel(self.main_container, size=(-1, 1))
+        self._header_line = wx.Panel(self.main_container, size=(-1, max(1, self.FromDIP(1))))
         self._header_line.SetBackgroundColour(_theme.color("dividers.default.color"))
         main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
@@ -811,7 +826,7 @@ class AddResolutionDialog(BaseStyledDialog):
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(self.create_header(_locale.get("dialog.add_resolution.header", "Add resolution"), show_close=False), 0, wx.EXPAND)
-        self._header_line = wx.Panel(self.main_container, size=(-1, 1))
+        self._header_line = wx.Panel(self.main_container, size=(-1, max(1, self.FromDIP(1))))
         self._header_line.SetBackgroundColour(_theme.color("dividers.default.color"))
         main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
@@ -949,7 +964,7 @@ class CustomResolutionsDialog(BaseStyledDialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         header = self.create_header(_locale.get("dialog.custom_res.header", "Custom resolutions"))
         main_sizer.Add(header, 0, wx.EXPAND)
-        self._header_line = wx.Panel(self.main_container, size=(-1, 1))
+        self._header_line = wx.Panel(self.main_container, size=(-1, max(1, self.FromDIP(1))))
         self._header_line.SetBackgroundColour(_theme.color("dividers.default.color"))
         main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
@@ -1047,7 +1062,7 @@ class RecallPresetDialog(BaseStyledDialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         header = self.create_header(_locale.get("dialog.preset.recall.header", "Select custom preset"))
         main_sizer.Add(header, 0, wx.EXPAND)
-        self._header_line = wx.Panel(self.main_container, size=(-1, 1))
+        self._header_line = wx.Panel(self.main_container, size=(-1, max(1, self.FromDIP(1))))
         self._header_line.SetBackgroundColour(_theme.color("dividers.default.color"))
         main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
@@ -1063,7 +1078,7 @@ class RecallPresetDialog(BaseStyledDialog):
             for scope, name in presets:
                 self.list_view.AddItem(name.upper(), data={"name": name, "scope": scope})
                 
-        padding_md = _theme._resolve("typography.spacing.md") or 16
+        padding_md = self.FromDIP(_theme._resolve("typography.spacing.md") or 16)
         main_sizer.Add(self.list_view, 1, wx.EXPAND | wx.ALL, padding_md)
         self.main_container.SetSizer(main_sizer)
 
@@ -1130,7 +1145,7 @@ class MessageDialog(BaseStyledDialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(self.create_header(self._title, show_close=False), 0, wx.EXPAND)
 
-        self._header_line = wx.Panel(self.main_container, size=(-1, 1))
+        self._header_line = wx.Panel(self.main_container, size=(-1, max(1, self.FromDIP(1))))
         self._header_line.SetBackgroundColour(_theme.color("dividers.default.color"))
         main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
@@ -1222,7 +1237,7 @@ class _AiLogoPanel(wx.Panel):
     _SVG_CACHE = {}  # class-level: name → wx.svg.SVGimage or None
 
     def __init__(self, parent, name):
-        s = self._SIZE
+        s = parent.FromDIP(self._SIZE)
         super().__init__(parent, size=(s, s))
         self.SetMinSize((s, s))
         self.SetMaxSize((s, s))
@@ -1253,7 +1268,7 @@ class _AiLogoPanel(wx.Panel):
         gc = wx.GraphicsContext.Create(dc)
         if not gc:
             return
-        s  = float(self._SIZE)
+        s  = float(min(self.GetClientSize()))
         cx = cy = s / 2.0
         color_token = f"colors.brand.ai.{self._name}"
         c  = _theme.color(color_token if _theme.has_token(color_token) else "colors.brand.ai.unknown")
@@ -1265,7 +1280,8 @@ class _AiLogoPanel(wx.Panel):
 
         if self._svg_image:
             try:
-                self._svg_image.RenderToGC(gc, size=(s, s))
+                # ints: KiCad 10's wxPython wx.Size(*size) rejects floats
+                self._svg_image.RenderToGC(gc, size=(int(s), int(s)))
             except Exception as exc:
                 _logger.debug("SVG render failed for %s: %s", self._name, exc)
             else:
@@ -1425,7 +1441,8 @@ class _AuthorLogoPanel(wx.Panel):
 
         if svg_image:
             try:
-                svg_image.RenderToGC(gc, size=(float(w), float(h)))
+                # ints: KiCad 10's wxPython wx.Size(*size) rejects floats
+                svg_image.RenderToGC(gc, size=(int(w), int(h)))
                 return
             except Exception as exc:
                 _logger.debug("FH SVG render failed: %s", exc)
@@ -1464,13 +1481,20 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         self._closing = False
         self.Bind(wx.EVT_WINDOW_DESTROY, self._on_destroy)
         self.build_ui()
-        self.autosize_dialog_height(max_height=h)
+        # Size to content: Windows font metrics run taller than the design
+        # height, and clamping below the content's best size squeezes the
+        # bottom (sponsor) section. Cap only at the usable screen height.
+        disp_idx = wx.Display.GetFromWindow(self)
+        screen_h = wx.Display(disp_idx if disp_idx != wx.NOT_FOUND else 0).GetClientArea().height
+        self.autosize_dialog_height(max_height=max(self.FromDIP(h), screen_h - self.shadow_size * 2))
         self.center_over_parent()
 
     @guarded_paint
     def on_paint_window(self, event):
         dc = wx.AutoBufferedPaintDC(self)
-        dc.SetBackground(wx.Brush(_theme.BLACK))
+        # See BaseStyledDialog.on_paint_window: with no shadow inset (MSW) the
+        # clear colour shows at the body's corners, so use the body colour.
+        dc.SetBackground(wx.Brush(_theme.BLACK if self.shadow_size else _theme.color("colors.gray-dark")))
         dc.Clear()
         gc = wx.GraphicsContext.Create(dc)
         if not gc:
@@ -1483,13 +1507,13 @@ class AboutSpinRenderDialog(BaseStyledDialog):
             alpha = int(160 * (1.0 - (i / s)**0.5))
             gc.SetBrush(wx.Brush(wx.Colour(_theme.BLACK.Red(), _theme.BLACK.Green(), _theme.BLACK.Blue(), alpha)))
             gc.SetPen(wx.TRANSPARENT_PEN)
-            gc.DrawRoundedRectangle(i, i, w - 2*i, h - 2*i, 12)
+            gc.DrawRoundedRectangle(i, i, w - 2*i, h - 2*i, self.FromDIP(12))
 
         gc.SetBrush(wx.Brush(_theme.color("colors.gray-dark")))
         gc.SetPen(wx.TRANSPARENT_PEN)
-        gc.DrawRoundedRectangle(s, s, self.logical_size[0], self.logical_size[1], 4)
+        gc.DrawRoundedRectangle(s, s, self.logical_size[0], self.logical_size[1], self.FromDIP(4))
 
-        gc.SetPen(wx.Pen(_theme.color("colors.primary"), 1))
+        gc.SetPen(wx.Pen(_theme.color("colors.primary"), max(1, self.FromDIP(1))))
         gc.StrokeLine(s, s + self.logical_size[1] - 1, s + self.logical_size[0], s + self.logical_size[1] - 1)
 
     # ─── build ─────────────────────────────────────────────────────────────
@@ -1498,7 +1522,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(self.create_header("SPINRENDER"), 0, wx.EXPAND)
 
-        self._header_line = wx.Panel(self.main_container, size=(-1, 1))
+        self._header_line = wx.Panel(self.main_container, size=(-1, max(1, self.FromDIP(1))))
         self._header_line.SetBackgroundColour(_theme.color("dividers.default.color"))
         main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
@@ -1519,6 +1543,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
 
     def _padded_section(self, parent, build_fn, pt=12, pr=16, pb=16, pl=16, outer_bg=None, show_divider=True):
         """Wrap section content with padding and an optional 1 px bottom divider."""
+        pt, pr, pb, pl = (self.FromDIP(v) for v in (pt, pr, pb, pl))
         outer = wx.Panel(parent)
         outer.SetBackgroundColour(_theme.color(outer_bg or "colors.gray-dark"))
         inner = build_fn(outer)
@@ -1531,7 +1556,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         vs.Add(hs, 0, wx.EXPAND)
         vs.Add((0, pb))
         if show_divider:
-            div = wx.Panel(outer, size=(-1, 1))
+            div = wx.Panel(outer, size=(-1, max(1, self.FromDIP(1))))
             div.SetBackgroundColour(_theme.color("dividers.default.color"))
             vs.Add(div, 0, wx.EXPAND)
         outer.SetSizer(vs)
@@ -1552,17 +1577,17 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         icon = self._mdi_icon(row, icon_glyph)
-        sizer.Add(icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, icon_gap)
+        sizer.Add(icon, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, self.FromDIP(icon_gap))
 
         lbl = create_text(row, label, "about_link_label")
         sizer.Add(lbl, 0, wx.ALIGN_CENTER_VERTICAL)
 
         if show_arrow:
             arrow = create_text(row, "↗", "about_link_arrow")
-            sizer.Add(arrow, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)
+            sizer.Add(arrow, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, self.FromDIP(12))
 
         if row_min_height is not None:
-            row.SetMinSize((-1, row_min_height))
+            row.SetMinSize((-1, self.FromDIP(row_min_height)))
         row.SetSizer(sizer)
         hover_bindings = [
             {"widget": row},
@@ -1587,7 +1612,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         right = wx.Panel(panel)
-        right.SetMinSize((200, -1))
+        right.SetMinSize((self.FromDIP(200), -1))
         right.SetBackgroundColour(_theme.color("colors.gray-dark"))
         rs = wx.BoxSizer(wx.VERTICAL)
 
@@ -1599,10 +1624,10 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         meta_wrap.SetBackgroundColour(_theme.color("colors.gray-dark"))
         meta_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        accent = wx.Panel(meta_wrap, size=(1, 28))
+        accent = wx.Panel(meta_wrap, size=(max(1, self.FromDIP(1)), self.FromDIP(28)))
         accent.SetBackgroundColour(_theme.color("colors.primary"))
         meta_sizer.Add(accent, 0, wx.ALIGN_CENTER_VERTICAL)
-        meta_sizer.Add((14, 0))
+        meta_sizer.Add((self.FromDIP(14), 0))
 
         meta_col = wx.BoxSizer(wx.VERTICAL)
         ver_lbl = create_text(meta_wrap, ver_raw, "about_link_label", color_token="colors.primary")
@@ -1616,12 +1641,12 @@ class AboutSpinRenderDialog(BaseStyledDialog):
             ),
             0,
             wx.TOP,
-            6,
+            self.FromDIP(6),
         )
 
         meta_sizer.Add(meta_col, 1)
         meta_wrap.SetSizer(meta_sizer)
-        rs.Add((8, 0))
+        rs.Add((self.FromDIP(8), 0))
         rs.Add(meta_wrap, 0, wx.EXPAND)
         right.SetSizer(rs)
         sizer.Add(right, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -1648,14 +1673,14 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         auth = wx.Panel(panel)
         auth.SetBackgroundColour(_theme.color("colors.gray-dark"))
         as_ = wx.BoxSizer(wx.VERTICAL)
-        as_.Add(self._section_label(auth, _locale.get("dialog.about.section_author", "AUTHOR")), 0, wx.BOTTOM, 10)
+        as_.Add(self._section_label(auth, _locale.get("dialog.about.section_author", "AUTHOR")), 0, wx.BOTTOM, self.FromDIP(10))
 
         author_name = _locale.get("dialog.about.author", "alsoknownasfoo")
         author_prefix = _locale.get("dialog.about.author_prefix", "by ")
         author_text = f"{author_prefix}{author_name}"
 
-        links_gap = 12
-        logo_size = 42
+        links_gap = self.FromDIP(12)
+        logo_size = self.FromDIP(42)
 
         author_links = wx.Panel(auth)
         author_links.SetBackgroundColour(_theme.color("colors.gray-dark"))
@@ -1682,7 +1707,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         )
 
         author_links_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        author_links_sizer.Add(_AuthorLogoPanel(author_links, logo_size), 0, wx.RIGHT | wx.ALIGN_TOP, 16)
+        author_links_sizer.Add(_AuthorLogoPanel(author_links, logo_size), 0, wx.RIGHT | wx.ALIGN_TOP, self.FromDIP(16))
 
         links_col = wx.BoxSizer(wx.VERTICAL)
         links_col.Add(author_lbl, 0, wx.BOTTOM, links_gap)
@@ -1697,16 +1722,16 @@ class AboutSpinRenderDialog(BaseStyledDialog):
 
         # Right — BUILT WITH (Supported By)
         ai_col = wx.Panel(panel)
-        ai_col.SetMinSize((200, -1))
+        ai_col.SetMinSize((self.FromDIP(200), -1))
         ai_col.SetBackgroundColour(_theme.color("colors.gray-dark"))
         ais = wx.BoxSizer(wx.VERTICAL)
-        ais.Add(self._section_label(ai_col, _locale.get("dialog.about.built_with_label", "BUILT WITH")), 0, wx.BOTTOM, 10)
-        ais.Add((0, 10))
+        ais.Add(self._section_label(ai_col, _locale.get("dialog.about.built_with_label", "BUILT WITH")), 0, wx.BOTTOM, self.FromDIP(10))
+        ais.Add((0, self.FromDIP(10)))
         ai_row = wx.Panel(ai_col)
         ai_row.SetBackgroundColour(_theme.color("colors.gray-dark"))
         ars = wx.BoxSizer(wx.HORIZONTAL)
         for name in ("claude", "gemini", "chatgpt", "copilot", "stepfun"):
-            ars.Add(_AiLogoPanel(ai_row, name), 0, wx.RIGHT, 16)
+            ars.Add(_AiLogoPanel(ai_row, name), 0, wx.RIGHT, self.FromDIP(16))
         ai_row.SetSizer(ars)
         ais.Add(ai_row, 0)
         ai_col.SetSizer(ais)
@@ -1721,10 +1746,29 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         panel.SetBackgroundColour(_theme.color("colors.gray-black"))
         vs = wx.BoxSizer(wx.VERTICAL)
 
-        card_w = panel.FromDIP(150)
-        card_h = panel.FromDIP(42)
+        # Size the row to the real font metrics — Windows fonts run taller and
+        # wider than the 150x42 design box fits. The dialog width follows via
+        # autosize_dialog_height (it expands to the content's best width).
+        _dc = wx.ScreenDC()
+        _btn_font = _theme.font("button")
+        _dc.SetFont(_btn_font)
+        _line_h = _dc.GetTextExtent("Ag")[1]
+        _dc.SetFont(_theme.font("layout.dialogs.about.body.link_label"))
+        _tag_h = _dc.GetTextExtent("Ag")[1]
+        card_h = max(panel.FromDIP(42), 2 * max(_line_h, _tag_h) + panel.FromDIP(14))
 
         def _donate_card(card_parent, style_id, icon_name, line1, line2, url):
+            # Width fits the icon + the widest text line + paddings, so the
+            # copy is never ellipsized; 150 design px stays the minimum.
+            mdc = wx.ScreenDC()
+            mdc.SetFont(_btn_font)
+            text_w = max(mdc.GetTextExtent(line1)[0], mdc.GetTextExtent(line2)[0])
+            icon_char = _theme.glyph(icon_name) or ""
+            mdc.SetFont(_theme.font("icon"))
+            icon_w = mdc.GetTextExtent(icon_char)[0] if icon_char else 0
+            pad = card_parent.FromDIP(16)
+            gap = card_parent.FromDIP(12)
+            card_w = max(card_parent.FromDIP(150), pad + icon_w + gap + text_w + pad)
             card = wx.Panel(card_parent, size=(card_w, card_h))
             card.SetMinSize((card_w, card_h))
             card.SetBackgroundStyle(wx.BG_STYLE_PAINT)
@@ -1839,7 +1883,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         copy_row_sizer.Add(copy_lbl, 0, wx.ALIGN_CENTER_VERTICAL)
         copy_row.SetSizer(copy_row_sizer)
 
-        copy_sizer.Add(copy_row, 0, wx.ALIGN_CENTER_VERTICAL)
+        copy_sizer.Add(copy_row, 0)
         copy_sizer.AddStretchSpacer()
         copy_wrap.SetSizer(copy_sizer)
 
@@ -1861,7 +1905,10 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         )
 
         dr.Add(copy_wrap, 0, wx.ALIGN_CENTER_VERTICAL)
-        dr.AddStretchSpacer()
+        # Stretchable gap with a real minimum: with a plain stretch spacer the
+        # row reports "fits" at zero gap and the tagline runs into the cards;
+        # the minimum feeds the best width so the dialog widens instead.
+        dr.Add((panel.FromDIP(32), 0), 1)
         dr.Add(kofi_btn, 0, wx.ALIGN_CENTER_VERTICAL)
         dr.Add(github_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, panel.FromDIP(16))
 
@@ -1882,7 +1929,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         links_panel = wx.Panel(panel)
         links_panel.SetBackgroundColour(_theme.color("colors.gray-dark"))
         ls = wx.BoxSizer(wx.VERTICAL)
-        ls.Add(self._section_label(links_panel, _locale.get("dialog.about.resources_label", "RESOURCES")), 0, wx.BOTTOM, 10)
+        ls.Add(self._section_label(links_panel, _locale.get("dialog.about.resources_label", "RESOURCES")), 0, wx.BOTTOM, self.FromDIP(10))
         for icon_glyph, lkey, fallback, url in [
             ("discussions", "dialog.about.discussions_label",   "Ask a question",            f"{base}/discussions"),
             ("github",      "dialog.about.repo_label",          "/alsoknownasfoo/SpinRender", base),
@@ -1890,25 +1937,25 @@ class AboutSpinRenderDialog(BaseStyledDialog):
             ("readme",      "dialog.about.readme_label",        "Help + documentation",      f"{base}/blob/main/README.md"),
         ]:
             ls.Add(self._link_row(links_panel, icon_glyph, _locale.get(lkey, fallback), url),
-                   0, wx.BOTTOM, 10)
+                   0, wx.BOTTOM, self.FromDIP(10))
         links_panel.SetSizer(ls)
         sizer.Add(links_panel, 1)
 
         # Right — LICENSE
         lic_panel = wx.Panel(panel)
-        lic_panel.SetMinSize((200, -1))
+        lic_panel.SetMinSize((self.FromDIP(200), -1))
         lic_panel.SetBackgroundColour(_theme.color("colors.gray-dark"))
         lic_s = wx.BoxSizer(wx.VERTICAL)
-        lic_s.Add(self._section_label(lic_panel, _locale.get("dialog.about.license_label", "LICENSE")), 0, wx.BOTTOM, 10)
+        lic_s.Add(self._section_label(lic_panel, _locale.get("dialog.about.license_label", "LICENSE")), 0, wx.BOTTOM, self.FromDIP(10))
         lic_s.Add(self._link_row(lic_panel, "file",
                                  _locale.get("dialog.about.gpl_label", "GPLv3 License"),
                                  _locale.get("dialog.about.gpl_url", f"{base}/blob/main/LICENSE")),
-                  0, wx.BOTTOM, 10)
+                  0, wx.BOTTOM, self.FromDIP(10))
         lic_s.Add(self._link_row(lic_panel, "file",
                                  _locale.get("dialog.about.cc_label", "CC BY-NC 4.0"),
                                  _locale.get("dialog.about.cc_url",
                                              "https://creativecommons.org/licenses/by-nc/4.0/")),
-                  0, wx.BOTTOM, 10)
+                  0, wx.BOTTOM, self.FromDIP(10))
         lic_s.Add(self._link_row(lic_panel, "notices",
                                  _locale.get("dialog.about.notices_label", "Open source notices"),
                                  _locale.get("dialog.about.notices_url", f"{base}/blob/main/NOTICES.md")), 0)
