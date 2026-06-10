@@ -1099,7 +1099,8 @@ class SectionToggle(wx.Panel):
         # Centered +/- drawn as vector strokes for crisp, equal spacing.
         cx, cy = box / 2.0, y_off + box / 2.0
         arm = max(3.0, box * 0.25)
-        gc.SetPen(wx.Pen(color, max(1.6, box * 0.13)))
+        # wx.Pen width must be int; GraphicsPenInfo keeps the fractional width.
+        gc.SetPen(gc.CreatePen(wx.GraphicsPenInfo(color).Width(max(1.6, box * 0.13))))
         path = gc.CreatePath()
         # Horizontal bar (present for both "+" and "-").
         path.MoveToPoint(cx - arm, cy)
