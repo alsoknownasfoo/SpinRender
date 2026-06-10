@@ -35,6 +35,23 @@ except ImportError:
     SpinLogger.setup(level='debug')
 
 logger = logging.getLogger("SpinRender")
+
+# Crash forensics: faulthandler catches native faults (access violations) that
+# never reach Python's exception machinery and writes the Python traceback of
+# every thread at the moment of the crash. KiCad has been dying with
+# 0xc0000005 in a paint-path vtable call; this names the exact handler.
+# The file handle must stay referenced for the lifetime of the process.
+try:
+    import faulthandler
+    _crash_log_path = os.path.join(plugin_dir, "logs", "crash_traceback.log")
+    os.makedirs(os.path.dirname(_crash_log_path), exist_ok=True)
+    _crash_log_file = open(_crash_log_path, "a", buffering=1)
+    _crash_log_file.write(f"\n=== faulthandler armed (pid {os.getpid()}) ===\n")
+    faulthandler.enable(file=_crash_log_file, all_threads=True)
+except Exception as _fh_err:  # never let diagnostics break the plugin
+    _crash_log_file = None
+    logging.getLogger("SpinRender").debug(f"faulthandler setup failed: {_fh_err}")
+
 logger.info(f"Loading SpinRender plugin from {plugin_dir}")
 logger.debug(f"Python executable: {sys.executable}")
 logger.debug(f"Python version: {sys.version}")
