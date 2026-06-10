@@ -242,6 +242,7 @@ class BaseStyledDialog(wx.Dialog):
         gap = self.FromDIP(gap)
 
         footer = wx.Panel(self.main_container)
+        apply_transparent_background(footer)
         outer_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self._footer_divider = wx.Panel(footer, size=(-1, 1))
@@ -1181,6 +1182,7 @@ class MessageDialog(BaseStyledDialog):
         padding = 16
         gap = 8
         footer = wx.Panel(self.main_container)
+        apply_transparent_background(footer)
         outer = wx.BoxSizer(wx.VERTICAL)
 
         self._footer_divider = wx.Panel(footer, size=(-1, 1))
