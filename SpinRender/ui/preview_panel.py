@@ -197,6 +197,10 @@ class PreviewPanel(wx.Panel):
 
         # Render preview overlay panel (for frames after export)
         self.render_preview_panel = wx.Panel(viewport_container, style=wx.BORDER_NONE)
+        # Suppress the native erase pass: without BG_STYLE_PAINT every
+        # Refresh() from the playback timer first fills the panel with the
+        # system gray before EVT_PAINT draws the frame, flashing at 30fps.
+        self.render_preview_panel.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.render_preview_panel.Hide()
         self.render_preview_panel.Bind(wx.EVT_PAINT, self._on_render_preview_paint)
         # The GL canvas is a heavyweight native window: on Windows it paints
@@ -386,7 +390,7 @@ class PreviewPanel(wx.Panel):
                 img = wx.Image(frame_path, wx.BITMAP_TYPE_PNG)
                 if img.IsOk():
                     self.render_preview_bitmap = wx.Bitmap(img)
-                    self.render_preview_panel.Refresh()
+                    self.render_preview_panel.Refresh(eraseBackground=False)
             except Exception:
                 pass
 
