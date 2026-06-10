@@ -6,6 +6,7 @@ Encapsulates the status bar UI at the bottom of SpinRenderPanel.
 import wx
 from .text_styles import TextStyle, TextStyles
 from SpinRender.core.theme import Theme
+from SpinRender.utils.paint_guard import guarded_paint
 _theme = Theme.current()
 
 
@@ -33,6 +34,7 @@ class StatusBar(wx.Panel):
         # Initialize to ready state with proper green color
         self.reset()
 
+    @guarded_paint
     def _on_paint(self, event):
         """Paint the status bar with message and progress bar."""
         dc = wx.AutoBufferedPaintDC(self)

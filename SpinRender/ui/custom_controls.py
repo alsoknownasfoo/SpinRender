@@ -16,6 +16,7 @@ from SpinRender.core.locale import Locale
 from .text_styles import TextStyles
 from .helpers import bind_mouse_events, create_text, prepare_styled_text, draw_styled_text, effective_background
 from .events import ParameterInteractionEvent
+from SpinRender.utils.paint_guard import guarded_paint
 
 logger = logging.getLogger("SpinRender")
 
@@ -176,6 +177,7 @@ class CustomSlider(wx.Panel):
         self.Refresh()
         event.Skip()
 
+    @guarded_paint
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         dc.SetBackground(wx.Brush(effective_background(self)))
@@ -304,6 +306,7 @@ class CustomToggleButton(wx.Panel):
             self.hover_index = new_hover
             self.Refresh(); self.Update()
 
+    @guarded_paint
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         dc.SetBackground(wx.Brush(effective_background(self)))
@@ -480,6 +483,7 @@ class CustomCheckbox(wx.Panel):
         evt.SetInt(int(self.value))
         self.GetEventHandler().ProcessEvent(evt)
 
+    @guarded_paint
     def on_paint(self, event) -> None:
         dc = wx.AutoBufferedPaintDC(self)
         dc.SetBackground(wx.Brush(effective_background(self)))
@@ -548,6 +552,7 @@ class DropdownPopup(wx.PopupTransientWindow):
         self.Bind(wx.EVT_LEFT_DOWN, self.on_click)
         self.Bind(wx.EVT_LEAVE_WINDOW, self.on_leave)
 
+    @guarded_paint
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         # Clear the buffer first: AutoBufferedPaintDC starts with undefined
@@ -641,6 +646,7 @@ class CustomDropdown(wx.Panel):
         self.Bind(wx.EVT_PAINT, self.on_paint)
         bind_mouse_events(self, hover_handler=self.on_enter, leave_handler=self.on_leave, click_handler=self.on_click)
 
+    @guarded_paint
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         dc.SetBackground(wx.Brush(effective_background(self)))
@@ -773,6 +779,7 @@ class CustomButton(wx.Panel):
 
     def on_size(self, event): self.Refresh(); event.Skip()
 
+    @guarded_paint
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         dc.SetBackground(wx.Brush(effective_background(self)))
@@ -937,6 +944,7 @@ class PresetCard(wx.Panel):
     def on_enter(self, event): self.hovered = True; self.Refresh(); self.Update()
     def on_leave(self, event): self.hovered = False; self.Refresh(); self.Update()
 
+    @guarded_paint
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         # Clear buffer to parent background so transparent card bg shows correctly
@@ -1064,6 +1072,7 @@ class SectionToggle(wx.Panel):
         if callable(self.on_toggle):
             self.on_toggle(self.collapsed)
 
+    @guarded_paint
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         dc.SetBackground(wx.Brush(effective_background(self)))
@@ -1377,6 +1386,7 @@ class CustomInput(wx.Panel):
         self._relayout()
         self.Refresh(); event.Skip()
 
+    @guarded_paint
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         dc.SetBackground(wx.Brush(effective_background(self)))
@@ -1509,6 +1519,7 @@ class ProjectFolderChip(wx.Panel):
         self.SetSize(new_size)
         self.Refresh()
 
+    @guarded_paint
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         dc.SetBackground(wx.Brush(effective_background(self)))
@@ -1607,6 +1618,7 @@ class CustomColorPicker(wx.Panel):
         rects['hex'] = wx.Rect(hex_x, dip(7), hex_x // 2, dip(32))
         return rects
 
+    @guarded_paint
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         dc.SetBackground(wx.Brush(effective_background(self)))
@@ -1778,6 +1790,7 @@ class CustomListItem(wx.Panel):
         evt.SetClientData(self.data)
         self.GetEventHandler().ProcessEvent(evt)
 
+    @guarded_paint
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         dc.SetBackground(wx.Brush(effective_background(self)))
@@ -1858,6 +1871,7 @@ class CustomListView(scrolled.ScrolledPanel):
         
         self.Bind(wx.EVT_PAINT, self.on_paint)
 
+    @guarded_paint
     def on_paint(self, event):
         dc = wx.PaintDC(self)
         bg = _theme.color(f"{self.token}.container.frame.bg")

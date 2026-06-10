@@ -22,6 +22,7 @@ from SpinRender.version import get_version
 _theme = Theme.current()
 _locale = Locale.current()
 from .helpers import create_section_label, create_numeric_input, create_text, reapply_text_styles, load_svg, set_text_widget_state, effective_background
+from SpinRender.utils.paint_guard import guarded_paint
 
 
 # Built-in output resolutions: (display label, "WxH" id). Custom resolutions
@@ -960,6 +961,7 @@ class SVGLogoPanel(wx.Panel):
         self.svg_image = load_svg(Path(__file__).parent.parent / "resources" / "icons" / "logo.svg")
         self.Bind(wx.EVT_PAINT, self.on_paint)
 
+    @guarded_paint
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         # Clear the buffer first: AutoBufferedPaintDC starts with undefined

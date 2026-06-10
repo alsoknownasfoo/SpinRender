@@ -20,6 +20,7 @@ import logging
 from pathlib import Path
 
 from SpinRender.utils.subprocess_utils import NO_WINDOW_FLAGS
+from SpinRender.utils.paint_guard import guarded_paint
 
 logger = logging.getLogger("SpinRender")
 
@@ -865,6 +866,7 @@ class PreviewRenderer(wx.Panel):
         self._update_rotation_axis()
         self.Refresh()
 
+    @guarded_paint
     def on_paint(self, _event):
         dc = wx.PaintDC(self)
         gc = wx.GraphicsContext.Create(dc)

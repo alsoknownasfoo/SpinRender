@@ -7,6 +7,7 @@ Strictly NO dependencies on core.theme, core.locale or ui.custom_controls.
 import wx
 import threading
 import logging
+from SpinRender.utils.paint_guard import guarded_paint
 
 logger = logging.getLogger("SpinRender")
 
@@ -59,6 +60,7 @@ class RoundedPanel(wx.Panel):
         self.Refresh()
         event.Skip()
 
+    @guarded_paint
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         dc.SetBackground(wx.Brush(self.GetParent().GetBackgroundColour()))
@@ -95,6 +97,7 @@ class CustomButton(wx.Panel):
         self.Refresh()
         event.Skip()
 
+    @guarded_paint
     def on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         dc.SetBackground(wx.Brush(self.GetParent().GetBackgroundColour()))

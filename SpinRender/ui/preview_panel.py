@@ -15,6 +15,7 @@ from SpinRender.core.locale import Locale
 _theme = Theme.current()
 _locale = Locale.current()
 from SpinRender.core.preview import GLPreviewRenderer
+from SpinRender.utils.paint_guard import guarded_paint
 
 
 class PreviewPanel(wx.Panel):
@@ -400,6 +401,7 @@ class PreviewPanel(wx.Panel):
     # Render overlay paint
     # ------------------------------------------------------------------------
 
+    @guarded_paint
     def _on_render_preview_paint(self, event):
         """Paint handler for render preview overlay."""
         dc = wx.AutoBufferedPaintDC(self.render_preview_panel)

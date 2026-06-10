@@ -474,12 +474,39 @@ class SpinRenderFrame(wx.Frame):
         except Exception as e:
             logger.error(f"_fit_to_display failed: {e}", exc_info=True)
 
+    @staticmethod
+    def _release_trapped_paint_dcs():
+        """Free any paint DC trapped in a leaked traceback BEFORE our windows die.
+
+        If an EVT_PAINT handler ever raised, PyErr_Print stored the traceback
+        in sys.last_traceback; that traceback pins the handler's frame and the
+        wx.AutoBufferedPaintDC local inside it. If that DC is finally
+        garbage-collected after this window is destroyed, ~wxBufferedPaintDC
+        blits into the dead window and KiCad crashes with 0xc0000005. Purging
+        the stashed tracebacks and collecting now destroys such DCs while
+        their window still exists, which is harmless. Handlers are wrapped
+        with @guarded_paint so this should never trigger, but third-party or
+        unguarded code may still leak one.
+        """
+        import gc
+        for attr in ('last_exc', 'last_traceback', 'last_value', 'last_type'):
+            try:
+                if hasattr(sys, attr):
+                    delattr(sys, attr)
+            except Exception:
+                pass
+        try:
+            gc.collect()
+        except Exception:
+            pass
+
     def on_close(self, event):
         """
         Handle window close
         """
         logger.debug("SpinRenderFrame.on_close() called")
         self._stop_theme_watcher()
+        self._release_trapped_paint_dcs()
         # Clean up resources
         if hasattr(self.panel, 'cleanup'):
             logger.debug("Calling panel cleanup()...")

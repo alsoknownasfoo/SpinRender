@@ -27,6 +27,7 @@ from SpinRender.foundation.icons import STATUS_ICONS
 from SpinRender.version import get_version, base_version, is_newer, is_pcm_install
 from SpinRender import version as version_module
 from SpinRender.core import self_update
+from SpinRender.utils.paint_guard import guarded_paint
 
 _theme = Theme.current()
 _locale = Locale.current()
@@ -86,6 +87,7 @@ class BaseStyledDialog(wx.Dialog):
         self.Bind(wx.EVT_CHAR_HOOK, self.on_char_hook)
         self.Bind(wx.EVT_PAINT, self.on_paint_window)
 
+    @guarded_paint
     def on_paint_window(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         # Clear the buffer first: AutoBufferedPaintDC starts with undefined
@@ -1243,6 +1245,7 @@ class _AiLogoPanel(wx.Panel):
             )
         return self._SVG_CACHE[name]
 
+    @guarded_paint
     def _on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         dc.SetBackground(wx.Brush(effective_background(self)))
@@ -1406,6 +1409,7 @@ class _AuthorLogoPanel(wx.Panel):
             self._DARK_CACHE[size] = fitted
             return fitted
 
+    @guarded_paint
     def _on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         dc.SetBackground(wx.Brush(effective_background(self)))
@@ -1463,6 +1467,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         self.autosize_dialog_height(max_height=h)
         self.center_over_parent()
 
+    @guarded_paint
     def on_paint_window(self, event):
         dc = wx.AutoBufferedPaintDC(self)
         dc.SetBackground(wx.Brush(_theme.BLACK))
@@ -1727,6 +1732,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
 
             state = {"hovered": False}
 
+            @guarded_paint
             def _paint(_event):
                 dc = wx.AutoBufferedPaintDC(card)
                 dc.SetBackground(wx.Brush(effective_background(card)))

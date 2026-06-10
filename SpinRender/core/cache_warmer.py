@@ -28,6 +28,7 @@ import logging
 import wx
 
 from SpinRender.utils.subprocess_utils import NO_WINDOW_FLAGS
+from SpinRender.utils.paint_guard import guarded_paint
 
 logger = logging.getLogger("SpinRender")
 
@@ -133,6 +134,7 @@ class _ThemedProgressBar(wx.Panel):
         self.Refresh()
         self.Update()
 
+    @guarded_paint
     def _on_paint(self, _evt):
         dc = wx.AutoBufferedPaintDC(self)
         gc = wx.GraphicsContext.Create(dc)
