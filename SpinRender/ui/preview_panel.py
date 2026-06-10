@@ -199,6 +199,12 @@ class PreviewPanel(wx.Panel):
         self.render_preview_panel = wx.Panel(viewport_container, style=wx.BORDER_NONE)
         self.render_preview_panel.Hide()
         self.render_preview_panel.Bind(wx.EVT_PAINT, self._on_render_preview_paint)
+        # The GL canvas is a heavyweight native window: on Windows it paints
+        # straight to the GPU surface and ignores sibling z-order, so it must
+        # be switched off whenever the overlay is up (otherwise the overlay
+        # never shows during a render and the two flash after completion).
+        # EVT_SHOW catches every Show()/Hide() call site in one place.
+        self.render_preview_panel.Bind(wx.EVT_SHOW, self._on_render_preview_shown)
 
         # Add overlay panels as children of main panel
         # In original, they are children of viewport_container for proper layering
@@ -441,6 +447,20 @@ class PreviewPanel(wx.Panel):
             container_size = self._viewport_container.GetSize()
             self.render_preview_panel.SetSize(container_size)
             self.render_preview_panel.SetPosition((0, 0))
+        event.Skip()
+
+    def _on_render_preview_shown(self, event):
+        """Disable the GL viewport while the render preview overlay is up."""
+        try:
+            if event.IsShown():
+                self.viewport.stop_preview()
+                self.viewport.Hide()
+            else:
+                self.viewport.Show()
+                self._viewport_container.Layout()
+                self.viewport.start_preview()
+        except RuntimeError:
+            pass  # viewport already destroyed during teardown
         event.Skip()
 
     # ------------------------------------------------------------------------
