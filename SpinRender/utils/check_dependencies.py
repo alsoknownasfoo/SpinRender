@@ -11,6 +11,8 @@ import importlib
 import site
 import logging
 
+from .subprocess_utils import NO_WINDOW_FLAGS
+
 logger = logging.getLogger("SpinRender")
 
 
@@ -154,7 +156,8 @@ class DependencyChecker:
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     timeout=5,
-                    check=False
+                    check=False,
+                    creationflags=NO_WINDOW_FLAGS,
                 )
                 self.found_paths[dep_name] = command_path
                 return True
@@ -273,7 +276,8 @@ class DependencyChecker:
                 stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,
-                universal_newlines=True
+                universal_newlines=True,
+                creationflags=NO_WINDOW_FLAGS,
             )
 
             if process.stdout:

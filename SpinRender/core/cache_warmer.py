@@ -27,6 +27,8 @@ import logging
 
 import wx
 
+from SpinRender.utils.subprocess_utils import NO_WINDOW_FLAGS
+
 logger = logging.getLogger("SpinRender")
 
 # Short line shown immediately; the full explanation lives behind "More Info".
@@ -390,7 +392,7 @@ def ensure_model_cache_warm(parent, board_path):
             proc = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 stdin=subprocess.DEVNULL, text=True, encoding='utf-8',
-                errors='replace', env=env,
+                errors='replace', env=env, creationflags=NO_WINDOW_FLAGS,
             )
             proc_holder['proc'] = proc
             proc.communicate()

@@ -13,6 +13,8 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
+from SpinRender.utils.subprocess_utils import NO_WINDOW_FLAGS
+
 logger = logging.getLogger("SpinRender")
 
 # Per-frame render timeout (seconds). Raytracing a large board at high
@@ -189,6 +191,7 @@ def _start_text_process(cmd, env=None):
         encoding='utf-8',
         errors='replace',
         env=env,
+        creationflags=NO_WINDOW_FLAGS,
     )
 
 

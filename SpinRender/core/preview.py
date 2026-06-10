@@ -19,6 +19,8 @@ import hashlib
 import logging
 from pathlib import Path
 
+from SpinRender.utils.subprocess_utils import NO_WINDOW_FLAGS
+
 logger = logging.getLogger("SpinRender")
 
 # Global flag to ensure glutInit is only called once per session
@@ -38,7 +40,7 @@ class PCBModelLoader:
             common_paths = ['kicad-cli', '/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli', '/usr/local/bin/kicad-cli', '/opt/homebrew/bin/kicad-cli']
             for path in common_paths:
                 try:
-                    subprocess.run([path, '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5, check=False)
+                    subprocess.run([path, '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5, check=False, creationflags=NO_WINDOW_FLAGS)
                     kicad_cli = path
                     break
                 except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -46,7 +48,7 @@ class PCBModelLoader:
             if not kicad_cli:
                 return False
             cmd = [kicad_cli, 'pcb', 'export', 'glb', '--fuse-shapes', '--grid-origin', '--no-dnp', '--subst-models', '--include-pads', '--include-silkscreen', board_path, '--output', output_path]
-            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120, text=True)
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120, text=True, creationflags=NO_WINDOW_FLAGS)
             if result.returncode != 0:
                 logger.error(f"kicad-cli glb export failed (rc={result.returncode}): {(result.stderr or '').strip()[:500]}")
                 return False
