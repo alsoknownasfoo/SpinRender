@@ -19,22 +19,22 @@ from SpinRender.core.theme import Theme
 class TextStyle:
     """Immutable text style specification."""
     family: str
-    size: int
+    size: float
     weight: int = 400
     color: Optional[object] = None
     color_token: Optional[str] = None
     formatting: Optional[str] = None
 
     def create_font(self) -> wx.Font:
-        """Create a wx.Font object with these specifications."""
-        style = wx.FONTSTYLE_ITALIC if self.formatting == "italic" else wx.FONTSTYLE_NORMAL
-        return wx.Font(
-            self.size,
-            wx.FONTFAMILY_DEFAULT,
-            style,
-            self.weight,
-            faceName=self.family
-        )
+        """Create a wx.Font object with these specifications.
+
+        Uses wx.FontInfo so fractional point sizes survive — Theme.font()
+        produces them on Windows when converting design px to points.
+        """
+        info = wx.FontInfo(float(self.size)).FaceName(self.family).Weight(self.weight)
+        if self.formatting == "italic":
+            info = info.Italic()
+        return wx.Font(info)
 
     def format_text(self, text: str) -> str:
         """Apply text formatting transformations.
@@ -157,7 +157,7 @@ class TextStyles:
             
         return TextStyle(
             family=font.GetFaceName(),
-            size=font.GetPointSize(),
+            size=font.GetFractionalPointSize(),
             weight=font.GetWeight(),
             color=color,
             formatting=formatting
