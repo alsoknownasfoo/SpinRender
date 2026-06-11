@@ -9,12 +9,13 @@ from pathlib import Path
 from typing import List, Optional
 
 from .text_styles import TextStyle, TextStyles
-from .helpers import create_text, update_text
+from .helpers import create_text, update_text, apply_transparent_background, refresh_transparent_backgrounds
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
 _theme = Theme.current()
 _locale = Locale.current()
 from SpinRender.core.preview import GLPreviewRenderer
+from SpinRender.utils.paint_guard import guarded_paint
 
 
 class PreviewPanel(wx.Panel):
@@ -40,6 +41,9 @@ class PreviewPanel(wx.Panel):
             on_close_callback: Optional callback to invoke when render preview is closed
         """
         super().__init__(parent)
+        # Set before children are created so overlay panels resolve their
+        # see-through background against this colour (not the MSW default).
+        self.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
         self.settings = settings
         self.board_path = board_path
         self.on_close_callback = on_close_callback
@@ -78,6 +82,7 @@ class PreviewPanel(wx.Panel):
         """Create all overlay text widgets."""
         # Top overlay container
         top_meta = wx.Panel(self)
+        apply_transparent_background(top_meta)
         top_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         # Top-Left: Preset name OR parameters
@@ -136,6 +141,7 @@ class PreviewPanel(wx.Panel):
 
         # Bottom overlay container
         bottom_meta = wx.Panel(self)
+        apply_transparent_background(bottom_meta)
         bottom_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         self.ov_bottom_left = create_text(bottom_meta, "", "info")
@@ -159,6 +165,9 @@ class PreviewPanel(wx.Panel):
     def reapply_theme(self):
         """Re-apply theme to static overlay elements."""
         self.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
+        # Overlay panels hold an MSW-resolved stand-in colour from the old
+        # theme; re-resolve them top-down (no-op on mac).
+        refresh_transparent_backgrounds(self)
 
         # Reapply dim color to nav bracket/divider widgets (computed, not in registry)
         nav_color = _theme.color("layout.main.rightpanel.shader.color")
@@ -175,14 +184,14 @@ class PreviewPanel(wx.Panel):
         """Set up the main sizer for PreviewPanel to manage all children."""
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        # Add top info overlay with 12px margins
-        main_sizer.Add(self._top_meta, 0, wx.EXPAND | wx.ALL, 12)
+        # Add top info overlay with 12px (design) margins
+        main_sizer.Add(self._top_meta, 0, wx.EXPAND | wx.ALL, self.FromDIP(12))
 
         # Add viewport container with proportion=1 to fill remaining space
         main_sizer.Add(self._viewport_container, 1, wx.EXPAND)
 
-        # Add bottom info overlay with 12px margins
-        main_sizer.Add(self._bottom_meta, 0, wx.EXPAND | wx.ALL, 12)
+        # Add bottom info overlay with 12px (design) margins
+        main_sizer.Add(self._bottom_meta, 0, wx.EXPAND | wx.ALL, self.FromDIP(12))
 
         self.SetSizer(main_sizer)
 
@@ -197,8 +206,18 @@ class PreviewPanel(wx.Panel):
 
         # Render preview overlay panel (for frames after export)
         self.render_preview_panel = wx.Panel(viewport_container, style=wx.BORDER_NONE)
+        # Suppress the native erase pass: without BG_STYLE_PAINT every
+        # Refresh() from the playback timer first fills the panel with the
+        # system gray before EVT_PAINT draws the frame, flashing at 30fps.
+        self.render_preview_panel.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.render_preview_panel.Hide()
         self.render_preview_panel.Bind(wx.EVT_PAINT, self._on_render_preview_paint)
+        # The GL canvas is a heavyweight native window: on Windows it paints
+        # straight to the GPU surface and ignores sibling z-order, so it must
+        # be switched off whenever the overlay is up (otherwise the overlay
+        # never shows during a render and the two flash after completion).
+        # EVT_SHOW catches every Show()/Hide() call site in one place.
+        self.render_preview_panel.Bind(wx.EVT_SHOW, self._on_render_preview_shown)
 
         # Add overlay panels as children of main panel
         # In original, they are children of viewport_container for proper layering
@@ -380,7 +399,7 @@ class PreviewPanel(wx.Panel):
                 img = wx.Image(frame_path, wx.BITMAP_TYPE_PNG)
                 if img.IsOk():
                     self.render_preview_bitmap = wx.Bitmap(img)
-                    self.render_preview_panel.Refresh()
+                    self.render_preview_panel.Refresh(eraseBackground=False)
             except Exception:
                 pass
 
@@ -390,6 +409,7 @@ class PreviewPanel(wx.Panel):
     # Render overlay paint
     # ------------------------------------------------------------------------
 
+    @guarded_paint
     def _on_render_preview_paint(self, event):
         """Paint handler for render preview overlay."""
         dc = wx.AutoBufferedPaintDC(self.render_preview_panel)
@@ -441,6 +461,20 @@ class PreviewPanel(wx.Panel):
             container_size = self._viewport_container.GetSize()
             self.render_preview_panel.SetSize(container_size)
             self.render_preview_panel.SetPosition((0, 0))
+        event.Skip()
+
+    def _on_render_preview_shown(self, event):
+        """Disable the GL viewport while the render preview overlay is up."""
+        try:
+            if event.IsShown():
+                self.viewport.stop_preview()
+                self.viewport.Hide()
+            else:
+                self.viewport.Show()
+                self._viewport_container.Layout()
+                self.viewport.start_preview()
+        except RuntimeError:
+            pass  # viewport already destroyed during teardown
         event.Skip()
 
     # ------------------------------------------------------------------------

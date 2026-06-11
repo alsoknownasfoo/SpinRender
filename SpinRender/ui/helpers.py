@@ -9,6 +9,8 @@ from pathlib import Path
 from typing import Optional
 
 import wx
+from SpinRender.utils.wx_svg_compat import ensure_wx_svg
+ensure_wx_svg()
 import wx.svg
 
 from SpinRender.core.theme import Theme
@@ -481,6 +483,104 @@ def create_frame(parent: wx.Panel, style_token: str, **kwargs) -> wx.Panel:
     color = _resolve_token(style_token)
     frame.SetBackgroundColour(color)
     return frame
+
+
+def effective_background(widget: wx.Window) -> wx.Colour:
+    """Nearest opaque ancestor background colour, for clearing paint buffers.
+
+    Section/row containers use a fully transparent background colour so the
+    panel behind them shows through; dc.Clear() ignores alpha, so clearing a
+    custom control's buffer to its direct parent's colour paints a black box.
+    Walk up until a window with an opaque background is found.
+
+    Only wxMSW needs the resolution: its paint buffers start undefined and
+    never-coloured windows report an opaque system default. macOS composites
+    windows transparently, so clearing to the direct parent's colour (even a
+    fully transparent one — effectively a no-op) preserves its historical
+    rendering; resolving to an ancestor's opaque colour there paints a wrong
+    solid box over the see-through containers.
+    """
+    if wx.Platform != '__WXMSW__':
+        parent = widget.GetParent()
+        return parent.GetBackgroundColour() if parent else wx.Colour(0, 0, 0)
+    p = widget.GetParent()
+    while p is not None:
+        # Skip ancestors whose colour was never explicitly themed: wxMSW
+        # reports an opaque system default (#202020 in dark mode) for them,
+        # which would leak into paint buffers.
+        explicit = getattr(p, '_sr_transparent_bg', None) is None
+        c = p.GetBackgroundColour()
+        if explicit and c.IsOk() and c.Alpha() == wx.ALPHA_OPAQUE:
+            return c
+        p = p.GetParent()
+    return wx.Colour(0, 0, 0)
+
+
+def apply_transparent_background(window: wx.Window) -> None:
+    """Give a container a see-through background that works on every platform.
+
+    macOS honours a fully transparent background colour, letting the panel
+    behind show through. wxMSW does not — an alpha-0 colour paints solid
+    black. On Windows, resolve to the nearest opaque ancestor colour instead,
+    which is visually identical as long as the ancestor is a flat fill.
+
+    Call this after the window is parented, and after ancestors have their
+    backgrounds set.
+    """
+    if wx.Platform == '__WXMSW__':
+        window._sr_transparent_bg = True
+        window.SetBackgroundColour(effective_background(window))
+    else:
+        window.SetBackgroundColour(_theme.TRANSPARENT)
+
+
+def refresh_transparent_backgrounds(root: wx.Window) -> None:
+    """Re-resolve apply_transparent_background() panels after a theme change.
+
+    Top-down so a re-resolved parent is already correct when its descendants
+    look it up. No-op outside Windows (mac keeps true transparency).
+    """
+    if wx.Platform != '__WXMSW__':
+        return
+    if getattr(root, '_sr_transparent_bg', None):
+        apply_transparent_background(root)
+    for child in root.GetChildren():
+        refresh_transparent_backgrounds(child)
+
+
+def apply_native_scrollbar_theme(window: wx.Window) -> None:
+    """MSW: match the native scrollbar visuals to the active plugin theme.
+
+    wx never themes the non-client scrollbars, so they follow whatever mode
+    the process rendered them in first (dark scrollbars in the plugin's light
+    theme, and vice versa). SetWindowTheme swaps the scrollbar style; the
+    SWP_FRAMECHANGED poke makes the non-client area redraw immediately.
+    Call at creation and from reapply_theme(). No-op off Windows.
+    """
+    if wx.Platform != '__WXMSW__':
+        return
+    import ctypes
+    from SpinRender.core.theme import Theme
+    light = Theme.current().is_light()
+    sub = "Explorer" if light else "DarkMode_Explorer"
+    try:
+        hwnd = int(window.GetHandle())
+        ux = ctypes.windll.uxtheme
+        try:
+            # AllowDarkModeForWindow (undocumented, uxtheme ordinal 133,
+            # Win10 1809+). The host app (KiCad's wx enables MSW dark mode)
+            # flags windows dark at the OS level; while that flag is set,
+            # the "Explorer" subclass still renders dark scrollbars, so it
+            # must be cleared (or set) to match the plugin theme first.
+            proto = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.c_int)
+            proto((133, ux))(hwnd, 0 if light else 1)
+        except Exception:
+            pass
+        ux.SetWindowTheme(hwnd, sub, None)
+        # SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED
+        ctypes.windll.user32.SetWindowPos(hwnd, 0, 0, 0, 0, 0, 0x0037)
+    except Exception:
+        pass
 
 
 def bind_mouse_events(widget: wx.Window,

@@ -11,6 +11,8 @@ import importlib
 import site
 import logging
 
+from .subprocess_utils import NO_WINDOW_FLAGS
+
 logger = logging.getLogger("SpinRender")
 
 
@@ -39,7 +41,7 @@ class DependencyChecker:
             'test_args': ['-version'],
             'install_macos': 'brew install ffmpeg',
             'install_linux': 'sudo apt-get install ffmpeg',
-            'install_windows': 'Download from https://ffmpeg.org/download.html',
+            'install_windows': 'Re-run install.bat to install ffmpeg via winget',
             'type': 'command'
         },
         'PyOpenGL': {
@@ -120,6 +122,10 @@ class DependencyChecker:
                 '/usr/local/bin/kicad-cli',
                 '/opt/homebrew/bin/kicad-cli'
             ]
+            if self.system == 'windows':
+                prog_files = os.environ.get('PROGRAMFILES', 'C:\\Program Files')
+                for ver in ('10.0', '9.0', '8.0'):
+                    common_paths.append(os.path.join(prog_files, 'KiCad', ver, 'bin', 'kicad-cli.exe'))
             for path in common_paths:
                 if os.path.exists(path):
                     command_path = path
@@ -131,6 +137,13 @@ class DependencyChecker:
                 '/opt/homebrew/bin/ffmpeg',
                 '/usr/bin/ffmpeg'
             ]
+            if self.system == 'windows':
+                prog_files = os.environ.get('PROGRAMFILES', 'C:\\Program Files')
+                common_paths += [
+                    os.path.join(prog_files, 'Gyan', 'FFmpeg', 'bin', 'ffmpeg.exe'),
+                    os.path.join(prog_files, 'ffmpeg', 'bin', 'ffmpeg.exe'),
+                    'C:\\ffmpeg\\bin\\ffmpeg.exe',
+                ]
             for path in common_paths:
                 if os.path.exists(path):
                     command_path = path
@@ -143,7 +156,8 @@ class DependencyChecker:
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     timeout=5,
-                    check=False
+                    check=False,
+                    creationflags=NO_WINDOW_FLAGS,
                 )
                 self.found_paths[dep_name] = command_path
                 return True
@@ -250,7 +264,7 @@ class DependencyChecker:
                 install_cmd = cmd_to_run
                 use_shell = True
             else:
-                logger.warning(f"Unsupported platform for auto-install: {self.system}")
+                logger.warning(f"No automatic installer for {dep_name} on {self.system}")
                 return False, install_cmd_str
 
         logger.debug(f"Executing: {install_cmd}")
@@ -262,7 +276,8 @@ class DependencyChecker:
                 stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,
-                universal_newlines=True
+                universal_newlines=True,
+                creationflags=NO_WINDOW_FLAGS,
             )
 
             if process.stdout:

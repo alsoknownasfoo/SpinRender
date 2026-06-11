@@ -6,6 +6,7 @@ Encapsulates the status bar UI at the bottom of SpinRenderPanel.
 import wx
 from .text_styles import TextStyle, TextStyles
 from SpinRender.core.theme import Theme
+from SpinRender.utils.paint_guard import guarded_paint
 _theme = Theme.current()
 
 
@@ -13,10 +14,12 @@ class StatusBar(wx.Panel):
     """Custom status bar with progress indicator and color-coded messages."""
 
     def __init__(self, parent):
-        super().__init__(parent, size=(-1, 25))
+        # Design px → display px so the bar matches the FromDIP-scaled layout.
+        bar_h = parent.FromDIP(25)
+        super().__init__(parent, size=(-1, bar_h))
         self.SetBackgroundColour(_theme.color("layout.main.status.default.bg"))
-        self.SetMinSize((-1, 25))
-        self.SetMaxSize((-1, 25))
+        self.SetMinSize((-1, bar_h))
+        self.SetMaxSize((-1, bar_h))
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
 
         # State - import Locale for status messages
@@ -33,6 +36,7 @@ class StatusBar(wx.Panel):
         # Initialize to ready state with proper green color
         self.reset()
 
+    @guarded_paint
     def _on_paint(self, event):
         """Paint the status bar with message and progress bar."""
         dc = wx.AutoBufferedPaintDC(self)
@@ -64,7 +68,7 @@ class StatusBar(wx.Panel):
         font_obj = TextStyles.status.create_font()
         gc.SetFont(gc.CreateFont(font_obj, fg_color))
         tw, th = gc.GetTextExtent(self._msg)
-        tx, ty = 10, (h - th) / 2
+        tx, ty = self.FromDIP(10), (h - th) / 2
         gc.DrawText(self._msg, tx, ty)
 
         # Layer 2: accent text clipped to fill region — readable against the fill colour

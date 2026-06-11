@@ -21,7 +21,7 @@ from .preset_controller import PresetController
 from SpinRender.core.render_controller import RenderController
 from .controls_side_panel import ControlsSidePanel
 from .events import EVT_PARAMETER_INTERACTION
-from .custom_controls import EVT_COLOURPICKER_CHANGED
+from .custom_controls import EVT_COLOURPICKER_CHANGED, ensure_fonts_loaded
 from .status_bar import StatusBar
 from .parameter_controller import ParameterController
 
@@ -58,6 +58,7 @@ class SpinRenderPanel(wx.Panel):
 
     def __init__(self, parent, board_path):
         super().__init__(parent)
+        ensure_fonts_loaded()
         # Original board path — kept as the project identity for preset storage,
         # dialog board-name/output defaults, etc. Never rendered/edited directly.
         self.board_path = board_path
@@ -146,8 +147,8 @@ class SpinRenderPanel(wx.Panel):
         self.controls_side_panel = ControlsSidePanel(self.top_container, self.settings, self.board_path)
         self.controls_side_panel.Bind(EVT_PARAMETER_INTERACTION, self.on_parameter_interaction)
         # Fixed width of 450px for controls panel
-        self.controls_side_panel.SetMinSize((450, -1))
-        self.controls_side_panel.SetMaxSize((450, -1))
+        self.controls_side_panel.SetMinSize(self.FromDIP(wx.Size(450, -1)))
+        self.controls_side_panel.SetMaxSize(self.FromDIP(wx.Size(450, -1)))
         top_sizer.Add(self.controls_side_panel, 0, wx.EXPAND)
         # Expose commonly accessed controls from side panel
         self.render_btn = self.controls_side_panel.render_btn
@@ -164,7 +165,7 @@ class SpinRenderPanel(wx.Panel):
         # Right: Preview panel
         self.preview_panel = self.create_preview_panel(self.top_container)
         # Ensure preview panel has minimum width of 700px BEFORE adding to sizer
-        self.preview_panel.SetMinSize((700, -1))
+        self.preview_panel.SetMinSize(self.FromDIP(wx.Size(700, -1)))
         top_sizer.Add(self.preview_panel, 1, wx.EXPAND)
 
         self.top_container.SetSizer(top_sizer)
@@ -387,7 +388,7 @@ class SpinRenderPanel(wx.Panel):
         )
 
         # Set preview panel width to 700px
-        self.preview.SetMinSize((700, -1))
+        self.preview.SetMinSize(self.FromDIP(wx.Size(700, -1)))
 
         # Expose preset_buttons for overlay label overrides
         self.preview.preset_buttons = self.preset_buttons

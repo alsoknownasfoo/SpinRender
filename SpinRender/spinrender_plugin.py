@@ -35,6 +35,23 @@ except ImportError:
     SpinLogger.setup(level='debug')
 
 logger = logging.getLogger("SpinRender")
+
+# Crash forensics: faulthandler catches native faults (access violations) that
+# never reach Python's exception machinery and writes the Python traceback of
+# every thread at the moment of the crash. KiCad has been dying with
+# 0xc0000005 in a paint-path vtable call; this names the exact handler.
+# The file handle must stay referenced for the lifetime of the process.
+try:
+    import faulthandler
+    _crash_log_path = os.path.join(plugin_dir, "logs", "crash_traceback.log")
+    os.makedirs(os.path.dirname(_crash_log_path), exist_ok=True)
+    _crash_log_file = open(_crash_log_path, "a", buffering=1)
+    _crash_log_file.write(f"\n=== faulthandler armed (pid {os.getpid()}) ===\n")
+    faulthandler.enable(file=_crash_log_file, all_threads=True)
+except Exception as _fh_err:  # never let diagnostics break the plugin
+    _crash_log_file = None
+    logging.getLogger("SpinRender").debug(f"faulthandler setup failed: {_fh_err}")
+
 logger.info(f"Loading SpinRender plugin from {plugin_dir}")
 logger.debug(f"Python executable: {sys.executable}")
 logger.debug(f"Python version: {sys.version}")
@@ -349,7 +366,29 @@ class SpinRenderFrame(wx.Frame):
         self.theme_timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_theme_watch_timer, self.theme_timer)
         self.theme_timer.Start(1000) # Check every second
+        # The timer holds a raw pointer to this frame as its event target. It
+        # MUST be stopped before the frame is destroyed: a tick fired after
+        # Destroy() calls through the freed frame and hard-crashes KiCad
+        # (0xc0000005) — typically a second or two after the plugin is
+        # reopened, once the heap block gets reused. EVT_WINDOW_DESTROY covers
+        # teardown paths that bypass on_close (e.g. KiCad closing the parent).
+        self.Bind(wx.EVT_WINDOW_DESTROY, self._on_frame_destroy)
         logger.debug(f"Theme watcher initialized for {self.theme_path.name}")
+
+    def _stop_theme_watcher(self):
+        """Stop the theme hot-reload timer (idempotent)."""
+        timer = getattr(self, 'theme_timer', None)
+        if timer is not None:
+            try:
+                if timer.IsRunning():
+                    timer.Stop()
+            except RuntimeError:
+                pass
+
+    def _on_frame_destroy(self, event):
+        if event.GetEventObject() is self:
+            self._stop_theme_watcher()
+        event.Skip()
 
     def on_theme_watch_timer(self, event):
         """Check if theme file has been modified and reload if needed."""
@@ -450,11 +489,39 @@ class SpinRenderFrame(wx.Frame):
         except Exception as e:
             logger.error(f"_fit_to_display failed: {e}", exc_info=True)
 
+    @staticmethod
+    def _release_trapped_paint_dcs():
+        """Free any paint DC trapped in a leaked traceback BEFORE our windows die.
+
+        If an EVT_PAINT handler ever raised, PyErr_Print stored the traceback
+        in sys.last_traceback; that traceback pins the handler's frame and the
+        wx.AutoBufferedPaintDC local inside it. If that DC is finally
+        garbage-collected after this window is destroyed, ~wxBufferedPaintDC
+        blits into the dead window and KiCad crashes with 0xc0000005. Purging
+        the stashed tracebacks and collecting now destroys such DCs while
+        their window still exists, which is harmless. Handlers are wrapped
+        with @guarded_paint so this should never trigger, but third-party or
+        unguarded code may still leak one.
+        """
+        import gc
+        for attr in ('last_exc', 'last_traceback', 'last_value', 'last_type'):
+            try:
+                if hasattr(sys, attr):
+                    delattr(sys, attr)
+            except Exception:
+                pass
+        try:
+            gc.collect()
+        except Exception:
+            pass
+
     def on_close(self, event):
         """
         Handle window close
         """
         logger.debug("SpinRenderFrame.on_close() called")
+        self._stop_theme_watcher()
+        self._release_trapped_paint_dcs()
         # Clean up resources
         if hasattr(self.panel, 'cleanup'):
             logger.debug("Calling panel cleanup()...")

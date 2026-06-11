@@ -27,6 +27,9 @@ import logging
 
 import wx
 
+from SpinRender.utils.subprocess_utils import NO_WINDOW_FLAGS
+from SpinRender.utils.paint_guard import guarded_paint
+
 logger = logging.getLogger("SpinRender")
 
 # Short line shown immediately; the full explanation lives behind "More Info".
@@ -131,6 +134,7 @@ class _ThemedProgressBar(wx.Panel):
         self.Refresh()
         self.Update()
 
+    @guarded_paint
     def _on_paint(self, _evt):
         dc = wx.AutoBufferedPaintDC(self)
         gc = wx.GraphicsContext.Create(dc)
@@ -390,7 +394,7 @@ def ensure_model_cache_warm(parent, board_path):
             proc = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 stdin=subprocess.DEVNULL, text=True, encoding='utf-8',
-                errors='replace', env=env,
+                errors='replace', env=env, creationflags=NO_WINDOW_FLAGS,
             )
             proc_holder['proc'] = proc
             proc.communicate()

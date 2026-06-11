@@ -28,6 +28,63 @@ _SNAPSHOT_SUFFIX = ".spinrender-src"
 
 _IS_WINDOWS = sys.platform.startswith("win")
 _FILE_ATTRIBUTE_HIDDEN = 0x02
+_FILE_ATTRIBUTE_NORMAL = 0x80
+
+
+def _hide_path(path: str) -> None:
+    """Set the Windows hidden attribute (no-op elsewhere; dotfile suffices)."""
+    if not _IS_WINDOWS or not os.path.exists(path):
+        return
+    try:
+        import ctypes
+        if not ctypes.windll.kernel32.SetFileAttributesW(path, _FILE_ATTRIBUTE_HIDDEN):
+            raise ctypes.WinError(ctypes.get_last_error())
+    except Exception as e:
+        # Non-fatal: the file still works, it just isn't hidden.
+        logger.warning(f"BoardWorkspace: could not set hidden attribute: {e}")
+
+
+def _unhide_path(path: str) -> None:
+    """Clear the Windows hidden/read-only attributes before overwriting.
+
+    Cloud-sync providers (e.g. OneDrive) periodically re-stamp synced
+    files as hidden+read-only; with the read-only bit set, opening the
+    existing working copy for write raises PermissionError, and
+    pcbnew.SaveBoard silently returns False. Reset to normal before each
+    overwrite so the previous run's hidden copy doesn't block the next one.
+    """
+    if not _IS_WINDOWS or not os.path.exists(path):
+        return
+    try:
+        import ctypes
+        if not ctypes.windll.kernel32.SetFileAttributesW(path, _FILE_ATTRIBUTE_NORMAL):
+            raise ctypes.WinError(ctypes.get_last_error())
+    except Exception as e:
+        logger.warning(f"BoardWorkspace: could not clear attributes on {path}: {e}")
+
+
+# pcbnew.SaveBoard doesn't only write the .kicad_pcb: it also (re)writes the
+# same-stem project files next to it. Hiding/unhiding must treat the whole
+# set as a unit — overwriting a still-hidden .kicad_pro with CREATE_ALWAYS
+# fails with access denied on Windows, and freshly side-written project
+# files would otherwise leak into the folder unhidden.
+_PROJECT_SUFFIXES = ('.kicad_pro', '.kicad_prl')
+
+
+def _board_file_set(board_path: str) -> list:
+    """The board file plus the same-stem project files SaveBoard rewrites."""
+    p = Path(board_path)
+    return [str(p)] + [str(p.with_suffix(s)) for s in _PROJECT_SUFFIXES]
+
+
+def _unhide_board_set(board_path: str) -> None:
+    for f in _board_file_set(board_path):
+        _unhide_path(f)
+
+
+def _hide_board_set(board_path: str) -> None:
+    for f in _board_file_set(board_path):
+        _hide_path(f)
 
 
 class BoardWorkspace:
@@ -49,6 +106,10 @@ class BoardWorkspace:
         snap_name = f".{src.stem}{_SNAPSHOT_SUFFIX}{src.suffix}"
         self.snapshot_path = str(src.with_name(snap_name))
         self._paired_paths = [Path(self.board_path), Path(self.snapshot_path)]
+        # SaveBoard side-writes same-stem project files next to the snapshot;
+        # track them so cleanup() removes them too (skipped when absent).
+        for suffix in _PROJECT_SUFFIXES:
+            self._paired_paths.append(Path(self.snapshot_path).with_suffix(suffix))
         self.capture_live_board()
         self._copy_source_files()
         logger.debug(f"BoardWorkspace: working copy at {self.board_path}")
@@ -69,6 +130,7 @@ class BoardWorkspace:
             return True
         # Fallback: copy the last-saved file so the snapshot is always present.
         try:
+            self._unhide(self.snapshot_path)
             shutil.copy2(self.source_path, self.snapshot_path)
             self._hide(self.snapshot_path)
             logger.debug("BoardWorkspace: snapshot fell back to on-disk file")
@@ -111,6 +173,7 @@ class BoardWorkspace:
         except Exception:
             was_modified = None
         try:
+            _unhide_board_set(dest)
             pcbnew.SaveBoard(dest, board)
         except Exception as e:
             logger.warning(f"BoardWorkspace: pcbnew.SaveBoard failed; using on-disk copy: {e}")
@@ -129,7 +192,7 @@ class BoardWorkspace:
         if not os.path.exists(dest) or os.path.getsize(dest) == 0:
             logger.warning("BoardWorkspace: SaveBoard produced no output; using on-disk copy")
             return False
-        self._hide(dest)
+        _hide_board_set(dest)
         return True
 
     def reset(self) -> None:
@@ -166,6 +229,8 @@ class BoardWorkspace:
         for path in self._paired_paths:
             try:
                 if path.exists():
+                    # Clear read-only (re-stamped by cloud sync) so remove works.
+                    _unhide_path(str(path))
                     os.remove(path)
                     logger.debug(f"BoardWorkspace: removed {path}")
             except OSError as e:
@@ -177,6 +242,7 @@ class BoardWorkspace:
         # Board geometry comes from the live-board snapshot (capture_live_board);
         # fall back to the on-disk source if the snapshot is somehow missing.
         board_src = self.snapshot_path if os.path.exists(self.snapshot_path) else self.source_path
+        self._unhide(str(board_copy))
         shutil.copy2(board_src, board_copy)
         self._hide(str(board_copy))
 
@@ -185,6 +251,7 @@ class BoardWorkspace:
             source_file = src.with_suffix(suffix)
             target_file = board_copy.with_suffix(suffix)
             if source_file.exists():
+                self._unhide(str(target_file))
                 shutil.copy2(source_file, target_file)
                 self._hide(str(target_file))
                 if target_file not in self._paired_paths:
@@ -196,16 +263,11 @@ class BoardWorkspace:
 
     def _hide(self, path: str = None) -> None:
         """Set the Windows hidden attribute (no-op elsewhere; dotfile suffices)."""
-        if not _IS_WINDOWS:
-            return
-        target_path = path or self.board_path
-        try:
-            import ctypes
-            if not ctypes.windll.kernel32.SetFileAttributesW(target_path, _FILE_ATTRIBUTE_HIDDEN):
-                raise ctypes.WinError(ctypes.get_last_error())
-        except Exception as e:
-            # Non-fatal: the copy still works, it just isn't hidden.
-            logger.warning(f"BoardWorkspace: could not set hidden attribute: {e}")
+        _hide_path(path or self.board_path)
+
+    def _unhide(self, path: str) -> None:
+        """Clear the Windows hidden/read-only attributes before overwriting."""
+        _unhide_path(path)
 
 
 def _is_via(track: Any, pcbnew_module: Any) -> bool:
@@ -401,11 +463,14 @@ def apply_render_filters_to_board_file(
                 _remove_board_item(board, footprint)
                 removed_footprints += 1
 
+    _unhide_board_set(board_path)
     try:
         save_result = pcbnew.SaveBoard(board_path, board)
     except Exception as exc:
         logger.error(f"BoardWorkspace: pcbnew.SaveBoard failed for {board_path}: {exc}", exc_info=True)
         raise RuntimeError(f"Unable to save board after via stripping: {board_path}") from exc
+    finally:
+        _hide_board_set(board_path)
 
     if save_result is False:
         raise RuntimeError(f"Unable to save board after via stripping: {board_path}")
@@ -458,11 +523,14 @@ def remove_user_drawings_from_board_file(board_path: str) -> None:
                 _remove_board_item(footprint, item)
                 removed_footprint_drawings += 1
 
+    _unhide_board_set(board_path)
     try:
         save_result = pcbnew.SaveBoard(board_path, board)
     except Exception as exc:
         logger.error(f"BoardWorkspace: pcbnew.SaveBoard failed for {board_path}: {exc}", exc_info=True)
         raise RuntimeError(f"Unable to save board after drawing stripping: {board_path}") from exc
+    finally:
+        _hide_board_set(board_path)
 
     if save_result is False:
         raise RuntimeError(f"Unable to save board after drawing stripping: {board_path}")

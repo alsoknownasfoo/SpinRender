@@ -209,7 +209,12 @@ class Theme:
     def _resolve_color_raw(self, token: str) -> Any:
         raw = self._resolve(token)
 
-        if raw is None or raw == "#FF00FF":
+        # Bare style names (e.g. "icon", "label", "status") have no '.' in their
+        # path, so _resolve()'s literal fast-path echoes the token back unchanged
+        # rather than failing. Treat that the same as an unresolved token and
+        # fall back to the "text.{token}" style preset, mirroring font()'s
+        # resolution order.
+        if raw is None or raw == "#FF00FF" or raw == token:
             style_raw = self._resolve(f"text.{token}")
             if isinstance(style_raw, dict):
                 raw = style_raw
@@ -519,10 +524,18 @@ class Theme:
         try:
             size = int(size_val)
             weight = int(weight_val)
-            w_map = {100:wx.FONTWEIGHT_THIN, 200:wx.FONTWEIGHT_LIGHT, 300:wx.FONTWEIGHT_LIGHT, 400:wx.FONTWEIGHT_NORMAL, 
+            w_map = {100:wx.FONTWEIGHT_THIN, 200:wx.FONTWEIGHT_LIGHT, 300:wx.FONTWEIGHT_LIGHT, 400:wx.FONTWEIGHT_NORMAL,
                      500:wx.FONTWEIGHT_NORMAL, 600:wx.FONTWEIGHT_SEMIBOLD, 700:wx.FONTWEIGHT_BOLD, 800:wx.FONTWEIGHT_BOLD, 900:wx.FONTWEIGHT_BOLD}
-            
-            return wx.Font(size, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, w_map.get(weight, wx.FONTWEIGHT_NORMAL), faceName=family)
+
+            # Theme sizes are design pixels. On macOS 1pt == 1px so they can
+            # be used as point sizes directly; on Windows a point is 1/72in
+            # rendered against a 96dpi baseline (1pt = 1.33px), so passing
+            # design px as pt makes every font 33% larger than the
+            # FromDIP-scaled layout around it. Convert px -> pt there.
+            import sys as _sys
+            pt = size * 72.0 / 96.0 if _sys.platform.startswith("win") else float(size)
+            info = wx.FontInfo(pt).FaceName(family).Weight(w_map.get(weight, wx.FONTWEIGHT_NORMAL))
+            return wx.Font(info)
         except Exception as e:
             logger.debug(f"Theme: Failed to create font for '{token}': {e}. (Family: {family}, Size: {size_val}, Weight: {weight_val})")
             return wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName="Webdings")

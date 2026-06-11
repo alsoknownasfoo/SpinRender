@@ -16,6 +16,7 @@ except ImportError:
     wx = None
 
 from SpinRender.utils.check_dependencies import DependencyChecker as PureDependencyChecker
+from SpinRender.utils.subprocess_utils import NO_WINDOW_FLAGS
 from SpinRender.foundation.fonts import JETBRAINS_MONO, MDI_FONT_FAMILY, OSWALD
 
 logger = logging.getLogger("SpinRender")
@@ -46,6 +47,12 @@ class DependencyChecker(PureDependencyChecker):
                 logger.warning("macOS font check failed - user cancelled")
                 return False
             logger.debug("macOS font check passed")
+        elif self.system == 'windows':
+            logger.debug("Running Windows font check...")
+            if not self._ensure_windows_fonts_native():
+                logger.warning("Windows font check failed - user cancelled")
+                return False
+            logger.debug("Windows font check passed")
 
         # 3. Comprehensive dependency check (Commands and Python libs)
         # Now that we have wx, we can safely proceed with wx-based UI
@@ -160,6 +167,64 @@ class DependencyChecker(PureDependencyChecker):
             
         return False
 
+    def _ensure_windows_fonts_native(self):
+        """Check for fonts and prompt to install via the Windows Font Viewer.
+
+        KiCad 10's bundled wxWidgets build doesn't implement
+        wx.Font.AddPrivateFont (the SIP binding exists but raises
+        NotImplementedError), so unlike on other platforms SpinRender's
+        bundled fonts can't be loaded privately at runtime - they must be
+        installed system-wide, same as on macOS.
+        """
+        def is_font_installed(face_name):
+            try:
+                import wx
+                enumerator = wx.FontEnumerator()
+                enumerator.EnumerateFacenames()
+                return face_name in enumerator.GetFacenames()
+            except:
+                return False
+
+        missing = []
+        if not is_font_installed(JETBRAINS_MONO): missing.append("JetBrains Mono")
+        if not is_font_installed(MDI_FONT_FAMILY): missing.append("Material Design Icons")
+        if not is_font_installed(OSWALD): missing.append("Oswald")
+
+        if not missing: return True
+
+        msg = (f"SpinRender requires the following fonts for its interface:\\n• {', '.join(missing)}\\n\\n"
+               "Would you like to install them now? (A preview window will open for each font; click 'Install')")
+
+        if self._show_native_confirm("Fonts Required", msg):
+            plugin_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            fonts_dir = os.path.join(plugin_dir, "resources", "fonts")
+            if os.path.exists(fonts_dir):
+                font_files = {
+                    "JetBrains Mono": "JetBrainsMono-VariableFont_wght.ttf",
+                    "Material Design Icons": "materialdesignicons-webfont.ttf",
+                    "Oswald": "Oswald-VariableFont_wght.ttf"
+                }
+                for name in missing:
+                    file_path = os.path.join(fonts_dir, font_files.get(name, ""))
+                    if os.path.exists(file_path):
+                        os.startfile(file_path)
+
+            # Poll for installation
+            logger.info("Polling for font installation...")
+            start_time = time.time()
+            while time.time() - start_time < 300:
+                still_missing = []
+                if not is_font_installed(JETBRAINS_MONO): still_missing.append("JetBrains Mono")
+                if not is_font_installed(MDI_FONT_FAMILY): still_missing.append("Material Design Icons")
+                if not is_font_installed(OSWALD): still_missing.append("Oswald")
+
+                if not still_missing:
+                    logger.info("All fonts detected!")
+                    return True
+                time.sleep(2)
+
+        return False
+
     def _show_native_confirm(self, title, msg):
         """Show a native OS confirmation dialog (osascript/powershell)."""
         if self.system == 'darwin':
@@ -172,7 +237,7 @@ class DependencyChecker(PureDependencyChecker):
             script = '[void][System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms"); '
             script += f'$res = [System.Windows.Forms.MessageBox]::Show("{msg}", "{title}", "YesNo", "Information"); if($res -eq "Yes") {{ echo "Install" }} else {{ echo "Exit" }}'
             try:
-                result = subprocess.check_output(['powershell', '-Command', script]).decode('utf-8').strip()
+                result = subprocess.check_output(['powershell', '-Command', script], creationflags=NO_WINDOW_FLAGS).decode('utf-8').strip()
                 return "Install" in result
             except: return False
         return False
