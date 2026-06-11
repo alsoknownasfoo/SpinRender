@@ -1,6 +1,6 @@
 """
 SpinRender - KiCad Plugin for PCB Animation Rendering
-Version: 0.7.0-beta
+Version: 0.8.0
 Author: Foo Hoang
 License: GPLv3
 """
@@ -8,10 +8,10 @@ License: GPLv3
 # DO NOT import heavy plugin modules at package import time.
 # This breaks unit tests for individual modules (like core.theme) by
 # pulling in unnecessary dependencies (wx, OpenGL). Instead, plugins
-# should import their own dependencies explicitly. 
+# should import their own dependencies explicitly.
 
 # KiCad plugin metadata
-__version__ = "0.7.0-beta"
+__version__ = "0.8.0"
 __author__ = "Foo Hoang"
 
 import sys
