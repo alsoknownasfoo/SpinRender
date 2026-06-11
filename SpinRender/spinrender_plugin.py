@@ -230,6 +230,21 @@ class SpinRenderPlugin(pcbnew.ActionPlugin):
                 )
                 return
 
+            # SpinRender is untested on Linux - let the user know up front and
+            # point them at GitHub for issue reports.
+            if sys.platform.startswith("linux"):
+                show_message(
+                    parent,
+                    _loc.get("dialog.linux_warning.title", "Linux Support"),
+                    _loc.get(
+                        "dialog.linux_warning.message",
+                        "SpinRender is untested on Linux. If you run into issues, please "
+                        "report them on GitHub — your feedback helps improve support for "
+                        "this platform.",
+                    ),
+                    button_id="ok",
+                )
+
             # Pre-flight: warm KiCad's 3D model tessellation cache before opening
             # the window. A cold cache makes the preview and first render block
             # for minutes; this shows a progress dialog (only when actually

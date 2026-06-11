@@ -135,6 +135,10 @@ locale:
       save_required:
         title: "Erreur"
         message: "Ce document doit être enregistré avant de lancer SpinRender."
+      # Affiché une fois par lancement sur Linux, où SpinRender n'a pas été testé.
+      linux_warning:
+        title: "Support Linux"
+        message: "SpinRender n'a pas été testé sur Linux. Si vous rencontrez des problèmes, veuillez les signaler sur GitHub — vos commentaires aident à améliorer la compatibilité avec cette plateforme."
       # Préchauffage du cache des modèles 3D (affiché avant la fenêtre principale).
       warmup:
         title: "Démarrage de SpinRender"

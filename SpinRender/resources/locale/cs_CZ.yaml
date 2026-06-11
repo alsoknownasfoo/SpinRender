@@ -135,6 +135,10 @@ locale:
       save_required:
         title: "Chyba"
         message: "Tento dokument musí být před spuštěním SpinRender uložen."
+      # Zobrazeno jednou za spuštění na Linuxu, kde je SpinRender netestován.
+      linux_warning:
+        title: "Podpora Linuxu"
+        message: "SpinRender na Linuxu nebyl testován. Pokud narazíte na problémy, hlaste je prosím na GitHub — vaše zpětná vazba pomůže zlepšit podporu pro tuto platformu."
       # Předehřev mezipaměti 3D modelů (zobrazuje se před hlavním oknem).
       warmup:
         title: "Spouštění SpinRender"

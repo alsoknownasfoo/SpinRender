@@ -135,6 +135,10 @@ locale:
       save_required:
         title: "Lỗi"
         message: "Tài liệu này cần được lưu trước khi khởi chạy SpinRender."
+      # Hiển thị một lần mỗi phiên trên Linux, nơi SpinRender chưa được thử nghiệm.
+      linux_warning:
+        title: "Hỗ trợ Linux"
+        message: "SpinRender chưa được thử nghiệm trên Linux. Nếu bạn gặp sự cố, vui lòng báo cáo chúng trên GitHub — phản hồi của bạn giúp cải thiện hỗ trợ cho nền tảng này."
       # Làm nóng bộ nhớ đệm mô hình 3D (hiển thị trước cửa sổ chính).
       warmup:
         title: "Đang khởi chạy SpinRender"

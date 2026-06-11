@@ -135,6 +135,10 @@ locale:
       save_required:
         title: "Fehler"
         message: "Dieses Dokument muss gespeichert werden, bevor SpinRender gestartet wird."
+      # Wird einmal pro Start unter Linux angezeigt, wo SpinRender nicht getestet ist.
+      linux_warning:
+        title: "Linux-Unterstützung"
+        message: "SpinRender wurde unter Linux nicht getestet. Falls Sie auf Probleme stoßen, melden Sie diese bitte auf GitHub — Ihr Feedback hilft, die Unterstützung für diese Plattform zu verbessern."
       # Vorbereiten des 3D-Modell-Caches (wird vor dem Hauptfenster angezeigt).
       warmup:
         title: "SpinRender wird gestartet"

@@ -135,6 +135,10 @@ locale:
       save_required:
         title: "エラー"
         message: "SpinRenderを起動する前に、このドキュメントを保存する必要があります。"
+      # Linux上で1回のみ起動時に表示されます。SpinRenderはLinuxでテストされていません。
+      linux_warning:
+        title: "Linux対応"
+        message: "SpinRenderはLinuxでテストされていません。問題が発生した場合は、GitHubで報告してください。フィードバックはこのプラットフォーム対応の改善に役立ちます。"
       # 3Dモデルキャッシュの準備（メインウィンドウの前に表示）。
       warmup:
         title: "SpinRenderを起動中"

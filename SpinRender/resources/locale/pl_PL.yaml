@@ -135,6 +135,10 @@ locale:
       save_required:
         title: "Błąd"
         message: "Ten dokument musi zostać zapisany przed uruchomieniem SpinRender."
+      # Pokazywane raz na sesję na Linuksie, gdzie SpinRender nie był testowany.
+      linux_warning:
+        title: "Obsługa Linuksa"
+        message: "SpinRender nie był testowany na Linuksie. Jeśli napotkasz problemy, zgłoś je na GitHub — Twoja opinia pomaga poprawiać obsługę dla tej platformy."
       # Rozgrzewanie pamięci podręcznej modeli 3D (pokazywane przed głównym oknem).
       warmup:
         title: "Uruchamianie SpinRender"

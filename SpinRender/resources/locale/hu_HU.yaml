@@ -135,6 +135,10 @@ locale:
       save_required:
         title: "Hiba"
         message: "Ezt a dokumentumot el kell menteni a SpinRender elindítása előtt."
+      # Linuxon jelenik meg indításonként, ahol a SpinRender teszteletlen.
+      linux_warning:
+        title: "Linux támogatás"
+        message: "A SpinRender linuxon nem lett tesztelve. Ha problémákba ütközöl, kérlek jelentsd ezt a GitHub-on — a visszajelzésed segít javítani a platform támogatását."
       # 3D modell gyorsítótár előmelegítése (a főablak előtt jelenik meg).
       warmup:
         title: "SpinRender indítása"

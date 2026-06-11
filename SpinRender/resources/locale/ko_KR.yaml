@@ -135,6 +135,10 @@ locale:
       save_required:
         title: "오류"
         message: "SpinRender를 실행하기 전에 이 문서를 저장해야 합니다."
+      # Linux에서 실행할 때마다 한 번 표시됩니다. SpinRender는 Linux에서 테스트되지 않았습니다.
+      linux_warning:
+        title: "Linux 지원"
+        message: "SpinRender는 Linux에서 테스트되지 않았습니다. 문제가 발생하면 GitHub에 보고해 주세요. 피드백이 이 플랫폼의 지원 개선에 도움이 됩니다."
       # 3D 모델 캐시 웜업 (메인 창 전에 표시).
       warmup:
         title: "SpinRender 시작 중"

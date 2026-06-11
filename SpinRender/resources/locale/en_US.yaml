@@ -138,6 +138,10 @@ locale:
       save_required:
         title: "Error"
         message: "This document needs to be saved before launching SpinRender."
+      # Shown once per launch on Linux, where SpinRender is untested.
+      linux_warning:
+        title: "Linux Support"
+        message: "SpinRender is untested on Linux. If you run into issues, please report them on GitHub — your feedback helps improve support for this platform."
       # Pre-flight 3D model cache warm-up (shown before the main window).
       warmup:
         title: "Starting SpinRender"

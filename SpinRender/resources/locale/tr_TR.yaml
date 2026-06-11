@@ -135,6 +135,10 @@ locale:
       save_required:
         title: "Hata"
         message: "SpinRender'ı başlatmadan önce bu belgenin kaydedilmesi gerekiyor."
+      # Linux'ta oturum başına bir kez gösterilen, SpinRender'ın test edilmediği yer.
+      linux_warning:
+        title: "Linux Desteği"
+        message: "SpinRender, Linux'ta test edilmemiştir. Sorunlarla karşılaşırsan lütfen onları GitHub'da bildir — geri bildiriminiz bu platform için desteği iyileştirmeye yardımcı olur."
       # 3D model önbelleği hazırlığı (ana pencereden önce gösterilir).
       warmup:
         title: "SpinRender Başlatılıyor"

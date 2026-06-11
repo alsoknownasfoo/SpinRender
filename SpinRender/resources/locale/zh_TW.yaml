@@ -135,6 +135,10 @@ locale:
       save_required:
         title: "錯誤"
         message: "啟動 SpinRender 前需要儲存此文件。"
+      # 在 Linux 上每次啟動顯示一次，SpinRender 在該平台上未經過測試。
+      linux_warning:
+        title: "Linux 支援"
+        message: "SpinRender 在 Linux 上尚未經過測試。如果您遇到任何問題，請在 GitHub 上回報 — 您的回饋有助於改進此平台的支援。"
       # 預執行 3D 模型快取預熱（在主視窗之前顯示）。
       warmup:
         title: "正在啟動 SpinRender"
