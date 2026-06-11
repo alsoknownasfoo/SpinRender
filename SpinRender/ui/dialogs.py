@@ -1602,14 +1602,15 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         sizer.Add(right, 0, wx.ALIGN_CENTER_VERTICAL)
         sizer.AddStretchSpacer()
 
-        self.upd_btn = CustomButton(
-            panel, id="check-updates",
-            label=_locale.get("dialog.about.check_updates", "CHECK FOR UPDATES"),
-            icon="cw", size=(170, 32),
-        )
-        self.upd_btn.SetIconRotation(0)
-        self.upd_btn.Bind(wx.EVT_BUTTON, self.on_check_updates)
-        sizer.Add(self.upd_btn, 0, wx.ALIGN_CENTER_VERTICAL)
+        # CHECK FOR UPDATES button hidden for now.
+        # self.upd_btn = CustomButton(
+        #     panel, id="check-updates",
+        #     label=_locale.get("dialog.about.check_updates", "CHECK FOR UPDATES"),
+        #     icon="cw", size=(170, 32),
+        # )
+        # self.upd_btn.SetIconRotation(0)
+        # self.upd_btn.Bind(wx.EVT_BUTTON, self.on_check_updates)
+        # sizer.Add(self.upd_btn, 0, wx.ALIGN_CENTER_VERTICAL)
         panel.SetSizer(sizer)
         return panel
 
