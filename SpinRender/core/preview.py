@@ -21,6 +21,7 @@ from pathlib import Path
 
 from SpinRender.utils.subprocess_utils import NO_WINDOW_FLAGS
 from SpinRender.utils.paint_guard import guarded_paint
+from SpinRender.core.renderer import find_command
 
 logger = logging.getLogger("SpinRender")
 
@@ -37,29 +38,22 @@ class PCBModelLoader:
     @staticmethod
     def export_glb(board_path, output_path):
         try:
-            kicad_cli = None
-            common_paths = ['kicad-cli', '/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli', '/usr/local/bin/kicad-cli', '/opt/homebrew/bin/kicad-cli']
-            for path in common_paths:
-                try:
-                    subprocess.run([path, '--version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5, check=False, creationflags=NO_WINDOW_FLAGS)
-                    kicad_cli = path
-                    break
-                except (FileNotFoundError, subprocess.TimeoutExpired):
-                    continue
+            kicad_cli = find_command('kicad-cli')
             if not kicad_cli:
-                return False
+                logger.error("kicad-cli not found")
+                return False, "kicad-cli not found"
             cmd = [kicad_cli, 'pcb', 'export', 'glb', '--fuse-shapes', '--grid-origin', '--no-dnp', '--subst-models', '--include-pads', '--include-silkscreen', board_path, '--output', output_path]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120, text=True, creationflags=NO_WINDOW_FLAGS)
             if result.returncode != 0:
                 logger.error(f"kicad-cli glb export failed (rc={result.returncode}): {(result.stderr or '').strip()[:500]}")
-                return False
+                return False, f"kicad-cli export failed (rc={result.returncode})"
             if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
                 logger.error(f"kicad-cli reported success but output is missing/empty: {output_path}")
-                return False
-            return True
+                return False, "kicad-cli export produced no output"
+            return True, None
         except Exception as e:
             logger.error(f"GLB export exception: {e}", exc_info=True)
-            return False
+            return False, "kicad-cli export error - see log"
 
     @staticmethod
     def load_glb_mesh(glb_path):
@@ -121,6 +115,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         # segfaults on macOS.
         self._destroyed = False
         self.mesh_data = None
+        self.load_error = None
         
         # Universal Joint Parameters
         self.rotation_angle = 0.0
@@ -209,6 +204,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         if self._destroyed or not self:
             return
         self.loading_state = "exporting"
+        self.load_error = None
         if not self.loading_timer.IsRunning():
             self.loading_timer.Start(50)
         self.Refresh()
@@ -234,6 +230,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             return str(int(os.path.getmtime(self.board_path)))
 
     def _export_and_load_sync(self, attempt=1):
+        last_error = None
         try:
             # 1. Determine cache path from board content (see _board_cache_key).
             key = self._board_cache_key()
@@ -269,8 +266,11 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             # 3. Otherwise Export
             if mesh is None:
                 logger.debug(f"Cache miss or invalid. Exporting GLB: {glb_path}")
-                if PCBModelLoader.export_glb(self.board_path, glb_path):
+                ok, err = PCBModelLoader.export_glb(self.board_path, glb_path)
+                if ok:
                     mesh = self._load_mesh_with_retry(glb_path)
+                elif err:
+                    last_error = err
 
             if mesh is not None:
                 wx.CallAfter(self._set_mesh, mesh)
@@ -283,12 +283,14 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
                 wx.CallAfter(self._retry_loading, attempt + 1)
             else:
                 logger.error("Preview model load failed after retries; showing placeholder.")
+                wx.CallAfter(self._set_load_error, last_error or "3D preview unavailable")
                 wx.CallAfter(self._update_loading, None)
         except Exception as e:
             logger.error(f"Sync Error: {e}", exc_info=True)
             if attempt < self._MAX_LOAD_ATTEMPTS and not self._destroyed:
                 wx.CallAfter(self._retry_loading, attempt + 1)
             else:
+                wx.CallAfter(self._set_load_error, "3D preview unavailable")
                 wx.CallAfter(self._update_loading, None)
 
     def _load_mesh_with_retry(self, glb_path, attempts=3, delay=0.25):
@@ -304,6 +306,14 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             if i < attempts - 1:
                 time.sleep(delay)
         return None
+
+    def _set_load_error(self, msg):
+        # Queued via wx.CallAfter from the loader thread; guard against the
+        # canvas being torn down before this fires (see _update_loading).
+        if self._destroyed or not self:
+            return
+        self.load_error = msg
+        self.Refresh()
 
     def _update_loading(self, state):
         # Queued via wx.CallAfter from the loader thread; the canvas may have
@@ -342,6 +352,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         self.Refresh()
 
     def _set_mesh(self, mesh):
+        self.load_error = None
         try:
             mesh.process(validate=True)
         except Exception:
@@ -564,6 +575,13 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             glMatrixMode(GL_MODELVIEW)
             glLoadIdentity()
             self._draw_loading_overlay(size.x, size.y)
+        elif self.load_error and not self.mesh_data:
+            glMatrixMode(GL_PROJECTION)
+            glLoadIdentity()
+            glOrtho(0, size.x, size.y, 0, -1, 1)
+            glMatrixMode(GL_MODELVIEW)
+            glLoadIdentity()
+            self._draw_error_overlay(size.x, size.y)
         else:
             # Use configured target aspect ratio for WYSIWYG preview
             target_aspect = self.target_aspect_ratio
@@ -729,6 +747,36 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             glBegin(GL_QUADS)
             glVertex2f(vs, by); glVertex2f(ve, by); glVertex2f(ve, by+BAR_H); glVertex2f(vs, by+BAR_H)
             glEnd()
+        glEnable(GL_DEPTH_TEST)
+
+    def _draw_error_overlay(self, width, height):
+        glDisable(GL_DEPTH_TEST)
+        glColor4f(0.0, 0.0, 0.0, 1.0)
+        glBegin(GL_QUADS)
+        glVertex2f(0, 0); glVertex2f(width, 0); glVertex2f(width, height); glVertex2f(0, height)
+        glEnd()
+        CX, CY = width / 2, height / 2
+        global _SPINRENDER_GLUT_INIT
+        try:
+            if not _SPINRENDER_GLUT_INIT:
+                try: glutInit()
+                except: pass
+                _SPINRENDER_GLUT_INIT = True
+            line1 = "3D preview unavailable"
+            line2 = self.load_error or ""
+            glColor3f(1.0, 1.0, 1.0)
+            text_w = len(line1) * 9
+            glRasterPos2f(CX - (text_w/2), CY - 15)
+            for char in line1:
+                glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord(char))
+            if line2:
+                glColor3f(0.6, 0.6, 0.6)
+                text_w2 = len(line2) * 9
+                glRasterPos2f(CX - (text_w2/2), CY + 10)
+                for char in line2:
+                    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord(char))
+        except:
+            pass
         glEnable(GL_DEPTH_TEST)
 
     def set_render_mode(self, mode):

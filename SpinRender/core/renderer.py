@@ -209,6 +209,51 @@ def _format_cli_output(output, max_lines=15):
     return f"\nkicad-cli output:\n{tail}"
 
 
+def _describe_exit_code(returncode):
+    """Translate a raw process exit code into a human-readable crash hint.
+
+    Bare exit codes like -11 or 3221225477 are meaningless to users but mean
+    "the process itself crashed" (signal/NTSTATUS), as opposed to a normal
+    non-zero failure. Decoding them tells users the tool crashed and gives a
+    next step, while keeping the raw number (for bug reports) in the message.
+    """
+    if returncode is None:
+        return ""
+    # POSIX signals are small negatives (-1..-64); anything more negative is a
+    # Windows NTSTATUS reported signed (e.g. -1073741819 == 0xC0000005) and is
+    # handled by the masked checks below.
+    if -256 < returncode < 0:
+        sig = -returncode
+        if sig == 11:
+            return " (crashed with SIGSEGV — segmentation fault)"
+        if sig == 6:
+            return " (crashed with SIGABRT)"
+        return f" (killed by signal {sig})"
+
+    code = returncode & 0xFFFFFFFF
+    if code == 0xC0000005:
+        return (
+            " (kicad-cli itself crashed: access violation — this usually "
+            "indicates a problem in KiCad's 3D pipeline with this board or "
+            "its 3D models; try rendering the board in KiCad's 3D viewer "
+            "with raytracing enabled to confirm)"
+        )
+    if code == 0xC0000135:
+        return " (kicad-cli crashed: missing DLL dependency)"
+    if code == 0xC0000409:
+        return " (kicad-cli crashed: stack buffer overrun/fail-fast)"
+    return ""
+
+
+def _is_crash_exit(returncode):
+    """True if `_describe_exit_code` would identify `returncode` as a crash.
+
+    Lets callers (e.g. the non-raytrace fallback) branch on "did the child
+    process itself crash" without duplicating the NTSTATUS/signal mapping.
+    """
+    return _describe_exit_code(returncode) != ""
+
+
 def _apply_overrides(cmd, override_str):
     """
     Remove any flags present in override_str from cmd, then return the
@@ -319,6 +364,10 @@ class RenderEngine:
         self.progress_callback = progress_callback
         self.canceled = False
         self._temp_dir = None  # Tracked for deferred cleanup on cancel
+        # Set when a frame crashes with raytraced ("user") quality and we
+        # successfully fall back to "basic" — all subsequent frames then
+        # render at basic automatically (see generate_frames).
+        self.degraded_quality = False
 
         # Apply preset defaults if using a preset
         if settings.get('preset') in self.PRESETS:
@@ -380,10 +429,11 @@ class RenderEngine:
 
             # Return output path, preview frame path, and frame dir for looping
             return {
-                'output': output_path, 
+                'output': output_path,
                 'preview': preview_frame_path or output_path,
                 'frame_dir': temp_dir,
-                'frame_count': frame_count
+                'frame_count': frame_count,
+                'degraded': self.degraded_quality
             }
 
         except Exception as e:
@@ -464,18 +514,6 @@ class RenderEngine:
             if not kicad_cli:
                 raise RuntimeError("kicad-cli not found in PATH or common locations")
 
-            # Build kicad-cli command
-            cmd = [
-                kicad_cli, 'pcb', 'render',
-                '--perspective',
-                '--rotate', rotate_str,
-                '--zoom', '0.8',
-                '-w', str(width),
-                '-h', str(height),
-                '--background', 'transparent',
-                '--quality', 'user'
-            ]
-            
             # Point kicad-cli at a writable, per-user config home seeded with our
             # 3d_viewer.json (forces raytracing settings like "no floor"). Kept
             # outside the install dir so kicad-cli's scratch writes never pollute
@@ -485,58 +523,115 @@ class RenderEngine:
             env = os.environ.copy()
             env['KICAD_CONFIG_HOME'] = _prepare_kicad_config_home(plugin_dir)
 
-            # Apply lighting parameters from preset
-            for key in ['light_top', 'light_bottom', 'light_side', 'light_camera', 'light_side_elevation']:
-                if key in light_params:
-                    cli_key = '--' + key.replace('_', '-')
-                    cmd.extend([cli_key, str(light_params[key])])
-
-            # Apply CLI overrides before positional args so kicad-cli sees them
-            # as flags.  Deduplicate first so user values win over base defaults.
             cli_overrides = self.settings.get('cli_overrides', '').strip()
-            if cli_overrides:
-                cmd, override_tokens = _apply_overrides(cmd, cli_overrides)
-                cmd.extend(override_tokens)
+            quality_overridden = '--quality' in cli_overrides
 
-            cmd.extend(['-o', output_path, self.board_path])
+            # Up to 2 attempts: the second attempt only happens if the first
+            # crashes (not a normal failure/timeout) and we haven't already
+            # degraded to basic quality, so we can retry this same frame at
+            # "basic" before giving up. All later frames then start at basic
+            # automatically via self.degraded_quality.
+            for attempt in range(2):
+                quality = 'basic' if self.degraded_quality else 'user'
 
-            # Execute render and pipe output to logger
-            logger.debug(f"CLI CMD: {' '.join(cmd)}")
+                # Build kicad-cli command
+                cmd = [
+                    kicad_cli, 'pcb', 'render',
+                    '--perspective',
+                    '--rotate', rotate_str,
+                    '--zoom', '0.8',
+                    '-w', str(width),
+                    '-h', str(height),
+                    '--background', 'transparent',
+                    '--quality', quality
+                ]
 
-            stdout = ""
-            try:
-                process = _start_text_process(cmd, env=env)
+                # Apply lighting parameters from preset
+                for key in ['light_top', 'light_bottom', 'light_side', 'light_camera', 'light_side_elevation']:
+                    if key in light_params:
+                        cli_key = '--' + key.replace('_', '-')
+                        cmd.extend([cli_key, str(light_params[key])])
 
-                stdout, _ = process.communicate(timeout=RENDER_FRAME_TIMEOUT)
-                if logger.isEnabledFor(logging.DEBUG):
-                    for line in stdout.splitlines():
-                        logger.debug(f"  [kicad-cli] {line.strip()}")
-                if process.returncode != 0:
-                    raise RuntimeError(
-                        f"Frame {i} render failed with exit code "
-                        f"{process.returncode}.{_format_cli_output(stdout)}"
-                    )
+                # Apply CLI overrides before positional args so kicad-cli sees them
+                # as flags.  Deduplicate first so user values win over base defaults.
+                if cli_overrides:
+                    cmd, override_tokens = _apply_overrides(cmd, cli_overrides)
+                    cmd.extend(override_tokens)
 
-                # Update progress with completed frame
-                if self.progress_callback:
-                    self.progress_callback(i + 1, frame_count, f"RENDERING FRAME {i+1}/{frame_count}", output_path)
+                cmd.extend(['-o', output_path, self.board_path])
 
-            except subprocess.TimeoutExpired:
-                process.kill()
-                # Drain whatever the child emitted before we killed it.
+                # Execute render and pipe output to logger
+                logger.debug(f"CLI CMD: {' '.join(cmd)}")
+
+                stdout = ""
                 try:
-                    stdout, _ = process.communicate(timeout=5)
-                except Exception:
-                    pass
-                raise RuntimeError(
-                    f"Frame {i} render timed out after {RENDER_FRAME_TIMEOUT}s."
-                    f"{_format_cli_output(stdout)}"
-                )
-            except RuntimeError:
-                # Already a descriptive render error — don't double-wrap it.
-                raise
-            except Exception as e:
-                raise RuntimeError(f"Frame {i} render failed: {str(e)}")
+                    process = _start_text_process(cmd, env=env)
+
+                    stdout, _ = process.communicate(timeout=RENDER_FRAME_TIMEOUT)
+                    if logger.isEnabledFor(logging.DEBUG):
+                        for line in stdout.splitlines():
+                            logger.debug(f"  [kicad-cli] {line.strip()}")
+                    if process.returncode != 0:
+                        if (
+                            attempt == 0
+                            and not self.degraded_quality
+                            and not quality_overridden
+                            and _is_crash_exit(process.returncode)
+                        ):
+                            logger.warning(
+                                f"Frame {i} crashed at raytraced quality with "
+                                f"exit code {process.returncode}"
+                                f"{_describe_exit_code(process.returncode)}; "
+                                f"retrying at basic quality."
+                            )
+                            self.degraded_quality = True
+                            continue
+
+                        if self.degraded_quality and _is_crash_exit(process.returncode):
+                            raise RuntimeError(
+                                f"Frame {i} render failed with exit code "
+                                f"{process.returncode}"
+                                f"{_describe_exit_code(process.returncode)}. "
+                                f"Even non-raytraced (basic) rendering crashed, "
+                                f"which points at a problem loading this board's "
+                                f"3D models in KiCad itself. Try running "
+                                f"kicad-cli manually on this board to "
+                                f"investigate.{_format_cli_output(stdout)}"
+                            )
+
+                        raise RuntimeError(
+                            f"Frame {i} render failed with exit code "
+                            f"{process.returncode}"
+                            f"{_describe_exit_code(process.returncode)}."
+                            f"{_format_cli_output(stdout)}"
+                        )
+
+                    # Update progress with completed frame
+                    if self.progress_callback:
+                        if self.degraded_quality:
+                            msg = f"RENDERING FRAME {i+1}/{frame_count} (BASIC QUALITY)"
+                        else:
+                            msg = f"RENDERING FRAME {i+1}/{frame_count}"
+                        self.progress_callback(i + 1, frame_count, msg, output_path)
+
+                    break
+
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    # Drain whatever the child emitted before we killed it.
+                    try:
+                        stdout, _ = process.communicate(timeout=5)
+                    except Exception:
+                        pass
+                    raise RuntimeError(
+                        f"Frame {i} render timed out after {RENDER_FRAME_TIMEOUT}s."
+                        f"{_format_cli_output(stdout)}"
+                    )
+                except RuntimeError:
+                    # Already a descriptive render error — don't double-wrap it.
+                    raise
+                except Exception as e:
+                    raise RuntimeError(f"Frame {i} render failed: {str(e)}")
 
         return frame_count
 
@@ -581,7 +676,10 @@ class RenderEngine:
                 for line in stdout.splitlines():
                     logger.debug(f"  [ffmpeg] {line.strip()}")
             if process.returncode != 0:
-                raise RuntimeError(f"MP4 assembly failed with code {process.returncode}")
+                raise RuntimeError(
+                    f"MP4 assembly failed with code {process.returncode}"
+                    f"{_describe_exit_code(process.returncode)}"
+                )
         except subprocess.TimeoutExpired:
             process.kill()
             process.communicate()

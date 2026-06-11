@@ -34,6 +34,8 @@ logger = logging.getLogger("SpinRender")
 
 # Short line shown immediately; the full explanation lives behind "More Info".
 _SHORT_MSG = "Preparing 3D models for rendering…"
+# Always-visible note shown directly under the short message.
+_FIRST_TIME_NOTE = "First launch can take a bit of time depending on your board"
 _DETAIL = (
     "KiCad tessellates each component's 3D model the first time it's used and\n"
     "caches the result — the same 3D model cache KiCad's own 3D Viewer builds.\n\n"
@@ -197,6 +199,7 @@ def _build_warmup_dialog(parent, start_time):
     loc = Locale.current()
     title = loc.get("dialog.warmup.title", "Starting SpinRender")
     short_msg = loc.get("dialog.warmup.message", _SHORT_MSG)
+    first_time_note = loc.get("dialog.warmup.first_time_note", _FIRST_TIME_NOTE)
     detail = loc.get("dialog.warmup.detail", _DETAIL)
     more_info = loc.get("dialog.warmup.more_info", "More Info")
     elapsed_tmpl = loc.get("dialog.warmup.elapsed", "Elapsed: {mins}m {secs:02d}s")
@@ -233,6 +236,10 @@ def _build_warmup_dialog(parent, start_time):
             head_font.MakeBold()
             head.SetFont(head_font)
             cs.Add(head, 0, wx.LEFT | wx.RIGHT | wx.TOP, pad)
+
+            note = create_text(content, first_time_note, "dialog_description")
+            cs.Add(note, 0, wx.LEFT | wx.RIGHT | wx.TOP, pad)
+            cs.Add((0, 4))
 
             cs.Add(self._build_more_info(content, create_text, SectionToggle),
                    0, wx.LEFT | wx.RIGHT | wx.TOP, pad)
@@ -371,6 +378,31 @@ def _show_required_warning(parent):
     return False
 
 
+def _show_crash_warning(parent, returncode):
+    """Warn that kicad-cli crashed during warm-up, then let launch proceed."""
+    try:
+        from SpinRender.ui.dialogs import show_message
+        from SpinRender.core.locale import Locale
+        from SpinRender.core.renderer import _describe_exit_code
+    except ImportError:
+        from ui.dialogs import show_message
+        from core.locale import Locale
+        from core.renderer import _describe_exit_code
+    loc = Locale.current()
+    description = _describe_exit_code(returncode)
+    show_message(
+        parent,
+        loc.get("dialog.warmup.crash_title", "KiCad 3D Engine Problem"),
+        loc.get(
+            "dialog.warmup.crash_message",
+            "kicad-cli crashed while preparing this board's 3D models{description}.\n\n"
+            "The 3D preview and renders will likely fail. To narrow it down, try "
+            "opening this board in KiCad's 3D Viewer with raytracing enabled — if "
+            "that also crashes, the problem is in KiCad itself.",
+        ).format(description=description),
+    )
+
+
 def ensure_model_cache_warm(parent, board_path):
     """Warm KiCad's 3D model cache before the main window opens.
 
@@ -436,9 +468,21 @@ def ensure_model_cache_warm(parent, board_path):
 
     _cleanup_temp(out_path)
     if result['rc'] not in (0, None):
-        # Warming didn't succeed (e.g. board load error) but that's the real
-        # render's problem to surface — don't block the user here.
-        logger.warning(f"cache_warmer: warm render exited rc={result['rc']}; proceeding anyway")
+        try:
+            from SpinRender.core.renderer import _describe_exit_code, _is_crash_exit
+        except ImportError:
+            from core.renderer import _describe_exit_code, _is_crash_exit
+
+        if _is_crash_exit(result['rc']):
+            logger.warning(
+                f"cache_warmer: warm render crashed rc={result['rc']}"
+                f"{_describe_exit_code(result['rc'])}; warning user and proceeding"
+            )
+            _show_crash_warning(parent, result['rc'])
+        else:
+            # Warming didn't succeed (e.g. board load error) but that's the real
+            # render's problem to surface — don't block the user here.
+            logger.warning(f"cache_warmer: warm render exited rc={result['rc']}; proceeding anyway")
     else:
         logger.info(f"cache_warmer: cache warmed in {time.time()-start:.1f}s")
     return True

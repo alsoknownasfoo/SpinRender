@@ -708,14 +708,20 @@ class SpinRenderPanel(wx.Panel):
                 preview_path = result.get('preview')
                 frame_dir = result.get('frame_dir')
                 frame_count = result.get('frame_count')
+                degraded = result.get('degraded', False)
             else:
                 output_path = result
                 preview_path = result
                 frame_dir = None
                 frame_count = 0
+                degraded = False
 
             self.status_bar.set_complete()
-            self.status_bar.set_status(_locale.get("component.status.complete", "RENDER COMPLETE"), progress=1.0)
+            if degraded:
+                status_text = _locale.get("component.status.complete_degraded", "RENDER COMPLETE (BASIC QUALITY)")
+            else:
+                status_text = _locale.get("component.status.complete", "RENDER COMPLETE")
+            self.status_bar.set_status(status_text, progress=1.0)
 
             # Start looping playback of the rendered result
             self.preview.render_preview_active = True
@@ -732,6 +738,19 @@ class SpinRenderPanel(wx.Panel):
 
             if frame_dir and frame_count:
                 self.preview.start_playback(frame_dir, frame_count)
+
+            if degraded:
+                wx.MessageBox(
+                    _locale.get(
+                        "dialog.render.degraded_message",
+                        "KiCad's raytracing renderer crashed on this board, so SpinRender "
+                        "fell back to basic (non-raytraced) quality for this render.\n\n"
+                        "Try opening the board in KiCad's 3D Viewer with raytracing enabled "
+                        "to confirm whether KiCad itself crashes.",
+                    ),
+                    _locale.get("dialog.title.render_notice", "Render Notice"),
+                    wx.OK | wx.ICON_INFORMATION,
+                )
 
             try:
                 folder = os.path.dirname(output_path)

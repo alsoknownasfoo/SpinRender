@@ -79,6 +79,7 @@ locale:
       ready: "Ready"
       rendering: "Rendering frame {current}/{total}"
       complete: "Render complete"
+      complete_degraded: "RENDER COMPLETE (BASIC QUALITY)"
       stopped: "Render stopped"
       stopping: "Stopping render..."
       error: "Error: {message}"
@@ -131,6 +132,16 @@ locale:
         empty: "No custom resolutions yet."
       render_error: "Render error"
       preparing: "Preparing render..."
+      # Window titles for message boxes shown over the main panel.
+      title:
+        render_error: "Render Error"
+        render_notice: "Render Notice"
+      # Notice shown after a render completes in degraded (non-raytraced) quality.
+      render:
+        degraded_message: |-
+          KiCad's raytracing renderer crashed on this board, so SpinRender fell back to basic (non-raytraced) quality for this render.
+
+          Try opening the board in KiCad's 3D Viewer with raytracing enabled to confirm whether KiCad itself crashes.
       # Save guard shown when the board has never been saved to disk.
       save_required:
         title: "Error"
@@ -143,6 +154,7 @@ locale:
       warmup:
         title: "Starting SpinRender"
         message: "Preparing 3D models for rendering…"
+        first_time_note: "First launch can take a bit of time depending on your board"
         more_info: "More Info"
         detail: |-
           KiCad tessellates each component's 3D model the first time it's used and
@@ -157,6 +169,11 @@ locale:
           SpinRender can't start without preparing the 3D model cache.
 
           This is the same 3D model data KiCad's own 3D Viewer builds, and it only needs to be done once — until your 3D models change. Please relaunch SpinRender when you're ready to let it finish.
+        crash_title: "KiCad 3D Engine Problem"
+        crash_message: |-
+          kicad-cli crashed while preparing this board's 3D models{description}.
+
+          The 3D preview and renders will likely fail. To narrow it down, try opening this board in KiCad's 3D Viewer with raytracing enabled — if that also crashes, the problem is in KiCad itself.
       about:
         title: "About SpinRender"
         check_updates:           "Check for updates"
