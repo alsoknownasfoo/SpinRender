@@ -85,24 +85,71 @@ class ColorMock:
         return False
 
 
+class FontInfoMock:
+    """Mock for wx.FontInfo that tracks configuration."""
+
+    def __init__(self, size):
+        self._size = size
+        self._faceName = ""
+        self._weight = 400
+        self._style = 0  # wx.FONTSTYLE_NORMAL
+        self._underlined = False
+
+    def FaceName(self, name):
+        self._faceName = name
+        return self
+
+    def Weight(self, weight):
+        self._weight = weight
+        return self
+
+    def Italic(self):
+        self._style = 1  # wx.FONTSTYLE_ITALIC
+        return self
+
+    def Underlined(self, underlined=True):
+        self._underlined = underlined
+        return self
+
+
 class FontMock:
     """Mock for wx.Font that returns configured faceName."""
-    def __init__(self, size, family=None, style=None, weight=None, faceName=None, **kwargs):
-        self._size = size
-        self._family = family
-        self._style = style
-        self._weight = weight
-        self._faceName = faceName
+
+    def __init__(self, *args, **kwargs):
+        if len(args) == 1 and isinstance(args[0], FontInfoMock):
+            info = args[0]
+            self._size = info._size
+            self._faceName = info._faceName
+            self._weight = info._weight
+            self._style = info._style
+            self._family = 80  # wx.FONTFAMILY_DEFAULT
+        else:
+            # Traditional constructor: size, family=None, style=None, weight=None, faceName=None
+            self._size = args[0] if args else kwargs.get('size', 10)
+            self._family = args[1] if len(args) > 1 else kwargs.get('family', 80)
+            self._style = args[2] if len(args) > 2 else kwargs.get('style', 0)
+            self._weight = args[3] if len(args) > 3 else kwargs.get('weight', 400)
+            self._faceName = args[4] if len(args) > 4 else kwargs.get('faceName', "")
 
     def GetFaceName(self):
         return self._faceName
 
     def GetPointSize(self):
-        return self._size
+        return int(self._size)
+
+    def GetFractionalPointSize(self):
+        return float(self._size)
 
     def GetWeight(self):
         return self._weight
 
+
+class DummySize:
+    def __init__(self, w, h):
+        self.width = w
+        self.height = h
+        self.x = w
+        self.y = h
 
 class DummyWindow:
     """Simple window mock that accepts arbitrary kwargs like wx.Window."""
@@ -116,9 +163,19 @@ class DummyWindow:
         """Return window size as (width, height) tuple."""
         return self._size
 
+    def GetBestSize(self):
+        return DummySize(100, 100)
+
     def SetMinSize(self, size):
         """Mock SetMinSize."""
         pass
+
+    def FromDIP(self, d):
+        """Mock FromDIP to just return the passed value, avoiding MagicMock comparison errors."""
+        # If passed a wx.Size or tuple, return it unchanged. If int/float, return int.
+        if hasattr(d, '__getitem__'):
+            return d
+        return int(d)
 
     def SetSizerAndFit(self, sizer):
         """Mock SetSizerAndFit."""
@@ -178,6 +235,9 @@ class Mockwx:
         # Font - return FontMock class
         if name == 'Font':
             return FontMock
+
+        if name == 'FontInfo':
+            return FontInfoMock
 
         # Constants
         font_weights = {

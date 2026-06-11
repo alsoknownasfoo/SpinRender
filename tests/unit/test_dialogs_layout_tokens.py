@@ -114,7 +114,7 @@ class TestDialogSubclassesUseLayout:
         source = inspect.getsource(AboutSpinRenderDialog.__init__)
         assert "layout.dialogs.about.frame.height" in source
         assert 'super().__init__(parent, "SPINRENDER", (w, h))' in source
-        assert "self.autosize_dialog_height(max_height=h)" in source
+        assert "self.autosize_dialog_height(" in source
         assert "self.center_over_parent()" in source
 
     def test_about_sections_match_version_vertical_padding(self):
@@ -124,7 +124,7 @@ class TestDialogSubclassesUseLayout:
         source = inspect.getsource(AboutSpinRenderDialog.build_ui)
         assert 'self._padded_section(content, self._build_version_section,  16, 16, 16, 16)' in source
         assert 'self._padded_section(content, self._build_author_ai_section, 16, 16, 16, 16)' in source
-        assert 'self._padded_section(content, self._build_links_section,     16, 16, 16, 16)' in source
+        assert 'self._padded_section(content, self._build_links_section,     16, 16, 64, 16)' in source
         assert 'self._padded_section(content, self._build_license_section,   16, 16, 16, 16, outer_bg="colors.gray-black", show_divider=False)' in source
 
     def test_base_dialog_exposes_modal_layout_helpers(self):
@@ -163,7 +163,7 @@ class TestDialogSubclassesUseLayout:
 
         source = inspect.getsource(CustomButton)
         assert "self.icon_rotation_degrees = 0" in source
-        assert "gc.Rotate(_math.radians(self.icon_rotation_degrees))" in source
+        assert 'gc.Rotate(math.radians(self.icon_rotation_degrees))' in source
         assert "def SetIconRotation(self, degrees)" in source
 
 

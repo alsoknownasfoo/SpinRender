@@ -118,7 +118,7 @@ class TestDependencyDialogConstruction:
         parent = MagicMock()
         dep_status = {'kicad': False, 'ffmpeg': False, 'python': True}
         mock_checker.get_status.return_value = dep_status
-        dialog = DependencyDialog(parent, mock_checker)
+        dialog = DependencyDialog(parent, dep_status, mock_checker)
         assert dialog is not None
         assert isinstance(dialog, wx.Dialog)
 
@@ -127,7 +127,7 @@ class TestDependencyDialogConstruction:
         parent = MagicMock()
         dep_status = {'kicad': False, 'ffmpeg': False, 'python': True}
         mock_checker.get_status.return_value = dep_status
-        dialog = DependencyDialog(parent, mock_checker)
+        dialog = DependencyDialog(parent, dep_status, mock_checker)
         assert dialog.checker is mock_checker
         assert dialog.dep_status == dep_status
         assert hasattr(dialog, 'progress_panel')
@@ -138,7 +138,7 @@ class TestDependencyDialogConstruction:
         parent = MagicMock()
         dep_status = {'kicad': False, 'ffmpeg': False, 'python': True}
         mock_checker.get_status.return_value = dep_status
-        dialog = DependencyDialog(parent, mock_checker)
+        dialog = DependencyDialog(parent, dep_status, mock_checker)
         assert hasattr(dialog, 'header')
         assert dialog.header is not None
         assert hasattr(dialog, 'header_title')
@@ -149,7 +149,7 @@ class TestDependencyDialogConstruction:
         parent = MagicMock()
         dep_status = {'kicad': False, 'ffmpeg': False, 'python': True}
         mock_checker.get_status.return_value = dep_status
-        dialog = DependencyDialog(parent, mock_checker)
+        dialog = DependencyDialog(parent, dep_status, mock_checker)
         # dep_status is stored as-is
         assert len(dialog.dep_status) == 3
 
@@ -158,7 +158,7 @@ class TestDependencyDialogConstruction:
         parent = MagicMock()
         dep_status = {'kicad': False, 'ffmpeg': False, 'python': True}
         mock_checker.get_status.return_value = dep_status
-        dialog = DependencyDialog(parent, mock_checker)
+        dialog = DependencyDialog(parent, dep_status, mock_checker)
         assert hasattr(dialog, 'close_btn')
         assert hasattr(dialog, 'install_btn')
         assert isinstance(dialog.close_btn, CustomButton)

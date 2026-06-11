@@ -90,7 +90,7 @@ def reapply_text_styles() -> None:
 # Text creation
 # ---------------------------------------------------------------------------
 
-def _resolve_text_style(text: str, style_name: str):
+def _resolve_text_style(text: str, style_name):
     """Resolve TextStyle and apply formatting.
 
     Shared by create_text() (widget context) and prepare_styled_text() (paint context).
@@ -100,6 +100,8 @@ def _resolve_text_style(text: str, style_name: str):
     Returns:
         (formatted_text, style) tuple.
     """
+    if not isinstance(style_name, str):
+        return style_name.format_text(text), style_name
     style = getattr(TextStyles, style_name)
     return style.format_text(text), style
 
