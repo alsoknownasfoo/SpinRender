@@ -14,7 +14,7 @@ from pathlib import Path
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
 from .text_styles import TextStyles
-from .helpers import bind_mouse_events, create_text, prepare_styled_text, draw_styled_text, effective_background, apply_transparent_background
+from .helpers import bind_mouse_events, create_text, prepare_styled_text, draw_styled_text, effective_background, apply_transparent_background, apply_native_scrollbar_theme
 from .events import ParameterInteractionEvent
 from SpinRender.utils.paint_guard import guarded_paint
 
@@ -1943,6 +1943,7 @@ class CustomListView(scrolled.ScrolledPanel):
         self.style_id = id
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
         self.SetupScrolling(scroll_x=False, scroll_y=True)
+        apply_native_scrollbar_theme(self)
 
         token = f"components.list.{self.style_id}"
         if not _theme.has_token(token):

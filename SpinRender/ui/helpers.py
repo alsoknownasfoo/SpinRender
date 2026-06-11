@@ -548,6 +548,29 @@ def refresh_transparent_backgrounds(root: wx.Window) -> None:
         refresh_transparent_backgrounds(child)
 
 
+def apply_native_scrollbar_theme(window: wx.Window) -> None:
+    """MSW: match the native scrollbar visuals to the active plugin theme.
+
+    wx never themes the non-client scrollbars, so they follow whatever mode
+    the process rendered them in first (dark scrollbars in the plugin's light
+    theme, and vice versa). SetWindowTheme swaps the scrollbar style; the
+    SWP_FRAMECHANGED poke makes the non-client area redraw immediately.
+    Call at creation and from reapply_theme(). No-op off Windows.
+    """
+    if wx.Platform != '__WXMSW__':
+        return
+    import ctypes
+    from SpinRender.core.theme import Theme
+    sub = "Explorer" if Theme.current().is_light() else "DarkMode_Explorer"
+    try:
+        hwnd = int(window.GetHandle())
+        ctypes.windll.uxtheme.SetWindowTheme(hwnd, sub, None)
+        # SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED
+        ctypes.windll.user32.SetWindowPos(hwnd, 0, 0, 0, 0, 0, 0x0037)
+    except Exception:
+        pass
+
+
 def bind_mouse_events(widget: wx.Window,
                       hover_handler=None,
                       leave_handler=None,

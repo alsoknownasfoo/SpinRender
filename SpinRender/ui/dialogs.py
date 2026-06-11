@@ -19,6 +19,7 @@ from .helpers import (
     effective_background,
     load_svg,
     load_svg_markup,
+    reapply_text_styles,
     replace_svg_fill,
 )
 from SpinRender.core.theme import Theme
@@ -35,6 +36,13 @@ _logger = logging.getLogger("SpinRender")
 
 
 ID_RESET = 10001
+
+def _solid_panel_bg(panel, token="colors.gray-dark"):
+    """Explicit body colour, with the token remembered on the window so
+    BaseStyledDialog._refresh_recursive can re-resolve it on theme switch."""
+    panel._sr_bg_token = token
+    panel.SetBackgroundColour(_theme.color(token))
+
 
 class BaseStyledDialog(wx.Dialog):
     """
@@ -147,12 +155,19 @@ class BaseStyledDialog(wx.Dialog):
             self._header_line.SetBackgroundColour(_theme.color("dividers.default.color"))
         if hasattr(self, '_footer_divider'):
             self._footer_divider.SetBackgroundColour(_theme.color("borders.default.color"))
-        # Refresh all children — custom controls query _theme in their on_paint handlers
+        # Static texts (labels/descriptions) hold resolved fonts/colours;
+        # re-resolve them from the registry like the main panel does.
+        reapply_text_styles()
+        # Refresh all children — custom controls query _theme in their on_paint
+        # handlers; panels tagged by _solid_panel_bg re-resolve their colour.
         self._refresh_recursive(self)
         self.Refresh()
         self.Update()
 
     def _refresh_recursive(self, win):
+        token = getattr(win, '_sr_bg_token', None)
+        if token:
+            win.SetBackgroundColour(_theme.color(token))
         win.Refresh()
         for child in win.GetChildren():
             self._refresh_recursive(child)
@@ -241,7 +256,7 @@ class BaseStyledDialog(wx.Dialog):
         gap = self.FromDIP(gap)
 
         footer = wx.Panel(self.main_container)
-        footer.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        _solid_panel_bg(footer)
         outer_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self._footer_divider = wx.Panel(footer, size=(-1, 1))
@@ -331,7 +346,7 @@ class FilenameEntryDialog(BaseStyledDialog):
         main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
         content = wx.Panel(self.main_container)
-        content.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        _solid_panel_bg(content)
         content_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.name_input = CustomInput(content, size=(-1, 36), id="default")
@@ -433,14 +448,14 @@ class AdvancedOptionsDialog(BaseStyledDialog):
 
         # Content
         content = wx.Panel(self.main_container)
-        content.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        _solid_panel_bg(content)
         content_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # 0. APPEARANCE section
         content_sizer.Add(self.create_section_label(content, _locale.get("parameters.appearance.label", "APPEARANCE")), 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(12))
 
         theme_row = wx.Panel(content)
-        theme_row.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        _solid_panel_bg(theme_row)
         theme_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         theme_desc = create_text(theme_row, _locale.get("dialog.advanced.theme_desc", "Interface theme."), "dialog_description", color_token="colors.gray-light")
@@ -467,7 +482,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
 
         # Auto Row
         auto_row = wx.Panel(content)
-        auto_row.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        _solid_panel_bg(auto_row)
         auto_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         auto_desc = create_text(auto_row, _locale.get("output.auto_desc", "Automatically save to time-stamped directories."), "dialog_description")
@@ -484,7 +499,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
 
         # Path Input Row
         path_input_row = wx.Panel(content)
-        path_input_row.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        _solid_panel_bg(path_input_row)
         path_input_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         self.path_display = CustomInput(path_input_row, size=(-1, 36), id="path")
@@ -504,7 +519,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         
         # Helper link simulation
         link_row = wx.Panel(content)
-        link_row.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        _solid_panel_bg(link_row)
         link_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
         info_icon = create_text(link_row, _theme.glyph("info"), "icon", color_token="colors.gray-light")
@@ -579,7 +594,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
         content_sizer.Add(logging_header_sizer, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(12))
         
         log_row = wx.Panel(content)
-        log_row.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        _solid_panel_bg(log_row)
         log_hsizer = wx.BoxSizer(wx.HORIZONTAL)
         
         log_info = create_text(log_row, _locale.get("parameters.log_info", "Logs are kept for 30 days. Useful for troubleshooting render failures."), "dialog_description", style=wx.ST_NO_AUTORESIZE)
@@ -752,7 +767,7 @@ class SavePresetDialog(BaseStyledDialog):
         main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
         content = wx.Panel(self.main_container)
-        content.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        _solid_panel_bg(content)
         content_sizer = wx.BoxSizer(wx.VERTICAL)
 
         self.name_input = CustomInput(content, size=(-1, 36), id="default")
@@ -843,12 +858,12 @@ class AddResolutionDialog(BaseStyledDialog):
         main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
         content = wx.Panel(self.main_container)
-        content.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        _solid_panel_bg(content)
         content_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Row: W [____]   ×   H [____]
         fields_row = wx.Panel(content)
-        fields_row.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        _solid_panel_bg(fields_row)
         fields_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         w_lbl = create_text(fields_row, _locale.get("dialog.add_resolution.width_label", "W"), "subheader")
@@ -1164,7 +1179,7 @@ class MessageDialog(BaseStyledDialog):
         main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
         content = wx.Panel(self.main_container)
-        content.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        _solid_panel_bg(content)
         content_sizer = wx.BoxSizer(wx.VERTICAL)
 
         padding_lg = _theme._resolve("typography.spacing.lg") or 24
@@ -1181,7 +1196,7 @@ class MessageDialog(BaseStyledDialog):
         padding = 16
         gap = 8
         footer = wx.Panel(self.main_container)
-        footer.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        _solid_panel_bg(footer)
         outer = wx.BoxSizer(wx.VERTICAL)
 
         self._footer_divider = wx.Panel(footer, size=(-1, 1))
@@ -1542,7 +1557,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         main_sizer.Add(self._header_line, 0, wx.EXPAND)
 
         content = wx.Panel(self.main_container)
-        content.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        _solid_panel_bg(content)
         cs = wx.BoxSizer(wx.VERTICAL)
 
         cs.Add(self._padded_section(content, self._build_version_section,  16, 16, 16, 16), 0, wx.EXPAND)
@@ -1564,7 +1579,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         """Wrap section content with padding and an optional 1 px bottom divider."""
         pt, pr, pb, pl = (self.FromDIP(v) for v in (pt, pr, pb, pl))
         outer = wx.Panel(parent)
-        outer.SetBackgroundColour(_theme.color(outer_bg or "colors.gray-dark"))
+        _solid_panel_bg(outer, outer_bg or "colors.gray-dark")
         inner = build_fn(outer)
         hs = wx.BoxSizer(wx.HORIZONTAL)
         hs.Add((pl, 0))
@@ -1576,7 +1591,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         vs.Add((0, pb))
         if show_divider:
             div = wx.Panel(outer, size=(-1, max(1, self.FromDIP(1))))
-            div.SetBackgroundColour(_theme.color("dividers.default.color"))
+            _solid_panel_bg(div, "dividers.default.color")
             vs.Add(div, 0, wx.EXPAND)
         outer.SetSizer(vs)
         return outer
@@ -1592,7 +1607,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
     def _link_row(self, parent, icon_glyph, label, url, show_arrow=True, icon_gap=12, row_min_height=None):
         """MDI icon + label (+ optional ↗ arrow); whole row opens URL on click."""
         row = wx.Panel(parent)
-        row.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        _solid_panel_bg(row)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         icon = self._mdi_icon(row, icon_glyph)
@@ -1747,7 +1762,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         ais.Add(self._section_label(ai_col, _locale.get("dialog.about.built_with_label", "BUILT WITH")), 0, wx.BOTTOM, self.FromDIP(10))
         ais.Add((0, self.FromDIP(10)))
         ai_row = wx.Panel(ai_col)
-        ai_row.SetBackgroundColour(_theme.color("colors.gray-dark"))
+        _solid_panel_bg(ai_row)
         ars = wx.BoxSizer(wx.HORIZONTAL)
         for name in ("claude", "gemini", "chatgpt", "copilot", "stepfun"):
             ars.Add(_AiLogoPanel(ai_row, name), 0, wx.RIGHT, self.FromDIP(16))
@@ -1874,7 +1889,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
             return card
 
         donate_row = wx.Panel(panel)
-        donate_row.SetBackgroundColour(_theme.color("colors.gray-black"))
+        _solid_panel_bg(donate_row, "colors.gray-black")
         dr = wx.BoxSizer(wx.HORIZONTAL)
 
         copy_wrap = wx.Panel(donate_row, size=(-1, card_h))
@@ -1884,7 +1899,7 @@ class AboutSpinRenderDialog(BaseStyledDialog):
         copy_sizer.AddStretchSpacer()
 
         copy_row = wx.Panel(copy_wrap)
-        copy_row.SetBackgroundColour(_theme.color("colors.gray-black"))
+        _solid_panel_bg(copy_row, "colors.gray-black")
         copy_row_sizer = wx.BoxSizer(wx.HORIZONTAL)
         gift_icon = create_text(
             copy_row,

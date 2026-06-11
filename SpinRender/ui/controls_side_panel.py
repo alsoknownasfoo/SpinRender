@@ -28,6 +28,7 @@ from .helpers import (
     create_section_label, create_numeric_input, create_text, reapply_text_styles,
     load_svg, set_text_widget_state, effective_background,
     apply_transparent_background, refresh_transparent_backgrounds,
+    apply_native_scrollbar_theme,
 )
 from SpinRender.utils.paint_guard import guarded_paint
 
@@ -104,6 +105,7 @@ class ControlsSidePanel(wx.Panel):
         self.scrolled_panel = scrolled.ScrolledPanel(main_container, size=self.FromDIP(wx.Size(400, -1)))
         self.scrolled_panel.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
         self.scrolled_panel.SetupScrolling(scroll_x=False, scroll_y=True, rate_y=20)
+        apply_native_scrollbar_theme(self.scrolled_panel)
         content_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Presets section
@@ -206,6 +208,7 @@ class ControlsSidePanel(wx.Panel):
 
         if hasattr(self, 'scrolled_panel'):
             self.scrolled_panel.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
+            apply_native_scrollbar_theme(self.scrolled_panel)
 
         if hasattr(self, 'header_panel'):
             self.header_panel.SetBackgroundColour(_theme.color("layout.main.header.bg"))
