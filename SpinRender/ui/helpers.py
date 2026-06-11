@@ -561,10 +561,22 @@ def apply_native_scrollbar_theme(window: wx.Window) -> None:
         return
     import ctypes
     from SpinRender.core.theme import Theme
-    sub = "Explorer" if Theme.current().is_light() else "DarkMode_Explorer"
+    light = Theme.current().is_light()
+    sub = "Explorer" if light else "DarkMode_Explorer"
     try:
         hwnd = int(window.GetHandle())
-        ctypes.windll.uxtheme.SetWindowTheme(hwnd, sub, None)
+        ux = ctypes.windll.uxtheme
+        try:
+            # AllowDarkModeForWindow (undocumented, uxtheme ordinal 133,
+            # Win10 1809+). The host app (KiCad's wx enables MSW dark mode)
+            # flags windows dark at the OS level; while that flag is set,
+            # the "Explorer" subclass still renders dark scrollbars, so it
+            # must be cleared (or set) to match the plugin theme first.
+            proto = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.c_int)
+            proto((133, ux))(hwnd, 0 if light else 1)
+        except Exception:
+            pass
+        ux.SetWindowTheme(hwnd, sub, None)
         # SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED
         ctypes.windll.user32.SetWindowPos(hwnd, 0, 0, 0, 0, 0, 0x0037)
     except Exception:

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from .text_styles import TextStyle, TextStyles
-from .helpers import create_text, update_text, apply_transparent_background
+from .helpers import create_text, update_text, apply_transparent_background, refresh_transparent_backgrounds
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
 _theme = Theme.current()
@@ -165,6 +165,9 @@ class PreviewPanel(wx.Panel):
     def reapply_theme(self):
         """Re-apply theme to static overlay elements."""
         self.SetBackgroundColour(_theme.color("layout.main.frame.bg"))
+        # Overlay panels hold an MSW-resolved stand-in colour from the old
+        # theme; re-resolve them top-down (no-op on mac).
+        refresh_transparent_backgrounds(self)
 
         # Reapply dim color to nav bracket/divider widgets (computed, not in registry)
         nav_color = _theme.color("layout.main.rightpanel.shader.color")
