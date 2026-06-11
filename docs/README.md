@@ -22,6 +22,7 @@ This directory contains all project documentation, organized by purpose.
 
 ### 🔧 Development Workflow
 - **`GUIDE_DEVELOPMENT_WORKFLOW.md`** - Testing strategy, TDD approach, operational notes
+- **`GUIDE_RELEASE_PROCESS.md`** - Cutting a release: version bump, PCM zip, GitHub release, addons-repo metadata MR
 
 ### 🗃️ Archive
 - **`archive/`** - Historical planning documents, superseded analyses, completed project plans
