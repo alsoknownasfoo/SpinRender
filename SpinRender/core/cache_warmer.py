@@ -237,7 +237,8 @@ def _build_warmup_dialog(parent, start_time):
             head.SetFont(head_font)
             cs.Add(head, 0, wx.LEFT | wx.RIGHT | wx.TOP, pad)
 
-            note = create_text(content, first_time_note, "dialog_description")
+            note = create_text(content, first_time_note, "dialog_description",
+                               color_token="colors.error")
             cs.Add(note, 0, wx.LEFT | wx.RIGHT | wx.TOP, pad)
             cs.Add((0, 4))
 
@@ -355,29 +356,6 @@ def _build_warmup_dialog(parent, start_time):
     return _WarmupDialog()
 
 
-def _show_required_warning(parent):
-    """Explain that warming is required, then return False to abort the launch."""
-    try:
-        from SpinRender.ui.dialogs import show_message
-        from SpinRender.core.locale import Locale
-    except ImportError:
-        from ui.dialogs import show_message
-        from core.locale import Locale
-    loc = Locale.current()
-    show_message(
-        parent,
-        loc.get("dialog.warmup.required_title", "Starting SpinRender"),
-        loc.get(
-            "dialog.warmup.required_message",
-            "SpinRender can't start without preparing the 3D model cache.\n\n"
-            "This is the same 3D model data KiCad's own 3D Viewer builds, and it "
-            "only needs to be done once — until your 3D models change. Please "
-            "relaunch SpinRender when you're ready to let it finish.",
-        ),
-    )
-    return False
-
-
 def _show_crash_warning(parent, returncode):
     """Warn that kicad-cli crashed during warm-up, then let launch proceed."""
     try:
@@ -461,10 +439,11 @@ def ensure_model_cache_warm(parent, board_path):
     dlg.Destroy()
 
     if cancelled:
-        logger.info("cache_warmer: user cancelled warm-up")
+        # Cancel means "don't launch" — exit quietly, no extra explainer dialog.
+        logger.info("cache_warmer: user cancelled warm-up; aborting launch")
         _terminate(proc_holder)
         _cleanup_temp(out_path)
-        return _show_required_warning(parent)
+        return False
 
     _cleanup_temp(out_path)
     if result['rc'] not in (0, None):
