@@ -13,7 +13,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
-from SpinRender.utils.subprocess_utils import NO_WINDOW_FLAGS
+from SpinRender.utils.subprocess_utils import NO_WINDOW_FLAGS, find_kicad_sibling_binary
 
 logger = logging.getLogger("SpinRender")
 
@@ -147,6 +147,14 @@ def find_command(cmd):
     path = shutil.which(cmd)
     if path:
         return path
+
+    # Look next to the interpreter running this process - on Windows/macOS
+    # KiCad bundles its own Python alongside kicad-cli, so this finds it
+    # regardless of KiCad's version or install location.
+    if cmd == 'kicad-cli':
+        sibling = find_kicad_sibling_binary('kicad-cli.exe' if os.name == 'nt' else 'kicad-cli')
+        if sibling:
+            return sibling
 
     # Common locations for KiCad and FFmpeg
     common_paths = []

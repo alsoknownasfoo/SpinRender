@@ -11,7 +11,7 @@ import importlib
 import site
 import logging
 
-from .subprocess_utils import NO_WINDOW_FLAGS
+from .subprocess_utils import NO_WINDOW_FLAGS, find_kicad_sibling_binary
 
 logger = logging.getLogger("SpinRender")
 
@@ -116,6 +116,9 @@ class DependencyChecker:
             return False
 
         command_path = shutil.which(dep_info['command'])
+        if not command_path and dep_name == 'kicad-cli':
+            exe_name = 'kicad-cli.exe' if self.system == 'windows' else 'kicad-cli'
+            command_path = find_kicad_sibling_binary(exe_name)
         if not command_path and dep_name == 'kicad-cli':
             common_paths = [
                 '/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli',
