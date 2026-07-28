@@ -4,7 +4,10 @@ Implements the tilted-loop model from the PRD
 """
 import subprocess
 import os
+import platform
 import shutil
+import struct
+import sys
 import tempfile
 import json
 import math
@@ -254,6 +257,150 @@ def _is_crash_exit(returncode):
     return _describe_exit_code(returncode) != ""
 
 
+# Mach-O fat-binary magic numbers (32/64-bit, either byte order).
+_MACHO_FAT_MAGICS = (b'\xca\xfe\xba\xbe', b'\xbe\xba\xfe\xca', b'\xca\xfe\xba\xbf', b'\xbf\xba\xfe\xca')
+_MACHO_CPU_TYPES = {0x00000007: 'x86', 0x0100000c: 'arm64', 0x01000007: 'x86_64', 0x0000000c: 'arm'}
+
+
+def _kicad_cli_arch_report(kicad_cli_path):
+    """Best-effort Mach-O architecture check for `kicad_cli_path` vs the host.
+
+    A crash that's 100% reproducible on one machine and never reproduces on
+    another (same kicad-cli version, same command) is a classic signature of
+    running under CPU translation (Rosetta on Apple Silicon): if the host's
+    architecture isn't one of the binary's fat-file slices, the OS runs it
+    translated, which is a well-known source of crashes in native/SIMD-heavy
+    code. Parsed directly from the binary's own header (no subprocess, no
+    external app) so it costs nothing and needs nothing beyond the file
+    SpinRender already resolved and is about to execute.
+
+    Returns a one-line string, or "" if this isn't a Mach-O fat binary (e.g.
+    Linux/Windows) or the file can't be read/parsed.
+    """
+    try:
+        with open(kicad_cli_path, 'rb') as f:
+            magic = f.read(4)
+            if magic not in _MACHO_FAT_MAGICS:
+                return ""
+            nfat = struct.unpack('>I', f.read(4))[0]
+            archs = []
+            for _ in range(nfat):
+                cputype, _subtype, _off, _sz, _align = struct.unpack('>iIIII', f.read(20))
+                archs.append(_MACHO_CPU_TYPES.get(cputype & 0xFFFFFFFF, hex(cputype & 0xFFFFFFFF)))
+    except (OSError, struct.error):
+        return ""
+
+    host_arch = platform.machine()
+    if host_arch in archs:
+        return f"kicad-cli architectures: {', '.join(archs)} -> native {host_arch} execution expected"
+    return (
+        f"kicad-cli architectures: {', '.join(archs)}; host is {host_arch}, "
+        f"which is NOT one of them -> this run is translated (e.g. via "
+        f"Rosetta), a common source of native crashes that only reproduce on "
+        f"this machine"
+    )
+
+
+def _crash_diagnostics(kicad_cli_path, elapsed, stdout):
+    """Build a self-contained diagnostic block for a crashed kicad-cli run.
+
+    kicad-cli exposes no debug/verbose env var that adds output (tried
+    WXTRACE, KICAD_STDOUT_LOG_LEVEL, WXDEBUG — no effect), and crashes like
+    issue #1 produce zero stdout, so the log otherwise has nothing beyond a
+    bare exit code. Everything below comes from stdlib introspection of the
+    same binary/process SpinRender already launched — no external crash-report
+    file or other application required.
+    """
+    lines = [f"host: {platform.platform()} ({platform.machine()})"]
+
+    try:
+        st = os.stat(kicad_cli_path)
+        mtime = datetime.fromtimestamp(st.st_mtime).isoformat(timespec='seconds')
+        lines.append(f"kicad-cli: {kicad_cli_path} ({st.st_size} bytes, mtime {mtime})")
+    except OSError as e:
+        lines.append(f"kicad-cli: {kicad_cli_path} (stat failed: {e})")
+
+    arch_report = _kicad_cli_arch_report(kicad_cli_path)
+    if arch_report:
+        lines.append(arch_report)
+
+    no_output = not stdout or not stdout.strip()
+    if no_output and elapsed < 1.0:
+        lines.append(
+            f"elapsed: {elapsed:.2f}s, no stdout produced -> crashed before "
+            f"emitting any output; looks like a process/library-load failure "
+            f"rather than a mid-render crash"
+        )
+    else:
+        lines.append(f"elapsed: {elapsed:.2f}s, stdout {'empty' if no_output else 'present'}")
+
+    try:
+        import resource
+        maxrss = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+        unit = "bytes" if sys.platform == "darwin" else "KB"
+        lines.append(f"peak child memory so far (RUSAGE_CHILDREN.ru_maxrss): {maxrss} {unit}")
+    except ImportError:
+        pass  # resource module isn't available on Windows
+
+    return "\nCrash diagnostics:\n  " + "\n  ".join(lines)
+
+
+def _run_minimal_probe(kicad_cli_path, board_path, env):
+    """On a crash, immediately retry with kicad-cli's simplest possible
+    invocation — matching the cache-warmer's own known-good command (96x96,
+    basic quality, no --perspective/--zoom/--background/lighting flags) —
+    against this same board file, in this same environment.
+
+    This is the one check we can run ourselves to tell apart two very
+    different situations that look identical from a bare "-11" exit code:
+    "something about this render's settings triggers a crash" vs. "kicad-cli
+    itself crashes on this machine/board no matter what we ask it to do" —
+    the latter being an upstream KiCad/environment problem (GPU driver, CPU
+    translation, corrupted install) that SpinRender has no control over. A
+    probe failure here is strong, direct evidence for the second case,
+    instead of us having to infer it indirectly across separate bug reports.
+
+    Best-effort: any failure to even run the probe is reported as
+    inconclusive rather than raised, since this only augments a log message
+    that's about to be shown for an already-failed render.
+    """
+    probe_out = None
+    try:
+        fd, probe_out = tempfile.mkstemp(prefix='spinrender_crash_probe_', suffix='.png')
+        os.close(fd)
+        cmd = [
+            kicad_cli_path, 'pcb', 'render',
+            '--rotate', '0,0,0',
+            '-w', '96', '-h', '96',
+            '--quality', 'basic',
+            '-o', probe_out, board_path,
+        ]
+        process = _start_text_process(cmd, env=env)
+        process.communicate(timeout=30)
+        if process.returncode == 0:
+            return (
+                "minimal probe (96x96, basic quality, no extra flags) "
+                "SUCCEEDED -> the crash is specific to this render's "
+                "settings, not kicad-cli/environment itself"
+            )
+        return (
+            f"minimal probe (96x96, basic quality, no extra flags) ALSO "
+            f"FAILED with exit code {process.returncode}"
+            f"{_describe_exit_code(process.returncode)} -> strong evidence "
+            f"this is a kicad-cli/environment problem (GPU driver, CPU "
+            f"translation, corrupted install) outside SpinRender's control, "
+            f"not something our render settings triggered"
+        )
+    except Exception as e:
+        return f"minimal probe could not be run: {e}"
+    finally:
+        if probe_out:
+            try:
+                os.remove(probe_out)
+            except OSError:
+                pass
+
+
 def _apply_overrides(cmd, override_str):
     """
     Remove any flags present in override_str from cmd, then return the
@@ -368,6 +515,10 @@ class RenderEngine:
         # successfully fall back to "basic" — all subsequent frames then
         # render at basic automatically (see generate_frames).
         self.degraded_quality = False
+        # Run the minimal-probe diagnostic (see _run_minimal_probe) at most
+        # once per render, on the first crash — later frames crashing the
+        # same way don't need to re-ask the same question.
+        self._probe_run = False
 
         # Apply preset defaults if using a preset
         if settings.get('preset') in self.PRESETS:
@@ -524,7 +675,14 @@ class RenderEngine:
             env['KICAD_CONFIG_HOME'] = _prepare_kicad_config_home(plugin_dir)
 
             cli_overrides = self.settings.get('cli_overrides', '').strip()
-            quality_overridden = '--quality' in cli_overrides
+            # Exact-token check, not substring: a leftover/malformed override
+            # like "--quality-high" (missing the space before "high") must NOT
+            # count as overriding --quality, or it silently disables the
+            # crash-retry-at-basic-quality fallback below while also never
+            # getting stripped by _apply_overrides (which also matches exact
+            # tokens) — the user then gets both flags on the command line and
+            # no safety net. See issue #1.
+            quality_overridden = '--quality' in cli_overrides.split()
 
             # Up to 2 attempts: the second attempt only happens if the first
             # crashes (not a normal failure/timeout) and we haven't already
@@ -565,13 +723,28 @@ class RenderEngine:
 
                 stdout = ""
                 try:
+                    attempt_start = time.time()
                     process = _start_text_process(cmd, env=env)
 
                     stdout, _ = process.communicate(timeout=RENDER_FRAME_TIMEOUT)
+                    elapsed = time.time() - attempt_start
                     if logger.isEnabledFor(logging.DEBUG):
                         for line in stdout.splitlines():
                             logger.debug(f"  [kicad-cli] {line.strip()}")
                     if process.returncode != 0:
+                        # Crashes (as opposed to plain non-zero exits) get the
+                        # extra diagnostic block logged unconditionally, not
+                        # just at DEBUG level — this is the one signal we have
+                        # since kicad-cli often produces no output at all when
+                        # it crashes (see issue #1).
+                        if _is_crash_exit(process.returncode):
+                            logger.error(_crash_diagnostics(kicad_cli, elapsed, stdout))
+                            if not self._probe_run:
+                                self._probe_run = True
+                                logger.error(
+                                    "Crash probe: " + _run_minimal_probe(kicad_cli, self.board_path, env)
+                                )
+
                         if (
                             attempt == 0
                             and not self.degraded_quality
