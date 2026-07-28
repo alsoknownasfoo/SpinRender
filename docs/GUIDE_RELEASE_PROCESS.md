@@ -212,7 +212,12 @@ The new `metadata.json` content:
 - Update `description_full` / `tags` / etc. only if they're actually changing
   for this release — otherwise carry over verbatim from upstream.
 - Re-check every tag against the `^[a-z][-a-z0-9]{0,48}[a-z0-9]$` regex before
-  submitting.
+  submitting — `3d` (starts with a digit) got silently stripped by the
+  reviewer on the 0.8.0 MR for exactly this reason.
+- Include a top-level `maintainer` block (same shape as `author`) — ours was
+  missing on the 0.8.0 submission and the reviewer added it before merging.
+  Keep it in `metadata.json` (repo root) and `build/pcm/metadata.json` too, so
+  future submissions already have it.
 
 ### Step C — open the draft MR
 
