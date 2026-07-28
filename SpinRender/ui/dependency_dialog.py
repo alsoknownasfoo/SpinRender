@@ -178,6 +178,8 @@ class DependencyDialog(wx.Dialog):
         self.dep_status = dep_status
         self.drag_pos = None
         self.current_dep_index = 0
+        self.status_labels = {}
+        self.hint_labels = {}
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_timer)
 
@@ -229,10 +231,20 @@ class DependencyDialog(wx.Dialog):
             status_label = wx.StaticText(dep_panel, label=icon_char)
             status_label.SetForegroundColour(status_color)
             status_label.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName=FONT_ICON))
+            self.status_labels[dep_name] = status_label
 
             row_sizer.Add(dep_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 16)
             row_sizer.Add(status_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 16)
             dep_sizer.Add(row_sizer, 0, wx.EXPAND | wx.TOP | wx.BOTTOM, 10)
+
+            hint = self._manual_install_hint(dep_name, is_found)
+            if hint:
+                hint_label = wx.StaticText(dep_panel, label=hint)
+                hint_label.SetForegroundColour(TEXT_SECONDARY)
+                hint_label.SetFont(wx.Font(9, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName=FONT_BODY))
+                hint_label.Wrap(400)
+                dep_sizer.Add(hint_label, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, 16)
+                self.hint_labels[dep_name] = hint_label
 
             dep_panel.SetSizer(dep_sizer)
             self.content_sizer.Add(dep_panel, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 24)
@@ -290,6 +302,32 @@ class DependencyDialog(wx.Dialog):
         self.SetMinSize((480, -1))
         self.Fit()
         self.Centre()
+
+    def _manual_install_hint(self, dep_name, is_found):
+        """Return a short note for dependencies that can't be auto-installed (e.g. kicad-cli, ffmpeg)."""
+        if is_found:
+            return None
+        dep_info = self.checker.REQUIRED_DEPS.get(dep_name)
+        if not dep_info or dep_info.get('type') != 'command':
+            return None
+        system = self.checker.system
+        install_key = 'install_macos' if 'darwin' in system else f'install_{system}'
+        hint = dep_info.get(install_key, '')
+        if hint.startswith('Download from'):
+            return f"Not bundled with pip - install manually and add to PATH: {hint}"
+        return f"Not found on PATH - install manually, then add it to PATH: {hint}"
+
+    def _refresh_status_icons(self):
+        for dep_name, status_label in self.status_labels.items():
+            is_found = self.dep_status.get(dep_name, False)
+            status_label.SetLabel(GLYPH_CHECK if is_found else GLYPH_CLOSE)
+            status_label.SetForegroundColour(COLOR_SUCCESS if is_found else COLOR_ERROR)
+            hint_label = self.hint_labels.get(dep_name)
+            if hint_label:
+                hint_label.Show(not is_found)
+        self.content_sizer.Layout()
+        self.Fit()
+        self.Refresh()
 
     def on_left_down(self, event):
         win = event.GetEventObject()
@@ -367,6 +405,7 @@ class DependencyDialog(wx.Dialog):
         self.timer.Stop()
         self.progress_gauge.SetValue(self.num_deps * 100)
         self.dep_status = self.checker.check_all()
+        self._refresh_status_icons()
         if not self.checker.missing_deps:
             self.EndModal(wx.ID_OK)
         else:
