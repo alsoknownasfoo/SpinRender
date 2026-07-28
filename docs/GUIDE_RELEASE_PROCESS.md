@@ -218,7 +218,7 @@ The new `metadata.json` content:
 
 ```bash
 cat > /tmp/mr_XYZ.json << EOF
-{"source_branch": "spinrender-X.Y.Z", "target_branch": "main", "target_project_id": 29185721, "title": "Draft: spinrender X.Y.Z", "description": "new release. updating the metadata to point at X.Y.Z.", "remove_source_branch": true}
+{"source_branch": "spinrender-X.Y.Z", "target_branch": "main", "target_project_id": 29185721, "title": "Update SpinRender to X.Y.Z", "description": "- bullet 1\n- bullet 2\n- bullet 3", "remove_source_branch": true}
 EOF
 glab api projects/82894976/merge_requests --method POST -H "Content-Type: application/json" --input /tmp/mr_XYZ.json
 ```
@@ -226,6 +226,19 @@ glab api projects/82894976/merge_requests --method POST -H "Content-Type: applic
 Note: `-H "Content-Type: application/json"` is **required** for this call —
 without it `glab api` sends an empty content-type and GitLab returns
 HTTP 415.
+
+### Title/description convention
+
+The addons-repo maintainer (`craftyjon` / Jon Evans) rewrote our first two
+submissions before merging. The 0.7.0-beta MR (`!598`) kept our submitted
+title/description verbatim; the 0.8.0 MR (`!599`) had ours ("Draft: spinrender
+0.8.0" / "new release. updating the metadata to point at 0.8.0.") replaced with
+"Update SpinRender to 0.8.0" / "- windows support\n- various bug fixes" before
+merge. Submit in his preferred format directly so there's nothing to rewrite:
+
+- **Title:** `Update SpinRender to X.Y.Z` (not "Draft: spinrender X.Y.Z")
+- **Description:** a short bullet list of actual highlights (2-4 bullets,
+  terse), not a generic "new release" sentence.
 
 ### Step D — watch the validation pipeline
 
