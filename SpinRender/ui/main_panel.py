@@ -24,6 +24,7 @@ from .events import EVT_PARAMETER_INTERACTION
 from .custom_controls import EVT_COLOURPICKER_CHANGED, ensure_fonts_loaded
 from .status_bar import StatusBar
 from .parameter_controller import ParameterController
+from .error_dialog import show_copyable_error
 
 
 def _detect_system_theme() -> str:
@@ -569,7 +570,7 @@ class SpinRenderPanel(wx.Panel):
             render_board_path = self._prepare_render_board_path()
         except Exception as e:
             logger.error(f"Failed to prepare render board: {e}", exc_info=True)
-            wx.MessageBox(str(e), _locale.get("dialog.title.render_error", "Render Error"), wx.OK | wx.ICON_ERROR)
+            show_copyable_error(self, str(e), _locale.get("dialog.title.render_error", "Render Error"))
             return
 
         # Prepare UI for rendering
@@ -700,7 +701,7 @@ class SpinRenderPanel(wx.Panel):
             self.preview.final_output_type = None
             error_msg = _locale.get("component.status.error", "Error: {message}").format(message=error)
             self.status_bar.set_error(error_msg)
-            wx.MessageBox(error, _locale.get("dialog.title.render_error", "Render Error"), wx.OK | wx.ICON_ERROR)
+            show_copyable_error(self, error, _locale.get("dialog.title.render_error", "Render Error"))
         elif result:
             # Handle new dict return format or legacy string format
             if isinstance(result, dict):

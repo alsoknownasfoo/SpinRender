@@ -462,6 +462,7 @@ class RenderEngine:
         self.progress_callback = progress_callback
         self.canceled = False
         self._temp_dir = None  # Tracked for deferred cleanup on cancel
+        self.degraded_quality = False  # Set True once a frame crashes and succeeds on retry at basic quality
 
         # Apply preset defaults if using a preset
         if settings.get('preset') in self.PRESETS:
@@ -567,6 +568,14 @@ class RenderEngine:
         resolution = self.settings.get('resolution', '1920x1080')
         width, height = map(int, resolution.split('x'))
 
+        # A real (exact-token) --quality override means the user explicitly
+        # chose a quality level, so a crash-triggered retry-at-basic-quality
+        # should not override that choice. Checked as an exact token, not a
+        # substring, so a malformed leftover like "--quality-high" (not a
+        # real kicad-cli flag) doesn't get mistaken for one (issue #1).
+        cli_overrides = self.settings.get('cli_overrides', '').strip()
+        quality_overridden = '--quality' in cli_overrides.split()
+
         if self.progress_callback:
             self.progress_callback(0, frame_count, "INITIALIZING RENDER...")
 
@@ -607,6 +616,11 @@ class RenderEngine:
             if not kicad_cli:
                 raise RuntimeError("kicad-cli not found in PATH or common locations")
 
+            # Once a prior frame has proven 'user' quality crashes on this
+            # machine, skip straight to 'basic' for the rest of the render
+            # instead of re-crashing (and re-diagnosing) every single frame.
+            base_quality = 'basic' if self.degraded_quality else 'user'
+
             # Build kicad-cli command
             cmd = [
                 kicad_cli, 'pcb', 'render',
@@ -616,9 +630,9 @@ class RenderEngine:
                 '-w', str(width),
                 '-h', str(height),
                 '--background', 'transparent',
-                '--quality', 'user'
+                '--quality', base_quality
             ]
-            
+
             # Point kicad-cli at a writable, per-user config home seeded with our
             # 3d_viewer.json (forces raytracing settings like "no floor"). Kept
             # outside the install dir so kicad-cli's scratch writes never pollute
@@ -636,7 +650,6 @@ class RenderEngine:
 
             # Apply CLI overrides before positional args so kicad-cli sees them
             # as flags.  Deduplicate first so user values win over base defaults.
-            cli_overrides = self.settings.get('cli_overrides', '').strip()
             if cli_overrides:
                 cmd, override_tokens = _apply_overrides(cmd, cli_overrides)
                 cmd.extend(override_tokens)
@@ -655,15 +668,47 @@ class RenderEngine:
                 if logger.isEnabledFor(logging.DEBUG):
                     for line in stdout.splitlines():
                         logger.debug(f"  [kicad-cli] {line.strip()}")
+
+                if process.returncode != 0 and _is_probable_crash(process.returncode):
+                    duration = time.time() - frame_start
+                    attempted_quality = cmd[cmd.index('--quality') + 1]
+                    diag = _crash_diagnostics(kicad_cli, duration, stdout)
+                    probe_result = _run_minimal_probe(
+                        kicad_cli, self.board_path, {'KICAD_CONFIG_HOME': env.get('KICAD_CONFIG_HOME')}
+                    )
+                    logger.warning(
+                        f"Frame {i} crashed (exit {process.returncode}) at quality={attempted_quality}\n"
+                        f"{diag}\n  {probe_result}"
+                    )
+
+                    if not quality_overridden and attempted_quality != 'basic':
+                        logger.warning(f"Frame {i}: retrying at basic quality")
+                        retry_cmd = list(cmd)
+                        retry_cmd[retry_cmd.index('--quality') + 1] = 'basic'
+                        retry_process = _start_text_process(retry_cmd, env=env)
+                        retry_stdout, _ = retry_process.communicate(timeout=RENDER_FRAME_TIMEOUT)
+                        if retry_process.returncode == 0:
+                            self.degraded_quality = True
+                            process = retry_process
+                            stdout = retry_stdout
+                        else:
+                            raise RuntimeError(
+                                f"Frame {i} render failed with exit code {process.returncode} at "
+                                f"quality={attempted_quality}; retry at basic quality also failed "
+                                f"with exit code {retry_process.returncode}."
+                                f"{_format_cli_output(retry_stdout)}\n{diag}\n  {probe_result}"
+                            )
+                    else:
+                        raise RuntimeError(
+                            f"Frame {i} render failed with exit code "
+                            f"{process.returncode}.{_format_cli_output(stdout)}\n{diag}\n  {probe_result}"
+                        )
+
                 if process.returncode != 0:
-                    error_msg = (
+                    raise RuntimeError(
                         f"Frame {i} render failed with exit code "
                         f"{process.returncode}.{_format_cli_output(stdout)}"
                     )
-                    if _is_probable_crash(process.returncode):
-                        duration = time.time() - frame_start
-                        error_msg += "\n" + _crash_diagnostics(kicad_cli, duration, stdout)
-                    raise RuntimeError(error_msg)
 
                 # Update progress with completed frame
                 if self.progress_callback:
