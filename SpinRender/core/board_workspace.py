@@ -87,20 +87,36 @@ def _hide_board_set(board_path: str) -> None:
         _hide_path(f)
 
 
+def _lock_path(path: Path) -> Path:
+    """KiCad's own lock file for an opened project/board: '~<name>.lck'
+    next to it (confirmed format: JSON {"hostname", "username"}). Written by
+    KiCad itself when it opens a file as a project, not by pcbnew scripting —
+    a sign that our disposable file got adopted as a real, open project."""
+    return path.with_name(f"~{path.name}.lck")
+
+
+def _remove_if_exists(path: Path) -> None:
+    try:
+        _unhide_path(str(path))
+        path.unlink(missing_ok=True)
+    except OSError as e:
+        logger.warning(f"BoardWorkspace: failed to remove stray {path}: {e}")
+
+
 def _delete_project_siblings(board_path: str) -> None:
     """Remove the same-stem .kicad_pro/.kicad_prl SaveBoard invents next to a
     board file that had no project of its own (see _serialize_live_board).
     Left in place, they're full standalone KiCad projects — hidden from
     Finder/Explorer, but still a real project on disk that a running KiCad
-    session can pick up as "current" (issue #3), not merely a stray file."""
+    session can pick up as "current" (issue #3), not merely a stray file.
+    Also removes any lock KiCad may have already dropped for them or for the
+    board file itself, so a mid-adoption lock doesn't outlive the project."""
     p = Path(board_path)
+    _remove_if_exists(_lock_path(p))
     for suffix in _PROJECT_SUFFIXES:
         sibling = p.with_suffix(suffix)
-        try:
-            _unhide_path(str(sibling))
-            sibling.unlink(missing_ok=True)
-        except OSError as e:
-            logger.warning(f"BoardWorkspace: failed to remove stray {sibling}: {e}")
+        _remove_if_exists(sibling)
+        _remove_if_exists(_lock_path(sibling))
 
 
 class BoardWorkspace:
@@ -246,7 +262,15 @@ class BoardWorkspace:
         return self.board_path
 
     def cleanup(self) -> None:
-        """Remove the working copy. Safe to call multiple times."""
+        """Remove the working copy. Safe to call multiple times.
+
+        Also removes any '~<name>.lck' KiCad may have dropped next to a
+        tracked file (e.g. the working copy's .kicad_pro, which — unlike the
+        snapshot's — is a real project we intentionally keep and can get
+        opened/locked by a running KiCad session). Deleting the project out
+        from under an existing lock without going through KiCad's own
+        project-close path is exactly how these locks get orphaned.
+        """
         for path in self._paired_paths:
             try:
                 if path.exists():
@@ -256,6 +280,7 @@ class BoardWorkspace:
                     logger.debug(f"BoardWorkspace: removed {path}")
             except OSError as e:
                 logger.warning(f"BoardWorkspace: failed to remove {path}: {e}")
+            _remove_if_exists(_lock_path(path))
 
     def _copy_source_files(self) -> None:
         """Refresh the board copy and any same-stem project files KiCad expects."""
