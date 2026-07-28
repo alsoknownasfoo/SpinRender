@@ -87,6 +87,22 @@ def _hide_board_set(board_path: str) -> None:
         _hide_path(f)
 
 
+def _delete_project_siblings(board_path: str) -> None:
+    """Remove the same-stem .kicad_pro/.kicad_prl SaveBoard invents next to a
+    board file that had no project of its own (see _serialize_live_board).
+    Left in place, they're full standalone KiCad projects — hidden from
+    Finder/Explorer, but still a real project on disk that a running KiCad
+    session can pick up as "current" (issue #3), not merely a stray file."""
+    p = Path(board_path)
+    for suffix in _PROJECT_SUFFIXES:
+        sibling = p.with_suffix(suffix)
+        try:
+            _unhide_path(str(sibling))
+            sibling.unlink(missing_ok=True)
+        except OSError as e:
+            logger.warning(f"BoardWorkspace: failed to remove stray {sibling}: {e}")
+
+
 class BoardWorkspace:
     """Maintains a disposable, hidden working copy of a board's .kicad_pcb file."""
 
@@ -192,7 +208,12 @@ class BoardWorkspace:
         if not os.path.exists(dest) or os.path.getsize(dest) == 0:
             logger.warning("BoardWorkspace: SaveBoard produced no output; using on-disk copy")
             return False
-        _hide_board_set(dest)
+        # The snapshot has no project of its own — any .kicad_pro/.kicad_prl
+        # SaveBoard just wrote here are its own invention, not something we
+        # asked for. Remove them immediately rather than leaving a real,
+        # loadable project sitting next to the user's project (issue #3).
+        _delete_project_siblings(dest)
+        _hide_path(dest)
         return True
 
     def reset(self) -> None:
