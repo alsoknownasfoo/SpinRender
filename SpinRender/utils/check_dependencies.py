@@ -170,25 +170,49 @@ class DependencyChecker:
         return False
 
     def check_python_package(self, package_name):
-        """Check if a Python package is available"""
+        """Check if a Python package is available.
+
+        Runs the actual import in a subprocess rather than in-process.
+        Some packages (trimesh, via its native/C-extension dependency
+        chain) can abort the whole process with a glibc-level crash (e.g.
+        "free(): invalid pointer") on certain Linux installs, when native
+        libraries they load conflict with ones KiCad already has loaded
+        (issue #4). That's a SIGABRT, not a Python exception, so no
+        try/except here could ever have caught it - importing in-process
+        risks taking KiCad down with it. A crashed child is just reported
+        as "not found" instead.
+        """
         logger.debug(f"Checking Python package: {package_name}")
+        pkg = package_name.split()[0]
+        if pkg == 'PyOpenGL':
+            pkg = 'OpenGL'
+        elif pkg == 'PyYAML':
+            pkg = 'yaml'
+        elif pkg == 'wxPython':
+            pkg = 'wx'
+        elif pkg.startswith('pyobjc'):
+            pkg = 'objc'
+
+        python_exe = self._get_python_executable()
         try:
-            importlib.invalidate_caches()
-            pkg = package_name.split()[0]
-            if pkg == 'PyOpenGL':
-                pkg = 'OpenGL'
-            elif pkg == 'PyYAML':
-                pkg = 'yaml'
-            elif pkg == 'wxPython':
-                pkg = 'wx'
-            elif pkg.startswith('pyobjc'):
-                pkg = 'objc'
-            __import__(pkg)
+            result = subprocess.run(
+                [python_exe, "-c", f"import {pkg}"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=15,
+                creationflags=NO_WINDOW_FLAGS,
+            )
+        except Exception as e:
+            logger.debug(f"  Could not probe package {pkg}: {e}")
+            return False
+
+        if result.returncode == 0:
             logger.debug(f"  Package {pkg} is available")
             return True
-        except ImportError as e:
-            logger.debug(f"  Package not available: {e}")
-            return False
+
+        stderr = result.stderr.decode(errors='replace').strip()
+        logger.debug(f"  Package {pkg} not available (exit {result.returncode}): {stderr}")
+        return False
 
     def check_all(self):
         """Check all required dependencies"""
