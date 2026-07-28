@@ -10,6 +10,8 @@ import json
 import math
 import time
 import logging
+import struct
+import platform
 from datetime import datetime
 from pathlib import Path
 
@@ -21,6 +23,16 @@ logger = logging.getLogger("SpinRender")
 # resolution can take well over the old 30s ceiling; 300s matches the MP4
 # assembly budget and avoids spurious "render timed out" on heavy boards.
 RENDER_FRAME_TIMEOUT = 300
+
+# Mach-O fat-binary header magic (macOS universal binaries only).
+_MACHO_FAT_MAGIC = 0xcafebabe
+_MACHO_FAT_MAGIC_64 = 0xcafebabf
+_MACHO_CPU_TYPES = {
+    0x00000007: 'i386',
+    0x01000007: 'x86_64',
+    0x0000000c: 'arm',
+    0x0100000c: 'arm64',
+}
 
 
 def _prepare_kicad_config_home(plugin_dir):
@@ -215,6 +227,129 @@ def _format_cli_output(output, max_lines=15):
     lines = [ln.rstrip() for ln in output.splitlines() if ln.strip()]
     tail = "\n".join(lines[-max_lines:])
     return f"\nkicad-cli output:\n{tail}"
+
+
+def _is_probable_crash(returncode):
+    """True when a return code looks like the process was killed by a signal
+    (SIGSEGV, SIGABRT, a Windows access violation, ...) rather than a normal
+    nonzero exit - the case worth attaching extra diagnostics to."""
+    return returncode is not None and returncode < 0
+
+
+def _kicad_cli_arch_report(path):
+    """Best-effort macOS universal-binary architecture check.
+
+    A 100%-reproducible kicad-cli crash with zero output, on an otherwise
+    identical version/config/board that nobody else could reproduce (issue
+    #1), is consistent with the binary running translated (Rosetta) rather
+    than natively. Only meaningful for macOS fat/universal binaries; returns
+    "" for anything else, including read errors, so callers can just skip it.
+    """
+    try:
+        with open(path, 'rb') as f:
+            header = f.read(8)
+            if len(header) < 8:
+                return ""
+            magic, nfat_arch = struct.unpack('>II', header)
+            if magic not in (_MACHO_FAT_MAGIC, _MACHO_FAT_MAGIC_64):
+                return ""
+            archs = []
+            for _ in range(nfat_arch):
+                entry = f.read(20)
+                if len(entry) < 20:
+                    break
+                cputype, _cpusubtype, _offset, _size, _align = struct.unpack('>iIIII', entry)
+                archs.append(_MACHO_CPU_TYPES.get(cputype, hex(cputype)))
+    except OSError:
+        return ""
+
+    if not archs:
+        return ""
+
+    host = platform.machine()
+    if host in archs:
+        return f"host is {host}; kicad-cli offers {archs} -> native {host} execution expected"
+    return f"host is {host}, which is NOT one of them ({archs}) -> this run is likely translated via Rosetta"
+
+
+def _crash_diagnostics(kicad_cli_path, duration, stdout):
+    """Best-effort diagnostics attached to the error message when kicad-cli
+    appears to have been killed by a signal rather than exited normally.
+
+    Built from a real investigation (issue #1): a 100%-reproducible segfault
+    with zero stdout, on kicad-cli, on one specific machine, that nobody else
+    could reproduce with the identical version/config/board. None of these
+    checks require anything beyond the binary/process we already resolved
+    and launched.
+    """
+    lines = ["kicad-cli crash diagnostics:"]
+    try:
+        size = os.path.getsize(kicad_cli_path)
+        mtime = datetime.fromtimestamp(os.path.getmtime(kicad_cli_path)).isoformat(timespec='seconds')
+        lines.append(f"  binary: {kicad_cli_path} ({size} bytes, modified {mtime})")
+    except OSError as e:
+        lines.append(f"  binary: {kicad_cli_path} (could not stat: {e})")
+
+    arch_report = _kicad_cli_arch_report(kicad_cli_path)
+    if arch_report:
+        lines.append(f"  {arch_report}")
+
+    if not stdout.strip() and duration < 1.0:
+        lines.append(
+            f"  crashed before emitting any output ({duration:.2f}s) - looks like a "
+            "process/library-load-time failure, not a rendering crash"
+        )
+
+    try:
+        import resource
+        peak_kb = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+        if platform.system() == 'Darwin':
+            peak_kb //= 1024  # macOS reports ru_maxrss in bytes, Linux in KB
+        lines.append(f"  peak child memory: ~{peak_kb / 1024:.0f} MB")
+    except Exception:
+        pass
+
+    lines.append(f"  host: {platform.platform()}")
+
+    return "\n".join(lines)
+
+
+def _run_minimal_probe(kicad_cli, board_path, config):
+    """Re-render the same board with a bare, minimal kicad-cli command (no
+    --perspective, lighting, or other flags) to isolate whether a crash is
+    tied to SpinRender's specific render settings, or happens with kicad-cli
+    regardless of what it's asked to do (issue #1: disabling render options,
+    trying a brand-new board, and overriding flags all still crashed - a
+    minimal command rules SpinRender's own flags out entirely).
+    """
+    env = os.environ.copy()
+    if config.get('KICAD_CONFIG_HOME'):
+        env['KICAD_CONFIG_HOME'] = config['KICAD_CONFIG_HOME']
+
+    probe_output = os.path.join(tempfile.gettempdir(), f"spinrender_probe_{os.getpid()}.png")
+    cmd = [kicad_cli, 'pcb', 'render', '-o', probe_output, board_path]
+
+    try:
+        process = _start_text_process(cmd, env=env)
+        process.communicate(timeout=60)
+    except Exception as e:
+        return f"minimal probe could not be run: {e}"
+    finally:
+        if os.path.exists(probe_output):
+            try:
+                os.remove(probe_output)
+            except OSError:
+                pass
+
+    if process.returncode == 0:
+        return (
+            "minimal probe (bare render, no extra flags) SUCCEEDED - this crash is "
+            "tied to SpinRender's render settings/flags, not kicad-cli/environment itself"
+        )
+    return (
+        f"minimal probe (bare render, no extra flags) ALSO FAILED (exit {process.returncode}) - "
+        "kicad-cli crashes outside SpinRender too"
+    )
 
 
 def _apply_overrides(cmd, override_str):
@@ -512,6 +647,7 @@ class RenderEngine:
             logger.debug(f"CLI CMD: {' '.join(cmd)}")
 
             stdout = ""
+            frame_start = time.time()
             try:
                 process = _start_text_process(cmd, env=env)
 
@@ -520,10 +656,14 @@ class RenderEngine:
                     for line in stdout.splitlines():
                         logger.debug(f"  [kicad-cli] {line.strip()}")
                 if process.returncode != 0:
-                    raise RuntimeError(
+                    error_msg = (
                         f"Frame {i} render failed with exit code "
                         f"{process.returncode}.{_format_cli_output(stdout)}"
                     )
+                    if _is_probable_crash(process.returncode):
+                        duration = time.time() - frame_start
+                        error_msg += "\n" + _crash_diagnostics(kicad_cli, duration, stdout)
+                    raise RuntimeError(error_msg)
 
                 # Update progress with completed frame
                 if self.progress_callback:
