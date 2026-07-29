@@ -50,6 +50,7 @@ tests/theme_token_inventory.json
 .res/
 .TODO.md
 SpinRender.zip
+.reports/
 
 # Release / PCM build artifacts
 build/
