@@ -27,11 +27,26 @@ exactly what went wrong with the first v0.8.0 attempt (zip reported
 
 ---
 
-## 2. Build the PCM zip
+## 2. Update root `metadata.json`
+
+The repo-root `metadata.json` (tracked) is the single source of truth for the
+package's own bundled metadata — step 3 copies it directly into the zip.
+Update its `versions` array (single entry, this release's version) and
+`description_full` here, before building the zip. It isn't what KiCad's PCM
+actually serves to end users (that comes from the addons-repo index, step 5)
+but it must accurately describe *this* package build.
+
+---
+
+## 3. Build the PCM zip
 
 The zip layout is **flat**: `plugins/`, `resources/`, and `metadata.json` at
 the zip root (NOT nested under a `SpinRender/` folder — that was the 0.6→0.7
 packaging fix and must not regress).
+
+`packaging/pcm/icon.png` is the hand-curated PCM icon (tracked, persists
+between releases). `packaging/pcm/schema-v2.json` is a local reference copy of
+the KiCad PCM v2 schema, useful for validating `metadata.json` offline.
 
 ```bash
 # 1. Sync current source into the staging dir, renaming SpinRender/ -> plugins/
@@ -39,31 +54,33 @@ rsync -a --delete \
   --exclude='__pycache__' --exclude='logs' --exclude='.DS_Store' \
   SpinRender/ build/pcm/plugins/
 
-# 2. Sanity check: should print the NEW version, and diff should be empty
+# 2. Copy the tracked packaging inputs into the staging dir
+mkdir -p build/pcm/resources
+cp packaging/pcm/icon.png build/pcm/resources/icon.png
+cp metadata.json build/pcm/metadata.json
+
+# 3. Sanity check: should print the NEW version, and diff should be empty
 grep __version__ build/pcm/plugins/__init__.py
 diff -rq SpinRender build/pcm/plugins --exclude=__pycache__ --exclude=logs --exclude=.DS_Store
 
-# 3. Zip it (run from build/pcm/)
+# 4. Zip it (run from build/pcm/)
 cd build/pcm
 rm -f ../sr-pcm-XYZ.zip   # XYZ = version with no dots, e.g. 0.8.0 -> 080
 zip -rq -X ../sr-pcm-XYZ.zip plugins resources metadata.json \
   -x '*.DS_Store' -x '*__pycache__*'
 cd ../..
 
-# 4. Compute the values needed for the addons-repo metadata MR (step 5)
+# 5. Compute the values needed for the addons-repo metadata MR (step 5)
 shasum -a 256 build/sr-pcm-XYZ.zip                 # download_sha256
 stat -f%z build/sr-pcm-XYZ.zip                     # download_size
 find build/pcm -type f -exec stat -f%z {} \; | awk '{s+=$1} END {print s}'  # install_size
 ```
 
-`build/pcm/resources/icon.png` and `build/pcm/metadata.json` are hand-curated
-and persist between releases — only update `metadata.json`'s `versions` array
-and `description_full` (see step 3).
+### ⚠️ `metadata.json` must list exactly ONE version before zipping
 
-### ⚠️ `build/pcm/metadata.json` must list exactly ONE version
-
-This is the package's **own** metadata, bundled inside the zip. KiCad's PCM
-validator rejects it if `versions` has more than one entry:
+This is the package's **own** metadata, bundled inside the zip (copied to
+`build/pcm/metadata.json` above). KiCad's PCM validator rejects it
+if `versions` has more than one entry:
 
 ```json
 "versions": [
@@ -85,15 +102,6 @@ Every string in `metadata.json`'s `tags` array must match
 `^[a-z][-a-z0-9]{0,48}[a-z0-9]$` — i.e. **must start with a lowercase letter**.
 Tags like `3d` are invalid (starts with a digit) and will fail the addons-repo
 validation pipeline. Use `three-d` or drop it.
-
----
-
-## 3. Update root `metadata.json` (optional, repo copy)
-
-The repo-root `metadata.json` is a reference copy and isn't what KiCad's PCM
-actually serves (that comes from the addons-repo index, step 5). Keep it in
-sync with `build/pcm/metadata.json`'s single-version entry + description/tags
-if you want it to reflect the latest release, but it's not load-bearing.
 
 ---
 
@@ -120,12 +128,13 @@ git tag -d vX.Y.Z                               # clean up local tag if it linge
 
 ### Release notes format
 
-Match the style of `build/RELEASE_NOTES_070b.md` / `build/RELEASE_NOTES_080.md`:
+The durable copy of every release's notes lives in `CHANGELOG.md` (tracked,
+[Keep a Changelog](https://keepachangelog.com) format) — add a new
+`## [X.Y.Z] - YYYY-MM-DD` section at the top, above the previous release's
+section but below the static `## Install` block:
 
 ```markdown
-# SpinRender vX.Y.Z
-
-## Highlights
+## [X.Y.Z] - YYYY-MM-DD
 
 ### <emoji> <Theme 1>
 - Bullet points, **bold** for key terms, `code` for flags/files/identifiers.
@@ -133,10 +142,6 @@ Match the style of `build/RELEASE_NOTES_070b.md` / `build/RELEASE_NOTES_080.md`:
 
 ### <emoji> <Theme 2>
 ...
-
-## Install
-- **PCM:** Plugin and Content Manager → search "SpinRender".
-- **Manual:** download `sr-pcm-XYZ.zip` and install via PCM's "Install from File…", or use `install.sh` / `install.bat` from a clone.
 
 **Full changelog:** https://github.com/alsoknownasfoo/SpinRender/compare/vPREV...vX.Y.Z
 ```
@@ -152,6 +157,11 @@ Group commits thematically (e.g. "Windows support", "Theming & dialog fixes",
 human-readable changelog, not a commit dump. Every release should get this
 treatment, even "minor" ones — a one-line release body (e.g. "windows support
 and various bug fixes") is not acceptable.
+
+Save the same new section's content to `build/RELEASE_NOTES_XYZ.md` too (gitignored
+scratch) so `gh release create --notes-file` above has a file to point at —
+`CHANGELOG.md` is the source of truth, this is just a throwaway copy for the
+`gh` invocation.
 
 ---
 
@@ -208,7 +218,7 @@ The new `metadata.json` content:
 - **Prepend** a new version entry to the existing `versions` array (newest
   first), keeping all prior entries intact.
 - New entry needs `version`, `status`, `kicad_version`, `download_sha256`,
-  `download_size`, `download_url`, `install_size` — all computed in step 2.
+  `download_size`, `download_url`, `install_size` — all computed in step 3.
 - Update `description_full` / `tags` / etc. only if they're actually changing
   for this release — otherwise carry over verbatim from upstream.
 - Re-check every tag against the `^[a-z][-a-z0-9]{0,48}[a-z0-9]$` regex before
@@ -216,8 +226,9 @@ The new `metadata.json` content:
   reviewer on the 0.8.0 MR for exactly this reason.
 - Include a top-level `maintainer` block (same shape as `author`) — ours was
   missing on the 0.8.0 submission and the reviewer added it before merging.
-  Keep it in `metadata.json` (repo root) and `build/pcm/metadata.json` too, so
-  future submissions already have it.
+  Keep it in the root `metadata.json` (step 2) so future submissions already
+  have it — `build/pcm/metadata.json` is just a copy of that file, made in
+  step 3.
 
 ### Step C — open the draft MR
 
@@ -270,7 +281,7 @@ glab api "projects/82894976/jobs/<job_id>/trace" | tail -c 2000
 
 Push another commit to the same branch — same `commits` API call as step B
 but with `"branch": "spinrender-X.Y.Z"` and no `start_sha` (it already
-exists). If the zip itself needed to change, redo step 2 fully (rebuild,
+exists). If the zip itself needed to change, redo step 3 fully (rebuild,
 recompute hash/size, `gh release upload` to replace the asset) before pushing
 the metadata fix, so the sha256 in the MR matches the live asset.
 
@@ -279,10 +290,13 @@ the metadata fix, so the sha256 in the MR matches the live asset.
 ## Quick checklist
 
 - [ ] `SpinRender/__init__.py` and `pyproject.toml` both bumped, same commit
+- [ ] Root `metadata.json` updated (`versions`, `description_full`)
 - [ ] `build/pcm/plugins/` re-synced from `SpinRender/` (rsync --delete)
 - [ ] `build/pcm/plugins/__init__.py` shows the new version
-- [ ] `build/pcm/metadata.json` has exactly **one** entry in `versions`
+- [ ] `build/pcm/resources/icon.png` copied from `packaging/pcm/icon.png`
+- [ ] `build/pcm/metadata.json` copied from root `metadata.json`, has exactly **one** entry in `versions`
 - [ ] All tags match `^[a-z][-a-z0-9]{0,48}[a-z0-9]$`
+- [ ] `CHANGELOG.md` has a new `## [X.Y.Z]` section
 - [ ] Zip is flat (`plugins/`, `resources/`, `metadata.json` at root) — diff file count/paths against the previous release's zip as a sanity check
 - [ ] Tag points at the version-bump commit; GitHub release created with rich, themed notes
 - [ ] Addons-repo MR opened as draft from `alsoknownasfoo/metadata` against `kicad/addons/metadata`, with correct sha256/size/install_size

@@ -38,5 +38,10 @@ Contributions are welcome! Whether you're fixing a bug, adding a new camera pres
 
 Please be respectful and helpful in all interactions within the project.
 
+## Maintainers
+
+Cutting a release (version bump, PCM zip, GitHub release, addons-repo MR)?
+See `docs/GUIDE_RELEASE_PROCESS.md`.
+
 ---
 Thank you for helping make SpinRender better!
