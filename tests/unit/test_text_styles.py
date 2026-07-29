@@ -1,5 +1,7 @@
 #!/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
 """Tests for TextStyle class and semantic font system."""
+import sys
+
 import pytest
 import wx
 from SpinRender.core.theme import Theme
@@ -8,6 +10,11 @@ _theme = Theme.current()
 _locale = Locale.current()
 
 from SpinRender.ui.text_styles import TextStyle, TextStyles
+
+
+def _px_to_pt(px):
+    """theme.py converts design px -> pt on Windows (72/96 baseline); passthrough elsewhere."""
+    return px * 72.0 / 96.0 if sys.platform.startswith("win") else float(px)
 
 
 @pytest.fixture
@@ -193,13 +200,13 @@ class TestTextStyles:
         style = TextStyles.body
         assert isinstance(style, TextStyle)
         assert style.family == _theme.font_family("mono")
-        assert style.size == 9  # typography.scale.sm
+        assert style.size == _px_to_pt(9)  # typography.scale.sm
         assert style.weight == 400
 
     def test_label_xs_token(self):
         """Test label-xs uses body style (sm=9, regular)."""
         style = TextStyles.label_xs
-        assert style.size == 9  # Maps to body: typography.scale.sm
+        assert style.size == _px_to_pt(9)  # Maps to body: typography.scale.sm
         assert style.weight == 400  # body weight
         assert style.family == _theme.font_family("mono")
 
@@ -207,7 +214,7 @@ class TestTextStyles:
         """Test numeric-unit uses body style (sm=9, regular)."""
         style = TextStyles.numeric_unit
         # Maps to body: typography.scale.sm
-        assert style.size == 9
+        assert style.size == _px_to_pt(9)
         assert style.weight == 400
         assert style.family == _theme.font_family("mono")
 
@@ -216,7 +223,7 @@ class TestTextStyles:
         style = TextStyles.panel_title
         # Maps to title: display, size lg=18, weight 700, uppercase
         assert style.family == _theme.font_family("display")
-        assert style.size == 18  # title uses lg, not xl
+        assert style.size == _px_to_pt(18)  # title uses lg, not xl
         assert style.weight == 700
         assert style.formatting == "uppercase"
 
@@ -224,7 +231,7 @@ class TestTextStyles:
         """save_preset should resolve to uppercase formatting for the actual button label."""
         style = TextStyles.save_preset
         assert style.family == _theme.font_family("mono")
-        assert style.size == 11
+        assert style.size == _px_to_pt(11)
         assert style.weight == 600
         assert style.formatting == "uppercase"
         # The "+" is rendered as a separate icon glyph (icon_ref: glyphs.plus),
@@ -235,12 +242,12 @@ class TestTextStyles:
         """Test icon uses MDI font at 14px (text.icon: typography.scale.md)."""
         style = TextStyles.icon
         assert style.family == _theme.font_family("icon")
-        assert style.size == 14  # YAML: text.icon size = typography.scale.md
+        assert style.size == _px_to_pt(14)  # YAML: text.icon size = typography.scale.md
 
     def test_icon_lg_token(self):
         """Test icon-lg uses 18px size (typography.scale.lg)."""
         style = TextStyles.icon_lg
-        assert style.size == 18  # YAML: text.icon_lg size = typography.scale.lg
+        assert style.size == _px_to_pt(18)  # YAML: text.icon_lg size = typography.scale.lg
         assert style.family == _theme.font_family("icon")
 
     def test_all_tokens_have_valid_sizes(self):
