@@ -6,6 +6,8 @@
 
 SpinRender is a KiCad 9+ plugin for generating high-fidelity, social-media-ready looping 3D renders of your circuit boards. 
 
+It's an interface and automation layer on top of `kicad-cli`'s rendering engine — SpinRender handles the presets, spin control, and video/GIF export, while `kicad-cli` does the actual 3D rendering.
+
 Use presets, or precisely control how your board rotates.
 
 Give your board dramatic lighting to add wow to your presentation or have it well lit and use it as a pseudo-3D reference model on your phone.
@@ -48,19 +50,26 @@ Give your board dramatic lighting to add wow to your presentation or have it wel
 >   - `Material Design Icons`
 >   - `Oswald`
 >
->   If you experience font rendering issues, ensure your system allows Python to access the internet, or manually install the recommended fonts listed above. For manual installation instructions, see the documentation.
+>   If you experience font rendering issues, ensure your system allows Python to access the internet, or install the fonts manually from `SpinRender/resources/fonts/` in this repo:
+>   - `JetBrainsMono-VariableFont_wght.ttf`
+>   - `Oswald-VariableFont_wght.ttf`
+>   - `materialdesignicons-webfont.ttf`
+>
+>   **Windows/macOS:** double-click each `.ttf` file and click **Install**.
+>   **Linux:** copy the files to `~/.local/share/fonts/` (create it if needed), then run `fc-cache -f`.
+>
+>   Restart KiCad after installing.
 > </details>
 
 ### Setup
 
 <details>
-   <summary><strong>Using PCM</strong> (Recommended)</summary>
-```
+   <summary><strong>Using KiCad's Plugin and Content Manager</strong> (Recommended)</summary>
+
 1. Start KiCad and click on **Plugin and Content Manager** in the project window.
 2. Under **Plugins**, filter for **SpinRender**.
 3. Click **Install**.
 4. Click **Apply Pending Changes**.
-```
 </details>
 
 <details>
@@ -113,8 +122,9 @@ Give your board dramatic lighting to add wow to your presentation or have it wel
 <details>
    <summary><strong>Missing dependencies:</strong></summary> 
 
-  * Open a terminal and run the manual install command above.
-  * Verify your Python version matches the one bundled with KiCad.
+  * Relaunch SpinRender from the toolbar — the dependency-check dialog appears automatically if anything's missing, and lists exactly what's missing.
+  * `kicad-cli` ships with KiCad — if it's missing, repair/reinstall KiCad rather than trying to install it separately.
+  * `ffmpeg`: install it and add it to your PATH if missing.
 </details>
 
 <details>
@@ -135,8 +145,7 @@ Built with support from: [^1]
 
 [![Claude][claude_icon]][claude_link] &nbsp;&nbsp; [![Gemini][gemini_icon]][gemini_link] &nbsp;&nbsp; [![ChatGPT][chatgpt_icon]][chatgpt_link] &nbsp;&nbsp; [![Copilot][copilot_icon]][copilot_link] &nbsp;&nbsp; [![StepFun][stepfun_icon]][stepfun_link]
 
-**Bug Reports:** Open a GitHub issue.  
-**Feature Requests:** Submit via GitHub discussions.
+**Bug Reports & Feature Requests:** Open a GitHub issue — templates are provided for both.
 
 _All feedback and suggestions welcomed!_
 
@@ -148,7 +157,7 @@ SpinRender is released under the **GPLv3 License**. See `LICENSE` for details.
 &nbsp;
 ## Thank You!
 
-Thanks for taking the time to check this project.  
+Thanks for taking the time to check this project out.  
 I created it because I wanted a way to show people how beautiful PCB design can be.   
 
 Hopefully, it helps you do the same.  
