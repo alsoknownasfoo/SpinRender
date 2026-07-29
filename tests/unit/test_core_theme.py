@@ -201,8 +201,8 @@ class TestThemeColorAPI:
     def test_color_text_tokens(self):
         """color() should resolve text color tokens."""
         import wx
-        # text.body.color -> @colors.gray-white -> near white
-        text_primary = self.theme.color("text.body.color")
+        # text.title.color -> @colors.gray-white -> near white
+        text_primary = self.theme.color("text.title.color")
         assert isinstance(text_primary, wx.Colour)
         # Dark theme: gray-white is #E0E0E0, very high RGB
         assert text_primary.Red() > 200

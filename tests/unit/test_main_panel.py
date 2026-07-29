@@ -37,7 +37,7 @@ def test_spinrender_panel_restores_collapsed_section_state(monkeypatch):
 
     monkeypatch.setattr(presets_module, 'PresetManager', FakePresetManager)
     monkeypatch.setattr(main_panel, '_apply_theme_mode', lambda mode: None)
-    monkeypatch.setattr(main_panel, 'BoardWorkspace', lambda board_path: SimpleNamespace(board_path=board_path, cleanup=lambda: None))
+    monkeypatch.setattr(main_panel, 'BoardWorkspace', lambda board_path: SimpleNamespace(board_path=board_path, snapshot_path='/tmp/nonexistent.snapshot', cleanup=lambda: None))
     monkeypatch.setattr(main_panel, 'RenderController', MagicMock())
     monkeypatch.setattr(main_panel.SpinRenderPanel, 'build_ui', lambda self: None)
 
@@ -63,7 +63,7 @@ def test_spinrender_panel_prepares_render_board_with_render_filters(monkeypatch)
         def get_last_used_settings(self):
             return None
 
-    initial_workspace = SimpleNamespace(board_path='/tmp/example.spinrender.kicad_pcb', cleanup=lambda: None)
+    initial_workspace = SimpleNamespace(board_path='/tmp/example.spinrender.kicad_pcb', snapshot_path='/tmp/nonexistent.snapshot', cleanup=lambda: None)
     calls = []
 
     monkeypatch.setattr(presets_module, 'PresetManager', FakePresetManager)
@@ -104,7 +104,7 @@ def test_spinrender_panel_prepares_render_board_with_unselected_options_removed(
         def get_last_used_settings(self):
             return None
 
-    initial_workspace = SimpleNamespace(board_path='/tmp/example.spinrender.kicad_pcb', cleanup=lambda: None)
+    initial_workspace = SimpleNamespace(board_path='/tmp/example.spinrender.kicad_pcb', snapshot_path='/tmp/nonexistent.snapshot', cleanup=lambda: None)
     calls = []
 
     monkeypatch.setattr(presets_module, 'PresetManager', FakePresetManager)
@@ -153,7 +153,7 @@ def test_spinrender_panel_saves_render_filters_as_default_on(monkeypatch):
 
     monkeypatch.setattr(presets_module, 'PresetManager', lambda board_path=None: manager)
     monkeypatch.setattr(main_panel, '_apply_theme_mode', lambda mode: None)
-    monkeypatch.setattr(main_panel, 'BoardWorkspace', lambda board_path: SimpleNamespace(board_path=board_path, cleanup=lambda: None))
+    monkeypatch.setattr(main_panel, 'BoardWorkspace', lambda board_path: SimpleNamespace(board_path=board_path, snapshot_path='/tmp/nonexistent.snapshot', cleanup=lambda: None))
     monkeypatch.setattr(main_panel, 'RenderController', MagicMock())
     monkeypatch.setattr(main_panel.SpinRenderPanel, 'build_ui', lambda self: None)
 

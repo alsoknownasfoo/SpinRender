@@ -217,7 +217,7 @@ colors:
         result = parse_yaml(str(yaml_file))
         
         assert 'palette.neutral-1' in result['all']
-        assert 'layout.main.frame.bg' in result['all']
+        assert 'colors.bg.page' in result['all']
         assert 'palette' in result
         assert 'colors' in result
 
@@ -242,7 +242,7 @@ colors:
         tokens = collect_tokens(data)
         
         expected = {
-            'layout.main.frame.bg',
+            'colors.bg.page',
             'colors.bg.panel',
             'colors.text.primary',
             'text.body.font'
@@ -279,12 +279,12 @@ colors:
         result = categorize_tokens(collect_tokens(data))
         
         assert 'palette.red' in result['palette']
-        assert 'layout.main.frame.bg' in result['colors']
+        assert 'colors.bg.page' in result['colors']
         assert 'text.body.font' in result['text']
         assert 'spacing.sm' in result['spacing']
         assert 'spacing.md' in result['spacing']
         assert 'borders.radius.md' in result['borders']
-        assert 'components.button.default.frame.bg' in result['components']
+        assert 'components.button.bg' in result['components']
 
     def test_missing_section_returns_empty(self, tmp_path):
         """Test that missing top-level sections yield empty category sets."""
@@ -534,7 +534,7 @@ class TestComparator:
         assert 'components' in categorized
         assert 'borders' in categorized
         
-        assert 'layout.main.frame.bg' in categorized['colors']
+        assert 'colors.text.primary' in categorized['colors']
         assert 'text.body.font' in categorized['text']
 
     def test_empty_sets(self):
@@ -574,7 +574,7 @@ class TestFixer:
     def test_generate_placeholder_colors(self):
         """Test placeholder generation for color tokens."""
         # Test different color subcategories
-        assert _generate_placeholder('layout.main.frame.bg') == {'ref': 'palette.neutral-3'}
+        assert _generate_placeholder('colors.bg.panel') == {'ref': 'palette.neutral-3'}
         assert _generate_placeholder('colors.bg.modal') == {'ref': 'palette.neutral-3'}
         assert _generate_placeholder('colors.text.primary') == {'ref': 'palette.neutral-14'}
         assert _generate_placeholder('colors.primary') == {'ref': 'palette.cyan'}
@@ -716,7 +716,7 @@ colors:
         
         # Both should be removed successfully
         removed = _purge_unused_tokens(yaml_data, {
-            'layout.main.frame.bg',
+            'colors.bg.page',
             'colors.bg.panel'
         }, dry_run=False)
         
@@ -789,7 +789,7 @@ class TestIntegration:
         (src_dir / "module.py").write_text('''
 from core.theme import theme
 def render():
-    theme.color("layout.main.frame.bg")
+    theme.color("colors.bg.page")
     theme.size("spacing.md")
 ''')
         
@@ -851,9 +851,10 @@ palette:
         import yaml
         with open(yaml_file, 'r') as f:
             data = yaml.safe_load(f)
-        assert 'colors' in data
-        assert 'bg' in data['colors']
-        assert 'page' in data['colors']['bg']
+        assert 'layout' in data
+        assert 'main' in data['layout']
+        assert 'frame' in data['layout']['main']
+        assert 'bg' in data['layout']['main']['frame']
 
 
 if __name__ == '__main__':

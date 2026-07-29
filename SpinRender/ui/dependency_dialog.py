@@ -189,21 +189,21 @@ class DependencyDialog(wx.Dialog):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
         # 1. Header
-        header = wx.Panel(self, size=(-1, 60))
-        header.SetBackgroundColour(BG_DARK)
+        self.header = wx.Panel(self, size=(-1, 60))
+        self.header.SetBackgroundColour(BG_DARK)
         header_sizer = wx.BoxSizer(wx.HORIZONTAL)
         
-        title = wx.StaticText(header, label="DEPENDENCY CHECK")
-        title.SetForegroundColour(COLOR_PRIMARY)
-        title.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName=FONT_MONO))
-        header_sizer.Add(title, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 24)
+        self.header_title = wx.StaticText(self.header, label="DEPENDENCY CHECK")
+        self.header_title.SetForegroundColour(COLOR_PRIMARY)
+        self.header_title.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD, faceName=FONT_MONO))
+        header_sizer.Add(self.header_title, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 24)
         
-        header.SetSizer(header_sizer)
-        main_sizer.Add(header, 0, wx.EXPAND)
+        self.header.SetSizer(header_sizer)
+        main_sizer.Add(self.header, 0, wx.EXPAND)
 
-        header.Bind(wx.EVT_LEFT_DOWN, self.on_left_down)
-        header.Bind(wx.EVT_LEFT_UP, self.on_left_up)
-        header.Bind(wx.EVT_MOTION, self.on_mouse_motion)
+        self.header.Bind(wx.EVT_LEFT_DOWN, self.on_left_down)
+        self.header.Bind(wx.EVT_LEFT_UP, self.on_left_up)
+        self.header.Bind(wx.EVT_MOTION, self.on_mouse_motion)
 
         # 2. Content Area
         content = wx.Panel(self)

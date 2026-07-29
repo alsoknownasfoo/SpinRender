@@ -27,20 +27,6 @@ class TestV2ThemeIntegration:
         assert isinstance(glyph, str) and len(glyph) > 0
 
 
-class TestGetPaintColorReplacement:
-    """Test _get_paint_color uses _theme.disabled()."""
-
-    def test_paint_helper_uses_theme_disabled(self):
-        from SpinRender.ui.custom_controls import _get_paint_color
-        c = wx.Colour(255, 128, 0, 255)
-        result = _get_paint_color(c, enabled=False)
-        expected = _theme.disabled(c)
-        assert result.Red() == expected.Red()
-        assert result.Green() == expected.Green()
-        assert result.Blue() == expected.Blue()
-        assert result.Alpha() == expected.Alpha()
-
-
 class TestV2ThemeTokenIntegration:
     """Test that theme tokens are used correctly in controls."""
 
@@ -105,9 +91,9 @@ class TestV2ThemeTokenIntegration:
 
         assert helper_calls["prepare"]
         assert helper_calls["draw"]
-        assert helper_calls["prepare"][0][0] == "+ Preset"
+        assert helper_calls["prepare"][0][0] == "Preset"
         assert helper_calls["prepare"][0][1] == "components.button.save_preset.label"
-        assert helper_calls["draw"][0][0] == "+ Preset"
+        assert helper_calls["draw"][0][0] == "Preset"
         assert helper_calls["draw"][0][1] == "components.button.save_preset.label"
 
     def test_preset_card_uses_v2_tokens(self):

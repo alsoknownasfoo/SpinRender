@@ -18,10 +18,12 @@ Contributions are welcome! Whether you're fixing a bug, adding a new camera pres
     pip install -r requirements_dev.txt  # If applicable
     ```
 5.  **Make your changes** and ensure everything works correctly.
-6.  **Run tests** (if any exist):
+6.  **Run tests**:
     ```bash
+    pip install pytest pytest-cov PyYAML PyOpenGL PyOpenGL-accelerate trimesh numpy
     pytest
     ```
+    CI runs the same suite on Linux, macOS, and Windows for every pull request.
 7.  **Commit your changes** with a clear and descriptive commit message.
 8.  **Push to your fork** and **submit a Pull Request**.
 

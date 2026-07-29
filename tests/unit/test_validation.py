@@ -3,46 +3,13 @@
 import pytest
 import sys
 
-# wx is already mocked by conftest
+# wx is already mocked by conftest; wx.Colour is conftest's shared ColorMock.
+# (Previously this module defined its own duplicate ColorMock and reassigned
+# wx.Colour to it at import time, which permanently clobbered the shared mock
+# for the rest of the pytest session since module-level code runs during
+# collection, before any test in any file executes.)
 import wx
-
-# Mock wx.Colour with a proper test double
-class ColorMock:
-    def __init__(self, r=0, g=0, b=0, a=None):
-        self._r = r
-        self._g = g
-        self._b = b
-        self._a = a if a is not None else 255  # Default opaque
-
-    def Red(self):
-        return self._r
-
-    def Green(self):
-        return self._g
-
-    def Blue(self):
-        return self._b
-
-    def Alpha(self):
-        return self._a
-
-    def IsOk(self):
-        """Return True if color components are valid (0-255)."""
-        try:
-            if not all(isinstance(v, (int, float)) for v in (self._r, self._g, self._b)):
-                return False
-            return 0 <= self._r <= 255 and 0 <= self._g <= 255 and 0 <= self._b <= 255
-        except TypeError:
-            return False
-
-    def __eq__(self, other):
-        if isinstance(other, ColorMock):
-            return (self._r, self._g, self._b, self._a) == (other._r, other._g, other._b, other._a)
-        return False
-
-# Replace wx.Colour globally in this test module
-original_Color = wx.Colour
-wx.Colour = ColorMock
+ColorMock = wx.Colour
 
 from SpinRender.ui.validation import validate_all_tokens, ContrastChecker, validate_theme_schema
 from SpinRender.ui.helpers import VALID_BG_TOKENS, VALID_TEXT_TOKENS, ALL_VALID_TOKENS
@@ -87,7 +54,7 @@ class TestValidateAllTokens:
     def test_detects_non_wx_color_type(self, monkeypatch):
         """Should flag token that is not a wx.Colour."""
         mock_theme_data = {token: ColorMock(100, 100, 100) for token in ALL_VALID_TOKENS}
-        mock_theme_data['colors.bg.page'] = "not a color"
+        mock_theme_data['layout.main.frame.bg'] = "not a color"
 
         class MockTheme:
             def color(self, token):
@@ -100,7 +67,7 @@ class TestValidateAllTokens:
     def test_detects_rgb_out_of_range(self, monkeypatch):
         """Should flag RGB values outside 0-255."""
         mock_theme_data = {token: ColorMock(100, 100, 100) for token in ALL_VALID_TOKENS}
-        mock_theme_data['colors.bg.page'] = ColorMock(300, -10, 128)
+        mock_theme_data['layout.main.frame.bg'] = ColorMock(300, -10, 128)
 
         class MockTheme:
             def color(self, token):
@@ -113,7 +80,7 @@ class TestValidateAllTokens:
     def test_detects_alpha_out_of_range(self, monkeypatch):
         """Should flag alpha values outside 0-255."""
         mock_theme_data = {token: ColorMock(100, 100, 100, 200) for token in ALL_VALID_TOKENS}
-        mock_theme_data['colors.bg.page'] = ColorMock(100, 100, 100, 300)
+        mock_theme_data['layout.main.frame.bg'] = ColorMock(100, 100, 100, 300)
 
         class MockTheme:
             def color(self, token):

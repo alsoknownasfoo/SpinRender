@@ -111,10 +111,11 @@ class TestStatusBar:
         assert status_bar._prog == 0.25
 
     def test_multiple_updates(self, status_bar):
+        # "status" style uppercases the message
         status_bar.set_status("Step 1", progress=0.25)
-        assert status_bar._msg == "Step 1"
+        assert status_bar._msg == "STEP 1"
         status_bar.set_status("Step 2", progress=0.5)
-        assert status_bar._msg == "Step 2"
+        assert status_bar._msg == "STEP 2"
         assert status_bar._prog == 0.5
         status_bar.reset()
         assert status_bar._msg == "READY"

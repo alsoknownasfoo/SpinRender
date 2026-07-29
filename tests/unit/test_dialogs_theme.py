@@ -32,7 +32,7 @@ class TestBaseStyledDialogTheme:
             def __init__(self, parent):
                 super().__init__(parent, title="Test", size=(400, 300))
 
-        dlg = TestDialog(None)
+        dlg = TestDialog(wx.Frame(None))
         # Basic sanity: dialog created without error
         assert dlg is not None
 
@@ -47,11 +47,14 @@ class TestBaseStyledDialogTheme:
         class TestDialog(BaseStyledDialog):
             def __init__(self, parent):
                 super().__init__(parent, title="Test", size=(400, 300))
-        dlg = TestDialog(None)
-        # Check that instance has shadow_size attribute set from theme
+        dlg = TestDialog(wx.Frame(None))
+        # shadow_size is intentionally zeroed after computing frame_margin (the
+        # painted shadow is disabled - see the constructor's comment - but the
+        # theme margin still shapes the outer window size via frame_margin).
         assert hasattr(dlg, 'shadow_size'), "Dialog instance must have shadow_size attribute"
-        # The value should be 16 (from dark.yaml) or fallback 16
-        assert dlg.shadow_size == 16, f"Expected shadow_size=16, got {dlg.shadow_size}"
+        assert dlg.shadow_size == 0
+        # frame_margin carries the theme-resolved value (16 from dark.yaml, or fallback 16)
+        assert dlg.frame_margin == 16, f"Expected frame_margin=16, got {dlg.frame_margin}"
 
 
 class TestAdvancedOptionsDialogTheme:

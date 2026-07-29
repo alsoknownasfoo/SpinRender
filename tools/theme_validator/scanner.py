@@ -16,7 +16,7 @@ class ThemeMethodVisitor(ast.NodeVisitor):
     THEME_METHODS = {
         'color', 'color_states',
         'size', 'font_size',
-        'font', 'font_family'
+        'font', 'font_family', 'glyph'
     }
 
     def __init__(self):
@@ -105,12 +105,18 @@ def _categorize_tokens(tokens: Set[str]) -> Dict[str, Set[str]]:
     components = set()
 
     for token in tokens:
-        if token.startswith('colors.') or token.startswith('palette.'):
-            colors.add(token)
-        elif token.startswith('spacing.') or token.startswith('typography.scale.'):
-            sizes.add(token)
-        elif token.startswith('components.'):
+        if token.startswith('components.'):
             components.add(token)
+        elif token.startswith('colors.') or token.startswith('palette.'):
+            colors.add(token)
+        elif (
+            token.startswith('spacing.')
+            or token.startswith('typography.scale.')
+            or token.endswith('.size')
+        ):
+            sizes.add(token)
+        elif token.endswith('.bg') or token.endswith('.fg') or token.endswith('.border'):
+            colors.add(token)
         else:
             # Could be a font preset or other; if used with theme.font-family(), it's a font
             fonts.add(token)

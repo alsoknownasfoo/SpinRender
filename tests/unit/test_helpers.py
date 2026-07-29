@@ -189,51 +189,39 @@ class TestCreateText:
 
     def test_creates_statictext_with_parent(self, helpers_module):
         """Creates wx.StaticText (FakeStaticText) with given parent."""
-        helpers, theme = helpers_module
-        parent = MagicMock()
-        style = helpers.TextStyle(family="Test", size=11, weight=400, color=theme.color("colors.text.primary"))
-        text = helpers.create_text(parent, "Label", style)
-        assert isinstance(text, FakeStaticText)
-        assert text.parent is parent
-        assert text.label == "Label"
-
-    def test_applies_font_from_style(self, helpers_module):
-        """Font set from TextStyle.create_font()."""
         helpers, _ = helpers_module
         parent = MagicMock()
-        style = helpers.TextStyle(family="Test", size=11, weight=600)
-        text = helpers.create_text(parent, "Label", style)
+        text = helpers.create_text(parent, "Label", "header")
+        assert isinstance(text, FakeStaticText)
+        assert text.parent is parent
+        # "header" style uppercases text per the theme's formatting rule
+        assert text.label == "LABEL"
+
+    def test_applies_font_from_style(self, helpers_module):
+        """Font set from the resolved TextStyle's create_font()."""
+        helpers, _ = helpers_module
+        parent = MagicMock()
+        text = helpers.create_text(parent, "Label", "header")
         font = text.GetFont()
         assert font is not None
         assert hasattr(font, 'GetFaceName')
         assert hasattr(font, 'GetPointSize')
         assert hasattr(font, 'GetWeight')
 
-    def test_applies_foreground_from_style_color(self, helpers_module):
-        """Foreground color set from style.color when provided."""
+    def test_applies_foreground_from_color_token_override(self, helpers_module):
+        """Foreground color set from an explicit color_token override."""
         helpers, theme = helpers_module
         parent = MagicMock()
-        style = helpers.TextStyle(family="Test", size=11, weight=400, color=theme.color("colors.cyan"))
-        text = helpers.create_text(parent, "Label", style)
+        text = helpers.create_text(parent, "Label", "header", color_token="colors.cyan")
         fg = text.GetForegroundColor()
         expected = theme.color("colors.cyan")
         assert fg.Red() == expected.Red() and fg.Green() == expected.Green() and fg.Blue() == expected.Blue()
-
-    def test_no_foreground_when_color_none(self, helpers_module):
-        """Does not set foreground if color is None."""
-        helpers, _ = helpers_module
-        parent = MagicMock()
-        style = helpers.TextStyle(family="Test", size=11, weight=400)
-        text = helpers.create_text(parent, "Label", style)
-        fg = text.GetForegroundColor()
-        assert fg is None
 
     def test_enables_mouse_pass_through(self, helpers_module):
         """Binds EVT_LEFT_DOWN to enable click propagation to parent."""
         helpers, _ = helpers_module
         parent = MagicMock()
-        style = helpers.TextStyle(family="Test", size=11, weight=400)
-        text = helpers.create_text(parent, "Label", style)
+        text = helpers.create_text(parent, "Label", "header")
         bindings = text.GetBindings()
         assert EVT_LEFT_DOWN in bindings
         assert len(bindings[EVT_LEFT_DOWN]) == 1

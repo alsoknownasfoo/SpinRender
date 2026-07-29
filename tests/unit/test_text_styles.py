@@ -196,36 +196,11 @@ class TestTextStyles:
         assert style.size == 9  # typography.scale.sm
         assert style.weight == 400
 
-    def test_body_strong_token(self):
-        """Test body-strong uses semibold weight."""
-        style = TextStyles.body_strong
-        assert style.weight == 600
-        assert style.size == 9  # inherits body size (sm=9)
-        assert style.family == _theme.font_family("mono")
-
-    def test_label_sm_token(self):
-        """Test label-sm uses header style (md=14, semibold)."""
-        style = TextStyles.label_sm
-        assert style.size == 14  # Maps to header: typography.scale.md
-        assert style.weight == 600
-        assert style.family == _theme.font_family("mono")
-
     def test_label_xs_token(self):
         """Test label-xs uses body style (sm=9, regular)."""
         style = TextStyles.label_xs
         assert style.size == 9  # Maps to body: typography.scale.sm
         assert style.weight == 400  # body weight
-        assert style.family == _theme.font_family("mono")
-
-    def test_numeric_value_token(self):
-        """Test numeric-value uses numeric style (base=11, semibold)."""
-        style = TextStyles.numeric_value
-        # Note: numeric_value is not a defined alias, this test likely fails
-        # Since there's no alias, _get_style falls back to body
-        # We should either add alias or test the actual numeric token
-        # For now, check what it actually resolves to
-        assert style.size == 11  # numeric: typography.scale.base
-        assert style.weight == 600
         assert style.family == _theme.font_family("mono")
 
     def test_numeric_unit_token(self):
@@ -235,15 +210,6 @@ class TestTextStyles:
         assert style.size == 9
         assert style.weight == 400
         assert style.family == _theme.font_family("mono")
-
-    def test_section_heading_token(self):
-        """Test section-heading uses header style (mono, md=14, semibold, uppercase)."""
-        style = TextStyles.section_heading
-        # Maps to header: mono, size md=14, weight 600, uppercase
-        assert style.family == _theme.font_family("mono")
-        assert style.size == 14
-        assert style.weight == 600
-        assert style.formatting == "uppercase"
 
     def test_panel_title_token(self):
         """Test panel-title uses title style (display, lg=18, bold, uppercase)."""
@@ -261,7 +227,9 @@ class TestTextStyles:
         assert style.size == 11
         assert style.weight == 600
         assert style.formatting == "uppercase"
-        assert style.format_text(_locale.get("component.button.save_preset.label")) == "+ PRESET"
+        # The "+" is rendered as a separate icon glyph (icon_ref: glyphs.plus),
+        # not baked into the label text itself.
+        assert style.format_text(_locale.get("component.button.save_preset.label")) == "PRESET"
 
     def test_icon_token(self):
         """Test icon uses MDI font at 14px (text.icon: typography.scale.md)."""

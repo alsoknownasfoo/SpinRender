@@ -172,7 +172,7 @@ class TestDependencyDialogTheme:
         parent = MagicMock()
         dep_status = {'kicad': False, 'ffmpeg': False, 'python': True}
         mock_checker.get_status.return_value = dep_status
-        dialog = DependencyDialog(parent, mock_checker)
+        dialog = DependencyDialog(parent, dep_status, mock_checker)
         # Background should be set from theme (via _get_color)
         # We can't test exact color without loading real theme; just check it's set
         assert dialog.GetBackgroundColour() is not None
@@ -182,7 +182,7 @@ class TestDependencyDialogTheme:
         parent = MagicMock()
         dep_status = {'kicad': False, 'ffmpeg': False, 'python': True}
         mock_checker.get_status.return_value = dep_status
-        dialog = DependencyDialog(parent, mock_checker)
+        dialog = DependencyDialog(parent, dep_status, mock_checker)
         # Check header title exists and has color/font set
         assert dialog.header_title.GetForegroundColour() is not None
         assert dialog.header_title.GetFont() is not None
@@ -195,7 +195,7 @@ class TestDependencyDialogEvents:
         parent = MagicMock()
         dep_status = {'kicad': False, 'ffmpeg': False, 'python': True}
         mock_checker.get_status.return_value = dep_status
-        dialog = DependencyDialog(parent, mock_checker)
+        dialog = DependencyDialog(parent, dep_status, mock_checker)
         dialog.EndModal = MagicMock()
         event = MagicMock()
         dialog.on_close(event)
@@ -206,7 +206,7 @@ class TestDependencyDialogEvents:
         parent = MagicMock()
         dep_status = {'kicad': False, 'ffmpeg': False, 'python': True}
         mock_checker.get_status.return_value = dep_status
-        dialog = DependencyDialog(parent, mock_checker)
+        dialog = DependencyDialog(parent, dep_status, mock_checker)
         dialog.timer = MagicMock()
         # Mock thread start
         with patch('threading.Thread') as mock_thread_class:
@@ -233,7 +233,7 @@ class TestDependencyDialogEvents:
         checker.missing_deps = []
         checker.check_all.return_value = {'kicad': True, 'ffmpeg': True, 'python': True}
         checker.get_status.return_value = {'kicad': True, 'ffmpeg': True, 'python': True}
-        dialog = DependencyDialog(parent, checker)
+        dialog = DependencyDialog(parent, checker.get_status.return_value, checker)
         dialog.EndModal = MagicMock()
         event = MagicMock()
         dialog.on_install(event)
@@ -244,7 +244,7 @@ class TestDependencyDialogEvents:
         parent = MagicMock()
         dep_status = {'kicad': False, 'ffmpeg': False, 'python': True}
         mock_checker.get_status.return_value = dep_status
-        dialog = DependencyDialog(parent, mock_checker)
+        dialog = DependencyDialog(parent, dep_status, mock_checker)
         # Check that close_btn has a binding for wx.EVT_BUTTON
         dialog.close_btn.Bind.assert_called_with(wx.EVT_BUTTON, dialog.on_close)
 
@@ -253,7 +253,7 @@ class TestDependencyDialogEvents:
         parent = MagicMock()
         dep_status = {'kicad': False, 'ffmpeg': False, 'python': True}
         mock_checker.get_status.return_value = dep_status
-        dialog = DependencyDialog(parent, mock_checker)
+        dialog = DependencyDialog(parent, dep_status, mock_checker)
         dialog.install_btn.Bind.assert_called_with(wx.EVT_BUTTON, dialog.on_install)
 
 class TestDependencyDialogInstallThread:
@@ -264,9 +264,9 @@ class TestDependencyDialogInstallThread:
         parent = MagicMock()
         dep_status = {'kicad': False, 'ffmpeg': False, 'python': True}
         mock_checker.get_status.return_value = dep_status
-        dialog = DependencyDialog(parent, mock_checker)
-        # Replace checker's install_dependency with mock
-        dialog.checker.install_dependency = mock_install_func
+        dialog = DependencyDialog(parent, dep_status, mock_checker)
+        # Replace checker's install_dependency with a call-tracking wrapper
+        dialog.checker.install_dependency = MagicMock(side_effect=mock_install_func)
         # Run the thread method directly
         dialog._run_install_thread()
         # Should have called install_dependency for each missing dep
@@ -277,7 +277,7 @@ class TestDependencyDialogInstallThread:
         parent = MagicMock()
         dep_status = {'kicad': False, 'ffmpeg': False, 'python': True}
         mock_checker.get_status.return_value = dep_status
-        dialog = DependencyDialog(parent, mock_checker)
+        dialog = DependencyDialog(parent, dep_status, mock_checker)
         # Create a mock TextCtrl that tracks AppendText
         dialog.progress_log = MagicMock()
         dialog._append_log("Test message")

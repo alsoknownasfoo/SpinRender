@@ -341,10 +341,16 @@ def collect_tokens(data: dict, prefix: str = '') -> Set[str]:
     if not isinstance(data, dict):
         return tokens
 
-    # Keys that indicate a dict is a leaf value (not a container)
-    LEAF_VALUE_KEYS = {
-        'ref', 'family', 'size', 'weight', 'fallback', 'transform', 'value',
-        'typeface', 'font', 'color', 'bg', 'radius', 'width', 'height'
+    # 'ref' unambiguously marks an alias shorthand (the whole dict is one leaf).
+    ALIAS_KEYS = {'ref'}
+    # These only indicate a leaf when they appear together describing a single
+    # font/text spec (e.g. {family, size, weight}). Keys like 'bg'/'radius'/
+    # 'width'/'height'/'color' are excluded because they commonly appear as
+    # sibling keys of independent tokens within a container (e.g.
+    # frame: {bg: ..., radius: ...} is two tokens, not one).
+    FONT_DESCRIPTOR_KEYS = {
+        'family', 'size', 'weight', 'fallback', 'transform', 'value',
+        'typeface'
     }
 
     for key, value in data.items():
@@ -354,9 +360,9 @@ def collect_tokens(data: dict, prefix: str = '') -> Set[str]:
         is_container = False
         if isinstance(value, dict):
             if value:
-                # If all keys are leaf-value keys, it's a leaf; otherwise container
-                all_leaf = all(k in LEAF_VALUE_KEYS for k in value.keys())
-                is_container = not all_leaf
+                keys = value.keys()
+                is_leaf = bool(ALIAS_KEYS & keys) or all(k in FONT_DESCRIPTOR_KEYS for k in keys)
+                is_container = not is_leaf
             else:
                 # Empty dict, treat as container (unlikely)
                 is_container = False

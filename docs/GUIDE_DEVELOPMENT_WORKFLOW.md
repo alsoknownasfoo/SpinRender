@@ -50,7 +50,7 @@ SpinRender/
 ### Dependencies
 Install from `pyproject.toml`:
 ```bash
-pip install pytest pytest-cov pytest-mock
+pip install pytest pytest-cov
 ```
 
 ### pytest.ini (Project Root)
@@ -111,6 +111,14 @@ def test_renderer_calls_kicad_cli():
 
 ---
 
+## Continuous Integration
+
+`.github/workflows/tests.yml` runs the full `pytest` suite on Linux, macOS,
+and Windows for every push to `main` and every pull request. It installs
+runtime dependencies directly (`PyYAML`, `PyOpenGL`, `trimesh`, `numpy`) plus
+`pytest`/`pytest-cov` — no `pip install -e .`, since `pyproject.toml` has no
+`[build-system]` and `conftest.py` already puts the repo root on `sys.path`.
+
 ## Running Tests
 
 ### Which Python Environment To Use
@@ -152,8 +160,8 @@ pytest tests/unit/test_theme.py::test_color_resolution -v
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .
-pip install pytest pytest-cov pytest-mock
+pip install PyYAML PyOpenGL PyOpenGL-accelerate trimesh numpy
+pip install pytest pytest-cov
 pytest tests/unit/test_settings.py -v
 ```
 
@@ -167,7 +175,7 @@ macOS example:
 
 If you need `pytest` inside the KiCad interpreter, install it there explicitly:
 ```bash
-/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/3.9/bin/python3.9 -m pip install pytest pytest-cov pytest-mock
+/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/3.9/bin/python3.9 -m pip install pytest pytest-cov
 ```
 
 ### Coverage Report
@@ -273,10 +281,10 @@ python -m venv .venv
 source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 
 # Install dependencies
-pip install -e .
+pip install PyYAML PyOpenGL PyOpenGL-accelerate trimesh numpy
 
 # Install test deps
-pip install pytest pytest-cov pytest-mock
+pip install pytest pytest-cov
 
 # Run tests
 pytest --cov=SpinRender

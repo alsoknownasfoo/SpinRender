@@ -1,6 +1,6 @@
 name: Bug Report
 description: Something in SpinRender isn't working right
-labels: ["bug"]
+labels: ["bug", "needs-triage"]
 body:
   - type: markdown
     attributes:

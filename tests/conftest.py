@@ -84,6 +84,9 @@ class ColorMock:
             return (self._r, self._g, self._b, self._a) == (other._r, other._g, other._b, other._a)
         return False
 
+    def __hash__(self):
+        return hash((self._r, self._g, self._b, self._a))
+
 
 class FontInfoMock:
     """Mock for wx.FontInfo that tracks configuration."""
@@ -155,9 +158,29 @@ class DummyWindow:
     """Simple window mock that accepts arbitrary kwargs like wx.Window."""
     def __init__(self, *args, **kwargs):
         self._size = (100, 100)  # default size
+        self._label = kwargs.get('label', '')
+
+    def GetLabel(self):
+        return self._label
+
+    def SetLabel(self, label):
+        self._label = label
 
     def __getattr__(self, name):
-        return MagicMock()
+        # Only auto-mock names that look like wxPython API (PascalCase
+        # methods/constants, e.g. Bind, GetBestSize, FromDIP). Anything else
+        # (snake_case/leading-underscore) is application-managed instance
+        # state (e.g. self._max_axis_label_width) that real code guards with
+        # hasattr()/hasattr-style checks — auto-vivifying those would make
+        # hasattr() always True and break "is this the first time" logic.
+        if not name[:1].isupper():
+            raise AttributeError(name)
+        # Cache via setattr so repeated access (e.g. widget.Bind(...) during
+        # construction, then widget.Bind.assert_called_with(...) in a test)
+        # returns the same mock object instead of a fresh one each time.
+        mock = MagicMock()
+        object.__setattr__(self, name, mock)
+        return mock
 
     def GetSize(self):
         """Return window size as (width, height) tuple."""
@@ -228,6 +251,13 @@ class Mockwx:
 
     def __getattr__(self, name):
         """Return mocked wx classes/functions based on name."""
+        # Names not otherwise special-cased below must return a stable object
+        # across repeated accesses (e.g. wx.ID_CANCEL, wx.EVT_BUTTON) so that
+        # mock.assert_called_with(wx.SOME_CONSTANT) can compare identity/equality
+        # against the same value the code under test used.
+        if name in self._objects:
+            return self._objects[name]
+
         # Color/Colour - return the ColorMock class itself (not a factory)
         if name in ['Color', 'Colour']:
             return ColorMock
@@ -282,11 +312,15 @@ class Mockwx:
         if name == 'App':
             return self._create_app_mock
         if name in ['Pen', 'Brush', 'GraphicsPenInfo', 'GraphicsBrushInfo']:
-            return MagicMock()
+            mock = MagicMock()
+            self._objects[name] = mock
+            return mock
         if name in ['EVT_PAINT', 'EVT_SIZE', 'BG_STYLE_PAINT',
                     'ALIGN_CENTER', 'ALIGN_LEFT', 'ALIGN_RIGHT',
                     'VERTICAL', 'HORIZONTAL']:
-            return MagicMock()
+            mock = MagicMock()
+            self._objects[name] = mock
+            return mock
 
         # Generic mock for anything else - create and cache a MagicMock instance
         mock = MagicMock()

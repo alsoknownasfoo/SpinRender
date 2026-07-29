@@ -203,7 +203,8 @@ class TestPreviewPanelOverlay:
         assert 'BR:-10°' in label
         assert 'ST:15°' in label
         assert 'SH:45°' in label
-        assert '4.5s' in label
+        # "info" style uppercases the whole overlay string
+        assert '4.5S' in label
 
     def test_update_overlay_shows_lighting_and_bg(self, wx_mock, mock_settings, mock_gl_preview):
         """Should display lighting and background in bottom-left."""
@@ -228,7 +229,8 @@ class TestPreviewPanelOverlay:
         label = preview.ov_bottom_center.label
         assert '1920 × 1080' in label
         assert '16:9' in label
-        assert '30fps' in label
+        # "info" style uppercases the whole overlay string
+        assert '30FPS' in label
 
     def test_update_overlay_calculates_4_by_3_aspect(self, wx_mock, mock_settings, mock_gl_preview):
         """Should correctly calculate 4:3 aspect ratio."""
@@ -600,9 +602,14 @@ class TestPreviewPanelIntegration:
         viewport.set_period.assert_called_once_with(8.5)
         viewport.set_direction.assert_called_once_with('cw')
         viewport.set_render_mode.assert_called_once_with('shaded')
-        viewport.set_background_color.assert_called_once_with('#123456')
         viewport.set_aspect_ratio.assert_called_once_with(1280, 720)
         viewport.start_preview.assert_called_once()
+
+        # Background color is deferred until the 3D model finishes loading,
+        # to avoid a flash of the wrong color before the model appears.
+        assert viewport.set_background_color.call_count == 0
+        preview._on_model_ready()
+        viewport.set_background_color.assert_called_once_with('#123456')
 
     def test_overlay_visibility_logic_with_render_mode_sizer(self, wx_mock, mock_settings, mock_gl_preview):
         """Test overlay close button show/hide logic."""

@@ -154,7 +154,7 @@ class TestControlsSidePanel:
         assert 'meta_sizer = wx.BoxSizer(wx.HORIZONTAL)' in source
         assert 'meta_sizer.Add(self.period_desc, 0, wx.ALIGN_CENTER_VERTICAL)' in source
         assert 'meta_sizer.AddStretchSpacer()' in source
-        assert 'meta_sizer.Add(self.frame_count, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 8)' in source
+        assert 'meta_sizer.Add(self.frame_count, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, self.FromDIP(8))' in source
 
     def test_direction_control_created(self, wx_mock, mock_parent):
         """Test that direction toggle is created."""

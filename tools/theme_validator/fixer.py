@@ -54,14 +54,14 @@ def _generate_placeholder(token: str) -> Any:
             return {'ref': 'palette.neutral-3'}
         elif subpath[0] == 'text':
             return {'ref': 'palette.neutral-14'}
-        elif subpath[0] == 'accent':
+        elif subpath[0] in ('accent', 'primary', 'secondary'):
             return {'ref': 'palette.cyan'}
         elif subpath[0] == 'border':
             return {'ref': 'palette.neutral-7'}
-        elif subpath[0] == 'state':
+        elif subpath[0] in ('state', 'auto_states'):
             if 'hover' in subpath[1:]:
                 return {'ref': 'palette.overlay-light'}
-            elif 'pressed' in subpath[1:]:
+            elif 'pressed' in subpath[1:] or 'active' in subpath[1:]:
                 return {'ref': 'palette.overlay-medium'}
             else:
                 return {'ref': 'palette.green'}
@@ -89,6 +89,13 @@ def _generate_placeholder(token: str) -> Any:
                 'size': {'ref': 'typography.scale.base'},
                 'weight': {'ref': 'typography.weights.normal'}
             }
+        else:
+            return "# TODO: define"
+
+    elif category == 'text':
+        # Semantic text styles (title/body/etc.) nest a font descriptor
+        if subpath[-1] == 'font':
+            return {'size': 11, 'typeface': 'JetBrains Mono', 'weight': 400}
         else:
             return "# TODO: define"
 

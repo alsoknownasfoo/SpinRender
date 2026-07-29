@@ -147,10 +147,14 @@ class PreviewPanel(wx.Panel):
         self.ov_bottom_left = create_text(bottom_meta, "", "info")
         bottom_sizer.Add(self.ov_bottom_left, 1, wx.ALIGN_CENTER_VERTICAL)
 
-        # Resolution info moved from center to right
         self.ov_bottom_center = create_text(bottom_meta, "", "info")
         bottom_sizer.Add(self.ov_bottom_center, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
         self.ov_bottom_center.SetWindowStyle(wx.ALIGN_RIGHT)
+
+        # Render progress / output type, shown during render preview
+        self.ov_bottom_right = create_text(bottom_meta, "", "info")
+        bottom_sizer.Add(self.ov_bottom_right, 1, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
+        self.ov_bottom_right.SetWindowStyle(wx.ALIGN_RIGHT)
 
         bottom_meta.SetSizer(bottom_sizer)
 
@@ -314,6 +318,7 @@ class PreviewPanel(wx.Panel):
         try:
             w, h = map(int, res.split('x'))
             aspect = w / h
+            res_display = f"{w} × {h}"
             if abs(aspect - 16/9) < 0.01:
                 ratio = "16:9"
             elif abs(aspect - 4/3) < 0.01:
@@ -324,9 +329,21 @@ class PreviewPanel(wx.Panel):
                 ratio = f"{w}:{h}"
         except Exception:
             ratio = "16:9"
-        
+            res_display = res.upper()
+
         # Only show resolution/fps, right-aligned
-        update_text(self.ov_bottom_center, f"{res.upper()}  ·  {ratio}  ·  {fps}")
+        update_text(self.ov_bottom_center, f"{res_display}  ·  {ratio}  ·  {fps}")
+
+        # Bottom-Right: Render progress (while rendering) or output type (during playback)
+        if self.render_preview_active and not self.preview_manually_closed:
+            if self.current_render_frame is not None and self.total_render_frames is not None:
+                update_text(self.ov_bottom_right, f"Frame {self.current_render_frame} / {self.total_render_frames}")
+            elif self.final_output_type:
+                update_text(self.ov_bottom_right, f"{self.final_output_type} output")
+            else:
+                update_text(self.ov_bottom_right, "")
+        else:
+            update_text(self.ov_bottom_right, "")
 
         self.Layout()
 
