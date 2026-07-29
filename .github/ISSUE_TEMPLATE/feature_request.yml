@@ -1,0 +1,53 @@
+name: Feature Request
+description: Suggest an idea or improvement for SpinRender
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before requesting, worth knowing SpinRender is an automation layer on top of `kicad-cli`'s rendering/`pcb render` command — some things (e.g. GPU-accelerated rendering, new camera effects) depend on `kicad-cli` itself gaining that capability first, not just on the plugin. If you're not sure which side of that line your idea falls on, describe the desired outcome and we'll figure it out.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: What are you trying to do today that's slow, awkward, or impossible?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should SpinRender do instead? Mockups, example CLI flags, or reference screenshots from other tools are welcome.
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives / workarounds you've tried
+      description: Anything you're currently doing manually (e.g. through kicad-cli directly, or OS-level settings) to get partway there.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of SpinRender does this touch?
+      options:
+        - Render output (video/gif/image sequence, quality, resolution)
+        - Camera / animation path (rotation, zoom, keyframes)
+        - Dependency detection / install (kicad-cli, ffmpeg)
+        - UI / dialogs
+        - Not sure
+    validations:
+      required: false
+
+  - type: input
+    id: spinrender-version
+    attributes:
+      label: SpinRender version
+      placeholder: "0.8.1"
+    validations:
+      required: false

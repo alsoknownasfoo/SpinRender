@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: kicad-cli documentation
+    url: https://docs.kicad.org/master/en/cli/cli.html
+    about: SpinRender is a thin automation layer over kicad-cli's "pcb render" command — check here first if your question is about render engine behavior itself rather than the plugin.

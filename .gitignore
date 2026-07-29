@@ -13,7 +13,6 @@ __pycache__/
 # IDE & Editor
 .vscode/
 .claude/
-.github/
 .worktrees/
 
 # Testing & Coverage

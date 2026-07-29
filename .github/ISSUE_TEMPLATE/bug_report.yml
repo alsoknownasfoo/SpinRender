@@ -1,0 +1,99 @@
+name: Bug Report
+description: Something in SpinRender isn't working right
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug! SpinRender is a thin automation layer over `kicad-cli` and `ffmpeg` — the more detail you give here, the faster we can tell whether it's a plugin bug or a `kicad-cli`/OS issue.
+
+  - type: input
+    id: spinrender-version
+    attributes:
+      label: SpinRender version
+      description: Plugin & Content Manager entry, or the version shown in the plugin's About/dependency dialog.
+      placeholder: "0.8.1"
+    validations:
+      required: true
+
+  - type: input
+    id: kicad-version
+    attributes:
+      label: KiCad version
+      description: Help → About KiCad
+      placeholder: "9.0.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - Windows
+        - macOS
+        - Linux
+    validations:
+      required: true
+
+  - type: input
+    id: os-version
+    attributes:
+      label: OS version
+      placeholder: "Windows 11 23H2 / macOS 15.1 / Ubuntu 24.04"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect to happen, and what happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro-steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open board X
+        2. Set quality to ...
+        3. Click Render
+        4. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: error-details
+    attributes:
+      label: Error dialog details
+      description: |
+        If a render error dialog appeared, click **Copy Details** and paste the full text here (crash diagnostics, exit codes, etc. are included automatically). If dependency check failed, open that dialog and note which item(s) show a red ✕.
+      render: text
+
+  - type: dropdown
+    id: deps
+    attributes:
+      label: Dependency check status
+      description: Open the dependency-check dialog (shown on startup if something's missing, or from the plugin menu) — what does it report?
+      options:
+        - All dependencies found (green checks)
+        - kicad-cli not found
+        - ffmpeg not found
+        - Haven't checked / not sure
+    validations:
+      required: false
+
+  - type: textarea
+    id: board-info
+    attributes:
+      label: Board file (optional)
+      description: If the issue is board-specific (e.g. crashes only on this board), attaching the `.kicad_pcb` (or a minimal repro board) is the single most useful thing you can add. Drag & drop it here, or describe the board (layer count, size, any unusual footprints/3D models).
+
+  - type: input
+    id: render-settings
+    attributes:
+      label: Render settings used
+      description: Quality (basic/high/user), resolution, output format (video/gif/image sequence), frame count.
+      placeholder: "quality=user, 1920x1080, mp4, 60 frames"
