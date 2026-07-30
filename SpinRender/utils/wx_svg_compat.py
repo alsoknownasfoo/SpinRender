@@ -36,7 +36,7 @@ _VENDOR_DIR = os.path.join(os.path.dirname(__file__), "..", "vendor", "wx_svg")
 
 # Enum classes RenderToGC()/_makeBrush()/_makePen() reference as bare names
 # in the mismatched older wx/svg/__init__.py (see module docstring).
-_SVG_CONST_NAMESPACES = ("SVGflags", "SVGpaintType", "SVGlineJoin", "SVGlineCap")
+_SVG_CONST_NAMESPACES = ("SVGflags", "SVGpaintType", "SVGlineJoin", "SVGlineCap", "SVGfillRule")
 
 
 def _patch_missing_svg_flags(wx_svg):
