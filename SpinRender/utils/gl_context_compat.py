@@ -14,7 +14,7 @@ current - contextdata then raises "Attempt to retrieve context when no
 valid context", and every vertex-array draw call is silently dropped.
 
 Since SpinRender's mesh arrays are held for the lifetime of the loaded
-model (SpinRenderPanel.mesh_data), rather than created fresh and discarded
+model (GLPreviewRenderer.mesh_data), rather than created fresh and discarded
 each frame, the array-liveness guarantee this bookkeeping exists to
 provide is already satisfied by our own object graph - the bookkeeping
 itself is redundant for us. This patches contextdata.getContext() to fall
