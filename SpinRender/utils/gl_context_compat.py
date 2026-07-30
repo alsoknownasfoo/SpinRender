@@ -34,7 +34,6 @@ def patch_context_lookup():
     global _PATCHED
     if _PATCHED:
         return
-    _PATCHED = True
 
     from OpenGL import contextdata, platform
 
@@ -46,4 +45,5 @@ def patch_context_lookup():
         return context
 
     contextdata.getContext = _get_context_or_fallback
+    _PATCHED = True
     logger.debug("gl_context_compat: patched OpenGL.contextdata.getContext with fallback id")
