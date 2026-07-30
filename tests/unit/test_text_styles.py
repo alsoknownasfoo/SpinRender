@@ -13,8 +13,9 @@ from SpinRender.ui.text_styles import TextStyle, TextStyles
 
 
 def _px_to_pt(px):
-    """theme.py converts design px -> pt on Windows (72/96 baseline); passthrough elsewhere."""
-    return px * 72.0 / 96.0 if sys.platform.startswith("win") else float(px)
+    """theme.py converts design px -> pt on Windows/Linux (72/96 baseline); passthrough on macOS."""
+    converts = sys.platform.startswith("win") or sys.platform.startswith("linux")
+    return px * 72.0 / 96.0 if converts else float(px)
 
 
 @pytest.fixture

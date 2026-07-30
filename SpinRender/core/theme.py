@@ -528,12 +528,14 @@ class Theme:
                      500:wx.FONTWEIGHT_NORMAL, 600:wx.FONTWEIGHT_SEMIBOLD, 700:wx.FONTWEIGHT_BOLD, 800:wx.FONTWEIGHT_BOLD, 900:wx.FONTWEIGHT_BOLD}
 
             # Theme sizes are design pixels. On macOS 1pt == 1px so they can
-            # be used as point sizes directly; on Windows a point is 1/72in
-            # rendered against a 96dpi baseline (1pt = 1.33px), so passing
-            # design px as pt makes every font 33% larger than the
-            # FromDIP-scaled layout around it. Convert px -> pt there.
+            # be used as point sizes directly; on Windows and Linux/GTK
+            # (Pango, like GDI, treats a point as 1/72in rendered against a
+            # 96dpi baseline - 1pt = 1.33px), so passing design px as pt
+            # makes every font ~33% larger than the FromDIP-scaled layout
+            # around it. Convert px -> pt on those platforms.
             import sys as _sys
-            pt = size * 72.0 / 96.0 if _sys.platform.startswith("win") else float(size)
+            _converts_px_to_pt = _sys.platform.startswith("win") or _sys.platform.startswith("linux")
+            pt = size * 72.0 / 96.0 if _converts_px_to_pt else float(size)
             info = wx.FontInfo(pt).FaceName(family).Weight(w_map.get(weight, wx.FONTWEIGHT_NORMAL))
             return wx.Font(info)
         except Exception as e:
