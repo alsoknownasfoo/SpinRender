@@ -286,9 +286,13 @@ class DependencyChecker:
         if callback:
             callback("pip not found - requesting privileges to install python3-pip...")
         logger.info("Bootstrapping pip via 'pkexec apt-get install -y python3-pip'")
+        apt_path = shutil.which('apt-get') or '/usr/bin/apt-get'
+        if not os.path.exists(apt_path):
+            logger.error(f"pip is missing and apt-get was not found at {apt_path}")
+            return False
         try:
             result = subprocess.run(
-                [pkexec_path, 'apt-get', 'install', '-y', 'python3-pip'],
+                [pkexec_path, apt_path, 'install', '-y', 'python3-pip'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 timeout=180,
