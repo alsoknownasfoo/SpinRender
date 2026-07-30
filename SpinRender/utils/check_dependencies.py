@@ -245,6 +245,66 @@ class DependencyChecker:
         logger.info(f"Dependency check complete: {len(self.missing_deps)} missing: {self.missing_deps}")
         return results
 
+    def _pip_available(self, python_exe):
+        """Check whether `python_exe -m pip` actually works.
+
+        Debian/Ubuntu ship a system Python3 with the `pip` module removed
+        (it's a separate `python3-pip` apt package), so this can't be
+        assumed just because Python itself is present.
+        """
+        try:
+            result = subprocess.run(
+                [python_exe, "-m", "pip", "--version"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=15,
+                creationflags=NO_WINDOW_FLAGS,
+            )
+            return result.returncode == 0
+        except Exception:
+            return False
+
+    def _ensure_pip(self, python_exe, callback=None):
+        """Bootstrap `pip` on Linux via apt if the interpreter lacks it.
+
+        Uses pkexec rather than sudo: this runs from a GUI process with no
+        controlling terminal, so sudo's password prompt has nowhere to go
+        ("sudo: A terminal is required to authenticate"). pkexec shows a
+        graphical polkit prompt instead and needs no TTY.
+        """
+        if self._pip_available(python_exe):
+            return True
+
+        if 'linux' not in self.system:
+            return False
+
+        pkexec_path = shutil.which('pkexec')
+        if not pkexec_path:
+            logger.error("pip is missing and pkexec is unavailable to install python3-pip")
+            return False
+
+        if callback:
+            callback("pip not found - requesting privileges to install python3-pip...")
+        logger.info("Bootstrapping pip via 'pkexec apt-get install -y python3-pip'")
+        try:
+            result = subprocess.run(
+                [pkexec_path, 'apt-get', 'install', '-y', 'python3-pip'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                timeout=180,
+                creationflags=NO_WINDOW_FLAGS,
+            )
+        except Exception as e:
+            logger.error(f"Failed to bootstrap pip: {e}")
+            return False
+
+        if result.returncode != 0:
+            logger.error(f"python3-pip install failed (exit {result.returncode}): "
+                         f"{result.stdout.decode(errors='replace').strip()}")
+            return False
+
+        return self._pip_available(python_exe)
+
     def install_dependency(self, dep_name, callback=None):
         """Attempt to install a missing dependency with real-time feedback"""
         logger.info(f"Attempting to install dependency: {dep_name}")
@@ -257,6 +317,13 @@ class DependencyChecker:
             package_name = dep_info.get('package_name', '')
             python_exe = self._get_python_executable()
             logger.debug(f"Using Python executable: {python_exe}")
+
+            if not self._ensure_pip(python_exe, callback):
+                msg = ("pip is not available for this Python interpreter and could not be "
+                       "installed automatically. Run 'sudo apt install python3-pip' and try again.")
+                logger.error(msg)
+                return False, msg
+
             install_cmd = [python_exe, "-m", "pip", "install", "--user"] + package_name.split()
             use_shell = False
         else:
@@ -270,7 +337,6 @@ class DependencyChecker:
 
             if 'darwin' in self.system or 'linux' in self.system:
                 brew_paths = ['/opt/homebrew/bin/brew', '/usr/local/bin/brew']
-                apt_paths = ['/usr/bin/apt-get']
 
                 cmd_to_run = None
                 if 'brew' in install_cmd_str:
@@ -279,10 +345,13 @@ class DependencyChecker:
                             cmd_to_run = install_cmd_str.replace('brew', brew_path)
                             break
                 elif 'apt-get' in install_cmd_str:
-                    for apt_path in apt_paths:
-                        if os.path.exists(apt_path):
-                            cmd_to_run = install_cmd_str.replace('sudo apt-get', f'sudo {apt_path}')
-                            break
+                    pkexec_path = shutil.which('pkexec')
+                    if pkexec_path:
+                        # pkexec needs an absolute path to the target binary and
+                        # doesn't go through a login shell PATH lookup like sudo does.
+                        apt_path = shutil.which('apt-get') or '/usr/bin/apt-get'
+                        rest = install_cmd_str.split('apt-get', 1)[1].strip()
+                        cmd_to_run = f'{pkexec_path} {apt_path} -y {rest}'
 
                 if not cmd_to_run:
                     logger.error(f"Package manager not found for: {install_cmd_str}")
