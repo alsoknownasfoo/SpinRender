@@ -83,7 +83,7 @@ Python packages and font dependencies are installed on first launch.
    💡 Save your favourite configurations with **+ SAVE PRESET** to reuse them across projects.<br><br>
 3. #### 💾 **Choose your output**<br>
    Select a resolution or customize your output parameters:
-   - **Resolution** — built-in presets or custom dimensions via ⚙ icon
+   - **Resolution** — built-in presets include 4K Portrait, 1080P Portrait, and 720P Portrait, plus custom dimensions via ⚙ icon
    - **Format** — MP4, animated GIF, or PNG sequence
    - **Render Options** — hide vias, components, or test points for a cleaner result<br><br>
 4. #### 🎬 **Render**<br>

@@ -37,9 +37,11 @@ from SpinRender.utils.paint_guard import guarded_paint
 # added by the user are appended after these and persisted in settings.
 BUILTIN_RESOLUTIONS = [
     ("3840×2160 (4K)", "3840x2160"),
-    ("2160×3840 (4K Phone/Tablet)", "2160x3840"),
+    ("2160×3840 (4K Portrait)", "2160x3840"),
     ("2160×2160 (4K Square)", "2160x2160"),
+    ("1080×1920 (1080P Portrait)", "1080x1920"),
     ("1920×1080 (1080P)", "1920x1080"),
+    ("720×1280 (720P Portrait)", "720x1280"),
     ("1280×720 (720P)", "1280x720"),
     ("800×800 (Square)", "800x800"),
 ]
@@ -750,7 +752,7 @@ class ControlsSidePanel(wx.Panel):
         # the dropdown below; a zero-width spacer pins the row height so FORMAT
         # and RESOLUTION (which carries a gear) stay vertically in step.
         f_head_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.format_heading = create_text(f_col, _locale.get("parameters.format.label", "FORMAT"), "subheader")
+        self.format_heading = create_text(f_col, _locale.get("output.format.label", "FORMAT"), "subheader")
         f_head_sizer.Add(self.format_heading, 0, wx.ALIGN_CENTER_VERTICAL)
         f_head_sizer.Add((0, self.FromDIP(head_h)))
         f_sizer.Add(f_head_sizer, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(6))
@@ -821,7 +823,7 @@ class ControlsSidePanel(wx.Panel):
         # pins this row to the same height as the FORMAT heading row.
         res_head_sizer = wx.BoxSizer(wx.HORIZONTAL)
         res_head_sizer.AddSpacer(self.FromDIP(4))
-        self.res_heading = create_text(r_col, _locale.get("parameters.resolution.label", "RESOLUTION"), "subheader")
+        self.res_heading = create_text(r_col, _locale.get("output.resolution.label", "RESOLUTION"), "subheader")
         res_head_sizer.Add(self.res_heading, 0, wx.ALIGN_CENTER_VERTICAL)
         res_head_sizer.AddStretchSpacer()
         self.res_gear_btn = CustomButton(r_col, id="options", label="", size=(head_h, head_h), section='output')
@@ -844,7 +846,7 @@ class ControlsSidePanel(wx.Panel):
         apply_transparent_background(bg_col)
         bg_vsizer = wx.BoxSizer(wx.VERTICAL)
         bg_vsizer.AddSpacer(self.FromDIP(10))
-        self.bg_heading = create_text(bg_col, _locale.get("parameters.bg_color.label", "BACKGROUND COLOR"), "subheader")
+        self.bg_heading = create_text(bg_col, _locale.get("output.bg_color.label", "BACKGROUND COLOR"), "subheader")
         bg_vsizer.Add(self.bg_heading, 0, wx.BOTTOM, self.FromDIP(6))
 
         self.bg_picker = CustomColorPicker(bg_col, current_color=self.settings.bg_color, section='output')
@@ -896,7 +898,7 @@ class ControlsSidePanel(wx.Panel):
         resolutions followed by the user's saved custom resolutions."""
         choices, ids = [], []
         for label, res_id in BUILTIN_RESOLUTIONS:
-            choices.append(label)
+            choices.append(_locale.get(f"output.resolution.presets.{res_id}", label))
             ids.append(res_id)
         for res_id in (getattr(self.settings, 'custom_resolutions', None) or []):
             choices.append(self._format_custom_res_label(res_id))
