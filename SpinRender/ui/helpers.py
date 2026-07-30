@@ -509,7 +509,7 @@ def effective_background(widget: wx.Window) -> wx.Colour:
     controls sitting in a transparent section container (e.g. sliders) render
     visibly darker than the panel behind them.
     """
-    if wx.Platform not in ('__WXMSW__', '__WXGTK__'):
+    if wx.Platform == '__WXMAC__':
         parent = widget.GetParent()
         return parent.GetBackgroundColour() if parent else wx.Colour(0, 0, 0)
     p = widget.GetParent()
