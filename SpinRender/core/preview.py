@@ -673,6 +673,16 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
                         self._mesh_draw_error_logged = True
                 else:
                     self._mesh_draw_error_logged = False
+                finally:
+                    # Best-effort cleanup so later overlay drawing isn't affected
+                    # (and so cleanup itself can't abort before SwapBuffers()).
+                    try:
+                        glDisableClientState(GL_NORMAL_ARRAY)
+                        glDisableClientState(GL_VERTEX_ARRAY)
+                        glDisable(GL_POLYGON_OFFSET_FILL)
+                        glDisable(GL_LIGHTING)
+                    except Exception:
+                        pass
             else:
                 self._draw_placeholder()
                 
