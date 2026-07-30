@@ -266,8 +266,8 @@ class SpinRenderPlugin(pcbnew.ActionPlugin):
             frame.Show()
             # Some Linux window managers don't automatically bring a newly
             # shown window to the front, especially right after a dialog
-            # closes and focus reverts to KiCad's main frame - the linux
-            # warning dialog above dismisses right before this. Raise/focus
+            # closes and focus reverts to KiCad's main frame - the cache
+            # warm-up dialog above dismisses right before this. Raise/focus
             # explicitly, matching what the "reuse existing frame" path
             # above already does.
             frame.Raise()
