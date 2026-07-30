@@ -228,9 +228,17 @@ class DependencyDialog(wx.Dialog):
             icon_char = GLYPH_CHECK if is_found else GLYPH_CLOSE
             status_color = COLOR_SUCCESS if is_found else COLOR_ERROR
             
-            status_label = wx.StaticText(dep_panel, label=icon_char)
-            status_label.SetForegroundColour(status_color)
+            # Font must be set before the label: constructing with the PUA
+            # glyph already in place makes GTK/Pango shape it with whatever
+            # font is active at that instant (not yet FONT_ICON), which
+            # segfaults deep in libpangoft2 on some Linux builds (issue
+            # observed on Ubuntu/aarch64). Empty label first, then font,
+            # then label - matches the safe order _refresh_status_icons()
+            # already uses when updating an existing widget.
+            status_label = wx.StaticText(dep_panel, label="")
             status_label.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName=FONT_ICON))
+            status_label.SetForegroundColour(status_color)
+            status_label.SetLabel(icon_char)
             self.status_labels[dep_name] = status_label
 
             row_sizer.Add(dep_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 16)
