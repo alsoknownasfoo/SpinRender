@@ -324,7 +324,16 @@ class DependencyChecker:
                 logger.error(msg)
                 return False, msg
 
-            install_cmd = [python_exe, "-m", "pip", "install", "--user"] + package_name.split()
+            install_cmd = [python_exe, "-m", "pip", "install", "--user"]
+            if 'linux' in self.system:
+                # Debian/Ubuntu's system Python is PEP 668 "externally managed",
+                # which makes pip refuse any install outside a venv. --user
+                # already keeps this out of apt-managed site-packages, so the
+                # override is safe here - it's what PEP 668 itself suggests
+                # for this exact case (installing into a specific host app's
+                # runtime rather than the system-wide environment).
+                install_cmd.append("--break-system-packages")
+            install_cmd += package_name.split()
             use_shell = False
         else:
             install_key = f'install_{self.system}' if 'darwin' not in self.system else 'install_macos'
