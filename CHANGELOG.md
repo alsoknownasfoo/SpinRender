@@ -9,6 +9,32 @@ All notable changes to SpinRender are documented here. Format is based on
 - **Manual:** download the release's `sr-pcm-XYZ.zip` and install via PCM's
   "Install from File…", or use `install.sh` / `install.bat` from a clone.
 
+## [0.9.0] - 2026-07-30
+
+### 🐧 Full Linux support
+- Linux is now fully supported — the "untested, try it and report issues" warning shown on launch has been removed.
+- Fixed the preview rendering solid black due to a PyOpenGL vertex-array context bug; restored the fast vertex-array mesh rendering path on Linux (patching the context lookup instead of falling back to slow immediate-mode drawing), with precomputed plain-float mesh lists to keep the immediate-mode fallback itself fast where it's still needed.
+- Fixed the preview getting stuck on the loading screen when a mesh draw failed mid-frame.
+- Fixed three visual bugs: a blue box around the logo, dark (unthemed) sliders, and oversized fonts — caused by bare SVG/wx enum constants not being resolved correctly on Linux's wxPython build.
+- Fixed a crash constructing the dependency dialog's status icon, and stopped using the MDI icon font and `AddPrivateFont` on Linux (fonts are now installed via `fontconfig` instead).
+- Dependency installs now use `pkexec` instead of `sudo`, and handle PEP 668's externally-managed-environment restriction on `pip install`.
+- Fixed the SpinRender window not reliably raising/focusing after a fresh launch on some window managers.
+- Fixed a `free(): invalid pointer` glibc crash risk in `effective_background()`'s theme-color resolution.
+
+### ✨ New features
+- Added portrait aspect-ratio resolution presets (2160×3840, 1080×1920, 720×1280) alongside the existing landscape/square ones.
+
+### 🧪 Testing & CI
+- Fixed the failing test suite and wired up CI; `tests/` and `tools/` are now tracked instead of local-only.
+- Fixed Windows px→pt font-conversion assumptions baked into the theme/text-style tests.
+
+### 📝 Docs
+- Overhauled `README.md` formatting and clarified the `kicad-cli` relationship.
+- Added GitHub issue templates for bug reports and feature requests.
+- Documented PCM packaging inputs and release history, and captured lessons from the 0.8.0 addons-repo MR (maintainer's metadata edits, preferred MR title/description convention).
+
+**Full changelog:** https://github.com/alsoknownasfoo/SpinRender/compare/v0.8.1...v0.9.0
+
 ## [0.8.1] - 2026-07-28
 
 ### 💥 Crash recovery & diagnostics
