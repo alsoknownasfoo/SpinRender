@@ -17,6 +17,7 @@ except ImportError:
 
 from SpinRender.utils.check_dependencies import DependencyChecker as PureDependencyChecker
 from SpinRender.utils.subprocess_utils import NO_WINDOW_FLAGS
+from SpinRender.utils.linux_fonts import install_linux_fonts
 from SpinRender.foundation.fonts import JETBRAINS_MONO, MDI_FONT_FAMILY, OSWALD
 
 logger = logging.getLogger("SpinRender")
@@ -54,8 +55,8 @@ class DependencyChecker(PureDependencyChecker):
                 return False
             logger.debug("Windows font check passed")
         elif self.system == 'linux':
-            logger.debug("Loading bundled fonts privately for Linux...")
-            self._ensure_linux_fonts_private()
+            logger.debug("Installing bundled fonts for Linux...")
+            install_linux_fonts()
 
         # 3. Comprehensive dependency check (Commands and Python libs)
         # Now that we have wx, we can safely proceed with wx-based UI
@@ -169,40 +170,6 @@ class DependencyChecker(PureDependencyChecker):
                 time.sleep(2)
             
         return False
-
-    def _ensure_linux_fonts_private(self):
-        """Load bundled fonts privately via wx.Font.AddPrivateFont.
-
-        Unlike macOS/Windows, Linux's wxWidgets builds actually implement
-        AddPrivateFont, so fonts don't need a system-wide install here - but
-        without this call, the dependency dialog's MDI check/close glyphs
-        draw with a font that was never loaded, and wx silently substitutes
-        a fallback font missing that private-use glyph (renders as a blank
-        box). This mirrors ui.custom_controls.ensure_fonts_loaded() but stays
-        dependency-free (no core.theme/core.locale) since it must run before
-        those dependencies are confirmed present.
-        """
-        if not hasattr(wx.Font, "AddPrivateFont"):
-            logger.warning("AddPrivateFont unavailable on this wx build; MDI glyphs may not render")
-            return
-
-        plugin_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        fonts_dir = os.path.join(plugin_dir, "resources", "fonts")
-        font_files = {
-            JETBRAINS_MONO: "JetBrainsMono-VariableFont_wght.ttf",
-            MDI_FONT_FAMILY: "materialdesignicons-webfont.ttf",
-            OSWALD: "Oswald-VariableFont_wght.ttf",
-        }
-        for family, filename in font_files.items():
-            font_path = os.path.join(fonts_dir, filename)
-            if not os.path.exists(font_path):
-                logger.warning(f"Bundled font file not found for '{family}': {font_path}")
-                continue
-            try:
-                if not wx.Font.AddPrivateFont(font_path):
-                    logger.warning(f"AddPrivateFont returned False for '{family}' ({filename})")
-            except Exception as e:
-                logger.warning(f"Failed to load bundled font '{family}': {e}")
 
     def _ensure_windows_fonts_native(self):
         """Check for fonts and prompt to install via the Windows Font Viewer.

@@ -49,6 +49,18 @@ def ensure_fonts_loaded():
     if wx.Platform == '__WXMAC__':
         return
 
+    if wx.Platform == '__WXGTK__':
+        # AddPrivateFont segfaults deep in libpangoft2 the instant a
+        # privately loaded font's text metrics are computed, on at least
+        # one tested Linux build (Ubuntu/aarch64) - reproduced with both
+        # the MDI icon font and Oswald, so it's not font-specific. Install
+        # as real fontconfig-registered fonts instead (like macOS/Windows'
+        # system font install), which uses the normal font resolution path
+        # instead of AddPrivateFont's. See DependencyChecker.check_and_prompt().
+        from SpinRender.utils.linux_fonts import install_linux_fonts
+        install_linux_fonts()
+        return
+
     if not hasattr(wx.Font, "AddPrivateFont"):
         logger.warning("ensure_fonts_loaded: wx.Font.AddPrivateFont unavailable; bundled fonts not loaded")
         return
