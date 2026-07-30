@@ -14,13 +14,16 @@ sys.modules before importing wx.svg, so the package's own
 `from ._nanosvg import *` resolves to it.
 
 Separately, at least one tested Ubuntu/aarch64 distro-packaged wxPython pairs
-an older `wx/svg/__init__.py` (which references the SVG "visible" shape flag
-as a bare module-level `SVG_FLAGS_VISIBLE` name) with a newer compiled
-`_nanosvg` extension that only exports the same value namespaced as
-`SVGflags.SVG_FLAGS_VISIBLE`. Every call to `SVGimage.RenderToGC()` then
-raises `NameError: name 'SVG_FLAGS_VISIBLE' is not defined`, so every SVG
-icon in the app falls back to a solid placeholder shape. We patch the bare
-name back onto the module so the existing bytecode's global lookup succeeds.
+an older `wx/svg/__init__.py` with a newer compiled `_nanosvg` extension.
+The older wrapper references several SVG enum constants (the shape-visible
+flag, paint types, line join/cap styles) as bare module-level names, e.g.
+`SVG_FLAGS_VISIBLE`, but the newer extension only exports them namespaced
+under enum classes, e.g. `SVGflags.SVG_FLAGS_VISIBLE`. Every call into
+`SVGimage.RenderToGC()` (used to draw every SVG icon in the app, including
+the header logo) then raises `NameError` on whichever constant it reaches
+first and falls back to a solid placeholder shape. We copy every member of
+each known namespace back onto the module as a bare name so the existing
+bytecode's global lookups succeed.
 """
 import importlib.util
 import logging
@@ -31,14 +34,25 @@ logger = logging.getLogger("SpinRender")
 
 _VENDOR_DIR = os.path.join(os.path.dirname(__file__), "..", "vendor", "wx_svg")
 
+# Enum classes RenderToGC()/_makeBrush()/_makePen() reference as bare names
+# in the mismatched older wx/svg/__init__.py (see module docstring).
+_SVG_CONST_NAMESPACES = ("SVGflags", "SVGpaintType", "SVGlineJoin", "SVGlineCap")
+
 
 def _patch_missing_svg_flags(wx_svg):
-    """Patch a missing module-level SVG_FLAGS_VISIBLE back onto wx.svg."""
-    if hasattr(wx_svg, "SVG_FLAGS_VISIBLE"):
-        return
-    value = getattr(getattr(wx_svg, "SVGflags", None), "SVG_FLAGS_VISIBLE", 1)
-    wx_svg.SVG_FLAGS_VISIBLE = value
-    logger.info("wx_svg_compat: patched missing wx.svg.SVG_FLAGS_VISIBLE (%r)", value)
+    """Copy enum members from _SVG_CONST_NAMESPACES onto wx.svg as bare names."""
+    patched = []
+    for ns_name in _SVG_CONST_NAMESPACES:
+        namespace = getattr(wx_svg, ns_name, None)
+        if namespace is None:
+            continue
+        for member_name in dir(namespace):
+            if not member_name.isupper() or hasattr(wx_svg, member_name):
+                continue
+            setattr(wx_svg, member_name, getattr(namespace, member_name))
+            patched.append(member_name)
+    if patched:
+        logger.info("wx_svg_compat: patched missing wx.svg constants: %s", ", ".join(patched))
 
 
 def ensure_wx_svg():
