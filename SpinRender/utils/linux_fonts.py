@@ -75,12 +75,17 @@ def install_linux_fonts(plugin_dir=None):
     if not fc_cache:
         return
     try:
-        subprocess.run(
+        result = subprocess.run(
             [fc_cache, "-f", str(dest_dir)],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             timeout=30,
+            text=True,
         )
-        logger.info("install_linux_fonts: installed bundled fonts to ~/.local/share/fonts/SpinRender")
+        if result.returncode == 0:
+            logger.info("install_linux_fonts: installed bundled fonts to ~/.local/share/fonts/SpinRender")
+        else:
+            combined = ((result.stdout or "") + (result.stderr or "")).strip()
+            logger.warning(f"install_linux_fonts: fc-cache failed (exit {result.returncode}): {combined}")
     except Exception as e:
         logger.warning(f"install_linux_fonts: fc-cache failed: {e}")
