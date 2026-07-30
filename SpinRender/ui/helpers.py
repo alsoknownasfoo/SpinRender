@@ -495,14 +495,29 @@ def effective_background(widget: wx.Window) -> wx.Colour:
     custom control's buffer to its direct parent's colour paints a black box.
     Walk up until a window with an opaque background is found.
 
-    Only wxMSW needs the resolution: its paint buffers start undefined and
-    never-coloured windows report an opaque system default. macOS composites
-    windows transparently, so clearing to the direct parent's colour (even a
-    fully transparent one — effectively a no-op) preserves its historical
-    rendering; resolving to an ancestor's opaque colour there paints a wrong
-    solid box over the see-through containers.
+    Only macOS is exempt from the walk: it composites windows transparently,
+    so clearing to the direct parent's colour (even a fully transparent one —
+    effectively a no-op) preserves its historical rendering; resolving to an
+    ancestor's opaque colour there paints a wrong solid box over the
+    see-through containers.
+
+    wxMSW and wxGTK both need the walk. wxMSW's paint buffers start undefined
+    and never-coloured windows report an opaque system default. wxGTK doesn't
+    composite AutoBufferedPaintDC's off-screen buffer against the real parent
+    either - clearing to a fully transparent colour there paints literally
+    (a dark/black tint) rather than showing the parent through, which made
+    controls sitting in a transparent section container (e.g. sliders) render
+    visibly darker than the panel behind them.
+
+    Deliberately an explicit inclusion list, not `wx.Platform == '__WXMAC__'`
+    inverted: wx.Platform isn't guaranteed to only ever be one of exactly
+    three values (build-specific variants like '__WXGTK3__' exist, and the
+    test suite's mocked wx.Platform matches none of them). Under any of
+    those, GetParent() calls never bottom out at None the way a real window
+    hierarchy does, so the walk branch hangs forever - only take it for the
+    platforms it's actually needed on.
     """
-    if wx.Platform != '__WXMSW__':
+    if wx.Platform not in ('__WXMSW__', '__WXGTK__'):
         parent = widget.GetParent()
         return parent.GetBackgroundColour() if parent else wx.Colour(0, 0, 0)
     p = widget.GetParent()

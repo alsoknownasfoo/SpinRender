@@ -262,8 +262,9 @@ class TestThemeFontAPI:
         """body font should be JetBrains Mono, 9px, normal (from text.body.font)."""
         font = self.theme.font("body")
         assert font.GetFaceName() == "JetBrains Mono"
-        # theme.py converts design px -> pt on Windows (72/96 baseline); 9px -> 6.75pt -> 6 (int truncation)
-        expected_pt = int(9 * 72.0 / 96.0) if sys.platform.startswith("win") else 9
+        # theme.py converts design px -> pt on Windows/Linux (72/96 baseline); 9px -> 6.75pt -> 6 (int truncation)
+        converts = sys.platform.startswith("win") or sys.platform.startswith("linux")
+        expected_pt = int(9 * 72.0 / 96.0) if converts else 9
         assert font.GetPointSize() == expected_pt  # YAML: typography.scale.sm
         # text.body.font.weight = 400 maps to FONTWEIGHT_NORMAL
         assert font.GetWeight() == 400
