@@ -180,6 +180,34 @@ class TestLocaleFileLoading:
                 locale_mod.Locale.load("en_US")
 
 
+class TestResolutionPresetParity:
+    """Every built-in resolution id must have a translated label in every
+    locale file, so the dropdown can't silently show the wrong label or
+    fall back to English for a locale that's missing an entry."""
+
+    LOCALE_DIR = Path(__file__).parent.parent.parent / "SpinRender" / "resources" / "locale"
+
+    @pytest.fixture(autouse=True)
+    def _resolution_ids(self):
+        from SpinRender.ui.controls_side_panel import BUILTIN_RESOLUTIONS
+        self.resolution_ids = [res_id for _, res_id in BUILTIN_RESOLUTIONS]
+
+    def test_every_locale_file_has_every_resolution_preset(self):
+        from SpinRender.core.locale import Locale
+
+        locale_names = [p.stem for p in sorted(self.LOCALE_DIR.glob("*.yaml"))]
+        assert locale_names, "no locale files found"
+
+        missing = {}
+        for name in locale_names:
+            locale = Locale.load(name)
+            for res_id in self.resolution_ids:
+                if locale.get(f"output.resolution.presets.{res_id}") is None:
+                    missing.setdefault(name, []).append(res_id)
+
+        assert not missing, f"locale files missing resolution preset labels: {missing}"
+
+
 class TestLocaleHotReload:
     """Test hot-reload behavior when locale file changes on disk."""
 

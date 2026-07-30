@@ -9,7 +9,7 @@ import pytest
 from unittest.mock import MagicMock
 
 # Import the module under test
-from SpinRender.ui.controls_side_panel import ControlsSidePanel
+from SpinRender.ui.controls_side_panel import BUILTIN_RESOLUTIONS, ControlsSidePanel
 from SpinRender.core.settings import RenderSettings
 
 
@@ -186,6 +186,19 @@ class TestControlsSidePanel:
         assert hasattr(panel, 'bg_picker')
         assert hasattr(panel, 'hide_vias_checkbox')
         assert hasattr(panel, 'hide_vias_label')
+
+    def test_builtin_resolution_presets_include_portrait_options(self):
+        """Built-in resolution presets should expose the updated portrait options."""
+        assert BUILTIN_RESOLUTIONS == [
+            ("3840×2160 (4K)", "3840x2160"),
+            ("2160×3840 (4K Portrait)", "2160x3840"),
+            ("2160×2160 (4K Square)", "2160x2160"),
+            ("1080×1920 (1080P Portrait)", "1080x1920"),
+            ("1920×1080 (1080P)", "1920x1080"),
+            ("720×1280 (720P Portrait)", "720x1280"),
+            ("1280×720 (720P)", "1280x720"),
+            ("800×800 (Square)", "800x800"),
+        ]
 
     def test_export_section_created(self, wx_mock, mock_parent):
         """Test that export buttons are created."""
