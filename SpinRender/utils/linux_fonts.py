@@ -40,7 +40,6 @@ def install_linux_fonts(plugin_dir=None):
     global _INSTALLED
     if _INSTALLED:
         return
-    _INSTALLED = True
 
     if plugin_dir is None:
         plugin_dir = Path(__file__).resolve().parent.parent
@@ -52,6 +51,8 @@ def install_linux_fonts(plugin_dir=None):
     except Exception as e:
         logger.warning(f"install_linux_fonts: could not create {dest_dir}: {e}")
         return
+
+    _INSTALLED = True
 
     copied_any = False
     for filename in FONT_FILES:
