@@ -379,12 +379,25 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         tri_vertices = mesh.vertices[mesh.faces].reshape(-1, 3)
         tri_normals = np.repeat(mesh.face_normals, 3, axis=0)
         
+        vertices_f32 = line_vertices.astype(np.float32)
+        tri_vertices_f32 = tri_vertices.astype(np.float32)
+        tri_normals_f32 = tri_normals.astype(np.float32)
+
         self.mesh_data = {
-            'vertices': line_vertices.astype(np.float32), 
+            'vertices': vertices_f32,
             'count': len(line_vertices),
-            'tri_vertices': tri_vertices.astype(np.float32),
-            'tri_normals': tri_normals.astype(np.float32),
-            'tri_count': len(tri_vertices)
+            'tri_vertices': tri_vertices_f32,
+            'tri_normals': tri_normals_f32,
+            'tri_count': len(tri_vertices),
+            # Plain-Python-float copies for the GTK immediate-mode fallback
+            # (see on_paint / _draw_*_immediate below): indexing a numpy
+            # array element-by-element inside the per-frame draw loop
+            # boxes a fresh numpy scalar for every float, which dominates
+            # the frame time. Converting once here with tolist() (a single
+            # bulk C call) instead of per-frame keeps the animation smooth.
+            'vertices_list': vertices_f32.tolist(),
+            'tri_vertices_list': tri_vertices_f32.tolist(),
+            'tri_normals_list': tri_normals_f32.tolist(),
         }
 
         self.loading_state = None
@@ -723,8 +736,8 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         glDisableClientState(GL_VERTEX_ARRAY)
 
     def _draw_shaded_mesh_immediate(self):
-        verts = self.mesh_data['tri_vertices']
-        norms = self.mesh_data['tri_normals']
+        verts = self.mesh_data['tri_vertices_list']
+        norms = self.mesh_data['tri_normals_list']
         glBegin(GL_TRIANGLES)
         for (vx, vy, vz), (nx, ny, nz) in zip(verts, norms):
             glNormal3f(nx, ny, nz)
@@ -732,7 +745,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         glEnd()
 
     def _draw_wireframe_mesh_immediate(self):
-        verts = self.mesh_data['vertices']
+        verts = self.mesh_data['vertices_list']
         glBegin(GL_LINES)
         for vx, vy, vz in verts:
             glVertex3f(vx, vy, vz)
