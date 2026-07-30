@@ -111,6 +111,15 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
     """
 
     def __init__(self, parent, board_path):
+        if wx.Platform == '__WXGTK__':
+            # See gl_context_compat.py: on at least one tested Linux/aarch64
+            # build, PyOpenGL's client-side vertex-array calls
+            # (glVertexPointer/glDrawArrays) fail every frame with
+            # "Attempt to retrieve context when no valid context", even
+            # though wx's SetCurrent() below genuinely makes a context
+            # current, silently dropping the mesh from every frame.
+            from SpinRender.utils.gl_context_compat import patch_context_lookup
+            patch_context_lookup()
         attribs = [glcanvas.WX_GL_RGBA, glcanvas.WX_GL_DOUBLEBUFFER, glcanvas.WX_GL_DEPTH_SIZE, 24, 0]
         super().__init__(parent, attribList=attribs)
         self.board_path = board_path
@@ -379,25 +388,12 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         tri_vertices = mesh.vertices[mesh.faces].reshape(-1, 3)
         tri_normals = np.repeat(mesh.face_normals, 3, axis=0)
         
-        vertices_f32 = line_vertices.astype(np.float32)
-        tri_vertices_f32 = tri_vertices.astype(np.float32)
-        tri_normals_f32 = tri_normals.astype(np.float32)
-
         self.mesh_data = {
-            'vertices': vertices_f32,
+            'vertices': line_vertices.astype(np.float32),
             'count': len(line_vertices),
-            'tri_vertices': tri_vertices_f32,
-            'tri_normals': tri_normals_f32,
-            'tri_count': len(tri_vertices),
-            # Plain-Python-float copies for the GTK immediate-mode fallback
-            # (see on_paint / _draw_*_immediate below): indexing a numpy
-            # array element-by-element inside the per-frame draw loop
-            # boxes a fresh numpy scalar for every float, which dominates
-            # the frame time. Converting once here with tolist() (a single
-            # bulk C call) instead of per-frame keeps the animation smooth.
-            'vertices_list': vertices_f32.tolist(),
-            'tri_vertices_list': tri_vertices_f32.tolist(),
-            'tri_normals_list': tri_normals_f32.tolist(),
+            'tri_vertices': tri_vertices.astype(np.float32),
+            'tri_normals': tri_normals.astype(np.float32),
+            'tri_count': len(tri_vertices)
         }
 
         self.loading_state = None
@@ -645,28 +641,12 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
                         glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50.0)
 
                         glColor4f(0.2, 0.2, 0.2, 1.0) # Deep charcoal for faces
-                        if wx.Platform == '__WXGTK__':
-                            # PyOpenGL's client-side vertex-array path
-                            # (glVertexPointer/glDrawArrays) tracks the
-                            # "current" GL context itself via contextdata,
-                            # separately from wx's SetCurrent(). On at
-                            # least one tested Linux/aarch64 build that
-                            # tracking never finds a context ("Attempt to
-                            # retrieve context when no valid context"),
-                            # even though the context genuinely is
-                            # current - every vertex-array draw call
-                            # silently drops the frame, leaving the
-                            # canvas black. Immediate-mode calls
-                            # (glBegin/glVertex3f/...) don't go through
-                            # that bookkeeping, so use them here instead.
-                            self._draw_shaded_mesh_immediate()
-                        else:
-                            glEnableClientState(GL_VERTEX_ARRAY)
-                            glEnableClientState(GL_NORMAL_ARRAY)
-                            glVertexPointer(3, GL_FLOAT, 0, self.mesh_data['tri_vertices'])
-                            glNormalPointer(GL_FLOAT, 0, self.mesh_data['tri_normals'])
-                            glDrawArrays(GL_TRIANGLES, 0, self.mesh_data['tri_count'])
-                            glDisableClientState(GL_NORMAL_ARRAY)
+                        glEnableClientState(GL_VERTEX_ARRAY)
+                        glEnableClientState(GL_NORMAL_ARRAY)
+                        glVertexPointer(3, GL_FLOAT, 0, self.mesh_data['tri_vertices'])
+                        glNormalPointer(GL_FLOAT, 0, self.mesh_data['tri_normals'])
+                        glDrawArrays(GL_TRIANGLES, 0, self.mesh_data['tri_count'])
+                        glDisableClientState(GL_NORMAL_ARRAY)
                         glDisable(GL_POLYGON_OFFSET_FILL)
 
                     # 2. Wireframe Edges (Technical Precision)
@@ -681,16 +661,10 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
                             glLineWidth(2.0)
 
                         glColor4f(*edge_color)
-                        if wx.Platform == '__WXGTK__':
-                            # See the shaded-face branch above for why
-                            # Linux avoids PyOpenGL's client-side vertex
-                            # arrays here.
-                            self._draw_wireframe_mesh_immediate()
-                        else:
-                            glEnableClientState(GL_VERTEX_ARRAY)
-                            glVertexPointer(3, GL_FLOAT, 0, self.mesh_data['vertices'])
-                            glDrawArrays(GL_LINES, 0, self.mesh_data['count'])
-                            glDisableClientState(GL_VERTEX_ARRAY)
+                        glEnableClientState(GL_VERTEX_ARRAY)
+                        glVertexPointer(3, GL_FLOAT, 0, self.mesh_data['vertices'])
+                        glDrawArrays(GL_LINES, 0, self.mesh_data['count'])
+                        glDisableClientState(GL_VERTEX_ARRAY)
                 except Exception:
                     # Playback drives this at ~30fps - log once per failure
                     # streak instead of flooding the log every frame.
@@ -734,22 +708,6 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         glVertexPointer(3, GL_FLOAT, 0, self.mesh_data['vertices'])
         glDrawArrays(GL_LINES, 0, self.mesh_data['count'])
         glDisableClientState(GL_VERTEX_ARRAY)
-
-    def _draw_shaded_mesh_immediate(self):
-        verts = self.mesh_data['tri_vertices_list']
-        norms = self.mesh_data['tri_normals_list']
-        glBegin(GL_TRIANGLES)
-        for (vx, vy, vz), (nx, ny, nz) in zip(verts, norms):
-            glNormal3f(nx, ny, nz)
-            glVertex3f(vx, vy, vz)
-        glEnd()
-
-    def _draw_wireframe_mesh_immediate(self):
-        verts = self.mesh_data['vertices_list']
-        glBegin(GL_LINES)
-        for vx, vy, vz in verts:
-            glVertex3f(vx, vy, vz)
-        glEnd()
 
     def _draw_placeholder(self):
         size = self.model_size * 0.4
