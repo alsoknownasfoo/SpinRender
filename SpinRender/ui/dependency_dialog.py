@@ -35,12 +35,18 @@ COLOR_BORDER = wx.Colour(31, 31, 31)
 # Font Names
 FONT_MONO = "JetBrains Mono"
 FONT_DISPLAY = "Oswald"
-FONT_ICON = "Material Design Icons"
 FONT_BODY = "Inter"
 
-# Glyph Constants (Hardcoded unicode)
-GLYPH_CHECK = "\U000F05E0"
-GLYPH_CLOSE = "\U000F0156"
+# Glyph Constants: plain Unicode, not MDI private-use codepoints.
+# This dialog exists to run *before* dependencies/fonts are confirmed
+# working, so it can't gamble on the bundled MDI icon font - on some
+# Linux builds (observed Ubuntu/aarch64), merely activating a wx.Font
+# with faceName="Material Design Icons" crashed deep in libpangoft2,
+# independent of the actual glyph content (both wxStaticText::Create
+# and ::SetFont hit the same Pango layout path and crashed identically).
+# Plain marks render fine with any system font.
+GLYPH_CHECK = "✓"
+GLYPH_CLOSE = "✗"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CUSTOM CONTROLS (BOOTSTRAP VERSIONS)
@@ -227,10 +233,11 @@ class DependencyDialog(wx.Dialog):
 
             icon_char = GLYPH_CHECK if is_found else GLYPH_CLOSE
             status_color = COLOR_SUCCESS if is_found else COLOR_ERROR
-            
+
             status_label = wx.StaticText(dep_panel, label=icon_char)
+            status_label.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
             status_label.SetForegroundColour(status_color)
-            status_label.SetFont(wx.Font(14, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, faceName=FONT_ICON))
+            status_label.SetLabel(icon_char)
             self.status_labels[dep_name] = status_label
 
             row_sizer.Add(dep_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 16)

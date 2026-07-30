@@ -17,6 +17,7 @@ except ImportError:
 
 from SpinRender.utils.check_dependencies import DependencyChecker as PureDependencyChecker
 from SpinRender.utils.subprocess_utils import NO_WINDOW_FLAGS
+from SpinRender.utils.linux_fonts import install_linux_fonts
 from SpinRender.foundation.fonts import JETBRAINS_MONO, MDI_FONT_FAMILY, OSWALD
 
 logger = logging.getLogger("SpinRender")
@@ -53,6 +54,9 @@ class DependencyChecker(PureDependencyChecker):
                 logger.warning("Windows font check failed - user cancelled")
                 return False
             logger.debug("Windows font check passed")
+        elif self.system == 'linux':
+            logger.debug("Installing bundled fonts for Linux...")
+            install_linux_fonts()
 
         # 3. Comprehensive dependency check (Commands and Python libs)
         # Now that we have wx, we can safely proceed with wx-based UI
