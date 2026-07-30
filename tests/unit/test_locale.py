@@ -193,16 +193,21 @@ class TestResolutionPresetParity:
         self.resolution_ids = [res_id for _, res_id in BUILTIN_RESOLUTIONS]
 
     def test_every_locale_file_has_every_resolution_preset(self):
-        from SpinRender.core.locale import Locale
+        import yaml
 
-        locale_names = [p.stem for p in sorted(self.LOCALE_DIR.glob("*.yaml"))]
-        assert locale_names, "no locale files found"
+        locale_paths = sorted(self.LOCALE_DIR.glob("*.yaml"))
+        assert locale_paths, "no locale files found"
 
         missing = {}
-        for name in locale_names:
-            locale = Locale.load(name)
+        for path in locale_paths:
+            name = path.stem
+            data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+            locale_data = (data.get("locale") or {}).get(name) or {}
+            presets = (((locale_data.get("output") or {}).get("resolution") or {}).get("presets") or {})
+            if not isinstance(presets, dict):
+                presets = {}
             for res_id in self.resolution_ids:
-                if locale.get(f"output.resolution.presets.{res_id}") is None:
+                if presets.get(res_id) is None:
                     missing.setdefault(name, []).append(res_id)
 
         assert not missing, f"locale files missing resolution preset labels: {missing}"
