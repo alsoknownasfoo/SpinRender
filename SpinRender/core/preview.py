@@ -121,6 +121,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         # segfaults on macOS.
         self._destroyed = False
         self.mesh_data = None
+        self._mesh_draw_error_logged = False
         
         # Universal Joint Parameters
         self.rotation_angle = 0.0
@@ -493,6 +494,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             
         self.Refresh()
 
+    @guarded_paint
     def on_paint(self, _event):
         if self._destroyed or not self:
             return
@@ -612,41 +614,56 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             glTranslatef(-self.model_center[0], -self.model_center[1], -self.model_center[2])
             
             if self.mesh_data:
-                # 1. Shaded Faces (Volume & Lighting)
-                if self.render_mode in ("shaded", "both"):
-                    glEnable(GL_LIGHTING)
-                    glEnable(GL_POLYGON_OFFSET_FILL)
-                    glPolygonOffset(1.0, 1.0)
-                    
-                    # Material Properties for nice "Studio" highlights
-                    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, [0.5, 0.5, 0.5, 1.0])
-                    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50.0)
-                    
-                    glColor4f(0.2, 0.2, 0.2, 1.0) # Deep charcoal for faces
-                    glEnableClientState(GL_VERTEX_ARRAY)
-                    glEnableClientState(GL_NORMAL_ARRAY)
-                    glVertexPointer(3, GL_FLOAT, 0, self.mesh_data['tri_vertices'])
-                    glNormalPointer(GL_FLOAT, 0, self.mesh_data['tri_normals'])
-                    glDrawArrays(GL_TRIANGLES, 0, self.mesh_data['tri_count'])
-                    glDisableClientState(GL_NORMAL_ARRAY)
-                    glDisable(GL_POLYGON_OFFSET_FILL)
-                
-                # 2. Wireframe Edges (Technical Precision)
-                if self.render_mode in ("wireframe", "both"):
-                    glDisable(GL_LIGHTING)
-                    
-                    if self.render_mode == "wireframe":
-                        edge_color = (0.5, 0.5, 0.5, 0.8) # Gray for pure wireframe
-                        glLineWidth(1.0)
-                    else:
-                        edge_color = (0.0, 0.0, 0.0, 0.9) # Black when overlaid on shaded
-                        glLineWidth(2.0)
-                    
-                    glColor4f(*edge_color)
-                    glEnableClientState(GL_VERTEX_ARRAY)
-                    glVertexPointer(3, GL_FLOAT, 0, self.mesh_data['vertices'])
-                    glDrawArrays(GL_LINES, 0, self.mesh_data['count'])
-                    glDisableClientState(GL_VERTEX_ARRAY)
+                # A GL error partway through mesh drawing (e.g. the vertex-array
+                # calls losing track of the current context - seen on some
+                # Linux/Mesa setups) must not skip SwapBuffers() below: that
+                # would leave the canvas frozen on whatever was last
+                # successfully swapped (typically the loading overlay) forever,
+                # instead of just dropping this one frame's mesh.
+                try:
+                    # 1. Shaded Faces (Volume & Lighting)
+                    if self.render_mode in ("shaded", "both"):
+                        glEnable(GL_LIGHTING)
+                        glEnable(GL_POLYGON_OFFSET_FILL)
+                        glPolygonOffset(1.0, 1.0)
+
+                        # Material Properties for nice "Studio" highlights
+                        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, [0.5, 0.5, 0.5, 1.0])
+                        glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50.0)
+
+                        glColor4f(0.2, 0.2, 0.2, 1.0) # Deep charcoal for faces
+                        glEnableClientState(GL_VERTEX_ARRAY)
+                        glEnableClientState(GL_NORMAL_ARRAY)
+                        glVertexPointer(3, GL_FLOAT, 0, self.mesh_data['tri_vertices'])
+                        glNormalPointer(GL_FLOAT, 0, self.mesh_data['tri_normals'])
+                        glDrawArrays(GL_TRIANGLES, 0, self.mesh_data['tri_count'])
+                        glDisableClientState(GL_NORMAL_ARRAY)
+                        glDisable(GL_POLYGON_OFFSET_FILL)
+
+                    # 2. Wireframe Edges (Technical Precision)
+                    if self.render_mode in ("wireframe", "both"):
+                        glDisable(GL_LIGHTING)
+
+                        if self.render_mode == "wireframe":
+                            edge_color = (0.5, 0.5, 0.5, 0.8) # Gray for pure wireframe
+                            glLineWidth(1.0)
+                        else:
+                            edge_color = (0.0, 0.0, 0.0, 0.9) # Black when overlaid on shaded
+                            glLineWidth(2.0)
+
+                        glColor4f(*edge_color)
+                        glEnableClientState(GL_VERTEX_ARRAY)
+                        glVertexPointer(3, GL_FLOAT, 0, self.mesh_data['vertices'])
+                        glDrawArrays(GL_LINES, 0, self.mesh_data['count'])
+                        glDisableClientState(GL_VERTEX_ARRAY)
+                except Exception:
+                    # Playback drives this at ~30fps - log once per failure
+                    # streak instead of flooding the log every frame.
+                    if not self._mesh_draw_error_logged:
+                        logger.warning("GLPreviewRenderer: mesh draw failed (dropping this frame's mesh; will keep retrying)", exc_info=True)
+                        self._mesh_draw_error_logged = True
+                else:
+                    self._mesh_draw_error_logged = False
             else:
                 self._draw_placeholder()
                 
