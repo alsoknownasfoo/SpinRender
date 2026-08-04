@@ -485,17 +485,20 @@ Platform-specific: macOS adds pyobjc-core, pyobjc-framework-Cocoa.
 ## Utils Modules (`SpinRender/utils/`)
 
 ### `logger.py`
-**Purpose**: Centralized logging configuration
+**Purpose**: Centralized logging configuration, with date-named log files and automatic retention cleanup
 
 **Classes**:
 - `SpinLogger`
-  - `setup(level='info', log_file=None)` - configure root logger
-  - `get_logger(name) → logging.Logger`
+  - `setup(level='info')` - configure the `SpinRender` logger; no-op if `level` matches the last-applied level. Accepts `'off'`, `'info'`, `'debug'` (legacy `'simple'`/`'verbose'` are normalized). Always triggers `cleanup()` as a side effect.
+  - `cleanup(logs_dir)` - deletes `spinrender_*.log` files older than `_CLEANUP_DAYS` (30 days), based on file mtime
+  - `get_logs_dir() → str` - resolves the active logs directory (plugin dir, or temp-dir fallback if unwritable)
+  - `open_logs_folder() → bool` - opens the logs directory in the OS file manager (Finder/Explorer/xdg-open)
 
 **Configuration**:
-- Format: `%(asctime)s [%(levelname)-8s] %(name)s: %(message)s`
-- Default level: INFO (configurable via settings)
-- Console handler only (no file by default)
+- Format: `%(asctime)s - [%(levelname)s] - %(name)s: %(message)s`
+- Log file path: `<plugin_dir>/logs/spinrender_YYYY-MM-DD.log` (one file per calendar day), falling back to `<tempdir>/SpinRender_Logs` if the plugin directory isn't writable
+- Default level: INFO; `'off'` disables the file handler entirely
+- **Retention**: on every `setup()` call, files under `logs/` matching `spinrender_*.log` older than 30 days are deleted (age-based, no size cap or count cap); cleanup errors are printed, not raised
 
 ---
 
