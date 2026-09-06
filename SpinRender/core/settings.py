@@ -25,6 +25,7 @@ class RenderSettings:
     preset: str = 'custom'
     logging_level: str = 'info'
     easing: str = 'linear'
+    zoom: float = 0.65
     output_auto: bool = True
     output_path: str = ''
     cli_overrides: str = ''
@@ -44,6 +45,8 @@ class RenderSettings:
             raise ValueError(f"spin_heading must be between -180 and 180 degrees, got {self.spin_heading}")
         if self.period <= 0:
             raise ValueError(f"period must be positive, got {self.period}")
+        if not 0.1 <= self.zoom <= 5.0:
+            raise ValueError(f"zoom must be between 0.1 and 5.0, got {self.zoom}")
 
     @classmethod
     def from_dict(cls, data: dict):

@@ -38,6 +38,31 @@ def test_generate_frames_uses_utf8_for_cli_output(monkeypatch, tmp_path):
     assert popen_calls[0]['kwargs']['text'] is True
     assert popen_calls[0]['kwargs']['encoding'] == 'utf-8'
     assert popen_calls[0]['kwargs']['errors'] == 'replace'
+    cmd = popen_calls[0]['args'][0]
+    assert '--zoom' in cmd
+    assert cmd[cmd.index('--zoom') + 1] == '0.65'
+
+
+def test_generate_frames_uses_custom_zoom(monkeypatch, tmp_path):
+    settings = {
+        'period': '0.04',
+        'resolution': '640x480',
+        'format': 'png_sequence',
+        'zoom': 1.25,
+    }
+    engine = RenderEngine('/tmp/example.kicad_pcb', settings)
+    mock_process = Mock()
+    mock_process.communicate.return_value = ('ok\n', None)
+    mock_process.returncode = 0
+    popen_calls = []
+
+    monkeypatch.setattr('SpinRender.core.renderer.find_command', lambda _: '/usr/bin/kicad-cli')
+    monkeypatch.setattr('SpinRender.core.renderer.subprocess.Popen', lambda *args, **kwargs: popen_calls.append(args[0]) or mock_process)
+
+    engine.generate_frames(str(tmp_path))
+    cmd = popen_calls[0]
+    assert '--zoom' in cmd
+    assert cmd[cmd.index('--zoom') + 1] == '1.25'
 
 
 def test_malformed_quality_override_does_not_block_crash_retry(monkeypatch, tmp_path):

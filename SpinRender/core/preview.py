@@ -164,11 +164,16 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         self.preview_texture = None
         self.has_texture = False
 
+        # Camera Zoom (synchronized with kicad-cli --zoom)
+        self.zoom = 0.65
+        self.on_zoom_callback = None
+
         # Callback for when model finishes loading
         self.on_model_loaded = None
 
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_SIZE, self.on_size)
+        self.Bind(wx.EVT_MOUSEWHEEL, self._on_mousewheel)
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_timer)
         self.loading_timer = wx.Timer(self)
@@ -176,6 +181,23 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         self.Bind(wx.EVT_WINDOW_DESTROY, self._on_destroy)
         self.loading_timer.Start(50)
         wx.CallAfter(self._start_loading_thread)
+
+    def _on_mousewheel(self, event):
+        """Handle mouse wheel on preview canvas for interactive zooming."""
+        rot = event.GetWheelRotation()
+        if rot == 0:
+            return
+        delta = 0.05 if rot > 0 else -0.05
+        new_zoom = max(0.1, min(5.0, round(self.zoom + delta, 2)))
+        if new_zoom != self.zoom:
+            self.set_zoom(new_zoom)
+            if callable(self.on_zoom_callback):
+                self.on_zoom_callback(new_zoom)
+
+    def set_zoom(self, zoom: float):
+        """Set camera zoom factor and redraw."""
+        self.zoom = max(0.1, min(5.0, float(zoom)))
+        self.Refresh()
 
     def _on_destroy(self, event):
         """Stop timers and disable GL work when this canvas is destroyed.
@@ -607,7 +629,8 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
 
             glMatrixMode(GL_PROJECTION)
             glLoadIdentity()
-            cam_dist = (self.model_size * 0.5) / (0.4142 * min(1.0, target_aspect) * 0.85)
+            zoom = getattr(self, 'zoom', 0.65)
+            cam_dist = (self.model_size * 0.5) / (0.4142 * min(1.0, target_aspect) * zoom)
             gluPerspective(45.0, target_aspect, 1.0, cam_dist * 10.0)
             glMatrixMode(GL_MODELVIEW)
             glLoadIdentity()

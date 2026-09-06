@@ -333,6 +333,7 @@ class ControlsSidePanel(wx.Panel):
         # Collapsible body — hidden when collapsed so only the title shows.
         self._params_content = [
             self.create_rotation_controls(panel),
+            self.create_zoom_control(panel),
             self.create_period_control(panel),
             self.create_direction_control(panel),
             self.create_lighting_control(panel),
@@ -340,7 +341,8 @@ class ControlsSidePanel(wx.Panel):
         sizer.Add(self._params_content[0], 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(10))
         sizer.Add(self._params_content[1], 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(10))
         sizer.Add(self._params_content[2], 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(10))
-        sizer.Add(self._params_content[3], 0, wx.EXPAND)
+        sizer.Add(self._params_content[3], 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(10))
+        sizer.Add(self._params_content[4], 0, wx.EXPAND)
 
         # Build in the expanded state so the panel measures at full height.
         # The persisted collapsed state is applied later (after the scroll
@@ -588,6 +590,60 @@ class ControlsSidePanel(wx.Panel):
         setattr(self, f"{attr_name}_input", inp)
         row.SetSizerAndFit(sizer)
         return row
+
+    def create_zoom_control(self, parent):
+        """Create the camera zoom / distance control."""
+        panel = wx.Panel(parent)
+        apply_transparent_background(panel)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.zoom_heading = create_text(panel, _locale.get("parameters.zoom.label", "CAMERA ZOOM / DISTANCE"), "subheader")
+        sizer.Add(self.zoom_heading, 0, wx.BOTTOM, self.FromDIP(6))
+
+        z_val = getattr(self.settings, 'zoom', 0.65)
+        self.zoom_meta_row = wx.Panel(panel)
+        apply_transparent_background(self.zoom_meta_row)
+        meta_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.zoom_desc = create_text(self.zoom_meta_row, _locale.get("parameters.zoom.desc", "CAMERA DISTANCE & FRAMING"), "description")
+        meta_sizer.Add(self.zoom_desc, 0, wx.ALIGN_CENTER_VERTICAL)
+        meta_sizer.AddStretchSpacer()
+
+        self.zoom_fit_btn = create_text(self.zoom_meta_row, _locale.get("parameters.zoom.reset_label", "RESET FIT"), "description", color_token="colors.primary")
+        self.zoom_fit_btn.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        self.zoom_fit_btn.SetToolTip(_locale.get("parameters.zoom.fit_tooltip", "Reset to default framing"))
+        self.zoom_fit_btn.Bind(wx.EVT_LEFT_DOWN, self._on_zoom_reset_clicked)
+        meta_sizer.Add(self.zoom_fit_btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, self.FromDIP(8))
+        self.zoom_meta_row.SetSizerAndFit(meta_sizer)
+        sizer.Add(self.zoom_meta_row, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(10))
+
+        crow = wx.Panel(panel)
+        apply_transparent_background(crow)
+        csizer = wx.BoxSizer(wx.HORIZONTAL)
+        csizer.AddSpacer(self.FromDIP(10))
+        self.zoom_slider = CustomSlider(crow, value=z_val, min_val=0.1, max_val=5.0, size=(-1, 18), id="primary", section='parameters')
+        csizer.Add(self.zoom_slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, self.FromDIP(10))
+        unit = _locale.get("parameters.zoom.unit", "x")
+        self.zoom_input = create_numeric_input(crow, f"{z_val:.2f}", unit, editable=True, min_val=0.1, max_val=5.0, id="axis", section='parameters')
+        csizer.Add(self.zoom_input, 0, wx.ALIGN_CENTER_VERTICAL)
+        crow.SetSizerAndFit(csizer)
+        sizer.Add(crow, 0, wx.EXPAND)
+        panel.SetSizerAndFit(sizer)
+        return panel
+
+    def _on_zoom_reset_clicked(self, event):
+        """Reset zoom to default safe framing."""
+        default_zoom = 0.65
+        self.settings.zoom = default_zoom
+        if hasattr(self, 'zoom_slider') and self.zoom_slider:
+            self.zoom_slider.SetValue(default_zoom)
+        if hasattr(self, 'zoom_input') and self.zoom_input:
+            self.zoom_input.SetValue(default_zoom)
+        if hasattr(self, 'main_panel'):
+            if hasattr(self.main_panel, 'preview_panel'):
+                self.main_panel.preview_panel.set_zoom(default_zoom)
+            if hasattr(self.main_panel, 'preset_controller'):
+                self.main_panel.preset_controller.check_preset_match(manual_change=True)
+            if hasattr(self.main_panel, 'parameter_controller'):
+                self.main_panel.parameter_controller.schedule_save()
 
     def create_period_control(self, parent):
         """Create the rotation period control."""

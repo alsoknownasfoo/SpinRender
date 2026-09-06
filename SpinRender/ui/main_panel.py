@@ -240,6 +240,8 @@ class SpinRenderPanel(wx.Panel):
             'spin_tilt_input': getattr(csp, 'spin_tilt_input', None),
             'spin_heading_slider': getattr(csp, 'spin_heading_slider', None),
             'spin_heading_input': getattr(csp, 'spin_heading_input', None),
+            'zoom_slider': getattr(csp, 'zoom_slider', None),
+            'zoom_input': getattr(csp, 'zoom_input', None),
             'period_slider': getattr(csp, 'period_slider', None),
             'period_input': getattr(csp, 'period_input', None),
             'frame_count': getattr(csp, 'frame_count', None),
@@ -266,6 +268,8 @@ class SpinRenderPanel(wx.Panel):
             'spin_tilt_input': csp.spin_tilt_input,
             'spin_heading_slider': csp.spin_heading_slider,
             'spin_heading_input': csp.spin_heading_input,
+            'zoom_slider': getattr(csp, 'zoom_slider', None),
+            'zoom_input': getattr(csp, 'zoom_input', None),
             'period_slider': csp.period_slider,
             'period_input': csp.period_input,
             'frame_count': csp.frame_count,
@@ -294,6 +298,10 @@ class SpinRenderPanel(wx.Panel):
         # Wire parameter control events to ParameterController
         self._wire_parameter_events()
 
+        # Hook interactive viewport zoom
+        if hasattr(self.preview, 'viewport'):
+            self.preview.viewport.on_zoom_callback = self.parameter_controller.on_viewport_zoom
+
     def _wire_parameter_events(self):
         """Bind parameter control events to ParameterController methods."""
         pc = self.parameter_controller
@@ -306,6 +314,11 @@ class SpinRenderPanel(wx.Panel):
         self.controls_side_panel.spin_tilt_input.Bind(wx.EVT_TEXT_ENTER, pc.on_spin_tilt_input)
         self.controls_side_panel.spin_heading_slider.Bind(wx.EVT_SLIDER, pc.on_spin_heading_change)
         self.controls_side_panel.spin_heading_input.Bind(wx.EVT_TEXT_ENTER, pc.on_spin_heading_input)
+        # Zoom controls
+        if getattr(self.controls_side_panel, 'zoom_slider', None):
+            self.controls_side_panel.zoom_slider.Bind(wx.EVT_SLIDER, pc.on_zoom_change)
+        if getattr(self.controls_side_panel, 'zoom_input', None):
+            self.controls_side_panel.zoom_input.Bind(wx.EVT_TEXT_ENTER, pc.on_zoom_input_change)
         # Period
         self.controls_side_panel.period_slider.Bind(wx.EVT_SLIDER, pc.on_period_change)
         self.controls_side_panel.period_input.Bind(wx.EVT_TEXT_ENTER, pc.on_period_input_change)

@@ -621,12 +621,14 @@ class RenderEngine:
             # instead of re-crashing (and re-diagnosing) every single frame.
             base_quality = 'basic' if self.degraded_quality else 'user'
 
+            zoom_val = float(self.settings.get('zoom', 0.65))
+
             # Build kicad-cli command
             cmd = [
                 kicad_cli, 'pcb', 'render',
                 '--perspective',
                 '--rotate', rotate_str,
-                '--zoom', '0.8',
+                '--zoom', f"{zoom_val:.4g}",
                 '-w', str(width),
                 '-h', str(height),
                 '--background', 'transparent',

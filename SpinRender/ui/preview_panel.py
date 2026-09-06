@@ -242,6 +242,8 @@ class PreviewPanel(wx.Panel):
         self.viewport.set_period(self.settings.period)
         self.viewport.set_direction(self.settings.direction)
         self.viewport.set_render_mode(getattr(self.settings, 'render_mode', 'both'))
+        if hasattr(self.viewport, 'set_zoom'):
+            self.viewport.set_zoom(getattr(self.settings, 'zoom', 0.65))
         
         # Defer background color until model is loaded
         self.viewport.on_model_loaded = self._on_model_ready
@@ -287,8 +289,14 @@ class PreviewPanel(wx.Panel):
                 f"BR:{self.settings.board_roll:.0f}°",
                 f"ST:{self.settings.spin_tilt:.0f}°",
                 f"SH:{self.settings.spin_heading:.0f}°",
-                f"· {self.settings.period:.1f}s"
             ]
+            try:
+                z_raw = getattr(self.settings, 'zoom', None)
+                if z_raw is not None and isinstance(z_raw, (int, float)):
+                    params.append(f"Z:{float(z_raw):.2f}x")
+            except Exception:
+                pass
+            params.append(f"· {self.settings.period:.1f}s")
             update_text(self.ov_top_left, "  ".join(params))
 
         # Top-Right: Close button visibility
@@ -544,6 +552,12 @@ class PreviewPanel(wx.Panel):
     def set_aspect_ratio(self, width: int, height: int):
         """Update viewport aspect ratio."""
         self.viewport.set_aspect_ratio(width, height)
+        self.update_preview_overlay()
+
+    def set_zoom(self, zoom: float):
+        """Update viewport camera zoom."""
+        if getattr(self, 'viewport', None) and hasattr(self.viewport, 'set_zoom'):
+            self.viewport.set_zoom(zoom)
         self.update_preview_overlay()
 
     def reload_model(self):

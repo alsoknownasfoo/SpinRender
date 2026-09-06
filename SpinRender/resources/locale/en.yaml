@@ -257,6 +257,12 @@ locale:
         desc: "Rotate the camera around the board"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
+      zoom:
+        label: "Camera zoom / distance"
+        desc: "Camera distance and framing margin"
+        reset_label: "Reset fit"
+        fit_tooltip: "Reset to default framing"
+        unit: "x"
       period:
         label: "Rotation period"
         desc: "Duration of a full 360° rotation"
