@@ -8,6 +8,7 @@ from SpinRender.core.renderer import (
     _kicad_cli_arch_report,
     _pad_frame_to_size,
     _png_size,
+    _render_size_from_cmd,
     _run_minimal_probe,
 )
 
@@ -249,3 +250,81 @@ def test_pad_frame_noop_without_ffmpeg(tmp_path):
     original = frame.read_bytes()
     _pad_frame_to_size(str(frame), 1920, 1080, None)
     assert frame.read_bytes() == original
+
+
+def test_pad_frame_kills_timed_out_ffmpeg_and_keeps_original(monkeypatch, tmp_path):
+    frame = tmp_path / 'frame0000.png'
+    _write_png_header(frame, 1904, 1064)
+    original = frame.read_bytes()
+
+    proc = Mock()
+    proc.communicate.side_effect = [subprocess.TimeoutExpired('ffmpeg', 60), ('', None)]
+    monkeypatch.setattr('SpinRender.core.renderer._start_text_process', lambda *a, **k: proc)
+
+    _pad_frame_to_size(str(frame), 1920, 1080, '/usr/bin/ffmpeg')
+
+    proc.kill.assert_called_once()
+    assert proc.communicate.call_count == 2  # drained after kill
+    assert frame.read_bytes() == original
+
+
+def test_pad_frame_cleanup_failure_is_not_fatal(monkeypatch, tmp_path):
+    frame = tmp_path / 'frame0000.png'
+    _write_png_header(frame, 1904, 1064)
+
+    def fake_process(cmd, **kwargs):
+        open(cmd[-1], 'wb').close()
+        proc = Mock()
+        proc.communicate.return_value = ('boom', None)
+        proc.returncode = 1
+        return proc
+
+    def locked_remove(path):
+        raise PermissionError('file in use')
+
+    monkeypatch.setattr('SpinRender.core.renderer._start_text_process', fake_process)
+    monkeypatch.setattr('SpinRender.core.renderer.os.remove', locked_remove)
+    _pad_frame_to_size(str(frame), 1920, 1080, '/usr/bin/ffmpeg')  # must not raise
+
+
+def test_render_size_from_cmd_uses_settings_when_not_overridden():
+    cmd = ['kicad-cli', 'pcb', 'render', '-w', '1920', '-h', '1080', '-o', 'x.png']
+    assert _render_size_from_cmd(cmd, 1920, 1080) == (1920, 1080)
+
+
+def test_render_size_from_cmd_honours_overrides():
+    cmd = ['kicad-cli', 'pcb', 'render', '--quality', 'user', '-w', '1280', '-h', '720']
+    assert _render_size_from_cmd(cmd, 1920, 1080) == (1280, 720)
+
+
+def test_render_size_from_cmd_long_flags_and_first_wins():
+    # kicad-cli takes the first occurrence when a flag is repeated
+    cmd = ['kicad-cli', '--width', '800', '--height', '600', '-w', '1920', '-h', '1080']
+    assert _render_size_from_cmd(cmd, 1920, 1080) == (800, 600)
+
+
+def test_render_size_from_cmd_ignores_unparseable_values():
+    cmd = ['kicad-cli', '-w', 'wide', '-h']
+    assert _render_size_from_cmd(cmd, 1920, 1080) == (1920, 1080)
+
+
+def test_generate_frames_pads_to_overridden_size(monkeypatch, tmp_path):
+    settings = {
+        'period': '0.04',
+        'resolution': '1920x1080',
+        'format': 'png_sequence',
+        'cli_overrides': '-w 1280 -h 720',
+    }
+    engine = RenderEngine('/tmp/example.kicad_pcb', settings)
+
+    proc = Mock()
+    proc.communicate.return_value = ('', None)
+    proc.returncode = 0
+    monkeypatch.setattr('SpinRender.core.renderer.find_command', lambda _: '/usr/bin/tool')
+    monkeypatch.setattr('SpinRender.core.renderer.subprocess.Popen', lambda *a, **k: proc)
+    pads = []
+    monkeypatch.setattr('SpinRender.core.renderer._pad_frame_to_size',
+                        lambda path, w, h, ffmpeg: pads.append((w, h)))
+
+    engine.generate_frames(str(tmp_path))
+    assert pads == [(1280, 720)]

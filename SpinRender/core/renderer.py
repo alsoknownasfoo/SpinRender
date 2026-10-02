@@ -255,15 +255,47 @@ def _pad_frame_to_size(path, width, height, ffmpeg):
     ]
     try:
         process = _start_text_process(cmd)
-        stdout, _ = process.communicate(timeout=FRAME_PAD_TIMEOUT)
-        if process.returncode == 0 and os.path.exists(tmp_path):
-            os.replace(tmp_path, path)
-            return
-        logger.warning(f"Frame padding failed for {path} (exit {process.returncode}).{_format_cli_output(stdout)}")
+        try:
+            stdout, _ = process.communicate(timeout=FRAME_PAD_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.communicate()
+            logger.warning(f"Frame padding timed out after {FRAME_PAD_TIMEOUT}s for {path}")
+        else:
+            if process.returncode == 0 and os.path.exists(tmp_path):
+                os.replace(tmp_path, path)
+                return
+            logger.warning(f"Frame padding failed for {path} (exit {process.returncode}).{_format_cli_output(stdout)}")
     except (OSError, subprocess.SubprocessError) as e:
         logger.warning(f"Frame padding failed for {path}: {e}")
-    if os.path.exists(tmp_path):
-        os.remove(tmp_path)
+    # Padding is best-effort: a leftover temp file must never fail the render
+    try:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+    except OSError as e:
+        logger.warning(f"Could not remove {tmp_path}: {e}")
+
+
+_WIDTH_FLAGS = ('-w', '--width')
+_HEIGHT_FLAGS = ('-h', '--height')
+
+
+def _render_size_from_cmd(cmd, default_width, default_height):
+    """Return the (width, height) kicad-cli will actually use for cmd.
+
+    CLI overrides can replace -w/-h, and kicad-cli takes the first
+    occurrence of a repeated flag, so the size comes from the final command.
+    """
+    def first_int(flags, default):
+        for flag, value in zip(cmd, cmd[1:]):
+            if flag in flags:
+                try:
+                    return int(value)
+                except ValueError:
+                    return default
+        return default
+
+    return first_int(_WIDTH_FLAGS, default_width), first_int(_HEIGHT_FLAGS, default_height)
 
 
 def _format_cli_output(output, max_lines=15):
@@ -764,7 +796,7 @@ class RenderEngine:
                         f"{process.returncode}.{_format_cli_output(stdout)}"
                     )
 
-                _pad_frame_to_size(output_path, width, height, ffmpeg)
+                _pad_frame_to_size(output_path, *_render_size_from_cmd(cmd, width, height), ffmpeg)
 
                 # Update progress with completed frame
                 if self.progress_callback:
