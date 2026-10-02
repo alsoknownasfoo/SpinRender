@@ -393,6 +393,7 @@ class RenderEngine:
             'spin_heading': 90.0,
             'direction': 'ccw',
             'period':5.0,
+            'zoom': DEFAULT_ZOOM,
             'lighting': 'dramatic'
         },
         'spin': {
@@ -402,6 +403,7 @@ class RenderEngine:
             'spin_heading': -90.0,
             'direction': 'ccw',
             'period':5.0,
+            'zoom': DEFAULT_ZOOM,
             'lighting': 'studio'
         },
         'flip': {
@@ -411,6 +413,7 @@ class RenderEngine:
             'spin_heading': 45.0,
             'direction': 'cw',
             'period':5.0,
+            'zoom': DEFAULT_ZOOM,
             'lighting': 'dramatic'
         }
     }

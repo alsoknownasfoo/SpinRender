@@ -14,7 +14,7 @@ providing a focused interface for preset management.
 import wx
 from typing import Dict, Any, Optional
 
-from SpinRender.core.settings import RenderSettings
+from SpinRender.core.settings import DEFAULT_ZOOM, RenderSettings
 from SpinRender.core.presets import PresetManager
 from SpinRender.core.locale import Locale
 _locale = Locale.current()
@@ -245,6 +245,7 @@ class PresetController:
             )
             is_match = is_match and getattr(self.settings, 'direction', '') == p_dict.get('direction', '')
             is_match = is_match and getattr(self.settings, 'lighting', '') == p_dict.get('lighting', '')
+            is_match = is_match and abs(getattr(self.settings, 'zoom', DEFAULT_ZOOM) - p_dict.get('zoom', DEFAULT_ZOOM)) < 0.01
 
             btn.SetSelected(is_match)
             if is_match:
@@ -267,6 +268,7 @@ class PresetController:
                 )
                 match = match and getattr(self.settings, 'direction', '') == pd_dict.get('direction', '')
                 match = match and getattr(self.settings, 'lighting', '') == pd_dict.get('lighting', '')
+                match = match and abs(getattr(self.settings, 'zoom', DEFAULT_ZOOM) - pd_dict.get('zoom', DEFAULT_ZOOM)) < 0.01
 
                 if match:
                     cmn = name

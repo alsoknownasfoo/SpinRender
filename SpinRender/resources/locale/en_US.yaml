@@ -260,8 +260,6 @@ locale:
       zoom:
         label: "Zoom"
         desc: "Scale of board within frame"
-        reset_label: "Reset fit"
-        fit_tooltip: "Reset to default framing"
         unit: "x"
       period:
         label: "Rotation period"
