@@ -216,6 +216,89 @@ def _start_text_process(cmd, env=None):
     )
 
 
+_PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
+FRAME_PAD_TIMEOUT = 60
+
+
+def _png_size(path):
+    """Return (width, height) from a PNG's IHDR chunk, or None if unreadable."""
+    try:
+        with open(path, 'rb') as f:
+            header = f.read(24)
+    except OSError:
+        return None
+    if len(header) < 24 or header[:8] != _PNG_SIGNATURE or header[12:16] != b'IHDR':
+        return None
+    return struct.unpack('>II', header[16:24])
+
+
+def _pad_frame_to_size(path, width, height, ffmpeg):
+    """Pad a kicad-cli frame back to the requested size, in place.
+
+    The raytracer renders whole 8px ray packets, so kicad-cli writes a
+    centered crop of the requested window (e.g. 1920x1080 -> 1904x1064) while
+    framing the camera for the full window. Re-centering the crop on a
+    transparent canvas reproduces the full frame exactly. Leaves the frame
+    untouched if it is already the right size or padding is not possible.
+    """
+    size = _png_size(path)
+    if size is None or size == (width, height) or not ffmpeg:
+        return
+    actual_w, actual_h = size
+    if actual_w > width or actual_h > height:
+        return
+    x, y = (width - actual_w) // 2, (height - actual_h) // 2
+    tmp_path = f"{path}.pad.png"
+    cmd = [
+        ffmpeg, '-y', '-v', 'error', '-i', path,
+        '-vf', f'pad={width}:{height}:{x}:{y}:color=black@0',
+        '-pix_fmt', 'rgba', tmp_path,
+    ]
+    try:
+        process = _start_text_process(cmd)
+        try:
+            stdout, _ = process.communicate(timeout=FRAME_PAD_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.communicate()
+            logger.warning(f"Frame padding timed out after {FRAME_PAD_TIMEOUT}s for {path}")
+        else:
+            if process.returncode == 0 and os.path.exists(tmp_path):
+                os.replace(tmp_path, path)
+                return
+            logger.warning(f"Frame padding failed for {path} (exit {process.returncode}).{_format_cli_output(stdout)}")
+    except (OSError, subprocess.SubprocessError) as e:
+        logger.warning(f"Frame padding failed for {path}: {e}")
+    # Padding is best-effort: a leftover temp file must never fail the render
+    try:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+    except OSError as e:
+        logger.warning(f"Could not remove {tmp_path}: {e}")
+
+
+_WIDTH_FLAGS = ('-w', '--width')
+_HEIGHT_FLAGS = ('-h', '--height')
+
+
+def _render_size_from_cmd(cmd, default_width, default_height):
+    """Return the (width, height) kicad-cli will actually use for cmd.
+
+    CLI overrides can replace -w/-h, and kicad-cli takes the first
+    occurrence of a repeated flag, so the size comes from the final command.
+    """
+    def first_int(flags, default):
+        for flag, value in zip(cmd, cmd[1:]):
+            if flag in flags:
+                try:
+                    return int(value)
+                except ValueError:
+                    return default
+        return default
+
+    return first_int(_WIDTH_FLAGS, default_width), first_int(_HEIGHT_FLAGS, default_height)
+
+
 def _format_cli_output(output, max_lines=15):
     """Build a readable tail of kicad-cli's output for an error message.
 
@@ -580,6 +663,9 @@ class RenderEngine:
         cli_overrides = self.settings.get('cli_overrides', '').strip()
         quality_overridden = '--quality' in cli_overrides.split()
 
+        # Used to restore kicad-cli's cropped frames to the requested size
+        ffmpeg = find_command('ffmpeg')
+
         if self.progress_callback:
             self.progress_callback(0, frame_count, "INITIALIZING RENDER...")
 
@@ -716,6 +802,8 @@ class RenderEngine:
                         f"{process.returncode}.{_format_cli_output(stdout)}"
                     )
 
+                _pad_frame_to_size(output_path, *_render_size_from_cmd(cmd, width, height), ffmpeg)
+
                 # Update progress with completed frame
                 if self.progress_callback:
                     self.progress_callback(i + 1, frame_count, f"RENDERING FRAME {i+1}/{frame_count}", output_path)
@@ -739,6 +827,20 @@ class RenderEngine:
 
         return frame_count
 
+    def _canvas_size(self, frame_dir):
+        """Background canvas size for assembly: the size frames were rendered at.
+
+        Frames are padded to kicad-cli's effective size, which CLI overrides
+        can change, so read it from the first frame; fall back to the
+        resolution setting if that frame can't be read.
+        """
+        size = _png_size(os.path.join(frame_dir, 'frame0000.png'))
+        if size:
+            return size
+        res = self.settings.get('resolution', '1920x1080')
+        w, h = map(int, res.split('x'))
+        return w, h
+
     def assemble_mp4(self, frame_dir, output_path, frame_count):
         """
         Assemble frames into MP4 video using ffmpeg
@@ -751,9 +853,7 @@ class RenderEngine:
         bg_hex = self.settings.get('bg_color', '#000000')
         if bg_hex == 'opaque': bg_hex = '#000000'
         
-        # Get resolution
-        res = self.settings.get('resolution', '1920x1080')
-        w, h = map(int, res.split('x'))
+        w, h = self._canvas_size(frame_dir)
 
         # Use single input and generate background in filter graph to avoid position-dependent option errors
         cmd = [
@@ -798,9 +898,7 @@ class RenderEngine:
         bg_hex = self.settings.get('bg_color', '#000000')
         if bg_hex == 'opaque': bg_hex = '#000000'
         
-        # Get resolution
-        res = self.settings.get('resolution', '1920x1080')
-        w, h = map(int, res.split('x'))
+        w, h = self._canvas_size(frame_dir)
 
         palette_path = os.path.join(frame_dir, 'palette.png')
         
