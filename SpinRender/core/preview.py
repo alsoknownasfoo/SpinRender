@@ -26,10 +26,12 @@ from SpinRender.core.settings import DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM
 logger = logging.getLogger("SpinRender")
 
 # Camera framing measured against kicad-cli 10 `pcb render --perspective`:
-# the board outline's longest side spans KICAD_FRAMING * zoom of the frame
-# *height* at any aspect ratio (vertical FOV fixed at 45°), and the camera
-# looks at the outline's center. Measured 0.98–1.005 across 6 renders.
-KICAD_FRAMING = 0.985
+# the board outline's longest side spans KICAD_FRAMING * zoom of the
+# requested frame *height* at any aspect ratio (vertical FOV fixed at 45°),
+# and the camera looks at the outline's center. Measured 0.966–0.977 across
+# 6 renders, relative to the requested size (kicad-cli writes a centered
+# crop a few pixels smaller, but frames the camera for the full window).
+KICAD_FRAMING = 0.971
 KICAD_FOV_Y = 45.0
 # kicad-cli `export glb` names the board body geometry "<board>_PCB_<n>".
 PCB_GEOMETRY_TAG = "_PCB_"
