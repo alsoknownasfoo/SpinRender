@@ -27,7 +27,8 @@ Give your board dramatic lighting to add wow to your presentation or have it wel
 &nbsp;
 ## Requirements
 
-- `KiCad 9.0 or 10.0`
+- `KiCad 9.0 or 10.0` (provides `kicad-cli`)
+- `ffmpeg` on your PATH
 - ##### Python Packages:<br> `PyOpenGL` `trimesh` `numpy` `PyYAML`
 - ##### Fonts:<br> `JetBrains Mono` `Oswald` `Material Design Icons`
 
@@ -73,21 +74,22 @@ Python packages and font dependencies are installed on first launch.
    ![SpinRender Icon][icon_img]   
    Find the icon in the top toolbar, or under `Tools > External Plugins`.<br><br>
 2. #### 🔄 **Choose a preset**<br>
-   Select a preset or customize your spin parameters:
-   - **Rotation Speed** — frames per rotation (0.01° to 360°)
-   - **Rotation Axis** — X, Y, Z, or custom orientation
-   - **Start Angle** — initial board orientation
-   - **Duration** — total animation length in seconds
-   - **Frame Rate** — output FPS (24, 30, or 60)
+   Pick **Hero**, **Spin** or **Flip**, recall one of your own with **Select custom**, or customize your spin parameters:
+   - **Board Tilt / Board Roll** — orient the board on the spindle (±90° / ±180°)
+   - **Spin Tilt / Spin Heading** — orient the spindle itself and rotate the camera around the board (±90° / ±180°)
+   - **Rotation Period** — seconds per full 360° turn (0.1 to 30 s, rendered at 30 fps)
+   - **Direction** — clockwise or counter-clockwise
+   - **Lighting** — Studio, Dramatic, Soft, or Workspace (uses your KiCad 3D viewer settings)
    
-   💡 Save your favourite configurations with **+ SAVE PRESET** to reuse them across projects.<br><br>
+   💡 Save your favourite configurations with **+ PRESET** to reuse them across projects.<br><br>
 3. #### 💾 **Choose your output**<br>
    Select a resolution or customize your output parameters:
-   - **Resolution** — built-in presets include 4K Portrait, 1080P Portrait, and 720P Portrait, plus custom dimensions via ⚙ icon
+   - **Resolution** — landscape, portrait and square presets from 720p to 4K, plus custom dimensions via the ⚙ icon
    - **Format** — MP4, animated GIF, or PNG sequence
+   - **Background Color** — solid color behind the board
    - **Render Options** — hide vias, components, or test points for a cleaner result<br><br>
 4. #### 🎬 **Render**<br>
-   Check out the preview of the animation and hit Render. Output lands next to your board file under the `Render` directory.<br><br>
+   Check out the preview of the animation and hit Render. Output lands next to your board file in `Renders/<timestamp>/`, or pick your own location in the advanced options (⚙ next to Render).<br><br>
 
 &nbsp;
 ## Troubleshooting
