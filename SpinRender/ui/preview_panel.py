@@ -15,6 +15,7 @@ from SpinRender.core.locale import Locale
 _theme = Theme.current()
 _locale = Locale.current()
 from SpinRender.core.preview import GLPreviewRenderer
+from SpinRender.core.settings import DEFAULT_ZOOM
 from SpinRender.utils.paint_guard import guarded_paint
 
 
@@ -243,7 +244,7 @@ class PreviewPanel(wx.Panel):
         self.viewport.set_direction(self.settings.direction)
         self.viewport.set_render_mode(getattr(self.settings, 'render_mode', 'both'))
         if hasattr(self.viewport, 'set_zoom'):
-            self.viewport.set_zoom(getattr(self.settings, 'zoom', 0.65))
+            self.viewport.set_zoom(getattr(self.settings, 'zoom', DEFAULT_ZOOM))
         
         # Defer background color until model is loaded
         self.viewport.on_model_loaded = self._on_model_ready

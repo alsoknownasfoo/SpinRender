@@ -14,6 +14,8 @@ import time
 import threading
 import subprocess
 import os
+
+from SpinRender.core.settings import DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM
 import tempfile
 import hashlib
 import logging
@@ -165,7 +167,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         self.has_texture = False
 
         # Camera Zoom (synchronized with kicad-cli --zoom)
-        self.zoom = 0.65
+        self.zoom = DEFAULT_ZOOM
         self.on_zoom_callback = None
 
         # Callback for when model finishes loading
@@ -188,7 +190,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         if rot == 0:
             return
         delta = 0.05 if rot > 0 else -0.05
-        new_zoom = max(0.1, min(5.0, round(self.zoom + delta, 2)))
+        new_zoom = max(MIN_ZOOM, min(MAX_ZOOM, round(self.zoom + delta, 2)))
         if new_zoom != self.zoom:
             self.set_zoom(new_zoom)
             if callable(self.on_zoom_callback):
@@ -196,7 +198,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
 
     def set_zoom(self, zoom: float):
         """Set camera zoom factor and redraw."""
-        self.zoom = max(0.1, min(5.0, float(zoom)))
+        self.zoom = max(MIN_ZOOM, min(MAX_ZOOM, float(zoom)))
         self.Refresh()
 
     def _on_destroy(self, event):
@@ -629,7 +631,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
 
             glMatrixMode(GL_PROJECTION)
             glLoadIdentity()
-            zoom = getattr(self, 'zoom', 0.65)
+            zoom = getattr(self, 'zoom', DEFAULT_ZOOM)
             cam_dist = (self.model_size * 0.5) / (0.4142 * min(1.0, target_aspect) * zoom)
             gluPerspective(45.0, target_aspect, 1.0, cam_dist * 10.0)
             glMatrixMode(GL_MODELVIEW)

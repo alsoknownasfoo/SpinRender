@@ -40,7 +40,7 @@ def test_generate_frames_uses_utf8_for_cli_output(monkeypatch, tmp_path):
     assert popen_calls[0]['kwargs']['errors'] == 'replace'
     cmd = popen_calls[0]['args'][0]
     assert '--zoom' in cmd
-    assert cmd[cmd.index('--zoom') + 1] == '0.65'
+    assert cmd[cmd.index('--zoom') + 1] == '0.8'
 
 
 def test_generate_frames_uses_custom_zoom(monkeypatch, tmp_path):

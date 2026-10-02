@@ -21,6 +21,7 @@ from .text_styles import TextStyle
 from .registry import ControlRegistry
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
+from SpinRender.core.settings import DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM
 from SpinRender.version import get_version
 _theme = Theme.current()
 _locale = Locale.current()
@@ -600,7 +601,7 @@ class ControlsSidePanel(wx.Panel):
         self.zoom_heading = create_text(panel, _locale.get("parameters.zoom.label", "ZOOM"), "subheader")
         sizer.Add(self.zoom_heading, 0, wx.BOTTOM, self.FromDIP(6))
 
-        z_val = getattr(self.settings, 'zoom', 0.65)
+        z_val = getattr(self.settings, 'zoom', DEFAULT_ZOOM)
         self.zoom_meta_row = wx.Panel(panel)
         apply_transparent_background(self.zoom_meta_row)
         meta_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -620,10 +621,10 @@ class ControlsSidePanel(wx.Panel):
         apply_transparent_background(crow)
         csizer = wx.BoxSizer(wx.HORIZONTAL)
         csizer.AddSpacer(self.FromDIP(10))
-        self.zoom_slider = CustomSlider(crow, value=z_val, min_val=0.1, max_val=5.0, size=(-1, 18), id="primary", section='parameters')
+        self.zoom_slider = CustomSlider(crow, value=z_val, min_val=MIN_ZOOM, max_val=MAX_ZOOM, size=(-1, 18), id="primary", section='parameters')
         csizer.Add(self.zoom_slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, self.FromDIP(10))
         unit = _locale.get("parameters.zoom.unit", "x")
-        self.zoom_input = create_numeric_input(crow, f"{z_val:.2f}", unit, editable=True, min_val=0.1, max_val=5.0, id="axis", section='parameters')
+        self.zoom_input = create_numeric_input(crow, f"{z_val:.2f}", unit, editable=True, min_val=MIN_ZOOM, max_val=MAX_ZOOM, id="axis", section='parameters')
         csizer.Add(self.zoom_input, 0, wx.ALIGN_CENTER_VERTICAL)
         crow.SetSizerAndFit(csizer)
         sizer.Add(crow, 0, wx.EXPAND)
@@ -632,7 +633,7 @@ class ControlsSidePanel(wx.Panel):
 
     def _on_zoom_reset_clicked(self, event):
         """Reset zoom to default safe framing."""
-        default_zoom = 0.65
+        default_zoom = DEFAULT_ZOOM
         self.settings.zoom = default_zoom
         if hasattr(self, 'zoom_slider') and self.zoom_slider:
             self.zoom_slider.SetValue(default_zoom)

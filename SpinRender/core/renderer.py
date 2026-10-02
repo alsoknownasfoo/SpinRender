@@ -15,6 +15,7 @@ import platform
 from datetime import datetime
 from pathlib import Path
 
+from SpinRender.core.settings import DEFAULT_ZOOM
 from SpinRender.utils.subprocess_utils import NO_WINDOW_FLAGS, find_kicad_sibling_binary
 
 logger = logging.getLogger("SpinRender")
@@ -621,7 +622,7 @@ class RenderEngine:
             # instead of re-crashing (and re-diagnosing) every single frame.
             base_quality = 'basic' if self.degraded_quality else 'user'
 
-            zoom_val = float(self.settings.get('zoom', 0.65))
+            zoom_val = float(self.settings.get('zoom', DEFAULT_ZOOM))
 
             # Build kicad-cli command
             cmd = [
