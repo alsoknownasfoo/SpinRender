@@ -14,8 +14,6 @@ import time
 import threading
 import subprocess
 import os
-
-from SpinRender.core.settings import DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM
 import tempfile
 import hashlib
 import logging
@@ -23,8 +21,18 @@ from pathlib import Path
 
 from SpinRender.utils.subprocess_utils import NO_WINDOW_FLAGS
 from SpinRender.utils.paint_guard import guarded_paint
+from SpinRender.core.settings import DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM
 
 logger = logging.getLogger("SpinRender")
+
+# Camera framing measured against kicad-cli 10 `pcb render --perspective`:
+# the board outline's longest side spans KICAD_FRAMING * zoom of the frame
+# *height* at any aspect ratio (vertical FOV fixed at 45°), and the camera
+# looks at the outline's center. Measured 0.98–1.005 across 6 renders.
+KICAD_FRAMING = 0.985
+KICAD_FOV_Y = 45.0
+# kicad-cli `export glb` names the board body geometry "<board>_PCB_<n>".
+PCB_GEOMETRY_TAG = "_PCB_"
 
 # Global flag to ensure glutInit is only called once per session
 if '_SPINRENDER_GLUT_INIT' not in globals():
@@ -74,6 +82,7 @@ class PCBModelLoader:
                 # texture-atlas packing (to_mesh() is expensive and unsafe in
                 # background threads; the GL preview only needs geometry).
                 parts = []
+                is_board = []
                 for node_name in scene.graph.nodes_geometry:
                     transform, geometry_name = scene.graph[node_name]
                     geom = scene.geometry[geometry_name]
@@ -84,15 +93,18 @@ class PCBModelLoader:
                     )
                     m.apply_transform(transform)
                     parts.append(m)
+                    is_board.append(PCB_GEOMETRY_TAG in str(geometry_name))
                 if not parts:
                     return None
                 all_vertices = np.concatenate([m.vertices for m in parts])
                 offsets = np.cumsum([0] + [len(m.vertices) for m in parts[:-1]])
                 all_faces = np.concatenate([m.faces + off for m, off in zip(parts, offsets)])
+                board_mask = np.concatenate([np.full(len(m.vertices), b) for m, b in zip(parts, is_board)])
                 mesh = trimesh.Trimesh(vertices=all_vertices, faces=all_faces, process=False)
             else:
                 mesh = scene
-            
+                board_mask = np.zeros(len(mesh.vertices), dtype=bool)
+
             # Align mesh with KiCad base orientation (Top-down view at 0,0,0)
             # Match parity test: Rotate +90 around X to bring face-up
             mesh.apply_transform(trimesh.transformations.rotation_matrix(math.radians(90), [1, 0, 0]))
@@ -100,7 +112,12 @@ class PCBModelLoader:
             # Auto-scale from meters to mm if needed
             if np.max(mesh.extents) < 1.0:
                 mesh.apply_scale(1000.0)
-                
+
+            # kicad-cli frames the board outline, not components hanging off
+            # it, so record the board body's bounds before vertices get merged.
+            board_vertices = mesh.vertices[board_mask] if board_mask.any() else mesh.vertices
+            mesh.metadata['board_bounds'] = np.array([board_vertices.min(axis=0), board_vertices.max(axis=0)])
+
             return mesh
         except Exception as e:
             logger.error(f"GLB mesh load failed for {glb_path}: {e}", exc_info=True)
@@ -157,6 +174,8 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
 
         self.model_center = np.array([0.0, 0.0, 0.0])
         self.model_size = 150.0
+        self.board_center = np.array([0.0, 0.0, 0.0])
+        self.board_max_dim = 100.0
         self.loading_state = "exporting"
 
         # Target aspect ratio for WYSIWYG preview
@@ -392,6 +411,9 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         bounds = mesh.bounds
         self.model_center = (bounds[0] + bounds[1]) / 2
         self.model_size = np.linalg.norm(bounds[1] - bounds[0])
+        board_lo, board_hi = mesh.metadata.get('board_bounds', bounds)
+        self.board_center = (board_lo + board_hi) / 2
+        self.board_max_dim = float(max(board_hi[0] - board_lo[0], board_hi[1] - board_lo[1]))
         
         try:
             sharp_mask = mesh.face_adjacency_angles > 0.52
@@ -639,8 +661,9 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             glMatrixMode(GL_PROJECTION)
             glLoadIdentity()
             zoom = getattr(self, 'zoom', DEFAULT_ZOOM)
-            cam_dist = (self.model_size * 0.5) / (0.4142 * min(1.0, target_aspect) * zoom)
-            gluPerspective(45.0, target_aspect, 1.0, cam_dist * 10.0)
+            visible_height = self.board_max_dim / (KICAD_FRAMING * zoom)
+            cam_dist = visible_height / (2.0 * math.tan(math.radians(KICAD_FOV_Y / 2.0)))
+            gluPerspective(KICAD_FOV_Y, target_aspect, cam_dist * 0.01, cam_dist * 10.0)
             glMatrixMode(GL_MODELVIEW)
             glLoadIdentity()
             gluLookAt(0, 0, cam_dist, 0, 0, 0, 0, 1, 0)
@@ -652,7 +675,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             glRotatef(self.direction_sign * self.rotation_angle, self.rotation_axis[0], self.rotation_axis[1], self.rotation_axis[2])
             glRotatef(self.board_roll, 0, 0, 1)
 
-            glTranslatef(-self.model_center[0], -self.model_center[1], -self.model_center[2])
+            glTranslatef(-self.board_center[0], -self.board_center[1], -self.board_center[2])
             
             if self.mesh_data:
                 # A GL error partway through mesh drawing (e.g. the vertex-array
