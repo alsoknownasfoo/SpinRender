@@ -596,14 +596,14 @@ class ControlsSidePanel(wx.Panel):
         panel = wx.Panel(parent)
         apply_transparent_background(panel)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        self.zoom_heading = create_text(panel, _locale.get("parameters.zoom.label", "CAMERA ZOOM / DISTANCE"), "subheader")
+        self.zoom_heading = create_text(panel, _locale.get("parameters.zoom.label", "ZOOM"), "subheader")
         sizer.Add(self.zoom_heading, 0, wx.BOTTOM, self.FromDIP(6))
 
         z_val = getattr(self.settings, 'zoom', 0.65)
         self.zoom_meta_row = wx.Panel(panel)
         apply_transparent_background(self.zoom_meta_row)
         meta_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.zoom_desc = create_text(self.zoom_meta_row, _locale.get("parameters.zoom.desc", "CAMERA DISTANCE & FRAMING"), "description")
+        self.zoom_desc = create_text(self.zoom_meta_row, _locale.get("parameters.zoom.desc", "SCALE OF BOARD WITHIN FRAME"), "description")
         meta_sizer.Add(self.zoom_desc, 0, wx.ALIGN_CENTER_VERTICAL)
         meta_sizer.AddStretchSpacer()
 

@@ -258,8 +258,8 @@ locale:
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
       zoom:
-        label: "Camera zoom / distance"
-        desc: "Camera distance and framing margin"
+        label: "Zoom"
+        desc: "Scale of board within frame"
         reset_label: "Reset fit"
         fit_tooltip: "Reset to default framing"
         unit: "x"
