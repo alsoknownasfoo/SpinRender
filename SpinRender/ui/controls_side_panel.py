@@ -333,9 +333,9 @@ class ControlsSidePanel(wx.Panel):
         # Collapsible body — hidden when collapsed so only the title shows.
         self._params_content = [
             self.create_rotation_controls(panel),
-            self.create_zoom_control(panel),
             self.create_period_control(panel),
             self.create_direction_control(panel),
+            self.create_zoom_control(panel),
             self.create_lighting_control(panel),
         ]
         sizer.Add(self._params_content[0], 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(10))
@@ -596,6 +596,7 @@ class ControlsSidePanel(wx.Panel):
         panel = wx.Panel(parent)
         apply_transparent_background(panel)
         sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.AddSpacer(self.FromDIP(10))
         self.zoom_heading = create_text(panel, _locale.get("parameters.zoom.label", "ZOOM"), "subheader")
         sizer.Add(self.zoom_heading, 0, wx.BOTTOM, self.FromDIP(6))
 
@@ -716,7 +717,6 @@ class ControlsSidePanel(wx.Panel):
         panel = wx.Panel(parent)
         apply_transparent_background(panel)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.AddSpacer(self.FromDIP(10))
         self.light_heading = create_text(panel, _locale.get("parameters.lighting.label", "LIGHTING"), "subheader")
         sizer.Add(self.light_heading, 0, wx.BOTTOM, self.FromDIP(6))
 
