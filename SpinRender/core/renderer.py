@@ -51,14 +51,16 @@ def _seed_global_lib_tables(version_dir):
     """Create empty global library tables in version_dir if they are missing.
 
     Existing tables are left alone: kicad-cli may have added PCM rows to them.
+    Exclusive create ('x') makes that atomic, so a table another process
+    created a moment earlier is never truncated.
     """
     for filename, root in _GLOBAL_LIB_TABLES.items():
         path = os.path.join(version_dir, filename)
-        if os.path.exists(path):
-            continue
         try:
-            with open(path, 'w', encoding='utf-8') as f:
+            with open(path, 'x', encoding='utf-8') as f:
                 f.write(f"({root}\n)\n")
+        except FileExistsError:
+            continue
         except OSError as e:
             logger.warning(f"Could not seed {filename} in {version_dir}: {e}")
 

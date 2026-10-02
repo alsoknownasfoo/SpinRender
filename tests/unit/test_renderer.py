@@ -1,3 +1,4 @@
+import os
 import struct
 import subprocess
 from unittest.mock import Mock
@@ -434,3 +435,21 @@ def test_config_home_lib_table_failure_is_not_fatal(monkeypatch, tmp_path):
     home = _prepare_kicad_config_home(str(_fake_plugin_dir(tmp_path, versions=('10.0',))))
     assert (tmp_path / 'tmp' / 'SpinRender_kicad_config' / '10.0' / '3d_viewer.json').exists()
     assert home
+
+
+def test_config_home_seeding_never_truncates_a_concurrently_created_table(monkeypatch, tmp_path):
+    # Another SpinRender/KiCad process can create the table (and kicad-cli can
+    # add PCM rows) between an existence check and the write. Seeding must
+    # never truncate it.
+    monkeypatch.setattr('SpinRender.core.renderer.tempfile.gettempdir', lambda: str(tmp_path / 'tmp'))
+    table = tmp_path / 'tmp' / 'SpinRender_kicad_config' / '10.0' / 'fp-lib-table'
+    table.parent.mkdir(parents=True)
+    table.write_text('(fp_lib_table\n  (lib (name "PCM_Example"))\n)\n')
+
+    real_exists = os.path.exists
+    monkeypatch.setattr('SpinRender.core.renderer.os.path.exists',
+                        lambda p: False if str(p).endswith('-lib-table') else real_exists(p))
+
+    _prepare_kicad_config_home(str(_fake_plugin_dir(tmp_path, versions=('10.0',))))
+
+    assert 'PCM_Example' in table.read_text()
