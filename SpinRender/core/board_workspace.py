@@ -398,6 +398,25 @@ def _coerce_board(board: Any, pcbnew_module: Any) -> Any:
     return board
 
 
+def _to_list(items: Any) -> list[Any]:
+    """Materialise a KiCad SWIG container without touching its ``__iter__``.
+
+    KiCad's TRACKS/DRAWINGS wrappers iterate via ``SwigPyIterator.next()``, which
+    some SWIG builds (e.g. Arch's KiCad 10) no longer generate, so ``list(items)``
+    raises ``AttributeError`` (issue #17). Index access works on every build;
+    ``Cast()`` mirrors what the wrapper's own ``__iter__`` yields.
+    """
+    if not (hasattr(items, '__len__') and hasattr(items, '__getitem__')):
+        return list(items)
+
+    result = []
+    for index in range(len(items)):
+        item = items[index]
+        caster = getattr(item, 'Cast', None)
+        result.append(caster() if callable(caster) else item)
+    return result
+
+
 def _get_board_items(board: Any, *getter_names: str) -> list[Any]:
     """Return board items across KiCad API variants such as Tracks/GetTracks."""
     for getter_name in getter_names:
@@ -405,7 +424,7 @@ def _get_board_items(board: Any, *getter_names: str) -> list[Any]:
         if callable(getter):
             items = getter()
             if items is not None:
-                return list(items)
+                return _to_list(items)
 
     getter_list = ', '.join(getter_names)
     raise AttributeError(f"Board object does not expose any of: {getter_list}")
@@ -429,7 +448,7 @@ def _get_footprints(board: Any) -> list[Any]:
         if callable(getter):
             items = getter()
             if items is not None:
-                return list(items)
+                return _to_list(items)
     return []
 
 
@@ -440,7 +459,7 @@ def _get_footprint_graphics(footprint: Any) -> list[Any]:
         if callable(getter):
             items = getter()
             if items is not None:
-                return list(items)
+                return _to_list(items)
     return []
 
 
