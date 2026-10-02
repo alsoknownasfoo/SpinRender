@@ -14,6 +14,7 @@ class RenderSettings:
     board_roll: float = 0.0          # -180..180
     spin_tilt: float = 0.0           # -90..90   spindle itself
     spin_heading: float = 0.0        # -180..180 camera around the board
+    zoom: float = DEFAULT_ZOOM       # MIN_ZOOM..MAX_ZOOM, passed to kicad-cli --zoom
     period: float = 10.0             # seconds per 360° (UI: 0.1..30), 30 fps
     direction: str = 'ccw'           # 'cw' | 'ccw'
     easing: str = 'linear'
@@ -41,7 +42,11 @@ class RenderSettings:
 ```
 
 **Validation** (`__post_init__`, raises `ValueError`): `board_tilt` and `spin_tilt` in ±90,
-`board_roll` and `spin_heading` in ±180, `period > 0`.
+`board_roll` and `spin_heading` in ±180, `period > 0`, `MIN_ZOOM <= zoom <= MAX_ZOOM`.
+
+**Zoom constants** (module level, shared by settings, renderer, preview and UI):
+`DEFAULT_ZOOM = 0.8` (the fixed `--zoom` used before zoom was configurable), `MIN_ZOOM = 0.1`,
+`MAX_ZOOM = 5.0`.
 
 **Serialization:** `to_dict()` (`dataclasses.asdict`) and `from_dict(d)` (`cls(**d)`, so unknown
 keys raise `TypeError`; missing keys take defaults).
@@ -54,14 +59,15 @@ TEST POINTS checkboxes where *checked = include*. `SpinRenderPanel` passes
 
 ## Built-in presets (`RenderEngine.PRESETS`)
 
-| id | board_tilt | board_roll | spin_tilt | spin_heading | period | direction | lighting |
-|---|---|---|---|---|---|---|---|
-| `hero` | 0 | -45 | 90 | 90 | 5 | ccw | dramatic |
-| `spin` | 0 | -90 | -90 | -90 | 5 | ccw | studio |
-| `flip` | 0 | -180 | 90 | 45 | 5 | cw | dramatic |
+| id | board_tilt | board_roll | spin_tilt | spin_heading | period | zoom | direction | lighting |
+|---|---|---|---|---|---|---|---|---|
+| `hero` | 0 | -45 | 90 | 90 | 5 | 0.8 | ccw | dramatic |
+| `spin` | 0 | -90 | -90 | -90 | 5 | 0.8 | ccw | studio |
+| `flip` | 0 | -180 | 90 | 45 | 5 | 0.8 | cw | dramatic |
 
 The fourth card ("Select custom") recalls a saved preset. `PresetController.check_preset_match`
-compares the five numeric fields (±0.01) plus `direction` and `lighting`.
+compares the five numeric fields and `zoom` (±0.01) plus `direction` and `lighting`. Presets
+saved before `zoom` existed load with `DEFAULT_ZOOM`.
 
 ## Lighting (`RenderEngine.LIGHTING_PRESETS`)
 

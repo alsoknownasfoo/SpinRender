@@ -2,6 +2,11 @@
 from dataclasses import dataclass, asdict, field
 from typing import List
 
+# Camera zoom (passed to kicad-cli --zoom; mirrored by the GL preview)
+DEFAULT_ZOOM = 0.8
+MIN_ZOOM = 0.1
+MAX_ZOOM = 5.0
+
 
 @dataclass
 class RenderSettings:
@@ -25,6 +30,7 @@ class RenderSettings:
     preset: str = 'custom'
     logging_level: str = 'info'
     easing: str = 'linear'
+    zoom: float = DEFAULT_ZOOM
     output_auto: bool = True
     output_path: str = ''
     cli_overrides: str = ''
@@ -44,6 +50,8 @@ class RenderSettings:
             raise ValueError(f"spin_heading must be between -180 and 180 degrees, got {self.spin_heading}")
         if self.period <= 0:
             raise ValueError(f"period must be positive, got {self.period}")
+        if not MIN_ZOOM <= self.zoom <= MAX_ZOOM:
+            raise ValueError(f"zoom must be between {MIN_ZOOM} and {MAX_ZOOM}, got {self.zoom}")
 
     @classmethod
     def from_dict(cls, data: dict):

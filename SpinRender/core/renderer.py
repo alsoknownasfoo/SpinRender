@@ -15,6 +15,7 @@ import platform
 from datetime import datetime
 from pathlib import Path
 
+from SpinRender.core.settings import DEFAULT_ZOOM
 from SpinRender.utils.subprocess_utils import NO_WINDOW_FLAGS, find_kicad_sibling_binary
 
 logger = logging.getLogger("SpinRender")
@@ -475,6 +476,7 @@ class RenderEngine:
             'spin_heading': 90.0,
             'direction': 'ccw',
             'period':5.0,
+            'zoom': DEFAULT_ZOOM,
             'lighting': 'dramatic'
         },
         'spin': {
@@ -484,6 +486,7 @@ class RenderEngine:
             'spin_heading': -90.0,
             'direction': 'ccw',
             'period':5.0,
+            'zoom': DEFAULT_ZOOM,
             'lighting': 'studio'
         },
         'flip': {
@@ -493,6 +496,7 @@ class RenderEngine:
             'spin_heading': 45.0,
             'direction': 'cw',
             'period':5.0,
+            'zoom': DEFAULT_ZOOM,
             'lighting': 'dramatic'
         }
     }
@@ -707,12 +711,14 @@ class RenderEngine:
             # instead of re-crashing (and re-diagnosing) every single frame.
             base_quality = 'basic' if self.degraded_quality else 'user'
 
+            zoom_val = float(self.settings.get('zoom', DEFAULT_ZOOM))
+
             # Build kicad-cli command
             cmd = [
                 kicad_cli, 'pcb', 'render',
                 '--perspective',
                 '--rotate', rotate_str,
-                '--zoom', '0.8',
+                '--zoom', f"{zoom_val:.4g}",
                 '-w', str(width),
                 '-h', str(height),
                 '--background', 'transparent',

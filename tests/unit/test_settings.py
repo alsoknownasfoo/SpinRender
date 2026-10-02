@@ -179,6 +179,14 @@ def test_render_settings_validation_period_negative():
         RenderSettings(period=-5.0)
 
 
+def test_render_settings_validation_zoom_out_of_range():
+    """Test that invalid zoom raises ValueError."""
+    with pytest.raises(ValueError, match="zoom"):
+        RenderSettings(zoom=0.05)
+    with pytest.raises(ValueError, match="zoom"):
+        RenderSettings(zoom=5.5)
+
+
 def test_render_settings_from_dict_invalid_direction():
     """Test from_dict() with invalid direction still works (accepts any string)."""
     # The dataclass doesn't enforce enum constraints, just type=str

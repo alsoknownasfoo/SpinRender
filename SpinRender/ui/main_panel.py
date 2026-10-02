@@ -240,6 +240,8 @@ class SpinRenderPanel(wx.Panel):
             'spin_tilt_input': getattr(csp, 'spin_tilt_input', None),
             'spin_heading_slider': getattr(csp, 'spin_heading_slider', None),
             'spin_heading_input': getattr(csp, 'spin_heading_input', None),
+            'zoom_slider': getattr(csp, 'zoom_slider', None),
+            'zoom_input': getattr(csp, 'zoom_input', None),
             'period_slider': getattr(csp, 'period_slider', None),
             'period_input': getattr(csp, 'period_input', None),
             'frame_count': getattr(csp, 'frame_count', None),
@@ -266,6 +268,8 @@ class SpinRenderPanel(wx.Panel):
             'spin_tilt_input': csp.spin_tilt_input,
             'spin_heading_slider': csp.spin_heading_slider,
             'spin_heading_input': csp.spin_heading_input,
+            'zoom_slider': getattr(csp, 'zoom_slider', None),
+            'zoom_input': getattr(csp, 'zoom_input', None),
             'period_slider': csp.period_slider,
             'period_input': csp.period_input,
             'frame_count': csp.frame_count,
@@ -294,6 +298,26 @@ class SpinRenderPanel(wx.Panel):
         # Wire parameter control events to ParameterController
         self._wire_parameter_events()
 
+        # Hook interactive viewport zoom
+        if hasattr(self.preview, 'viewport'):
+            self.preview.viewport.on_zoom_callback = self._on_viewport_zoom
+            self.preview.viewport.can_wheel_zoom = lambda: not self.render_controller.is_rendering()
+        # The render result overlays the viewport and swallows wheel events;
+        # forward them so scrolling dismisses it like any other adjustment.
+        if hasattr(self.preview, 'render_preview_panel'):
+            self.preview.render_preview_panel.Bind(wx.EVT_MOUSEWHEEL, self._on_render_preview_wheel)
+
+    def _on_viewport_zoom(self, new_zoom: float):
+        """Wheel zoom in the viewport counts as a parameter adjustment."""
+        self.reset_status_bar()
+        self.parameter_controller.on_viewport_zoom(new_zoom)
+
+    def _on_render_preview_wheel(self, event):
+        """Dismiss the render result and apply the wheel zoom to the viewport."""
+        if self.render_controller.is_rendering():
+            return
+        self.preview.viewport.zoom_step(event.GetWheelRotation())
+
     def _wire_parameter_events(self):
         """Bind parameter control events to ParameterController methods."""
         pc = self.parameter_controller
@@ -306,6 +330,11 @@ class SpinRenderPanel(wx.Panel):
         self.controls_side_panel.spin_tilt_input.Bind(wx.EVT_TEXT_ENTER, pc.on_spin_tilt_input)
         self.controls_side_panel.spin_heading_slider.Bind(wx.EVT_SLIDER, pc.on_spin_heading_change)
         self.controls_side_panel.spin_heading_input.Bind(wx.EVT_TEXT_ENTER, pc.on_spin_heading_input)
+        # Zoom controls
+        if getattr(self.controls_side_panel, 'zoom_slider', None):
+            self.controls_side_panel.zoom_slider.Bind(wx.EVT_SLIDER, pc.on_zoom_change)
+        if getattr(self.controls_side_panel, 'zoom_input', None):
+            self.controls_side_panel.zoom_input.Bind(wx.EVT_TEXT_ENTER, pc.on_zoom_input_change)
         # Period
         self.controls_side_panel.period_slider.Bind(wx.EVT_SLIDER, pc.on_period_change)
         self.controls_side_panel.period_input.Bind(wx.EVT_TEXT_ENTER, pc.on_period_input_change)

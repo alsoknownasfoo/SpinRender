@@ -254,6 +254,10 @@ locale:
         desc: "Xoay camera quanh bảng mạch"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
+      zoom:
+        label: "Thu phóng"
+        desc: "Tỷ lệ bảng mạch trong khung hình"
+        unit: "x"
       period:
         label: "Chu kỳ xoay"
         desc: "Thời gian cho một vòng 360°"

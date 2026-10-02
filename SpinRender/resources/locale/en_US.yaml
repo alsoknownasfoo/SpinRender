@@ -257,6 +257,10 @@ locale:
         desc: "Rotate the camera around the board"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
+      zoom:
+        label: "Zoom"
+        desc: "Scale of board within frame"
+        unit: "x"
       period:
         label: "Rotation period"
         desc: "Duration of a full 360° rotation"

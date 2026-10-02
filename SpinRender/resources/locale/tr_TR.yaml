@@ -254,6 +254,10 @@ locale:
         desc: "Kameranın kart etrafında dönmesi"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
+      zoom:
+        label: "Yakınlaştırma"
+        desc: "Kartın kare içindeki ölçeği"
+        unit: "x"
       period:
         label: "Rotasyon süresi"
         desc: "Tam bir 360° dönüş süresi"

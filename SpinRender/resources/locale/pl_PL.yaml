@@ -254,6 +254,10 @@ locale:
         desc: "Obrót kamery wokół płytki"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
+      zoom:
+        label: "Powiększenie"
+        desc: "Skala płytki w kadrze"
+        unit: "x"
       period:
         label: "Okres obrotu"
         desc: "Czas pełnego obrotu 360°"

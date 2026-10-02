@@ -254,6 +254,10 @@ locale:
         desc: "Вращение камеры вокруг платы"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
+      zoom:
+        label: "Масштаб"
+        desc: "Масштаб платы в кадре"
+        unit: "x"
       period:
         label: "Период вращения"
         desc: "Время полного оборота на 360°"

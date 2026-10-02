@@ -52,6 +52,8 @@ class ParameterController:
         self.spin_tilt_input = controls.get('spin_tilt_input')
         self.spin_heading_slider = controls.get('spin_heading_slider')
         self.spin_heading_input = controls.get('spin_heading_input')
+        self.zoom_slider = controls.get('zoom_slider')
+        self.zoom_input = controls.get('zoom_input')
         self.period_slider = controls.get('period_slider')
         self.period_input = controls.get('period_input')
         self.frame_count = controls.get('frame_count')
@@ -141,6 +143,44 @@ class ParameterController:
                 self.settings.spin_heading
             )
         self.preview.update_preview_overlay()
+
+    # Zoom handlers
+    def on_zoom_change(self, event):
+        if not self.zoom_slider:
+            return
+        val = round(float(self.zoom_slider.GetValue()), 2)
+        self.settings.zoom = val
+        if self.zoom_input:
+            self.zoom_input.SetValue(val)
+        if hasattr(self.preview, 'set_zoom'):
+            self.preview.set_zoom(val)
+        self.preset_controller.check_preset_match(manual_change=True)
+        self.schedule_save()
+
+    def on_zoom_input_change(self, event):
+        if not self.zoom_input:
+            return
+        val = round(float(self.zoom_input.GetValue()), 2)
+        self.settings.zoom = val
+        if self.zoom_slider:
+            self.zoom_slider.SetValue(val)
+        if hasattr(self.preview, 'set_zoom'):
+            self.preview.set_zoom(val)
+        self.preset_controller.check_preset_match(manual_change=True)
+        self.schedule_save()
+
+    def on_viewport_zoom(self, new_zoom: float):
+        """Called when user zooms directly in the 3D viewport."""
+        val = round(float(new_zoom), 2)
+        self.settings.zoom = val
+        if self.zoom_slider:
+            self.zoom_slider.SetValue(val)
+        if self.zoom_input:
+            self.zoom_input.SetValue(val)
+        if hasattr(self.preview, 'update_preview_overlay'):
+            self.preview.update_preview_overlay()
+        self.preset_controller.check_preset_match(manual_change=True)
+        self.schedule_save()
 
     # Period handler
     def on_period_change(self, event):

@@ -37,7 +37,7 @@ class TestParameterController:
         controls = {}
         # Sliders
         for name in ['board_tilt_slider', 'board_roll_slider', 'spin_tilt_slider',
-                     'spin_heading_slider', 'period_slider']:
+                     'spin_heading_slider', 'zoom_slider', 'period_slider']:
             slider = MagicMock()
             slider.GetValue = MagicMock(return_value=0.0)
             slider.SetValue = MagicMock()
@@ -45,7 +45,7 @@ class TestParameterController:
 
         # Text inputs
         for name in ['board_tilt_input', 'board_roll_input', 'spin_tilt_input',
-                     'spin_heading_input', 'period_input']:
+                     'spin_heading_input', 'zoom_input', 'period_input']:
             inp = MagicMock()
             inp.GetValue = MagicMock(return_value="0.0")
             inp.SetValue = MagicMock()
@@ -237,3 +237,34 @@ class TestParameterController:
         assert controller.settings.bg_color == '#FF0000'
         mock_preview.viewport.set_background_color.assert_called_once_with('#FF0000')
         mock_preview.update_preview_overlay.assert_called_once()
+
+    def test_on_zoom_change_slider(self, controller, mock_controls, mock_preview):
+        """Test zoom slider adjustment."""
+        mock_controls['zoom_slider'].GetValue.return_value = 1.2
+        controller.on_zoom_change(None)
+
+        assert controller.settings.zoom == 1.2
+        mock_controls['zoom_input'].SetValue.assert_called_once_with(1.2)
+        mock_preview.set_zoom.assert_called_once_with(1.2)
+        controller.preset_controller.check_preset_match.assert_called_with(manual_change=True)
+
+    def test_on_zoom_change_input(self, controller, mock_controls, mock_preview):
+        """Test zoom text input adjustment."""
+        mock_controls['zoom_input'].GetValue.return_value = "0.75"
+        controller.on_zoom_input_change(None)
+
+        assert controller.settings.zoom == 0.75
+        mock_controls['zoom_slider'].SetValue.assert_called_once_with(0.75)
+        mock_preview.set_zoom.assert_called_once_with(0.75)
+        controller.preset_controller.check_preset_match.assert_called_with(manual_change=True)
+
+    def test_on_viewport_zoom(self, controller, mock_controls, mock_preview):
+        """Test interactive viewport zoom via mousewheel."""
+        controller.on_viewport_zoom(0.85)
+
+        assert controller.settings.zoom == 0.85
+        mock_controls['zoom_slider'].SetValue.assert_called_once_with(0.85)
+        mock_controls['zoom_input'].SetValue.assert_called_once_with(0.85)
+        mock_preview.update_preview_overlay.assert_called_once()
+        controller.preset_controller.check_preset_match.assert_called_with(manual_change=True)
+
