@@ -300,7 +300,23 @@ class SpinRenderPanel(wx.Panel):
 
         # Hook interactive viewport zoom
         if hasattr(self.preview, 'viewport'):
-            self.preview.viewport.on_zoom_callback = self.parameter_controller.on_viewport_zoom
+            self.preview.viewport.on_zoom_callback = self._on_viewport_zoom
+            self.preview.viewport.can_wheel_zoom = lambda: not self.render_controller.is_rendering()
+        # The render result overlays the viewport and swallows wheel events;
+        # forward them so scrolling dismisses it like any other adjustment.
+        if hasattr(self.preview, 'render_preview_panel'):
+            self.preview.render_preview_panel.Bind(wx.EVT_MOUSEWHEEL, self._on_render_preview_wheel)
+
+    def _on_viewport_zoom(self, new_zoom: float):
+        """Wheel zoom in the viewport counts as a parameter adjustment."""
+        self.reset_status_bar()
+        self.parameter_controller.on_viewport_zoom(new_zoom)
+
+    def _on_render_preview_wheel(self, event):
+        """Dismiss the render result and apply the wheel zoom to the viewport."""
+        if self.render_controller.is_rendering():
+            return
+        self.preview.viewport.zoom_step(event.GetWheelRotation())
 
     def _wire_parameter_events(self):
         """Bind parameter control events to ParameterController methods."""

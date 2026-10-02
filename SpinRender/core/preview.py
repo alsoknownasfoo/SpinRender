@@ -169,6 +169,8 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         # Camera Zoom (synchronized with kicad-cli --zoom)
         self.zoom = DEFAULT_ZOOM
         self.on_zoom_callback = None
+        # Optional predicate; wheel zoom is ignored while it returns False
+        self.can_wheel_zoom = None
 
         # Callback for when model finishes loading
         self.on_model_loaded = None
@@ -186,7 +188,12 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
 
     def _on_mousewheel(self, event):
         """Handle mouse wheel on preview canvas for interactive zooming."""
-        rot = event.GetWheelRotation()
+        if callable(self.can_wheel_zoom) and not self.can_wheel_zoom():
+            return
+        self.zoom_step(event.GetWheelRotation())
+
+    def zoom_step(self, rot: int):
+        """Nudge zoom one step in the direction of a wheel rotation."""
         if rot == 0:
             return
         delta = 0.05 if rot > 0 else -0.05
