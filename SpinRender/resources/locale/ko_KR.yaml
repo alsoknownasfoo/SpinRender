@@ -254,6 +254,10 @@ locale:
         desc: "보드 주변 카메라 회전"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
+      zoom:
+        label: "확대/축소"
+        desc: "프레임 내 보드 배율"
+        unit: "x"
       period:
         label: "회전 주기"
         desc: "360도 회전 소요 시간"

@@ -254,6 +254,10 @@ locale:
         desc: "Otáčení kamery kolem desky"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
+      zoom:
+        label: "Přiblížení"
+        desc: "Měřítko desky v záběru"
+        unit: "x"
       period:
         label: "Perioda rotace"
         desc: "Doba jedné plné otáčky 360°"

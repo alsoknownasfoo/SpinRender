@@ -257,6 +257,10 @@ locale:
         desc: "Gira la cámara alrededor de la placa"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
+      zoom:
+        label: "Zoom"
+        desc: "Escala de la placa en el encuadre"
+        unit: "x"
       period:
         label: "Periodo rotación"
         desc: "Duración de un giro completo de 360°"

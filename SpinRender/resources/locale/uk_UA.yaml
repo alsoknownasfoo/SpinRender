@@ -254,6 +254,10 @@ locale:
         desc: "Обертання камери навколо плати"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
+      zoom:
+        label: "Масштаб"
+        desc: "Масштаб плати в кадрі"
+        unit: "x"
       period:
         label: "Період оберту"
         desc: "Час повного оберту на 360°"

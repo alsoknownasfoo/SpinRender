@@ -254,6 +254,10 @@ locale:
         desc: "攝像機繞電路板旋轉"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
+      zoom:
+        label: "縮放"
+        desc: "電路板在畫面中的比例"
+        unit: "x"
       period:
         label: "旋轉週期"
         desc: "完成360°旋轉所需時間"

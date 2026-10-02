@@ -254,6 +254,10 @@ locale:
         desc: "基板周囲のカメラ回転"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
+      zoom:
+        label: "ズーム"
+        desc: "フレーム内の基板のスケール"
+        unit: "x"
       period:
         label: "回転周期"
         desc: "360度回転にかかる時間"

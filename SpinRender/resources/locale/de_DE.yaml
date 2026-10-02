@@ -257,6 +257,10 @@ locale:
         desc: "Kamera um die Platine drehen"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
+      zoom:
+        label: "Zoom"
+        desc: "Skalierung der Platine im Bildausschnitt"
+        unit: "x"
       period:
         label: "Rotationsdauer"
         desc: "Zeit für eine volle 360°-Drehung"

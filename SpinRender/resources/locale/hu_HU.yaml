@@ -254,6 +254,10 @@ locale:
         desc: "Kamera forgatása a panel körül"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
+      zoom:
+        label: "Nagyítás"
+        desc: "A panel mérete a képkivágásban"
+        unit: "x"
       period:
         label: "Forgási idő"
         desc: "Egy teljes 360°-os fordulat ideje"

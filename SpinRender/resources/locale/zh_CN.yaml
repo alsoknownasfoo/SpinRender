@@ -254,6 +254,10 @@ locale:
         desc: "摄像机绕电路板旋转"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
+      zoom:
+        label: "缩放"
+        desc: "电路板在画面中的比例"
+        unit: "x"
       period:
         label: "旋转周期"
         desc: "完成360°旋转所需时间"
