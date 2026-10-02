@@ -39,7 +39,9 @@ RenderSettings (core/settings.py), SpinLogger (utils/logger.py)
 
 ### 1. Startup
 1. `SpinRenderPlugin.Run()` runs the dependency check (`kicad-cli`, `ffmpeg`, PyOpenGL,
-   numpy, trimesh, PyYAML) and offers to install anything missing.
+   numpy, trimesh, PyYAML). Missing Python packages are pip-installed into KiCad's Python;
+   missing commands are installed via Homebrew (macOS) or `pkexec apt-get` (Linux), while
+   Windows gets manual instructions (e.g. re-run `install.bat` for ffmpeg via winget).
 2. Reuses the open window if one exists (`SpinRenderFrame.active_instance`).
 3. Requires a saved board, loads last-used settings (`PresetManager.get_last_used_settings`)
    and the active locale.

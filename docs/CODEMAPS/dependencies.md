@@ -5,8 +5,9 @@
 ## Runtime dependencies
 
 Checked on every launch by `DependencyChecker` (`utils/check_dependencies.py`, UI wrapper in
-`ui/dependencies.py` + `ui/dependency_dialog.py`). Missing Python packages can be installed
-into KiCad's Python from the dialog.
+`ui/dependencies.py` + `ui/dependency_dialog.py`). From the dialog, missing Python packages
+are pip-installed into KiCad's Python; missing commands are installed via Homebrew (macOS) or
+`pkexec apt-get` (Linux). On Windows, command dependencies get manual instructions instead.
 
 | Dependency | Type | Used for |
 |---|---|---|

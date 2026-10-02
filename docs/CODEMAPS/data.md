@@ -22,7 +22,7 @@ class RenderSettings:
     # Output
     format: str = 'mp4'              # 'mp4' | 'gif' | 'png_sequence'
     resolution: str = '1920x1080'    # 'WxH'
-    custom_resolutions: List[str] = []  # user-added 'WxH' entries
+    custom_resolutions: List[str] = field(default_factory=list)  # user-added 'WxH' entries
     bg_color: str = '#000000'        # composited under transparent frames
     hide_vias: bool = True           # render filters (see note below)
     hide_components: bool = True
