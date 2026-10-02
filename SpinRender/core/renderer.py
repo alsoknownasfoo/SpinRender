@@ -35,8 +35,39 @@ _MACHO_CPU_TYPES = {
 }
 
 
+# Global library tables kicad-cli expects in a config home, mapped to the
+# s-expression root of an empty table. KiCad 10.0.x <= 10.0.6 dereferences a
+# null table during PCM library auto-load when these are missing and any
+# PCM-installed footprint/symbol library exists, crashing kicad-cli before it
+# renders anything (issue #15; fixed upstream in 10.0.7).
+_GLOBAL_LIB_TABLES = {
+    'sym-lib-table': 'sym_lib_table',
+    'fp-lib-table': 'fp_lib_table',
+    'design-block-lib-table': 'design_block_lib_table',
+}
+
+
+def _seed_global_lib_tables(version_dir):
+    """Create empty global library tables in version_dir if they are missing.
+
+    Existing tables are left alone: kicad-cli may have added PCM rows to them.
+    Exclusive create ('x') makes that atomic, so a table another process
+    created a moment earlier is never truncated.
+    """
+    for filename, root in _GLOBAL_LIB_TABLES.items():
+        path = os.path.join(version_dir, filename)
+        try:
+            with open(path, 'x', encoding='utf-8') as f:
+                f.write(f"({root}\n)\n")
+        except FileExistsError:
+            continue
+        except OSError as e:
+            logger.warning(f"Could not seed {filename} in {version_dir}: {e}")
+
+
 def _prepare_kicad_config_home(plugin_dir):
-    """Return a writable KICAD_CONFIG_HOME seeded with our 3d_viewer.json.
+    """Return a writable KICAD_CONFIG_HOME seeded with our 3d_viewer.json
+    and empty global library tables.
 
     kicad-cli treats KICAD_CONFIG_HOME as a full config home: it reads it and
     writes scratch config (pcbnew.json, 3d/, colors/, ...) back on every render.
@@ -69,6 +100,7 @@ def _prepare_kicad_config_home(plugin_dir):
             os.chmod(dest_file, 0o644)
         except OSError as e:
             logger.warning(f"Could not seed 3d_viewer.json for {version}: {e}")
+        _seed_global_lib_tables(dest_dir)
 
     return config_home
 

@@ -79,7 +79,7 @@ Each preset maps to kicad-cli `--light-top/-side/-bottom/-camera` intensities an
 | Frame scratch | `<tmp>/spinrender_frames_*/frame0000.png...` | `RenderEngine.render` (removed by the UI later) |
 | Last preview frame | `<tmp>/spinrender_preview/last_render_preview.png` | `RenderEngine.render` |
 | Preview GLB cache | `<tmp>/SpinRender_Cache/<board>_<sha1[:16]>.glb` | `GLPreviewRenderer` |
-| kicad-cli config home | per-user copy of `resources/kicad_config/<9.0|10.0>/` | `_prepare_kicad_config_home` |
+| kicad-cli config home | `<tmp>/SpinRender_kicad_config/<9.0|10.0>/`: our `3d_viewer.json` + empty global library tables | `_prepare_kicad_config_home` |
 | Board working copy | hidden `.<board>.spinrender-tmp.kicad_pcb` (+ project siblings, `.spinrender-src` snapshot) next to the board | `BoardWorkspace` |
 | Logs | `SpinRender/logs/` (fallback `<tmp>/SpinRender_Logs`), 30-day retention | `SpinLogger` |
 
@@ -106,7 +106,11 @@ version: a field added to `RenderSettings` gets its default when an older file i
 
 ## KiCad integration data
 
-- `resources/kicad_config/<version>/3d_viewer.json` forces raytracing settings (e.g. no floor)
-  for kicad-cli renders; 10.0 also ships the other config JSONs kicad-cli expects.
+- `resources/kicad_config/<version>/3d_viewer.json` (the only tracked file there) forces
+  raytracing settings (e.g. no floor) for kicad-cli renders. It is copied into the config home
+  on every render; kicad-cli writes its other config JSONs there itself.
+- The config home also gets empty `sym-lib-table`, `fp-lib-table` and `design-block-lib-table`
+  when missing (never overwritten: kicad-cli adds PCM library rows to them). Without them,
+  KiCad 10.0.x up to 10.0.6 segfaults during PCM library auto-load (issue #15).
 - kicad-cli `--rotate` angles come from `compute_kicad_angles()` (rotation order
   `R_X(board_tilt) · R_spin · R_Z(board_roll)`), normalized to `[0, 360)`.

@@ -1,9 +1,11 @@
+import os
 import struct
 import subprocess
 from unittest.mock import Mock
 
 from SpinRender.core.renderer import (
     RenderEngine,
+    _prepare_kicad_config_home,
     _crash_diagnostics,
     _kicad_cli_arch_report,
     _pad_frame_to_size,
@@ -377,3 +379,77 @@ def test_assembly_canvas_falls_back_to_resolution_setting(monkeypatch, tmp_path)
     engine.assemble_mp4(str(tmp_path), str(tmp_path / 'out.mp4'), 1)
 
     assert 's=1920x1080' in _filter_graph(cmds[0])
+
+
+def _fake_plugin_dir(tmp_path, versions=('9.0', '10.0')):
+    plugin_dir = tmp_path / 'plugin'
+    for v in versions:
+        d = plugin_dir / 'resources' / 'kicad_config' / v
+        d.mkdir(parents=True)
+        (d / '3d_viewer.json').write_text('{}')
+    return plugin_dir
+
+
+GLOBAL_LIB_TABLES = {
+    'sym-lib-table': 'sym_lib_table',
+    'fp-lib-table': 'fp_lib_table',
+    'design-block-lib-table': 'design_block_lib_table',
+}
+
+
+def test_config_home_seeds_empty_global_lib_tables(monkeypatch, tmp_path):
+    # KiCad <= 10.0.6 segfaults when a config home has no global library tables
+    # and PCM-installed libraries exist (issue #15).
+    monkeypatch.setattr('SpinRender.core.renderer.tempfile.gettempdir', lambda: str(tmp_path / 'tmp'))
+    home = _prepare_kicad_config_home(str(_fake_plugin_dir(tmp_path)))
+
+    for version in ('9.0', '10.0'):
+        for filename, root in GLOBAL_LIB_TABLES.items():
+            table = tmp_path / 'tmp' / 'SpinRender_kicad_config' / version / filename
+            assert table.read_text().lstrip().startswith(f'({root}'), (version, filename)
+    assert home == str(tmp_path / 'tmp' / 'SpinRender_kicad_config')
+
+
+def test_config_home_keeps_existing_lib_tables(monkeypatch, tmp_path):
+    # kicad-cli may add PCM rows to the tables; don't clobber them on each render
+    monkeypatch.setattr('SpinRender.core.renderer.tempfile.gettempdir', lambda: str(tmp_path / 'tmp'))
+    existing = tmp_path / 'tmp' / 'SpinRender_kicad_config' / '10.0' / 'fp-lib-table'
+    existing.parent.mkdir(parents=True)
+    existing.write_text('(fp_lib_table\n  (lib (name "PCM_Example"))\n)\n')
+
+    _prepare_kicad_config_home(str(_fake_plugin_dir(tmp_path, versions=('10.0',))))
+
+    assert 'PCM_Example' in existing.read_text()
+
+
+def test_config_home_lib_table_failure_is_not_fatal(monkeypatch, tmp_path):
+    monkeypatch.setattr('SpinRender.core.renderer.tempfile.gettempdir', lambda: str(tmp_path / 'tmp'))
+    real_open = open
+
+    def failing_open(path, *args, **kwargs):
+        if str(path).endswith('-lib-table'):
+            raise PermissionError('read-only temp dir')
+        return real_open(path, *args, **kwargs)
+
+    monkeypatch.setattr('builtins.open', failing_open)
+    home = _prepare_kicad_config_home(str(_fake_plugin_dir(tmp_path, versions=('10.0',))))
+    assert (tmp_path / 'tmp' / 'SpinRender_kicad_config' / '10.0' / '3d_viewer.json').exists()
+    assert home
+
+
+def test_config_home_seeding_never_truncates_a_concurrently_created_table(monkeypatch, tmp_path):
+    # Another SpinRender/KiCad process can create the table (and kicad-cli can
+    # add PCM rows) between an existence check and the write. Seeding must
+    # never truncate it.
+    monkeypatch.setattr('SpinRender.core.renderer.tempfile.gettempdir', lambda: str(tmp_path / 'tmp'))
+    table = tmp_path / 'tmp' / 'SpinRender_kicad_config' / '10.0' / 'fp-lib-table'
+    table.parent.mkdir(parents=True)
+    table.write_text('(fp_lib_table\n  (lib (name "PCM_Example"))\n)\n')
+
+    real_exists = os.path.exists
+    monkeypatch.setattr('SpinRender.core.renderer.os.path.exists',
+                        lambda p: False if str(p).endswith('-lib-table') else real_exists(p))
+
+    _prepare_kicad_config_home(str(_fake_plugin_dir(tmp_path, versions=('10.0',))))
+
+    assert 'PCM_Example' in table.read_text()
