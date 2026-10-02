@@ -79,6 +79,7 @@ Python packages and font dependencies are installed on first launch.
    - **Start Angle** — initial board orientation
    - **Duration** — total animation length in seconds
    - **Frame Rate** — output FPS (24, 30, or 60)
+   - **Zoom** — scale of the board within the frame (0.1× to 5×), or scroll over the preview to zoom
    
    💡 Save your favourite configurations with **+ SAVE PRESET** to reuse them across projects.<br><br>
 3. #### 💾 **Choose your output**<br>

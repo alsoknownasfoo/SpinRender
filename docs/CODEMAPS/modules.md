@@ -75,6 +75,7 @@ colors.primary
 
 **Key Classes**:
 - `GLPreviewRenderer` (wx.GLCanvas)
+  - `set_zoom(zoom)`, `zoom_step(wheel_rotation)` — mouse-wheel zoom; `on_zoom_callback` syncs the UI, `can_wheel_zoom` predicate blocks it during renders
   - `__init__(parent, board_path)`
   - `load_board(board_path) → bool`
   - `render_frame(camera_pos, lighting, resolution) → wx.Bitmap`
@@ -87,6 +88,17 @@ colors.primary
 - trimesh for mesh loading
 - OpenGL for rendering
 - numpy for transforms
+
+**Camera framing (preview ↔ render parity)**: the preview reproduces kicad-cli's
+`pcb render --perspective` camera so the preview matches the final frame:
+- Look-at point is the **board outline** center, read from the GLB's `*_PCB_*`
+  geometry (`board_bounds` in mesh metadata), not the full mesh — overhanging
+  or tall components would otherwise shift the pivot.
+- Fixed 45° vertical FOV (`KICAD_FOV_Y`) at every aspect ratio.
+- Camera distance makes the board's longest side span `KICAD_FRAMING * zoom`
+  of the frame height. `KICAD_FRAMING` (0.971) was measured from kicad-cli 10
+  renders relative to the *requested* frame size; re-measure if a KiCad
+  release changes framing.
 
 ---
 
@@ -126,7 +138,7 @@ colors.primary
 
 **Class**: `RenderSettings`
 - Resolution: `width`, `height`
-- Camera: `board_tilt`, `board_roll`, `spin_tilt`, `spin_heading`
+- Camera: `board_tilt`, `board_roll`, `spin_tilt`, `spin_heading`, `zoom`
 - Animation: `period`, `easing`, `direction`
 - Lighting: `lighting` preset name
 - Output: `format`, `resolution`, `bg_color`, `output_auto`, `output_path`

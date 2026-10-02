@@ -17,6 +17,7 @@ class RenderSettings:
     board_roll: float = -45.0        # -180 to +180
     spin_tilt: float = 90.0          # -90 to +90
     spin_heading: float = 90.0       # -180 to +180
+    zoom: float = DEFAULT_ZOOM       # 0.1 to 5.0, passed to kicad-cli --zoom
 
     # Animation
     period: float = 10.0             # seconds, 3-30
@@ -46,6 +47,11 @@ class RenderSettings:
 - `spin_tilt`: -90 ≤ value ≤ 90
 - `spin_heading`: -180 ≤ value ≤ 180
 - `period`: > 0 (3-30 typical)
+- `zoom`: `MIN_ZOOM` ≤ value ≤ `MAX_ZOOM`
+
+**Module constants** (shared by settings, renderer, preview and UI):
+- `DEFAULT_ZOOM = 0.8` — matches the fixed `--zoom` used before zoom was configurable
+- `MIN_ZOOM = 0.1`, `MAX_ZOOM = 5.0`
 
 **Serialization**:
 - `to_dict() → dict` - all fields as JSON-compatible dict
@@ -327,6 +333,7 @@ Theme supports:
     "board_roll": -45.0,
     "spin_tilt": 90.0,
     "spin_heading": 90.0,
+    "zoom": 0.8,
     "period": 10.0,
     "easing": "linear",
     "direction": "ccw",
@@ -343,7 +350,7 @@ Theme supports:
 }
 ```
 
-**Schema Version**: Implicit v1 (flat RenderSettings fields)
+**Schema Version**: Implicit v1 (flat RenderSettings fields). Presets saved before `zoom` existed load with `DEFAULT_ZOOM`. Built-in presets (`RenderEngine.PRESETS`) also carry `zoom`, and preset matching compares it.
 **Backwards Compat**: `RenderSettings.from_dict()` ignores extra keys.
 
 ---
