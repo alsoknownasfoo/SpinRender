@@ -821,6 +821,20 @@ class RenderEngine:
 
         return frame_count
 
+    def _canvas_size(self, frame_dir):
+        """Background canvas size for assembly: the size frames were rendered at.
+
+        Frames are padded to kicad-cli's effective size, which CLI overrides
+        can change, so read it from the first frame; fall back to the
+        resolution setting if that frame can't be read.
+        """
+        size = _png_size(os.path.join(frame_dir, 'frame0000.png'))
+        if size:
+            return size
+        res = self.settings.get('resolution', '1920x1080')
+        w, h = map(int, res.split('x'))
+        return w, h
+
     def assemble_mp4(self, frame_dir, output_path, frame_count):
         """
         Assemble frames into MP4 video using ffmpeg
@@ -833,9 +847,7 @@ class RenderEngine:
         bg_hex = self.settings.get('bg_color', '#000000')
         if bg_hex == 'opaque': bg_hex = '#000000'
         
-        # Get resolution
-        res = self.settings.get('resolution', '1920x1080')
-        w, h = map(int, res.split('x'))
+        w, h = self._canvas_size(frame_dir)
 
         # Use single input and generate background in filter graph to avoid position-dependent option errors
         cmd = [
@@ -880,9 +892,7 @@ class RenderEngine:
         bg_hex = self.settings.get('bg_color', '#000000')
         if bg_hex == 'opaque': bg_hex = '#000000'
         
-        # Get resolution
-        res = self.settings.get('resolution', '1920x1080')
-        w, h = map(int, res.split('x'))
+        w, h = self._canvas_size(frame_dir)
 
         palette_path = os.path.join(frame_dir, 'palette.png')
         

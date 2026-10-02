@@ -328,3 +328,52 @@ def test_generate_frames_pads_to_overridden_size(monkeypatch, tmp_path):
 
     engine.generate_frames(str(tmp_path))
     assert pads == [(1280, 720)]
+
+
+def _capture_assembly_cmds(monkeypatch):
+    cmds = []
+
+    def fake_process(cmd, **kwargs):
+        cmds.append(cmd)
+        proc = Mock()
+        proc.communicate.return_value = ('', None)
+        proc.returncode = 0
+        return proc
+
+    monkeypatch.setattr('SpinRender.core.renderer.find_command', lambda _: '/usr/bin/ffmpeg')
+    monkeypatch.setattr('SpinRender.core.renderer._start_text_process', fake_process)
+    return cmds
+
+
+def _filter_graph(cmd):
+    return cmd[cmd.index('-filter_complex') + 1]
+
+
+def test_assemble_mp4_canvas_matches_rendered_frames(monkeypatch, tmp_path):
+    _write_png_header(tmp_path / 'frame0000.png', 1280, 720)
+    engine = RenderEngine('/tmp/example.kicad_pcb', {'resolution': '1920x1080'})
+    cmds = _capture_assembly_cmds(monkeypatch)
+
+    engine.assemble_mp4(str(tmp_path), str(tmp_path / 'out.mp4'), 1)
+
+    assert 's=1280x720' in _filter_graph(cmds[0])
+
+
+def test_assemble_gif_canvas_matches_rendered_frames(monkeypatch, tmp_path):
+    _write_png_header(tmp_path / 'frame0000.png', 1280, 720)
+    engine = RenderEngine('/tmp/example.kicad_pcb', {'resolution': '1920x1080'})
+    cmds = _capture_assembly_cmds(monkeypatch)
+
+    engine.assemble_gif(str(tmp_path), str(tmp_path / 'out.gif'), 1)
+
+    assert len(cmds) == 2  # palette + assembly
+    assert all('s=1280x720' in _filter_graph(c) for c in cmds)
+
+
+def test_assembly_canvas_falls_back_to_resolution_setting(monkeypatch, tmp_path):
+    engine = RenderEngine('/tmp/example.kicad_pcb', {'resolution': '1920x1080'})
+    cmds = _capture_assembly_cmds(monkeypatch)
+
+    engine.assemble_mp4(str(tmp_path), str(tmp_path / 'out.mp4'), 1)
+
+    assert 's=1920x1080' in _filter_graph(cmds[0])
