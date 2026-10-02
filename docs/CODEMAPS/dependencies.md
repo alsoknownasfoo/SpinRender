@@ -36,7 +36,7 @@ fontconfig on Linux): JetBrains Mono, Oswald, Material Design Icons.
 | `locale/*.yaml` | 19 locales, `en_US` is the source (`core/locale.py`) |
 | `fonts/` | the three font files above |
 | `icons/` | `logo.svg`, author/AI-assistant SVGs for the About dialog |
-| `kicad_config/9.0/`, `kicad_config/10.0/` | config homes for kicad-cli (raytracing settings, see `data.md`) |
+| `kicad_config/9.0/`, `kicad_config/10.0/` | `3d_viewer.json` seeds for kicad-cli's config home (raytracing settings, see `data.md`) |
 | `icon.png` | toolbar icon |
 
 `vendor/` holds a vendored `wx.svg` fallback used by `utils/wx_svg_compat.py`.
