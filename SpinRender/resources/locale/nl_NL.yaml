@@ -254,6 +254,10 @@ locale:
         desc: "Draai de camera rond het bord"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
+      zoom:
+        label: "Zoom"
+        desc: "Schaal van het bord in beeld"
+        unit: "x"
       period:
         label: "Draaiperiode"
         desc: "Duur van een volledige 360° draai"

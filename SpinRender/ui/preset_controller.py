@@ -14,7 +14,7 @@ providing a focused interface for preset management.
 import wx
 from typing import Dict, Any, Optional
 
-from SpinRender.core.settings import RenderSettings
+from SpinRender.core.settings import DEFAULT_ZOOM, RenderSettings
 from SpinRender.core.presets import PresetManager
 from SpinRender.core.locale import Locale
 _locale = Locale.current()
@@ -69,6 +69,8 @@ class PresetController:
         self.spin_tilt_input = controls.get('spin_tilt_input')
         self.spin_heading_slider = controls.get('spin_heading_slider')
         self.spin_heading_input = controls.get('spin_heading_input')
+        self.zoom_slider = controls.get('zoom_slider')
+        self.zoom_input = controls.get('zoom_input')
         self.period_slider = controls.get('period_slider')
         self.period_input = controls.get('period_input')
         self.frame_count = controls.get('frame_count')
@@ -141,7 +143,7 @@ class PresetController:
                 self.preset_buttons['custom'].SetLabel(_locale.get("component.preset_card.card4.label", "SELECT CUSTOM"))
 
         # Determine keys to update
-        keys = ['board_tilt', 'board_roll', 'spin_tilt', 'spin_heading', 'period', 'direction', 'lighting', 'bg_color']
+        keys = ['board_tilt', 'board_roll', 'spin_tilt', 'spin_heading', 'zoom', 'period', 'direction', 'lighting', 'bg_color']
         for k in keys:
             if hasattr(preset, k):
                 setattr(self.settings, k, getattr(preset, k))
@@ -175,6 +177,11 @@ class PresetController:
             if self.spin_heading_input:
                 self.spin_heading_input.SetValue(self.settings.spin_heading)
 
+        if self.zoom_slider and hasattr(self.settings, 'zoom'):
+            self.zoom_slider.SetValue(self.settings.zoom)
+            if self.zoom_input:
+                self.zoom_input.SetValue(self.settings.zoom)
+
         if self.period_slider:
             p = self.settings.period
             self.period_slider.SetValue(p)
@@ -199,6 +206,8 @@ class PresetController:
             self.preview.viewport.set_period(self.settings.period)
             self.preview.viewport.set_direction(self.settings.direction)
             self.preview.viewport.set_lighting(self.settings.lighting)
+            if hasattr(self.preview.viewport, 'set_zoom') and hasattr(self.settings, 'zoom'):
+                self.preview.viewport.set_zoom(self.settings.zoom)
 
         self.preview.update_preview_overlay()
         self.check_preset_match(manual_change=False)
@@ -236,6 +245,7 @@ class PresetController:
             )
             is_match = is_match and getattr(self.settings, 'direction', '') == p_dict.get('direction', '')
             is_match = is_match and getattr(self.settings, 'lighting', '') == p_dict.get('lighting', '')
+            is_match = is_match and abs(getattr(self.settings, 'zoom', DEFAULT_ZOOM) - p_dict.get('zoom', DEFAULT_ZOOM)) < 0.01
 
             btn.SetSelected(is_match)
             if is_match:
@@ -258,6 +268,7 @@ class PresetController:
                 )
                 match = match and getattr(self.settings, 'direction', '') == pd_dict.get('direction', '')
                 match = match and getattr(self.settings, 'lighting', '') == pd_dict.get('lighting', '')
+                match = match and abs(getattr(self.settings, 'zoom', DEFAULT_ZOOM) - pd_dict.get('zoom', DEFAULT_ZOOM)) < 0.01
 
                 if match:
                     cmn = name

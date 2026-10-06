@@ -107,4 +107,5 @@ dismisses a displayed render result.
 - **Isolated KiCad config:** `kicad-cli` runs with `KICAD_CONFIG_HOME` pointed at a
   per-user copy of `resources/kicad_config/<version>/` (forces raytracing settings).
 - **Preview ≠ render engine:** the preview is an OpenGL approximation of the shot, not a
-  kicad-cli render, so framing and lighting are close but not pixel-identical.
+  kicad-cli render. Framing is calibrated to match kicad-cli's camera (see `modules.md` →
+  `preview.py`); lighting and materials are approximate.

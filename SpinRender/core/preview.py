@@ -21,8 +21,20 @@ from pathlib import Path
 
 from SpinRender.utils.subprocess_utils import NO_WINDOW_FLAGS
 from SpinRender.utils.paint_guard import guarded_paint
+from SpinRender.core.settings import DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM
 
 logger = logging.getLogger("SpinRender")
+
+# Camera framing measured against kicad-cli 10 `pcb render --perspective`:
+# the board outline's longest side spans KICAD_FRAMING * zoom of the
+# requested frame *height* at any aspect ratio (vertical FOV fixed at 45°),
+# and the camera looks at the outline's center. Measured 0.966–0.977 across
+# 6 renders, relative to the requested size (kicad-cli writes a centered
+# crop a few pixels smaller, but frames the camera for the full window).
+KICAD_FRAMING = 0.971
+KICAD_FOV_Y = 45.0
+# kicad-cli `export glb` names the board body geometry "<board>_PCB_<n>".
+PCB_GEOMETRY_TAG = "_PCB_"
 
 # Global flag to ensure glutInit is only called once per session
 if '_SPINRENDER_GLUT_INIT' not in globals():
@@ -72,6 +84,7 @@ class PCBModelLoader:
                 # texture-atlas packing (to_mesh() is expensive and unsafe in
                 # background threads; the GL preview only needs geometry).
                 parts = []
+                is_board = []
                 for node_name in scene.graph.nodes_geometry:
                     transform, geometry_name = scene.graph[node_name]
                     geom = scene.geometry[geometry_name]
@@ -82,15 +95,18 @@ class PCBModelLoader:
                     )
                     m.apply_transform(transform)
                     parts.append(m)
+                    is_board.append(PCB_GEOMETRY_TAG in str(geometry_name))
                 if not parts:
                     return None
                 all_vertices = np.concatenate([m.vertices for m in parts])
                 offsets = np.cumsum([0] + [len(m.vertices) for m in parts[:-1]])
                 all_faces = np.concatenate([m.faces + off for m, off in zip(parts, offsets)])
+                board_mask = np.concatenate([np.full(len(m.vertices), b) for m, b in zip(parts, is_board)])
                 mesh = trimesh.Trimesh(vertices=all_vertices, faces=all_faces, process=False)
             else:
                 mesh = scene
-            
+                board_mask = np.zeros(len(mesh.vertices), dtype=bool)
+
             # Align mesh with KiCad base orientation (Top-down view at 0,0,0)
             # Match parity test: Rotate +90 around X to bring face-up
             mesh.apply_transform(trimesh.transformations.rotation_matrix(math.radians(90), [1, 0, 0]))
@@ -98,7 +114,12 @@ class PCBModelLoader:
             # Auto-scale from meters to mm if needed
             if np.max(mesh.extents) < 1.0:
                 mesh.apply_scale(1000.0)
-                
+
+            # kicad-cli frames the board outline, not components hanging off
+            # it, so record the board body's bounds before vertices get merged.
+            board_vertices = mesh.vertices[board_mask] if board_mask.any() else mesh.vertices
+            mesh.metadata['board_bounds'] = np.array([board_vertices.min(axis=0), board_vertices.max(axis=0)])
+
             return mesh
         except Exception as e:
             logger.error(f"GLB mesh load failed for {glb_path}: {e}", exc_info=True)
@@ -155,6 +176,8 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
 
         self.model_center = np.array([0.0, 0.0, 0.0])
         self.model_size = 150.0
+        self.board_center = np.array([0.0, 0.0, 0.0])
+        self.board_max_dim = 100.0
         self.loading_state = "exporting"
 
         # Target aspect ratio for WYSIWYG preview
@@ -164,11 +187,18 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         self.preview_texture = None
         self.has_texture = False
 
+        # Camera Zoom (synchronized with kicad-cli --zoom)
+        self.zoom = DEFAULT_ZOOM
+        self.on_zoom_callback = None
+        # Optional predicate; wheel zoom is ignored while it returns False
+        self.can_wheel_zoom = None
+
         # Callback for when model finishes loading
         self.on_model_loaded = None
 
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_SIZE, self.on_size)
+        self.Bind(wx.EVT_MOUSEWHEEL, self._on_mousewheel)
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.on_timer)
         self.loading_timer = wx.Timer(self)
@@ -176,6 +206,28 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         self.Bind(wx.EVT_WINDOW_DESTROY, self._on_destroy)
         self.loading_timer.Start(50)
         wx.CallAfter(self._start_loading_thread)
+
+    def _on_mousewheel(self, event):
+        """Handle mouse wheel on preview canvas for interactive zooming."""
+        if callable(self.can_wheel_zoom) and not self.can_wheel_zoom():
+            return
+        self.zoom_step(event.GetWheelRotation())
+
+    def zoom_step(self, rot: int):
+        """Nudge zoom one step in the direction of a wheel rotation."""
+        if rot == 0:
+            return
+        delta = 0.05 if rot > 0 else -0.05
+        new_zoom = max(MIN_ZOOM, min(MAX_ZOOM, round(self.zoom + delta, 2)))
+        if new_zoom != self.zoom:
+            self.set_zoom(new_zoom)
+            if callable(self.on_zoom_callback):
+                self.on_zoom_callback(new_zoom)
+
+    def set_zoom(self, zoom: float):
+        """Set camera zoom factor and redraw."""
+        self.zoom = max(MIN_ZOOM, min(MAX_ZOOM, float(zoom)))
+        self.Refresh()
 
     def _on_destroy(self, event):
         """Stop timers and disable GL work when this canvas is destroyed.
@@ -361,6 +413,9 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         bounds = mesh.bounds
         self.model_center = (bounds[0] + bounds[1]) / 2
         self.model_size = np.linalg.norm(bounds[1] - bounds[0])
+        board_lo, board_hi = mesh.metadata.get('board_bounds', bounds)
+        self.board_center = (board_lo + board_hi) / 2
+        self.board_max_dim = float(max(board_hi[0] - board_lo[0], board_hi[1] - board_lo[1]))
         
         try:
             sharp_mask = mesh.face_adjacency_angles > 0.52
@@ -607,8 +662,10 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
 
             glMatrixMode(GL_PROJECTION)
             glLoadIdentity()
-            cam_dist = (self.model_size * 0.5) / (0.4142 * min(1.0, target_aspect) * 0.85)
-            gluPerspective(45.0, target_aspect, 1.0, cam_dist * 10.0)
+            zoom = getattr(self, 'zoom', DEFAULT_ZOOM)
+            visible_height = self.board_max_dim / (KICAD_FRAMING * zoom)
+            cam_dist = visible_height / (2.0 * math.tan(math.radians(KICAD_FOV_Y / 2.0)))
+            gluPerspective(KICAD_FOV_Y, target_aspect, cam_dist * 0.01, cam_dist * 10.0)
             glMatrixMode(GL_MODELVIEW)
             glLoadIdentity()
             gluLookAt(0, 0, cam_dist, 0, 0, 0, 0, 1, 0)
@@ -620,7 +677,7 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
             glRotatef(self.direction_sign * self.rotation_angle, self.rotation_axis[0], self.rotation_axis[1], self.rotation_axis[2])
             glRotatef(self.board_roll, 0, 0, 1)
 
-            glTranslatef(-self.model_center[0], -self.model_center[1], -self.model_center[2])
+            glTranslatef(-self.board_center[0], -self.board_center[1], -self.board_center[2])
             
             if self.mesh_data:
                 # A GL error partway through mesh drawing (e.g. the vertex-array

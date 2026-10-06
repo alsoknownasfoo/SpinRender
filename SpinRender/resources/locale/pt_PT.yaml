@@ -254,6 +254,10 @@ locale:
         desc: "Rodar a câmara à volta da placa"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
+      zoom:
+        label: "Zoom"
+        desc: "Escala da placa no enquadramento"
+        unit: "x"
       period:
         label: "Período rotação"
         desc: "Duração de uma volta completa (360°)"

@@ -254,6 +254,10 @@ locale:
         desc: "Ruota la camera attorno alla scheda"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
+      zoom:
+        label: "Zoom"
+        desc: "Scala della scheda nell'inquadratura"
+        unit: "x"
       period:
         label: "Periodo rotazione"
         desc: "Durata di un giro completo (360°)"

@@ -21,6 +21,7 @@ from .text_styles import TextStyle
 from .registry import ControlRegistry
 from SpinRender.core.theme import Theme
 from SpinRender.core.locale import Locale
+from SpinRender.core.settings import DEFAULT_ZOOM, MIN_ZOOM, MAX_ZOOM
 from SpinRender.version import get_version
 _theme = Theme.current()
 _locale = Locale.current()
@@ -335,12 +336,14 @@ class ControlsSidePanel(wx.Panel):
             self.create_rotation_controls(panel),
             self.create_period_control(panel),
             self.create_direction_control(panel),
+            self.create_zoom_control(panel),
             self.create_lighting_control(panel),
         ]
         sizer.Add(self._params_content[0], 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(10))
         sizer.Add(self._params_content[1], 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(10))
         sizer.Add(self._params_content[2], 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(10))
-        sizer.Add(self._params_content[3], 0, wx.EXPAND)
+        sizer.Add(self._params_content[3], 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(10))
+        sizer.Add(self._params_content[4], 0, wx.EXPAND)
 
         # Build in the expanded state so the panel measures at full height.
         # The persisted collapsed state is applied later (after the scroll
@@ -589,6 +592,38 @@ class ControlsSidePanel(wx.Panel):
         row.SetSizerAndFit(sizer)
         return row
 
+    def create_zoom_control(self, parent):
+        """Create the camera zoom control."""
+        panel = wx.Panel(parent)
+        apply_transparent_background(panel)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.AddSpacer(self.FromDIP(10))
+        self.zoom_heading = create_text(panel, _locale.get("parameters.zoom.label", "ZOOM"), "subheader")
+        sizer.Add(self.zoom_heading, 0, wx.BOTTOM, self.FromDIP(6))
+
+        z_val = getattr(self.settings, 'zoom', DEFAULT_ZOOM)
+        self.zoom_meta_row = wx.Panel(panel)
+        apply_transparent_background(self.zoom_meta_row)
+        meta_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.zoom_desc = create_text(self.zoom_meta_row, _locale.get("parameters.zoom.desc", "SCALE OF BOARD WITHIN FRAME"), "description")
+        meta_sizer.Add(self.zoom_desc, 0, wx.ALIGN_CENTER_VERTICAL)
+        self.zoom_meta_row.SetSizerAndFit(meta_sizer)
+        sizer.Add(self.zoom_meta_row, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(10))
+
+        crow = wx.Panel(panel)
+        apply_transparent_background(crow)
+        csizer = wx.BoxSizer(wx.HORIZONTAL)
+        csizer.AddSpacer(self.FromDIP(10))
+        self.zoom_slider = CustomSlider(crow, value=z_val, min_val=MIN_ZOOM, max_val=MAX_ZOOM, size=(-1, 18), id="primary", section='parameters')
+        csizer.Add(self.zoom_slider, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, self.FromDIP(10))
+        unit = _locale.get("parameters.zoom.unit", "x")
+        self.zoom_input = create_numeric_input(crow, f"{z_val:.2f}", unit, editable=True, min_val=MIN_ZOOM, max_val=MAX_ZOOM, id="axis", section='parameters')
+        csizer.Add(self.zoom_input, 0, wx.ALIGN_CENTER_VERTICAL)
+        crow.SetSizerAndFit(csizer)
+        sizer.Add(crow, 0, wx.EXPAND)
+        panel.SetSizerAndFit(sizer)
+        return panel
+
     def create_period_control(self, parent):
         """Create the rotation period control."""
         panel = wx.Panel(parent)
@@ -660,7 +695,6 @@ class ControlsSidePanel(wx.Panel):
         panel = wx.Panel(parent)
         apply_transparent_background(panel)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.AddSpacer(self.FromDIP(10))
         self.light_heading = create_text(panel, _locale.get("parameters.lighting.label", "LIGHTING"), "subheader")
         sizer.Add(self.light_heading, 0, wx.BOTTOM, self.FromDIP(6))
 

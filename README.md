@@ -79,6 +79,7 @@ Python packages and font dependencies are installed on first launch.
    - **Spin Tilt / Spin Heading** — orient the spindle itself and rotate the camera around the board (±90° / ±180°)
    - **Rotation Period** — seconds per full 360° turn (0.1 to 30 s, rendered at 30 fps)
    - **Direction** — clockwise or counter-clockwise
+   - **Zoom** — scale of the board within the frame (0.1× to 5×), or scroll over the preview to zoom
    - **Lighting** — Studio, Dramatic, Soft, or Workspace (uses your KiCad 3D viewer settings)
    
    💡 Save your favourite configurations with **+ PRESET** to reuse them across projects.<br><br>

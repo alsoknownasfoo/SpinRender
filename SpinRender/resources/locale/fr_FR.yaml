@@ -257,6 +257,10 @@ locale:
         desc: "Rotation caméra autour de la carte"
         icon_ref: "glyphs.axis-z-rot"
         unit: "°"
+      zoom:
+        label: "Zoom"
+        desc: "Échelle de la carte dans le cadre"
+        unit: "x"
       period:
         label: "Période rotation"
         desc: "Durée d'un tour complet (360°)"

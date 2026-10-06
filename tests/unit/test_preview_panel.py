@@ -192,6 +192,7 @@ class TestPreviewPanelOverlay:
         mock_settings.board_roll = -10.0
         mock_settings.spin_tilt = 15.0
         mock_settings.spin_heading = 45.0
+        mock_settings.zoom = 1.25
         mock_settings.period = 4.5
 
         parent = MagicMock()
@@ -203,6 +204,7 @@ class TestPreviewPanelOverlay:
         assert 'BR:-10°' in label
         assert 'ST:15°' in label
         assert 'SH:45°' in label
+        assert 'Z:1.25X' in label
         # "info" style uppercases the whole overlay string
         assert '4.5S' in label
 

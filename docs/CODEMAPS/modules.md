@@ -18,7 +18,7 @@
 
 ### `settings.py` (~55 lines)
 `RenderSettings` dataclass — every persisted setting, validated in `__post_init__`;
-`to_dict()` / `from_dict()`. See `data.md`.
+`to_dict()` / `from_dict()`. Also `DEFAULT_ZOOM`, `MIN_ZOOM`, `MAX_ZOOM`. See `data.md`.
 
 ### `renderer.py` (~990 lines)
 `RenderEngine(board_path, settings: dict, progress_callback, source_board_path)`
@@ -32,7 +32,7 @@ Module helpers:
 - `find_command()` — locates `kicad-cli` / `ffmpeg` (PATH + platform install dirs)
 - `_pad_frame_to_size()`, `_png_size()`, `_render_size_from_cmd()` — restore kicad-cli's
   cropped frames to the effective requested size
-- `_apply_overrides()` — user CLI overrides replace base flags
+- `_apply_overrides()` — user CLI overrides replace base flags (a `--zoom` override wins over the Zoom setting, so the GL preview no longer matches the render)
 - Crash handling: `_is_probable_crash()`, `_crash_diagnostics()`, `_run_minimal_probe()`,
   `_kicad_cli_arch_report()` (macOS Rosetta detection)
 - `_prepare_kicad_config_home()` — per-user copy of `resources/kicad_config/<version>/`
@@ -49,9 +49,21 @@ removed on the UI thread after pending callbacks.
   `<tmp>/SpinRender_Cache`), shaded + feature-edge drawing, animation timer.
   `set_universal_joint_parameters`, `set_period`, `set_direction`, `set_lighting`,
   `set_background_color`, `set_render_mode`, `set_aspect_ratio`, `reload_model`,
-  `start_preview` / `stop_preview`, `cleanup`.
+  `start_preview` / `stop_preview`, `cleanup`. Zoom: `set_zoom(zoom)`, `zoom_step(rotation)`
+  (mouse wheel), `on_zoom_callback` (syncs the UI), `can_wheel_zoom` (predicate, blocks
+  wheel zoom during renders).
 - `PreviewRenderer(wx.Panel)` — legacy wx-drawn wireframe renderer; not instantiated anywhere
   (candidate for removal).
+
+**Camera framing (preview ↔ render parity):** the preview reproduces kicad-cli's
+`pcb render --perspective` camera so the preview matches the final frame:
+- Look-at point is the **board outline** center, read from the GLB's `*_PCB_*` geometry
+  (`board_bounds` in mesh metadata), not the full mesh: overhanging or tall components would
+  otherwise shift the pivot.
+- Fixed 45° vertical FOV (`KICAD_FOV_Y`) at every aspect ratio.
+- Camera distance makes the board's longest side span `KICAD_FRAMING * zoom` of the frame
+  height. `KICAD_FRAMING` (0.971) was measured from kicad-cli 10 renders relative to the
+  *requested* frame size; re-measure if a KiCad release changes framing.
 
 ### `board_workspace.py` (~600 lines)
 `BoardWorkspace(board_path)` — hidden working copy of the `.kicad_pcb` (+ project siblings):
@@ -99,7 +111,7 @@ overlays (`update_preview_overlay`), render-result display and looping playback
 
 ### `parameter_controller.py` (~280 lines)
 `ParameterController` — one handler per control (`on_board_tilt_change`, `on_period_change`,
-`on_direction_change`, `on_lighting_change`, `on_format_change`, `on_resolution_change`,
+`on_direction_change`, `on_zoom_change` / `on_zoom_input_change` / `on_viewport_zoom`, `on_lighting_change`, `on_format_change`, `on_resolution_change`,
 `on_hide_*_change`, `on_bg_color_change`, ...): settings → paired control → preview → preset
 match → debounced save.
 
