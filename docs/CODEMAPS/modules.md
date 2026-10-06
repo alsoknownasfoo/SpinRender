@@ -32,7 +32,7 @@ Module helpers:
 - `find_command()` — locates `kicad-cli` / `ffmpeg` (PATH + platform install dirs)
 - `_pad_frame_to_size()`, `_png_size()`, `_render_size_from_cmd()` — restore kicad-cli's
   cropped frames to the effective requested size
-- `_apply_overrides()` — user CLI overrides replace base flags
+- `_apply_overrides()` — user CLI overrides replace base flags (a `--zoom` override wins over the Zoom setting, so the GL preview no longer matches the render)
 - Crash handling: `_is_probable_crash()`, `_crash_diagnostics()`, `_run_minimal_probe()`,
   `_kicad_cli_arch_report()` (macOS Rosetta detection)
 - `_prepare_kicad_config_home()` — per-user copy of `resources/kicad_config/<version>/`

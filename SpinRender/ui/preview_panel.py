@@ -290,14 +290,9 @@ class PreviewPanel(wx.Panel):
                 f"BR:{self.settings.board_roll:.0f}°",
                 f"ST:{self.settings.spin_tilt:.0f}°",
                 f"SH:{self.settings.spin_heading:.0f}°",
+                f"Z:{getattr(self.settings, 'zoom', DEFAULT_ZOOM):.2f}x",
+                f"· {self.settings.period:.1f}s",
             ]
-            try:
-                z_raw = getattr(self.settings, 'zoom', None)
-                if z_raw is not None and isinstance(z_raw, (int, float)):
-                    params.append(f"Z:{float(z_raw):.2f}x")
-            except Exception:
-                pass
-            params.append(f"· {self.settings.period:.1f}s")
             update_text(self.ov_top_left, "  ".join(params))
 
         # Top-Right: Close button visibility
