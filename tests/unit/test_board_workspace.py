@@ -559,3 +559,89 @@ def test_capture_live_board_falls_back_when_board_mismatch(tmp_path, monkeypatch
     assert not save_log  # SaveBoard never called on a mismatched board
 
     workspace.cleanup()
+
+class _SwigContainerWithoutNext:
+    """Mimic KiCad's TRACKS/DRAWINGS SWIG wrappers on builds whose SwigPyIterator
+    lacks ``next()`` (issue #17): ``__iter__`` blows up, index access still works
+    and returns base-class proxies that need ``Cast()``."""
+
+    class _Proxy:
+        def __init__(self, item):
+            self._item = item
+
+        def Cast(self):
+            return self._item
+
+    def __init__(self, items):
+        self._items = list(items)
+
+    def __iter__(self):
+        raise AttributeError("'SwigPyIterator' object has no attribute 'next'")
+
+    def __len__(self):
+        return len(self._items)
+
+    def __getitem__(self, index):
+        return self._Proxy(self._items[index])
+
+
+def test_render_filters_survive_swig_iterator_without_next(monkeypatch):
+    """Issue #17: filtering must not depend on KiCad's container ``__iter__``."""
+
+    class FakeVia:
+        pass
+
+    class FakeTrack:
+        pass
+
+    class FakeDrawing:
+        def __init__(self, layer_name):
+            self.layer_name = layer_name
+
+        def GetLayerName(self):
+            return self.layer_name
+
+    class FakeFootprint:
+        def __init__(self, graphics):
+            self.graphics = list(graphics)
+
+        def GraphicalItems(self):
+            return _SwigContainerWithoutNext(self.graphics)
+
+        def Remove(self, item):
+            self.graphics.remove(item)
+
+    class FakeBoard:
+        def __init__(self):
+            self.tracks = [FakeTrack(), FakeVia()]
+            self.drawings = [FakeDrawing('User.Drawings'), FakeDrawing('Edge.Cuts')]
+            self.footprint = FakeFootprint([FakeDrawing('User.Drawings'), FakeDrawing('F.SilkS')])
+
+        def GetTracks(self):
+            return _SwigContainerWithoutNext(self.tracks)
+
+        def GetDrawings(self):
+            return _SwigContainerWithoutNext(self.drawings)
+
+        def GetFootprints(self):
+            return _SwigContainerWithoutNext([self.footprint])
+
+        def Remove(self, item):
+            for items in (self.tracks, self.drawings):
+                if item in items:
+                    items.remove(item)
+
+    fake_board = FakeBoard()
+    fake_pcbnew = SimpleNamespace(
+        PCB_VIA=FakeVia,
+        LoadBoard=lambda path: fake_board,
+        SaveBoard=lambda path, board: True,
+    )
+    monkeypatch.setitem(sys.modules, 'pcbnew', fake_pcbnew)
+
+    board_workspace.remove_vias_from_board_file('/tmp/demo.kicad_pcb')
+    board_workspace.remove_user_drawings_from_board_file('/tmp/demo.kicad_pcb')
+
+    assert [type(item) for item in fake_board.tracks] == [FakeTrack]
+    assert [d.GetLayerName() for d in fake_board.drawings] == ['Edge.Cuts']
+    assert [g.GetLayerName() for g in fake_board.footprint.graphics] == ['F.SilkS']
