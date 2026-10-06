@@ -1,4 +1,4 @@
-<!-- Generated: 2026-06-10 | Maintainer: SpinRender Team -->
+<!-- Generated: 2026-06-10 | Updated: 2026-10-02 (build from git archive) | Maintainer: SpinRender Team -->
 
 # Release Process Guide
 
@@ -48,20 +48,37 @@ packaging fix and must not regress).
 between releases). `packaging/pcm/schema-v2.json` is a local reference copy of
 the KiCad PCM v2 schema, useful for validating `metadata.json` offline.
 
+### ⚠️ Build from the commit, not the working tree
+
+Stage the zip with `git archive` from the version-bump commit, **not** by
+copying `SpinRender/`. The working tree collects gitignored local files that
+must never ship. On 0.9.1 a folder copy would have packaged 7 leftover
+`kicad-cli` config files from `SpinRender/resources/kicad_config/10.0/`
+(including `kicad.json` / `kicad_common.json`, which can hold the
+maintainer's local paths and settings). Only `3d_viewer.json` is tracked
+there.
+
 ```bash
-# 1. Sync current source into the staging dir, renaming SpinRender/ -> plugins/
-rsync -a --delete \
-  --exclude='__pycache__' --exclude='logs' --exclude='.DS_Store' \
-  SpinRender/ build/pcm/plugins/
+REL=<version-bump commit sha>   # the commit you will tag in step 4
 
-# 2. Copy the tracked packaging inputs into the staging dir
-mkdir -p build/pcm/resources
+# 0. Clear the previous staging dir. Old builds can leave read-only files
+#    (resources/kicad_config/*), so make it writable first.
+[ -d build/pcm ] && chmod -R u+w build/pcm
+rm -rf build/pcm build/pcm-src
+
+# 1. Export exactly the tracked plugin files, renaming SpinRender/ -> plugins/
+mkdir -p build/pcm/resources build/pcm-src
+git archive "$REL" SpinRender | tar -x -C build/pcm-src
+mv build/pcm-src/SpinRender build/pcm/plugins && rmdir build/pcm-src
+
+# 2. Copy the tracked packaging inputs into the staging dir (from the same commit)
 cp packaging/pcm/icon.png build/pcm/resources/icon.png
-cp metadata.json build/pcm/metadata.json
+git show "$REL":metadata.json > build/pcm/metadata.json
 
-# 3. Sanity check: should print the NEW version, and diff should be empty
+# 3. Sanity check: should print the NEW version, and the two counts must match
 grep __version__ build/pcm/plugins/__init__.py
-diff -rq SpinRender build/pcm/plugins --exclude=__pycache__ --exclude=logs --exclude=.DS_Store
+git ls-tree -r --name-only "$REL" SpinRender | wc -l   # tracked files
+find build/pcm/plugins -type f | wc -l                 # staged files
 
 # 4. Zip it (run from build/pcm/)
 cd build/pcm
@@ -74,6 +91,13 @@ cd ../..
 shasum -a 256 build/sr-pcm-XYZ.zip                 # download_sha256
 stat -f%z build/sr-pcm-XYZ.zip                     # download_size
 find build/pcm -type f -exec stat -f%z {} \; | awk '{s+=$1} END {print s}'  # install_size
+
+# 6. Verify the zip before uploading
+unzip -Z1 build/sr-pcm-XYZ.zip | cut -d/ -f1 | sort -u          # exactly: metadata.json plugins resources
+unzip -Z1 build/sr-pcm-XYZ.zip | grep 'kicad_config/.*[^/]$'   # only the two 3d_viewer.json files
+unzip -Z1 build/sr-pcm-XYZ.zip | grep -cE '__pycache__|\.DS_Store|/logs/'   # 0
+unzip -p  build/sr-pcm-XYZ.zip metadata.json | python3 -c \
+  "import json,sys; print(json.load(sys.stdin)['versions'])"    # one entry, the new version
 ```
 
 ### ⚠️ `metadata.json` must list exactly ONE version before zipping
@@ -117,6 +141,14 @@ gh release create vX.Y.Z \
   "build/sr-pcm-XYZ.zip#SpinRender PCM Build (sr-pcm-XYZ.zip)" \
   --title "SpinRender X.Y.Z" \
   --notes-file build/RELEASE_NOTES_XYZ.md
+```
+
+Confirm the uploaded asset is the zip you verified. Its SHA-256 goes into the
+addons-repo MR (step 5), so a mismatch here breaks the PCM install:
+
+```bash
+gh release download vX.Y.Z -p sr-pcm-XYZ.zip -O /tmp/sr-pcm-XYZ.zip
+shasum -a 256 /tmp/sr-pcm-XYZ.zip build/sr-pcm-XYZ.zip   # must be identical
 ```
 
 If you need to redo a release (wrong zip, wrong tag commit, etc.):

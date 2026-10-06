@@ -17,6 +17,22 @@ All notable changes to SpinRender are documented here. Format is based on
 ### 🐛 Fixes
 - The preview now frames the board the same way the final render does. Previously components overhanging the board edge or tall parts could shift the preview off-centre, and squarer boards appeared smaller in the preview than in the render.
 
+## [0.9.1] - 2026-10-02
+
+### 💥 Render crash fix
+- Fixed renders failing on the first frame with `exit code 3221225477` (Windows) or `-11` (macOS) and no output from `kicad-cli`. KiCad 10.0.x up to 10.0.6 crashes when its config folder has no global library tables and any library is installed through the Plugin and Content Manager; SpinRender now seeds empty `sym-lib-table`, `fp-lib-table` and `design-block-lib-table` in its isolated `kicad-cli` config folder. KiCad fixes this on their side in 10.0.7. Diagnosis by [@oktkas](https://github.com/oktkas) ([#15](https://github.com/alsoknownasfoo/SpinRender/issues/15), [#16](https://github.com/alsoknownasfoo/SpinRender/issues/16)).
+
+### 🎞️ Output resolution
+- Renders now come out at exactly the requested resolution. `kicad-cli` writes a centered crop a few pixels smaller than requested (e.g. 1904×1064 for 1920×1080); frames are now padded back to full size, so MP4/GIF output is no longer 8px off-centre and PNG sequences are the right size.
+- `-w`/`-h` overrides in Advanced options are respected for every format.
+- A hung `ffmpeg` during frame padding is now stopped instead of left running.
+
+### 📝 Docs
+- Rewrote the README usage section to match the actual controls (tilt/roll/heading, rotation period, direction, lighting), listed `ffmpeg` as a requirement, and corrected the output location (`Renders/<timestamp>/`).
+- Rebuilt the developer codemaps from the source.
+
+**Full changelog:** https://github.com/alsoknownasfoo/SpinRender/compare/v0.9.0...v0.9.1
+
 ## [0.9.0] - 2026-07-30
 
 ### 🐧 Full Linux support
