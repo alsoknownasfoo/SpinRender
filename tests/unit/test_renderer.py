@@ -1,10 +1,19 @@
+import math
 import os
 import struct
 import subprocess
 from unittest.mock import Mock
 
+import pytest
+
 from SpinRender.core.renderer import (
     RenderEngine,
+    _matmul,
+    _rodrigues,
+    _rot_x,
+    _rot_y,
+    _rot_z,
+    compute_kicad_angles,
     _prepare_kicad_config_home,
     _crash_diagnostics,
     _kicad_cli_arch_report,
@@ -478,3 +487,29 @@ def test_config_home_seeding_never_truncates_a_concurrently_created_table(monkey
     _prepare_kicad_config_home(str(_fake_plugin_dir(tmp_path, versions=('10.0',))))
 
     assert 'PCM_Example' in table.read_text()
+
+
+def _intended_rotation(board_tilt, board_roll, spin_tilt, spin_heading, angle):
+    t, h = math.radians(spin_tilt), math.radians(spin_heading)
+    axis = (math.sin(t) * math.cos(h), math.sin(t) * math.sin(h), math.cos(t))
+    return _matmul(_rot_x(math.radians(board_tilt)),
+                   _matmul(_rodrigues(axis, math.radians(angle)), _rot_z(math.radians(board_roll))))
+
+
+@pytest.mark.parametrize("board_tilt, board_roll, spin_tilt, spin_heading", [
+    (0.0, -30.0, 90.0, 90.0),   # spin around Y: hits ky=+90 and ky=-90 exactly
+    (20.0, 0.0, 90.0, 90.0),
+    (-35.0, 45.0, 60.0, 30.0),
+    (10.0, 15.0, 45.0, -120.0),
+])
+def test_kicad_angles_reproduce_rotation_every_frame(board_tilt, board_roll, spin_tilt, spin_heading):
+    # The --rotate angles must rebuild the intended rotation for every frame,
+    # including the gimbal-lock frames (ky = +/-90) where a wrong branch
+    # rendered the board flipped 180 degrees for a single frame.
+    for i in range(120):
+        angle = i * 3.0
+        kx, ky, kz = compute_kicad_angles(board_tilt, board_roll, spin_tilt, spin_heading, angle)
+        rebuilt = _matmul(_rot_x(math.radians(kx)), _matmul(_rot_y(math.radians(ky)), _rot_z(math.radians(kz))))
+        intended = _intended_rotation(board_tilt, board_roll, spin_tilt, spin_heading, angle)
+        err = max(abs(a - b) for ra, rb in zip(rebuilt, intended) for a, b in zip(ra, rb))
+        assert err < 1e-6, f"frame {i} ({angle} deg): angles {kx, ky, kz} off by {err}"

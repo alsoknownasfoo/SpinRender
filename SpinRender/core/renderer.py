@@ -154,12 +154,9 @@ def _euler_xyz_from_matrix(M):
         kz = math.atan2(-M[0][1], M[0][0])
     else:
         # Gimbal lock: ky = ±90°; set kz=0 and solve for kx.
-        # For ky=-90°: M[2][0]=cos(kx-kz), M[2][1]=sin(kx-kz)
-        # For ky=+90°: M[2][0]=cos(kx+kz), M[2][1]=-sin(kx+kz)
-        if sy < 0:
-            kx = math.atan2(M[2][1], M[2][0])
-        else:
-            kx = math.atan2(-M[2][1], M[2][0])
+        # With kz=0, both ky=+90° and ky=-90° give M[1][1]=cos(kx) and
+        # M[2][1]=sin(kx), so one formula covers both signs.
+        kx = math.atan2(M[2][1], M[1][1])
         kz = 0.0
     return math.degrees(kx), math.degrees(ky), math.degrees(kz)
 
