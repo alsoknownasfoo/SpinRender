@@ -292,6 +292,8 @@ locale:
         label: "ALKATRÉSZEK"
       hide_test_points:
         label: "TESZTPONTOK (T# REFS)"
+      transparent_bg:
+        label: "ÁTLÁTSZÓ"
       resolution:
         label: "Felbontás"
         desc: "Kimeneti méretek és arány"

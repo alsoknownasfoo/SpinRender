@@ -268,3 +268,48 @@ class TestParameterController:
         mock_preview.update_preview_overlay.assert_called_once()
         controller.preset_controller.check_preset_match.assert_called_with(manual_change=True)
 
+
+    def _transparency_controller(self, mock_settings, mock_controls, mock_preview, mock_preset_controller):
+        mock_controls['transparent_bg_checkbox'] = MagicMock()
+        mock_controls['controls_side_panel'] = MagicMock()
+        return ParameterController(
+            settings=mock_settings,
+            controls=mock_controls,
+            preview=mock_preview,
+            preset_controller=mock_preset_controller
+        )
+
+    def test_on_transparent_bg_change(self, mock_settings, mock_controls, mock_preview, mock_preset_controller):
+        """Enabling transparency for a GIF shows the checkerboard preview."""
+        mock_settings.format = 'gif'
+        controller = self._transparency_controller(mock_settings, mock_controls, mock_preview, mock_preset_controller)
+        mock_controls['transparent_bg_checkbox'].GetValue.return_value = True
+
+        controller.on_transparent_bg_change(None)
+
+        assert controller.settings.transparent_bg is True
+        mock_controls['controls_side_panel'].sync_background_controls.assert_called_once()
+        mock_preview.viewport.set_transparent_background.assert_called_once_with(True)
+        mock_preview.update_preview_overlay.assert_called_once()
+
+    def test_on_transparent_bg_change_mp4_stays_opaque(self, mock_settings, mock_controls, mock_preview, mock_preset_controller):
+        """MP4 has no alpha, so the preview keeps the solid background."""
+        controller = self._transparency_controller(mock_settings, mock_controls, mock_preview, mock_preset_controller)
+        mock_controls['transparent_bg_checkbox'].GetValue.return_value = True
+
+        controller.on_transparent_bg_change(None)
+
+        assert controller.settings.transparent_bg is True
+        mock_preview.viewport.set_transparent_background.assert_called_once_with(False)
+
+    def test_on_format_change_resyncs_transparency(self, mock_settings, mock_controls, mock_preview, mock_preset_controller):
+        """Switching from MP4 to GIF re-applies a previously enabled transparency."""
+        mock_settings.transparent_bg = True
+        controller = self._transparency_controller(mock_settings, mock_controls, mock_preview, mock_preset_controller)
+        mock_controls['format_choice'].GetSelection.return_value = 1  # gif
+
+        controller.on_format_change(None)
+
+        assert controller.settings.format == 'gif'
+        mock_controls['controls_side_panel'].sync_background_controls.assert_called_once()
+        mock_preview.viewport.set_transparent_background.assert_called_once_with(True)

@@ -292,6 +292,8 @@ locale:
         label: "组件 (COMPONENTS)"
       hide_test_points:
         label: "测试点 (T# REFS)"
+      transparent_bg:
+        label: "透明"
       resolution:
         label: "分辨率"
         desc: "输出尺寸和纵横比"

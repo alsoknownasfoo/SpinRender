@@ -48,7 +48,7 @@ removed on the UI thread after pending callbacks.
 - `GLPreviewRenderer(glcanvas.GLCanvas)` — background GLB load (cached by board SHA-1 in
   `<tmp>/SpinRender_Cache`), shaded + feature-edge drawing, animation timer.
   `set_universal_joint_parameters`, `set_period`, `set_direction`, `set_lighting`,
-  `set_background_color`, `set_render_mode`, `set_aspect_ratio`, `reload_model`,
+  `set_background_color`, `set_transparent_background` (checkerboard), `set_render_mode`, `set_aspect_ratio`, `reload_model`,
   `start_preview` / `stop_preview`, `cleanup`. Zoom: `set_zoom(zoom)`, `zoom_step(rotation)`
   (mouse wheel), `on_zoom_callback` (syncs the UI), `can_wheel_zoom` (predicate, blocks
   wheel zoom during renders).

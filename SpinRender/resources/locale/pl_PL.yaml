@@ -292,6 +292,8 @@ locale:
         label: "KOMPONENTY"
       hide_test_points:
         label: "PUNKTY TESTOWE (T# REFS)"
+      transparent_bg:
+        label: "PRZEZROCZYSTE"
       resolution:
         label: "Rozdzielczość"
         desc: "Wymiary wyjściowe i proporcje"

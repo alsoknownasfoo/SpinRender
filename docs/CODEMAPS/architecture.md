@@ -69,8 +69,9 @@ dismisses a displayed render result.
    `--rotate X,Y,Z` (`compute_kicad_angles`), runs `kicad-cli pcb render`, retries at
    `basic` quality if it crashes, then pads the frame back to the requested size
    (`_pad_frame_to_size`: kicad-cli writes a centered crop a few px smaller).
-4. Assembly by format: `assemble_mp4` / `assemble_gif` (ffmpeg, background color composited
-   under the transparent frames) or `assemble_png_sequence` (copy).
+4. Assembly by format: `assemble_mp4` / `assemble_gif` / `assemble_png_sequence` (ffmpeg,
+   background color composited under the transparent frames). With `transparent_bg` the GIF
+   keeps 1-bit alpha and the PNG sequence is copied as rendered; MP4 always composites.
 5. Progress is marshalled to the UI with `wx.CallAfter`; the result loops in the preview
    (`PreviewPanel.start_playback`) and the frame dir is cleaned up later on the UI thread.
 

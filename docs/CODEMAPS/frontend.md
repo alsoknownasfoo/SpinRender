@@ -22,7 +22,7 @@ SpinRenderFrame (wx.Frame, spinrender_plugin.py)
     │   │   │   └── Output [collapsible]
     │   │   │       ├── Format: CustomDropdown (MP4 (H.264) / GIF / PNG Sequence)
     │   │   │       ├── Resolution: CustomDropdown (BUILTIN_RESOLUTIONS + custom) + ⚙ CustomButton
-    │   │   │       ├── Background color: CustomColorPicker
+    │   │   │       ├── Background color: CustomColorPicker + Transparent CustomCheckbox
     │   │   │       └── Board options: CustomCheckbox ×3 (vias, components, test points)
     │   │   └── Footer: ⚙ advanced options · about · exit/cancel · RENDER (CustomButton)
     │   └── PreviewPanel (ui/preview_panel.py)  [RIGHT, expands]

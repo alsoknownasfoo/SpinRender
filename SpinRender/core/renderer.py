@@ -893,7 +893,7 @@ class RenderEngine:
             '-y',
             '-framerate', '30',
             '-i', os.path.join(frame_dir, 'frame%04d.png'),
-            '-filter_complex', f'color=c={bg_hex}:s={w}x{h}[bg];[bg][0:v]overlay=shortest=1[ov];[ov]scale=trunc(iw/2)*2:trunc(ih/2)*2[out]',
+            '-filter_complex', f'color=c={bg_hex}:s={w}x{h}:r=30[bg];[bg][0:v]overlay=shortest=1[ov];[ov]scale=trunc(iw/2)*2:trunc(ih/2)*2[out]',
             '-map', '[out]',
             '-c:v', 'libx264',
             '-pix_fmt', 'yuv420p',
@@ -933,12 +933,23 @@ class RenderEngine:
         w, h = self._canvas_size(frame_dir)
 
         palette_path = os.path.join(frame_dir, 'palette.png')
-        
-        # 1. Generate palette from composited frames (background generated in filter graph)
+
+        # Transparent: keep the frames' alpha and reserve a palette slot for it
+        # (GIF transparency is 1-bit, so pixels under 50% alpha become clear).
+        # Otherwise composite onto the background colour generated in the graph.
+        if self.settings.get('transparent_bg', False):
+            palette_graph = '[0:v]palettegen=reserve_transparent=1'
+            gif_graph = '[0:v][1:v]paletteuse=alpha_threshold=128'
+        else:
+            composite = f'color=c={bg_hex}:s={w}x{h}:r=30[bg];[bg][0:v]overlay=shortest=1[ov]'
+            palette_graph = f'{composite};[ov]palettegen'
+            gif_graph = f'{composite};[ov][1:v]paletteuse'
+
+        # 1. Generate palette
         palette_cmd = [
             ffmpeg, '-y', '-framerate', '30',
             '-i', os.path.join(frame_dir, 'frame%04d.png'),
-            '-filter_complex', f'color=c={bg_hex}:s={w}x{h}[bg];[bg][0:v]overlay=shortest=1[ov];[ov]palettegen', 
+            '-filter_complex', palette_graph,
             palette_path
         ]
 
@@ -959,12 +970,12 @@ class RenderEngine:
             logger.error(f"Palette gen error: {e}")
             raise RuntimeError("GIF palette generation failed.")
 
-        # 2. Assemble GIF with composited frames (background generated in filter graph)
+        # 2. Assemble GIF with the palette
         gif_cmd = [
             ffmpeg, '-y', '-framerate', '30',
             '-i', os.path.join(frame_dir, 'frame%04d.png'),
             '-i', palette_path,
-            '-filter_complex', f'color=c={bg_hex}:s={w}x{h}[bg];[bg][0:v]overlay=shortest=1[ov];[ov][1:v]paletteuse',
+            '-filter_complex', gif_graph,
             output_path
         ]
 
@@ -988,17 +999,58 @@ class RenderEngine:
 
     def assemble_png_sequence(self, frame_dir, output_path, frame_count):
         """
-        Copy PNG sequence to output directory.
+        Write the PNG sequence to the output directory.
         output_path is the full base prefix (e.g. /path/to/my_board).
         Files are named {base_name}_{i:05d}.png to match the _##### preview.
+        Transparent frames are copied as rendered; otherwise ffmpeg composites
+        them onto the background colour.
         """
         out_dir = os.path.dirname(output_path)
         base_name = os.path.basename(output_path)
         os.makedirs(out_dir, exist_ok=True)
-        for i in range(frame_count):
-            src = os.path.join(frame_dir, f"frame{i:04d}.png")
-            dst = os.path.join(out_dir, f"{base_name}_{i:05d}.png")
-            shutil.copy2(src, dst)
+
+        if self.settings.get('transparent_bg', False):
+            for i in range(frame_count):
+                src = os.path.join(frame_dir, f"frame{i:04d}.png")
+                dst = os.path.join(out_dir, f"{base_name}_{i:05d}.png")
+                shutil.copy2(src, dst)
+            return
+
+        ffmpeg = find_command('ffmpeg')
+        if not ffmpeg:
+            raise RuntimeError("ffmpeg not found in PATH or common locations")
+
+        bg_hex = self.settings.get('bg_color', '#000000')
+        if bg_hex == 'opaque': bg_hex = '#000000'
+
+        w, h = self._canvas_size(frame_dir)
+
+        # '%' is the image2 sequence placeholder, so escape it in the board name.
+        out_pattern = os.path.join(out_dir, base_name.replace('%', '%%') + '_%05d.png')
+        cmd = [
+            ffmpeg, '-y', '-framerate', '30',
+            '-i', os.path.join(frame_dir, 'frame%04d.png'),
+            '-filter_complex', f'color=c={bg_hex}:s={w}x{h}:r=30[bg];[bg][0:v]overlay=shortest=1:format=rgb[ov];[ov]format=rgb24',
+            # Output rate must match the input, or image2's 25fps default drops frames.
+            '-r', '30',
+            '-start_number', '0',
+            out_pattern
+        ]
+
+        logger.info(f"Writing PNG sequence: {out_pattern}")
+        logger.debug(f"PNG SEQUENCE CMD: {' '.join(cmd)}")
+        try:
+            process = _start_text_process(cmd)
+            stdout, _ = process.communicate(timeout=300)
+            if logger.isEnabledFor(logging.DEBUG):
+                for line in stdout.splitlines():
+                    logger.debug(f"  [ffmpeg-png] {line.strip()}")
+            if process.returncode != 0:
+                raise RuntimeError(f"PNG sequence export failed with code {process.returncode}")
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.communicate()
+            raise RuntimeError("PNG sequence export timed out")
 
     def get_output_path(self):
         """

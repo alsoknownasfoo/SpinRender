@@ -169,6 +169,8 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
 
         # Background color - Start pure black for "Black White Loading" state
         self.bg_color = (0.0, 0.0, 0.0, 1.0)
+        # Transparent output: draw a checkerboard instead of the colour
+        self.transparent_bg = False
 
         # Computed Axis
         self.rotation_axis = np.array([0.0, 1.0, 0.0])
@@ -508,6 +510,37 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
         
         self.Refresh()
 
+    def set_transparent_background(self, enabled):
+        """Show a checkerboard behind the board when the output is transparent."""
+        self.transparent_bg = bool(enabled)
+        self.Refresh()
+
+    def _draw_checkerboard(self, width, height):
+        """Fill the current viewport with a checkerboard (transparency indicator)."""
+        cell = 12
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glOrtho(0, width, height, 0, -1, 1)
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        glPushAttrib(GL_ENABLE_BIT)
+        glDisable(GL_LIGHTING)
+        glDisable(GL_DEPTH_TEST)
+        glDisable(GL_TEXTURE_2D)
+        glBegin(GL_QUADS)
+        for row in range(0, height // cell + 1):
+            for col in range(0, width // cell + 1):
+                # Matches the theme's viewport.checker light/dark (#3A3A3A / #222222)
+                shade = 0x3A / 255.0 if (row + col) % 2 else 0x22 / 255.0
+                glColor4f(shade, shade, shade, 1.0)
+                x, y = col * cell, row * cell
+                glVertex2f(x, y)
+                glVertex2f(x + cell, y)
+                glVertex2f(x + cell, y + cell)
+                glVertex2f(x, y + cell)
+        glEnd()
+        glPopAttrib()
+
     def set_lighting(self, preset_id):
         """Sets OpenGL lights based on the actual values in RenderEngine.LIGHTING_PRESETS."""
         from .renderer import RenderEngine
@@ -650,15 +683,25 @@ class GLPreviewRenderer(glcanvas.GLCanvas):
                 viewport_x = 0
                 viewport_y = (h - viewport_height) // 2
 
-            # Clear entire viewport to black (or bg color)
+            # Clear entire viewport to black (or bg color); the colour isn't
+            # used for a transparent output, so the bars go neutral instead.
             glViewport(0, 0, w, h)
-            glClearColor(*self.bg_color)
+            if self.transparent_bg:
+                glClearColor(0x22 / 255.0, 0x22 / 255.0, 0x22 / 255.0, 1.0)
+            else:
+                glClearColor(*self.bg_color)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
             # Set viewport to the letterboxed/pillarboxed area
             glViewport(viewport_x, viewport_y, viewport_width, viewport_height)
-            glClearColor(*self.bg_color)
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+            if self.transparent_bg:
+                # glClear ignores the viewport, so a colour clear here would
+                # repaint the bars; the checkerboard covers this area instead.
+                glClear(GL_DEPTH_BUFFER_BIT)
+                self._draw_checkerboard(viewport_width, viewport_height)
+            else:
+                glClearColor(*self.bg_color)
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
             glMatrixMode(GL_PROJECTION)
             glLoadIdentity()

@@ -292,6 +292,8 @@ locale:
         label: "BİLEŞENLER"
       hide_test_points:
         label: "TEST NOKTALARI (T#)"
+      transparent_bg:
+        label: "ŞEFFAF"
       resolution:
         label: "Çözünürlük"
         desc: "Çıktı boyutları ve en boy oranı"

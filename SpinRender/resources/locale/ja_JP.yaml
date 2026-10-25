@@ -292,6 +292,8 @@ locale:
         label: "コンポーネント"
       hide_test_points:
         label: "テストポイント (T#)"
+      transparent_bg:
+        label: "透明"
       resolution:
         label: "解像度"
         desc: "出力サイズとアスペクト比"

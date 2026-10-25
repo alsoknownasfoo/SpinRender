@@ -880,8 +880,20 @@ class ControlsSidePanel(wx.Panel):
         apply_transparent_background(bg_col)
         bg_vsizer = wx.BoxSizer(wx.VERTICAL)
         bg_vsizer.AddSpacer(self.FromDIP(10))
+        # Heading row: title on the left, TRANSPARENT toggle on the right
+        # (mirrors the RESOLUTION heading + gear layout).
+        bg_head_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.bg_heading = create_text(bg_col, _locale.get("output.bg_color.label", "BACKGROUND COLOR"), "subheader")
-        bg_vsizer.Add(self.bg_heading, 0, wx.BOTTOM, self.FromDIP(6))
+        bg_head_sizer.Add(self.bg_heading, 0, wx.ALIGN_CENTER_VERTICAL)
+        bg_head_sizer.AddStretchSpacer()
+        self.transparent_bg_row, self.transparent_bg_checkbox, self.transparent_bg_label = self._create_render_option_row(
+            bg_col,
+            option_id="transparent_bg",
+            label=_locale.get("output.transparent_bg.label", "TRANSPARENT"),
+            value=self.settings.transparent_bg,
+        )
+        bg_head_sizer.Add(self.transparent_bg_row, 0, wx.ALIGN_CENTER_VERTICAL)
+        bg_vsizer.Add(bg_head_sizer, 0, wx.EXPAND | wx.BOTTOM, self.FromDIP(6))
 
         self.bg_picker = CustomColorPicker(bg_col, current_color=self.settings.bg_color, section='output')
         bg_vsizer.Add(self.bg_picker, 0, wx.EXPAND)
@@ -889,11 +901,27 @@ class ControlsSidePanel(wx.Panel):
         bg_col.SetSizer(bg_vsizer)
         sizer.Add(bg_col, 0, wx.EXPAND)
         self._output_content.append(bg_col)
+        self.sync_background_controls()
 
         # Built expanded; the persisted collapsed state is applied later (after
         # the scroll area's min height is measured), matching Parameters.
         panel.SetSizerAndFit(sizer)
         return panel
+
+    def sync_background_controls(self):
+        """Grey out the background controls that don't apply to the current output.
+
+        MP4 has no alpha channel, so TRANSPARENT is unavailable there; while the
+        background is transparent the colour picker has nothing to colour.
+        """
+        if not hasattr(self, 'transparent_bg_checkbox'):
+            return
+        # Only the checkbox is disabled (as with the other option rows): a
+        # disabled label is drawn embossed on Windows.
+        self.transparent_bg_checkbox.Enable(self.settings.format != 'mp4')
+        self.bg_picker.Enable(not self.settings.transparent_output())
+        self.transparent_bg_checkbox.Refresh()
+        self.bg_picker.Refresh()
 
     def _create_render_option_row(self, parent, option_id, label, value):
         """Build a single render-option checkbox row for the options grid."""

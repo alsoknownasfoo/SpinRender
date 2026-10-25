@@ -292,6 +292,8 @@ locale:
         label: "LINH KIỆN"
       hide_test_points:
         label: "ĐIỂM KIỂM TRA (T#)"
+      transparent_bg:
+        label: "TRONG SUỐT"
       resolution:
         label: "Độ phân giải"
         desc: "Kích thước đầu ra và tỷ lệ khung hình"

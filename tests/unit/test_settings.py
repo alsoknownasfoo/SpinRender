@@ -358,3 +358,22 @@ def test_preset_manager_save_and_load_dict_backward_compatibility(tmp_path):
     assert isinstance(loaded, RenderSettings)
     assert loaded.board_tilt == 25.0
     assert loaded.period == 8.0
+
+
+def test_render_settings_transparent_bg_defaults_off():
+    """Renders keep the solid background colour unless transparency is enabled."""
+    assert RenderSettings().transparent_bg is False
+
+
+def test_render_settings_transparent_bg_round_trip():
+    """The transparency toggle should persist through dict serialization."""
+    recreated = RenderSettings.from_dict(RenderSettings(transparent_bg=True).to_dict())
+
+    assert recreated.transparent_bg is True
+
+
+@pytest.mark.parametrize("fmt, expected", [('gif', True), ('png_sequence', True), ('mp4', False)])
+def test_render_settings_transparent_output_depends_on_format(fmt, expected):
+    """MP4 has no alpha channel, so it never produces a transparent output."""
+    assert RenderSettings(transparent_bg=True, format=fmt).transparent_output() is expected
+    assert RenderSettings(transparent_bg=False, format=fmt).transparent_output() is False

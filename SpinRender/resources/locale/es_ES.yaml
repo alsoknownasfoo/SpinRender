@@ -295,6 +295,8 @@ locale:
         label: "COMPONENTES"
       hide_test_points:
         label: "PUNTOS DE PRUEBA (REFS T#)"
+      transparent_bg:
+        label: "TRANSPARENTE"
       resolution:
         label: "Resolución"
         desc: "Dimensiones y relación de aspecto"

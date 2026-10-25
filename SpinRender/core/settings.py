@@ -20,6 +20,7 @@ class RenderSettings:
     direction: str = 'ccw'
     lighting: str = 'studio'
     bg_color: str = '#000000'
+    transparent_bg: bool = False
     render_mode: str = 'both'
     format: str = 'mp4'
     resolution: str = '1920x1080'
@@ -52,6 +53,10 @@ class RenderSettings:
             raise ValueError(f"period must be positive, got {self.period}")
         if not MIN_ZOOM <= self.zoom <= MAX_ZOOM:
             raise ValueError(f"zoom must be between {MIN_ZOOM} and {MAX_ZOOM}, got {self.zoom}")
+
+    def transparent_output(self) -> bool:
+        """True when the output keeps the transparent background (MP4 has no alpha)."""
+        return self.transparent_bg and self.format != 'mp4'
 
     @classmethod
     def from_dict(cls, data: dict):

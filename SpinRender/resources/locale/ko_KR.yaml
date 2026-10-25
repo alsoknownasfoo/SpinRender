@@ -292,6 +292,8 @@ locale:
         label: "부품(COMPONENTS)"
       hide_test_points:
         label: "테스트 포인트(T# REFS)"
+      transparent_bg:
+        label: "투명"
       resolution:
         label: "해상도"
         desc: "출력 크기 및 종횡비"

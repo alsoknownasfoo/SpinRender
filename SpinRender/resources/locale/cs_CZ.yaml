@@ -292,6 +292,8 @@ locale:
         label: "SOUČÁSTKY"
       hide_test_points:
         label: "TESTOVACÍ BODY (T# REFS)"
+      transparent_bg:
+        label: "PRŮHLEDNÉ"
       resolution:
         label: "Rozlišení"
         desc: "Výstupní rozměry a poměr stran"

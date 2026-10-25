@@ -292,6 +292,8 @@ locale:
         label: "КОМПОНЕНТИ"
       hide_test_points:
         label: "КОНТРОЛЬНІ ТОЧКИ (T#)"
+      transparent_bg:
+        label: "ПРОЗОРИЙ"
       resolution:
         label: "Роздільна здатність"
         desc: "Розміри кадру та співвідношення сторін"

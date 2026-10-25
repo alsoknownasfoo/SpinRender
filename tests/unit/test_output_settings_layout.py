@@ -21,3 +21,35 @@ def test_output_settings_tracks_render_options_before_other_output_content():
     source = inspect.getsource(ControlsSidePanel.create_output_settings_section)
 
     assert 'self._output_content = [board_options_col, cols_panel]' in source
+
+
+def test_output_settings_places_transparent_toggle_in_background_heading():
+    """The TRANSPARENT toggle shares the BACKGROUND COLOR heading row."""
+    source = inspect.getsource(ControlsSidePanel.create_output_settings_section)
+
+    assert 'option_id="transparent_bg"' in source
+    assert 'bg_head_sizer.Add(self.transparent_bg_row, 0, wx.ALIGN_CENTER_VERTICAL)' in source
+    assert source.index('self.bg_heading = ') < source.index('option_id="transparent_bg"') < source.index('self.bg_picker = ')
+
+
+def _sync_background(fmt, transparent):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from SpinRender.core.settings import RenderSettings
+
+    panel = SimpleNamespace(
+        settings=RenderSettings(format=fmt, transparent_bg=transparent),
+        transparent_bg_checkbox=MagicMock(),
+        bg_picker=MagicMock(),
+    )
+    ControlsSidePanel.sync_background_controls(panel)
+    return panel.transparent_bg_checkbox.Enable.call_args.args[0], panel.bg_picker.Enable.call_args.args[0]
+
+
+def test_sync_background_controls_greys_out_what_does_not_apply():
+    # (toggle enabled, colour picker enabled)
+    assert _sync_background('gif', False) == (True, True)
+    assert _sync_background('gif', True) == (True, False)
+    assert _sync_background('png_sequence', True) == (True, False)
+    # MP4 has no alpha: toggle unavailable, colour always used
+    assert _sync_background('mp4', True) == (False, True)

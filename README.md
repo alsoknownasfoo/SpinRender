@@ -87,7 +87,7 @@ Python packages and font dependencies are installed on first launch.
    Select a resolution or customize your output parameters:
    - **Resolution** — landscape, portrait and square presets from 720p to 4K, plus custom dimensions via the ⚙ icon
    - **Format** — MP4, animated GIF, or PNG sequence
-   - **Background Color** — solid color behind the board
+   - **Background Color** — solid color behind the board, or tick **Transparent** to keep the background see-through (GIF and PNG sequence; MP4 has no transparency)
    - **Render Options** — hide vias, components, or test points for a cleaner result<br><br>
 4. #### 🎬 **Render**<br>
    Check out the preview of the animation and hit Render. Output lands next to your board file in `Renders/<timestamp>/`, or pick your own location in the advanced options (⚙ next to Render).<br><br>

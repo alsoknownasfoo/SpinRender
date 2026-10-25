@@ -285,6 +285,7 @@ class SpinRenderPanel(wx.Panel):
             'hide_test_points_checkbox': getattr(csp, 'hide_test_points_checkbox', None),
             'controls_side_panel': csp,
             'bg_picker': csp.bg_picker,
+            'transparent_bg_checkbox': getattr(csp, 'transparent_bg_checkbox', None),
         }
 
         self.parameter_controller = ParameterController(
@@ -356,6 +357,8 @@ class SpinRenderPanel(wx.Panel):
         # Background color
         if self.controls_side_panel.bg_picker:
             self.controls_side_panel.bg_picker.Bind(EVT_COLOURPICKER_CHANGED, lambda e: pc.on_bg_color_change(e.GetString()))
+        if getattr(self.controls_side_panel, 'transparent_bg_checkbox', None):
+            self.controls_side_panel.transparent_bg_checkbox.Bind(wx.EVT_CHECKBOX, pc.on_transparent_bg_change)
 
     def _prepare_render_board_path(self) -> str:
         """Return the board path to render after refreshing any working copy."""
@@ -447,6 +450,9 @@ class SpinRenderPanel(wx.Panel):
                     registry.controls(section='parameters') + \
                     registry.controls(section='output'):
             ctrl.Enable(enable)
+        if enable and hasattr(self.controls_side_panel, 'sync_background_controls'):
+            # Re-enabling everything would undo the format-dependent greying.
+            self.controls_side_panel.sync_background_controls()
 
         if hasattr(self.controls_side_panel, 'reapply_theme'):
             self.controls_side_panel.reapply_theme()
