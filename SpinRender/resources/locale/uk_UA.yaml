@@ -285,13 +285,15 @@ locale:
       format:
         label: "Формат"
         desc: "Відео або послідовність кадрів"
-        options: ["MP4 (H.264)", "GIF", "PNG кадри"]
+        options: ["MP4 (H.264)", "GIF", "WebP", "PNG кадри"]
       hide_vias:
         label: "ПЕРЕХІДНІ ОТВОРИ (VIAS)"
       hide_components:
         label: "КОМПОНЕНТИ"
       hide_test_points:
         label: "КОНТРОЛЬНІ ТОЧКИ (T#)"
+      transparent_bg:
+        label: "ПРОЗОРИЙ"
       resolution:
         label: "Роздільна здатність"
         desc: "Розміри кадру та співвідношення сторін"

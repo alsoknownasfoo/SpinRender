@@ -113,6 +113,7 @@ def mock_settings():
     settings.direction = 'ccw'
     settings.render_mode = 'both'
     settings.bg_color = '#000000'
+    settings.transparent_output.return_value = False
     settings.resolution = '1920x1080'
     settings.lighting = 'studio'
     return settings
@@ -219,6 +220,18 @@ class TestPreviewPanelOverlay:
 
         assert 'DRAMATIC' in preview.ov_bottom_left.label
         assert '#FF0000' in preview.ov_bottom_left.label
+
+    def test_update_overlay_shows_transparent_bg(self, wx_mock, mock_settings, mock_gl_preview):
+        """A transparent output replaces the colour in the bottom-left label."""
+        mock_settings.bg_color = '#FF0000'
+        mock_settings.transparent_output.return_value = True
+
+        parent = MagicMock()
+        preview = PreviewPanel(parent, mock_settings, '/fake/board.kicad_pcb')
+        preview.update_preview_overlay()
+
+        assert 'BG:TRANSPARENT' in preview.ov_bottom_left.label
+        assert '#FF0000' not in preview.ov_bottom_left.label
 
     def test_update_overlay_shows_resolution_info(self, wx_mock, mock_settings, mock_gl_preview):
         """Should display resolution, aspect ratio, and FPS in bottom-center."""

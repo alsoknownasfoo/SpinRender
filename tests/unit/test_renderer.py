@@ -3,6 +3,8 @@ import struct
 import subprocess
 from unittest.mock import Mock
 
+import pytest
+
 from SpinRender.core.renderer import (
     RenderEngine,
     _prepare_kicad_config_home,
@@ -404,6 +406,123 @@ def test_assembly_canvas_falls_back_to_resolution_setting(monkeypatch, tmp_path)
     engine.assemble_mp4(str(tmp_path), str(tmp_path / 'out.mp4'), 1)
 
     assert 's=1920x1080' in _filter_graph(cmds[0])
+
+
+def test_background_source_matches_frame_rate(monkeypatch, tmp_path):
+    # The color source defaults to 25fps and drives the overlay's timing, so
+    # without r=30 one in six rendered frames is dropped.
+    _write_png_header(tmp_path / 'frame0000.png', 800, 800)
+    engine = RenderEngine('/tmp/example.kicad_pcb', {'resolution': '800x800'})
+    cmds = _capture_assembly_cmds(monkeypatch)
+
+    engine.assemble_mp4(str(tmp_path), str(tmp_path / 'out.mp4'), 1)
+    engine.assemble_gif(str(tmp_path), str(tmp_path / 'out.gif'), 1)
+
+    assert all('s=800x800:r=30[bg]' in _filter_graph(c) for c in cmds)
+
+
+def test_assemble_gif_transparent_keeps_alpha(monkeypatch, tmp_path):
+    _write_png_header(tmp_path / 'frame0000.png', 800, 800)
+    engine = RenderEngine('/tmp/example.kicad_pcb', {'resolution': '800x800', 'transparent_bg': True})
+    cmds = _capture_assembly_cmds(monkeypatch)
+
+    engine.assemble_gif(str(tmp_path), str(tmp_path / 'out.gif'), 1)
+
+    palette_graph, gif_graph = (_filter_graph(c) for c in cmds)
+    assert 'color=' not in palette_graph and 'color=' not in gif_graph
+    assert 'palettegen=reserve_transparent=1' in palette_graph
+    assert 'paletteuse=alpha_threshold=128' in gif_graph
+
+
+def test_assemble_webp_composites_background(monkeypatch, tmp_path):
+    _write_png_header(tmp_path / 'frame0000.png', 800, 800)
+    engine = RenderEngine('/tmp/example.kicad_pcb', {'resolution': '800x800', 'bg_color': '#123456'})
+    cmds = _capture_assembly_cmds(monkeypatch)
+
+    engine.assemble_webp(str(tmp_path), str(tmp_path / 'out.webp'), 1)
+
+    assert len(cmds) == 1
+    assert 'color=c=#123456:s=800x800:r=30[bg]' in _filter_graph(cmds[0])
+    assert cmds[0][cmds[0].index('-c:v') + 1] == 'libwebp_anim'
+    assert cmds[0][cmds[0].index('-loop') + 1] == '0'
+
+
+def test_assemble_webp_transparent_keeps_alpha(monkeypatch, tmp_path):
+    _write_png_header(tmp_path / 'frame0000.png', 800, 800)
+    engine = RenderEngine('/tmp/example.kicad_pcb', {'resolution': '800x800', 'transparent_bg': True})
+    cmds = _capture_assembly_cmds(monkeypatch)
+
+    engine.assemble_webp(str(tmp_path), str(tmp_path / 'out.webp'), 1)
+
+    graph = _filter_graph(cmds[0])
+    assert 'color=' not in graph
+    assert 'yuva420p' in graph
+
+
+def test_assemble_webp_reports_missing_encoder(monkeypatch, tmp_path):
+    def failing_process(cmd, **kwargs):
+        proc = Mock()
+        proc.communicate.return_value = ("Unknown encoder 'libwebp_anim'", None)
+        proc.returncode = 1
+        return proc
+
+    monkeypatch.setattr('SpinRender.core.renderer.find_command', lambda _: '/usr/bin/ffmpeg')
+    monkeypatch.setattr('SpinRender.core.renderer._start_text_process', failing_process)
+    engine = RenderEngine('/tmp/example.kicad_pcb', {'resolution': '800x800'})
+
+    with pytest.raises(RuntimeError, match='no libwebp encoder'):
+        engine.assemble_webp(str(tmp_path), str(tmp_path / 'out.webp'), 1)
+
+
+def test_output_path_uses_webp_extension(tmp_path):
+    engine = RenderEngine(str(tmp_path / 'board.kicad_pcb'), {
+        'format': 'webp', 'output_auto': False, 'output_path': str(tmp_path),
+    })
+
+    assert engine.get_output_path() == str(tmp_path / 'board.webp')
+
+
+def test_assemble_mp4_ignores_transparent_bg(monkeypatch, tmp_path):
+    _write_png_header(tmp_path / 'frame0000.png', 800, 800)
+    engine = RenderEngine('/tmp/example.kicad_pcb', {
+        'resolution': '800x800', 'transparent_bg': True, 'bg_color': '#123456',
+    })
+    cmds = _capture_assembly_cmds(monkeypatch)
+
+    engine.assemble_mp4(str(tmp_path), str(tmp_path / 'out.mp4'), 1)
+
+    assert 'color=c=#123456' in _filter_graph(cmds[0])
+
+
+def test_assemble_png_sequence_transparent_copies_frames(monkeypatch, tmp_path):
+    frames = tmp_path / 'frames'
+    frames.mkdir()
+    for i in range(2):
+        (frames / f'frame{i:04d}.png').write_bytes(b'frame%d' % i)
+    engine = RenderEngine('/tmp/example.kicad_pcb', {'transparent_bg': True})
+    cmds = _capture_assembly_cmds(monkeypatch)
+
+    engine.assemble_png_sequence(str(frames), str(tmp_path / 'out' / 'board'), 2)
+
+    assert cmds == []
+    assert (tmp_path / 'out' / 'board_00001.png').read_bytes() == b'frame1'
+
+
+def test_assemble_png_sequence_composites_background(monkeypatch, tmp_path):
+    frames = tmp_path / 'frames'
+    frames.mkdir()
+    _write_png_header(frames / 'frame0000.png', 800, 800)
+    engine = RenderEngine('/tmp/example.kicad_pcb', {'bg_color': '#123456'})
+    cmds = _capture_assembly_cmds(monkeypatch)
+
+    engine.assemble_png_sequence(str(frames), str(tmp_path / 'out' / '50%board'), 1)
+
+    cmd = cmds[0]
+    assert 'color=c=#123456:s=800x800:r=30[bg]' in _filter_graph(cmd)
+    # Output numbering starts at 0, at the input rate, with '%' escaped
+    assert cmd[cmd.index('-r') + 1] == '30'
+    assert cmd[cmd.index('-start_number') + 1] == '0'
+    assert cmd[-1] == os.path.join(str(tmp_path / 'out'), '50%%board_%05d.png')
 
 
 def _fake_plugin_dir(tmp_path, versions=('9.0', '10.0')):

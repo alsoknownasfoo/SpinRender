@@ -22,7 +22,7 @@ Give your board dramatic lighting to add wow to your presentation or have it wel
 - 💡 **Flexible Staging** — Personalize the background and control how your board is lit.
 - 🧹 **Render Filters** — Hide vias, components, or test points for a cleaner shot.
 - 📐 **Custom Resolutions** — Add and manage your own output sizes alongside the built-in presets.
-- 🎞️ **Format Options** — Export to an MP4 movie file, animated GIF, or lossless PNG sequence.
+- 🎞️ **Format Options** — Export to an MP4 movie file, animated GIF, animated WebP, or lossless PNG sequence.
 
 &nbsp;
 ## Requirements
@@ -86,8 +86,8 @@ Python packages and font dependencies are installed on first launch.
 3. #### 💾 **Choose your output**<br>
    Select a resolution or customize your output parameters:
    - **Resolution** — landscape, portrait and square presets from 720p to 4K, plus custom dimensions via the ⚙ icon
-   - **Format** — MP4, animated GIF, or PNG sequence
-   - **Background Color** — solid color behind the board
+   - **Format** — MP4, animated GIF, animated WebP, or PNG sequence. For GitHub/GitLab READMEs, WebP is usually the best choice: it is typically 2–4× smaller than the same GIF, keeps full colour, and embeds the same way (`![](board.webp)`)
+   - **Background Color** — solid color behind the board, or tick **Transparent** to keep the background see-through (GIF, WebP and PNG sequence; MP4 has no transparency)
    - **Render Options** — hide vias, components, or test points for a cleaner result<br><br>
 4. #### 🎬 **Render**<br>
    Check out the preview of the animation and hit Render. Output lands next to your board file in `Renders/<timestamp>/`, or pick your own location in the advanced options (⚙ next to Render).<br><br>

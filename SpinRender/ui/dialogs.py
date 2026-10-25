@@ -648,7 +648,7 @@ class AdvancedOptionsDialog(BaseStyledDialog):
                 if fmt == 'png_sequence':
                     self.path_display.SetPath("/Renders/Untitled_#####.png", in_project=True)
                 else:
-                    ext = 'mp4' if fmt == 'mp4' else 'gif'
+                    ext = fmt if fmt in ('mp4', 'webp') else 'gif'
                     self.path_display.SetPath(f"/Renders/Untitled.{ext}", in_project=True)
             else:
                 display = f"{path}_#####.png" if fmt == 'png_sequence' else path

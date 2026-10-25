@@ -55,7 +55,7 @@ class PreviewPanel(wx.Panel):
         self.is_rendering = False  # set by controller
         self.current_render_frame: Optional[int] = None
         self.total_render_frames: Optional[int] = None
-        self.final_output_type: Optional[str] = None  # 'mp4' or 'gif'
+        self.final_output_type: Optional[str] = None  # 'mp4', 'gif' or 'webp'
         self.render_preview_bitmap: Optional[wx.Bitmap] = None
         self.last_frame_dir: Optional[str] = None
 
@@ -262,7 +262,24 @@ class PreviewPanel(wx.Panel):
         """Callback for when model finishes loading. Transition to saved color."""
         bg_hex = getattr(self.settings, 'bg_color', '#000000')
         self.viewport.set_background_color(bg_hex)
+        self.viewport.set_transparent_background(self._transparent_output())
         self.update_preview_overlay()
+
+    def _draw_checkerboard(self, gc, w, h):
+        """Checkerboard behind transparent render frames."""
+        cell = self.FromDIP(12)
+        gc.SetPen(wx.TRANSPARENT_PEN)
+        gc.SetBrush(wx.Brush(_theme.color("viewport.checker.dark")))
+        gc.DrawRectangle(0, 0, w, h)
+        gc.SetBrush(wx.Brush(_theme.color("viewport.checker.light")))
+        for row in range(h // cell + 1):
+            for col in range(row % 2, w // cell + 1, 2):
+                gc.DrawRectangle(col * cell, row * cell, cell, cell)
+
+    def _transparent_output(self):
+        """True when the configured output keeps a transparent background."""
+        check = getattr(self.settings, 'transparent_output', None)
+        return bool(check()) if callable(check) else False
 
     # ------------------------------------------------------------------------
     # Public API for parent/orchestrator to call
@@ -314,6 +331,8 @@ class PreviewPanel(wx.Panel):
         # Bottom-Left: Lighting + BG
         lighting = getattr(self.settings, 'lighting', 'studio').upper()
         bg_hex = getattr(self.settings, 'bg_color', '#000000').upper()
+        if self._transparent_output():
+            bg_hex = "TRANSPARENT"
         update_text(self.ov_bottom_left, f"{lighting} · BG:{bg_hex}")
 
         # Bottom-Center: Resolution, aspect ratio, FPS
@@ -448,6 +467,8 @@ class PreviewPanel(wx.Panel):
         gc.SetBrush(wx.Brush(bg_color))
         gc.SetPen(wx.TRANSPARENT_PEN)
         gc.DrawRectangle(0, 0, w, h)
+        if self._transparent_output():
+            self._draw_checkerboard(gc, w, h)
 
         if self.render_preview_bitmap and self.render_preview_bitmap.IsOk():
             bmp_w = self.render_preview_bitmap.GetWidth()

@@ -285,13 +285,15 @@ locale:
       format:
         label: "Formát"
         desc: "Formát videa nebo sekvence snímků"
-        options: ["MP4 (H.264)", "GIF", "Sekvence PNG"]
+        options: ["MP4 (H.264)", "GIF", "WebP", "Sekvence PNG"]
       hide_vias:
         label: "PROKOPY (VIAS)"
       hide_components:
         label: "SOUČÁSTKY"
       hide_test_points:
         label: "TESTOVACÍ BODY (T# REFS)"
+      transparent_bg:
+        label: "PRŮHLEDNÉ"
       resolution:
         label: "Rozlišení"
         desc: "Výstupní rozměry a poměr stran"

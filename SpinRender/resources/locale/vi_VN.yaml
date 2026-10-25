@@ -285,13 +285,15 @@ locale:
       format:
         label: "Định dạng"
         desc: "Định dạng video hoặc chuỗi hình ảnh"
-        options: ["MP4 (H.264)", "GIF", "Chuỗi PNG"]
+        options: ["MP4 (H.264)", "GIF", "WebP", "Chuỗi PNG"]
       hide_vias:
         label: "VIAS"
       hide_components:
         label: "LINH KIỆN"
       hide_test_points:
         label: "ĐIỂM KIỂM TRA (T#)"
+      transparent_bg:
+        label: "TRONG SUỐT"
       resolution:
         label: "Độ phân giải"
         desc: "Kích thước đầu ra và tỷ lệ khung hình"

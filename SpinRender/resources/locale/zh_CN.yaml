@@ -285,13 +285,15 @@ locale:
       format:
         label: "格式"
         desc: "视频或图像序列格式"
-        options: ["MP4 (H.264)", "GIF", "PNG 序列"]
+        options: ["MP4 (H.264)", "GIF", "WebP", "PNG 序列"]
       hide_vias:
         label: "过孔 (VIAS)"
       hide_components:
         label: "组件 (COMPONENTS)"
       hide_test_points:
         label: "测试点 (T# REFS)"
+      transparent_bg:
+        label: "透明"
       resolution:
         label: "分辨率"
         desc: "输出尺寸和纵横比"

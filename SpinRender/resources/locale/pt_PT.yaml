@@ -285,13 +285,15 @@ locale:
       format:
         label: "Formato"
         desc: "Formato de vídeo ou sequência de imagens"
-        options: ["MP4 (H.264)", "GIF", "Sequência PNG"]
+        options: ["MP4 (H.264)", "GIF", "WebP", "Sequência PNG"]
       hide_vias:
         label: "VIAS"
       hide_components:
         label: "COMPONENTES"
       hide_test_points:
         label: "PONTOS DE TESTE (REFS T#)"
+      transparent_bg:
+        label: "TRANSPARENTE"
       resolution:
         label: "Resolução"
         desc: "Dimensões de saída e proporção"

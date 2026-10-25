@@ -374,6 +374,10 @@ viewport:
   bg: "@colors.black" # Keep viewport dark even in light mode
   grid: "@colors.gray-medium"
   wireframe: null
+  # Checkerboard shown behind the board when the output background is transparent
+  checker:
+    dark: "#222222"
+    light: "#3A3A3A"
   axes:
     x: "@colors.red"
     y: "@colors.green"

@@ -66,6 +66,7 @@ class ParameterController:
         self.hide_vias_checkbox = controls.get('hide_vias_checkbox')
         self.hide_components_checkbox = controls.get('hide_components_checkbox')
         self.hide_test_points_checkbox = controls.get('hide_test_points_checkbox')
+        self.transparent_bg_checkbox = controls.get('transparent_bg_checkbox')
         self.controls_side_panel = controls.get('controls_side_panel')
 
     # Rotation handlers
@@ -233,6 +234,8 @@ class ParameterController:
         idx = self.format_choice.GetSelection()
         if 0 <= idx < len(self.format_ids):
             self.settings.format = self.format_ids[idx]
+        # Transparency depends on the format (MP4 has no alpha)
+        self._apply_background_state()
         self.preview.update_preview_overlay()
         self.schedule_save()
 
@@ -317,3 +320,18 @@ class ParameterController:
             self.preview.viewport.set_background_color(color_hex)
         self.preview.update_preview_overlay()
         self.schedule_save()
+
+    def on_transparent_bg_change(self, event):
+        self.settings.transparent_bg = bool(self.transparent_bg_checkbox.GetValue())
+        self._apply_background_state()
+        self.preview.update_preview_overlay()
+        self.schedule_save()
+
+    def _apply_background_state(self):
+        """Sync the background controls and the preview with the transparency state."""
+        if self.controls_side_panel and hasattr(self.controls_side_panel, 'sync_background_controls'):
+            self.controls_side_panel.sync_background_controls()
+        if hasattr(self.preview, 'viewport'):
+            self.preview.viewport.set_transparent_background(self.settings.transparent_output())
+        if hasattr(self.preview, 'render_preview_panel'):
+            self.preview.render_preview_panel.Refresh()

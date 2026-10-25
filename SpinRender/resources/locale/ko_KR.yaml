@@ -285,13 +285,15 @@ locale:
       format:
         label: "포맷"
         desc: "동영상 또는 이미지 시퀀스"
-        options: ["MP4 (H.264)", "GIF", "PNG 시퀀스"]
+        options: ["MP4 (H.264)", "GIF", "WebP", "PNG 시퀀스"]
       hide_vias:
         label: "비아(VIAS)"
       hide_components:
         label: "부품(COMPONENTS)"
       hide_test_points:
         label: "테스트 포인트(T# REFS)"
+      transparent_bg:
+        label: "투명"
       resolution:
         label: "해상도"
         desc: "출력 크기 및 종횡비"

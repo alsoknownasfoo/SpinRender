@@ -285,13 +285,15 @@ locale:
       format:
         label: "Format"
         desc: "Video veya görüntü dizisi formatı"
-        options: ["MP4 (H.264)", "GIF", "PNG Dizisi"]
+        options: ["MP4 (H.264)", "GIF", "WebP", "PNG Dizisi"]
       hide_vias:
         label: "VİALAR"
       hide_components:
         label: "BİLEŞENLER"
       hide_test_points:
         label: "TEST NOKTALARI (T#)"
+      transparent_bg:
+        label: "ŞEFFAF"
       resolution:
         label: "Çözünürlük"
         desc: "Çıktı boyutları ve en boy oranı"
