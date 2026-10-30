@@ -15,6 +15,7 @@ All notable changes to SpinRender are documented here. Format is based on
 - Added a **Zoom** control to set how large the board appears in the frame (0.1× to 5×, default 0.8× matches previous renders). Scroll over the preview to zoom; scrolling over a finished render dismisses it. Zoom is saved with presets. Thanks [@shubham0x13](https://github.com/shubham0x13)!
 
 ### 🐛 Fixes
+- Fixed KiCad crashing partway through a render (seen on macOS as a segfault in `wxEvtHandler::ProcessEventLocally`, a few frames in). Inside KiCad, every `wx.CallAfter` from the render thread re-registered its handler on KiCad's app object while the UI thread was dispatching events through it. SpinRender now pins the app's wxPython wrapper on launch, so the handler is registered once on the main thread.
 - The preview now frames the board the same way the final render does. Previously components overhanging the board edge or tall parts could shift the preview off-centre, and squarer boards appeared smaller in the preview than in the render.
 
 ## [0.9.1] - 2026-10-02

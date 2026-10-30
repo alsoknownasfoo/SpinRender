@@ -1,7 +1,8 @@
-"""Focused tests for KiCad board path resolution in the plugin entrypoint."""
+"""Focused tests for the plugin entrypoint: board path resolution and wx.App pinning."""
 
 import importlib
 import sys
+import weakref
 from types import SimpleNamespace
 
 
@@ -55,3 +56,63 @@ def test_get_board_file_path_casts_raw_board_when_needed(monkeypatch):
     plugin = _load_plugin_module(monkeypatch, fake_pcbnew)
 
     assert plugin._get_board_file_path(RawBoard()) == '/tmp/cast.kicad_pcb'
+
+
+class _AppWrapper:
+    """Stand-in for the wxPython wrapper of KiCad's C++-owned wxApp."""
+
+
+def _install_fake_app(plugin, monkeypatch):
+    """Mimic KiCad: wx.GetApp() returns the live wrapper if something holds one,
+    otherwise a fresh one (like sip's object map). wx.CallAfter() follows
+    wxPython: it calls app.Connect() whenever the wrapper lacks _CallAfterId."""
+    live = [None]
+    connects = []
+
+    def get_app():
+        app = live[0]() if live[0] else None
+        if app is None:
+            app = _AppWrapper()
+            live[0] = weakref.ref(app)
+        return app
+
+    def call_after(fn, *args, **kwargs):
+        app = get_app()
+        if not hasattr(app, '_CallAfterId'):
+            app._CallAfterId = 1000 + len(connects)
+            connects.append(app._CallAfterId)
+
+    monkeypatch.setattr(plugin.wx, 'GetApp', get_app, raising=False)
+    monkeypatch.setattr(plugin.wx, 'CallAfter', call_after, raising=False)
+    return connects
+
+
+def test_callafter_reconnects_every_call_with_transient_app_wrapper(monkeypatch):
+    """Documents the KiCad behaviour behind the crash: without pinning, every
+    CallAfter registers another handler on the app."""
+    fake_pcbnew = SimpleNamespace(ActionPlugin=type('ActionPlugin', (), {}))
+    plugin = _load_plugin_module(monkeypatch, fake_pcbnew)
+    connects = _install_fake_app(plugin, monkeypatch)
+
+    for _ in range(3):
+        plugin.wx.CallAfter(lambda: None)
+
+    assert len(connects) == 3
+
+
+def test_pin_wx_app_registers_callafter_handler_once(monkeypatch):
+    """After _pin_wx_app(), worker-thread CallAfter calls must only post events,
+    never Connect() on the app."""
+    fake_pcbnew = SimpleNamespace(ActionPlugin=type('ActionPlugin', (), {}))
+    plugin = _load_plugin_module(monkeypatch, fake_pcbnew)
+    connects = _install_fake_app(plugin, monkeypatch)
+
+    plugin._pin_wx_app()
+    connects_after_pin = len(connects)
+
+    for _ in range(10):
+        plugin.wx.CallAfter(lambda: None)
+    plugin._pin_wx_app()  # idempotent
+
+    assert plugin._wx_app_ref is plugin.wx.GetApp()
+    assert len(connects) == connects_after_pin
