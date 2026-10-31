@@ -88,6 +88,41 @@ def _get_board_file_path(board) -> str:
 
     raise AttributeError(f"{type(board).__name__!s} object has no attribute 'GetFileName'")
 
+
+# Strong reference to the wxPython wrapper of KiCad's wxApp.
+#
+# wx.CallAfter() caches its event type as an attribute on the wx.GetApp()
+# wrapper and, when that attribute is missing, calls app.Connect() to register
+# a new handler on the app. KiCad's wxApp is created in C++ and nothing on the
+# Python side holds its wrapper, so every wx.GetApp() returns a fresh wrapper
+# without the attribute: each CallAfter() adds another handler to the app's
+# dynamic event table. From a worker thread (render progress, preview loader)
+# that mutates the table while the main thread is iterating it to dispatch
+# idle-time wxUpdateUIEvents, and KiCad segfaults in
+# wxEvtHandler::ProcessEventLocally. Pinning the wrapper on the main thread
+# makes the attribute stick, so later CallAfter() calls only post an event.
+_wx_app_ref = None
+
+
+def _pin_wx_app():
+    """Keep wx.GetApp()'s wrapper alive and register CallAfter's handler on the main thread."""
+    global _wx_app_ref
+    if _wx_app_ref is not None:
+        return
+    app = wx.GetApp()
+    if app is None:
+        return
+    # Diagnostic: if the wrapper is transient, the attribute set by this
+    # CallAfter is gone by the time we look it up again.
+    if not hasattr(app, "_CallAfterId"):
+        del app
+        wx.CallAfter(lambda: None)
+        app = wx.GetApp()
+        logger.debug(f"wx.App wrapper keeps _CallAfterId across GetApp() calls: {hasattr(app, '_CallAfterId')}")
+    _wx_app_ref = app
+    wx.CallAfter(lambda: None)
+    logger.debug(f"Pinned wx.App wrapper (_CallAfterId={getattr(app, '_CallAfterId', None)})")
+
 # NOTE: Do NOT import ui.main_panel here - it pulls in core.preview which requires
 # trimesh/OpenGL. We import it inside Run() AFTER checking dependencies.
 
@@ -116,6 +151,10 @@ class SpinRenderPlugin(pcbnew.ActionPlugin):
         """
         logger.info("SpinRender Run() called")
         try:
+            # Must happen on the main thread before any worker thread calls
+            # wx.CallAfter() (dependency installer, preview loader, renderer).
+            _pin_wx_app()
+
             # 1. CHECK DEPENDENCIES (INCLUDING wxPython) FIRST
             logger.debug("Starting dependency check...")
             checker = DependencyChecker()
